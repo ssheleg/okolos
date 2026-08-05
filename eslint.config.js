@@ -100,6 +100,8 @@ export default tseslint.config(
     files: ['**/*.test.ts', '**/*.bench.ts', 'tools/**/*.ts'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
+      // Mocks need typed parameters they never read, to pin the call signature.
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
   },
 )

@@ -1,0 +1,18 @@
+{
+  "name": "@okolos/storage",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "description": "IndexedDB schema, retention, export and wipe. The only place that knows how data is laid out.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@okolos/contracts": "workspace:*",
+    "idb": "^8.0.3"
+  }
+}

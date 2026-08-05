@@ -1,4 +1,17 @@
 {
   "files": [],
-  "references": [{ "path": "packages/contracts" }]
+  "references": [
+    {
+      "path": "packages/contracts"
+    },
+    {
+      "path": "packages/storage"
+    },
+    {
+      "path": "packages/net"
+    },
+    {
+      "path": "packages/platform"
+    }
+  ]
 }

@@ -17,8 +17,8 @@ are specified once in [screens.md](screens.md).
 | SCN-005 | Neutralise and restore | ai-shield | P-01 | ST-003, FLW-02 | implemented | 2026-08-04 PASS |
 | SCN-006 | Lookalike domain warning | web-guard | P-01 | ST-006, FLW-05 | implemented | 2026-08-05 PASS |
 | SCN-007 | Known-malicious page blocked | web-guard | P-02 | ST-005, ST-016, FLW-04 | implemented | 2026-08-05 PASS |
-| SCN-008 | ClickFix — page copies a command | web-guard | P-02 | ST-007, FLW-06 | draft | — |
-| SCN-009 | Browser-lock trap escape | web-guard | P-02 | ST-008, FLW-07 | draft | — |
+| SCN-008 | ClickFix — page copies a command | web-guard | P-02 | ST-007, FLW-06 | implemented | 2026-08-05 PASS |
+| SCN-009 | Browser-lock trap escape | web-guard | P-02 | ST-008, FLW-07 | implemented | 2026-08-05 PASS |
 | SCN-010 | Agent blocked from acting on a poisoned page | ai-shield | P-01 | ST-004, FLW-03 | implemented | 2026-08-05 PASS |
 | SCN-011 | Credential-entry guard on a new domain | web-guard | P-02 | ST-010, FLW-09 | draft | — |
 | SCN-012 | Download stopped by feed or hash | web-guard | P-01 | ST-009, FLW-08 | draft | — |
@@ -208,8 +208,8 @@ See [foundation.md](foundation.md) → Personas.
 - **UI elements:** blocking banner (clickfix variant), copied text block, "Leave page" (primary), "I already ran it", deliberate dismiss control
 - **States covered:** success
 - **Errors & recovery:** clipboard content cannot be read -> the warning still appears based on the write event and the page pattern, and says the content could not be displayed
-- **Status:** draft
-- **Coverage:** none yet
+- **Status:** implemented
+- **Coverage:** packages/core-traps/src/clickfix.ts:44, apps/extension/src/content/traps.ts:41, e2e/scn-008.spec.ts:37
 
 ### SCN-009: Browser-lock trap escape
 - **Persona:** P-02
@@ -226,8 +226,8 @@ See [foundation.md](foundation.md) → Personas.
 - **UI elements:** banner (techsupport variant), "Close this page" (primary), "I already called them", dismiss
 - **States covered:** success, error
 - **Errors & recovery:** dialogs cannot be fully suppressed in this context -> system says so and directs the user to close the tab
-- **Status:** draft
-- **Coverage:** none yet
+- **Status:** implemented
+- **Coverage:** packages/core-traps/src/techsupport.ts:40, apps/extension/src/content/traps.ts:83, e2e/scn-008.spec.ts:69
 
 ### SCN-011: Credential-entry guard on a new domain
 - **Persona:** P-02

@@ -86,6 +86,9 @@ importers:
       '@okolos/core-sanitizer':
         specifier: workspace:*
         version: link:../../packages/core-sanitizer
+      '@okolos/core-traps':
+        specifier: workspace:*
+        version: link:../../packages/core-traps
       '@okolos/model':
         specifier: workspace:*
         version: link:../../packages/model
@@ -135,6 +138,8 @@ importers:
       '@okolos/contracts':
         specifier: workspace:*
         version: link:../contracts
+
+  packages/core-traps: {}
 
   packages/model:
     dependencies:

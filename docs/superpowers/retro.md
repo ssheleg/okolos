@@ -184,3 +184,35 @@ happens before adding.
 - **Catches it next time:** `apps/extension/src/background/inference.test.ts`
   asserts the `no-runtime` state explicitly, so the absence is a tested
   behaviour rather than an oversight.
+
+### 2026-08-05 — the detector that would have flagged every install page
+
+- **Symptom:** the first ClickFix rule fired on "copy this, paste it in your
+  terminal, press Enter" plus a scripted copy. That is a ClickFix page. It is
+  also every developer documentation page in the world, where the copy button
+  fires `execCommand('copy')`.
+- **Surfaced at:** stage 6, writing the false-positive half of the corpus —
+  not by a failing test, but by asking what else matches.
+- **Owned by:** stage 5 — the rule was written from the attack outward instead
+  of from the population of pages it would run against.
+- **Root cause:** two of the three signals are shared with legitimate pages. The
+  pretext ("verify you are human", "fix this error") is the only one that is
+  never innocent: no genuine verification has ever required a terminal.
+- **Fix, by grade:** the pretext is now required for any verdict at all. Cost:
+  a ClickFix variant with unfamiliar pretext wording is missed. Benefit: the
+  extension does not accuse npm's install page.
+- **Catches it next time:** `packages/core-traps/src/clickfix.test.ts` carries
+  the documentation page as a named negative, and removing the pretext
+  requirement turns three tests red.
+
+### 2026-08-05 — a guard nothing tested, kept for what it claims
+
+- **Symptom:** removing the `isTrusted` check on copy events failed nothing.
+- **Surfaced at:** stage 6, planted-defect check on REQ-16.
+- **Root cause:** with the pretext rule in place, the check no longer changes
+  whether a warning appears — only what the warning says. The banner's sentence
+  is "this page copied a command for you", which is untrue when the user copied
+  it themselves.
+- **Fix, by grade:** the watcher now reports the signals behind each warning
+  through a callback — used to journal the trap, and asserted in a test that
+  goes red without the guard. A claim worth making is a claim worth testing.

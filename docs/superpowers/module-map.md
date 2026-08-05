@@ -24,7 +24,7 @@
 | **M4** | Поверхности AI Shield | REQ-06, REQ-07 | `ui/banner`, `ui/inspector`, `ui/first-run` | M0, M1, M3 |
 | **M5** | Санитайзер и гейт агента | REQ-10, REQ-11 | `core-sanitizer`, `core-gate`, `ui/gate`, `content/agent-gate` | M3, M4 |
 | **M6** | Ежедневные поверхности | REQ-12 | `core-queue`, `ui/popup`, `ui/journal`, `popup/state` | M0, M1 |
-| **M7** | Фиды и подпись | REQ-13 | `feeds`, `crypto/ed25519` | M0, M1 |
+| **M7** | Фиды и подпись | REQ-13 | `core-feeds`, `core-lookalike`, `core-traps`, `ui/interstitial`, `ui/comparison`, `content/traps` | M0, M1 |
 | **M8** | Guard ссылок и страниц | REQ-14, REQ-15, REQ-16, REQ-17, REQ-18 | `core-url`, `core-page`, `ui/interstitial` | M7, M4 |
 | **M9** | Загрузки | REQ-19 | `core-download` | M7, M4 |
 | **M10** | Пароли и утечки | REQ-20, REQ-21 | `core-credential`, `sources/*` | M1, M6 |

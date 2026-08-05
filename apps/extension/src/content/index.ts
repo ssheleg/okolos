@@ -19,6 +19,7 @@ import type {
 import { AgentGate } from './agent-gate.js'
 import { collect, DEFAULT_BUDGET } from './collect.js'
 import { warnIfLookalike } from './lookalike.js'
+import { watchForTraps } from './traps.js'
 import { Sanitiser } from './sanitize.js'
 
 /**
@@ -224,6 +225,33 @@ if (isTopFrame) {
   })
 }
 
+/**
+ * Trap watching runs only in the top frame and only where a person is looking:
+ * a ClickFix banner inside a hidden ad frame warns nobody, and the fullscreen it
+ * would try to leave is not the fullscreen the user is trapped in.
+ */
+if (isTopFrame) {
+  watchForTraps({
+    doc: document,
+    text: () => document.body?.innerText ?? '',
+    leave: () => history.back(),
+    recover: (kind) => {
+      void platform.runtime.send('recovery/open', { kind }).catch(() => undefined)
+    },
+    warned: (kind, signals) => {
+      void platform.runtime
+        .send('trap/warned', { kind, signals: signals.join(',') })
+        .catch(() => undefined)
+    },
+    exitFullscreen: () => {
+      void document.exitFullscreen?.().catch(() => {
+        // The browser refused. The warning still stands and still says the way
+        // out is to close the tab.
+      })
+    },
+  })
+}
+
 void safely(scan)
   }, RESCAN_DEBOUNCE_MS)
 }
@@ -317,6 +345,33 @@ if (isTopFrame) {
   }).catch(() => {
     // An address that could not be checked is not an address declared safe;
     // nothing is shown either way, and the page is left alone.
+  })
+}
+
+/**
+ * Trap watching runs only in the top frame and only where a person is looking:
+ * a ClickFix banner inside a hidden ad frame warns nobody, and the fullscreen it
+ * would try to leave is not the fullscreen the user is trapped in.
+ */
+if (isTopFrame) {
+  watchForTraps({
+    doc: document,
+    text: () => document.body?.innerText ?? '',
+    leave: () => history.back(),
+    recover: (kind) => {
+      void platform.runtime.send('recovery/open', { kind }).catch(() => undefined)
+    },
+    warned: (kind, signals) => {
+      void platform.runtime
+        .send('trap/warned', { kind, signals: signals.join(',') })
+        .catch(() => undefined)
+    },
+    exitFullscreen: () => {
+      void document.exitFullscreen?.().catch(() => {
+        // The browser refused. The warning still stands and still says the way
+        // out is to close the tab.
+      })
+    },
   })
 }
 

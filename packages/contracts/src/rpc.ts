@@ -30,6 +30,10 @@ export interface RpcMap {
   'data/export': { req: Record<string, never>; res: { json: string } }
   'data/wipe': { req: { confirm: true }; res: { ok: true } }
   /** Domains the user has marked legitimate, and the way to add one. */
+  /** Opens the recovery checklist for what just happened. */
+  /** Records a page trap in the journal, so the diff can show it. */
+  'trap/warned': { req: { kind: string; signals: string }; res: { ok: true } }
+  'recovery/open': { req: { kind: string }; res: { ok: true } }
   'trust/list': { req: Record<string, never>; res: { domains: string[] } }
   'trust/add': { req: { domain: string }; res: { ok: true } }
   'gate/decision': { req: GateDecision; res: { ok: true } }

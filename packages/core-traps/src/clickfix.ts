@@ -1,0 +1,78 @@
+/**
+ * ClickFix: the page copies a command, and asks the user to run it.
+ *
+ * The attack does not exploit the browser at all. It persuades a person to
+ * paste a line into a box outside it — Win+R, a terminal, PowerShell — where no
+ * browser protection reaches. The host is usually a legitimate site that has
+ * been compromised, so nothing about the domain gives it away.
+ *
+ * Three signals, and the third one is load-bearing in a way the first draft of
+ * this file missed. "Copy this, paste it in your terminal, press Enter" with a
+ * scripted copy behind it describes a ClickFix page — and it equally describes
+ * every installation page on every developer site in the world, which is where
+ * the copy button that fires `execCommand('copy')` actually lives.
+ *
+ * What separates them is the pretext. Real documentation asks you to run a
+ * command because you asked how to install something. A ClickFix page asks you
+ * to run one to prove you are human, or to fix an error it invented. No
+ * genuine verification has ever required a terminal, so that claim is the
+ * signal that cannot be innocent, and nothing here fires without it.
+ */
+
+export interface ClickFixEvidence {
+  /** Visible text of the page, already truncated by the collector. */
+  readonly text: string
+  /** True when a copy happened that no human gesture initiated. */
+  readonly scriptedCopy: boolean
+  /** What was copied, when it could be read at all. */
+  readonly copied: string | null
+}
+
+export interface ClickFixVerdict {
+  readonly confidence: 'high' | 'medium'
+  readonly signals: readonly string[]
+  /** Verbatim, for showing the user. Null when it could not be read. */
+  readonly copied: string | null
+  /** True when the warning rests on the page's wording alone. */
+  readonly copyUnreadable: boolean
+}
+
+/** Where the page tells the user to paste. */
+const RUN_TARGET = /\b(win\s*\+\s*r|windows\s*\+\s*r|run dialog|powershell|command prompt|cmd\.exe|terminal|iex|invoke-expression)\b/i
+
+/** The instruction to paste, in the phrasings these campaigns actually use. */
+const PASTE_STEP = /\b(ctrl\s*\+\s*v|cmd\s*\+\s*v|⌘\s*v|paste (?:it|the|this)|press enter|hit enter)\b/i
+
+/** The pretext: a verification that a real one never asks for. */
+const PRETEXT = /\b(verify (?:you are|you're) (?:a )?human|i am not a robot|i'm not a robot|captcha|verification (?:step|code|failed)|fix (?:the|this) (?:error|issue))\b/i
+
+/** What a copied ClickFix payload looks like. */
+const PAYLOAD = /\b(powershell|iex|invoke-expression|curl\s|wget\s|mshta|certutil|bitsadmin|base64|cmd\s*\/c|bash\s+-c|\/bin\/sh)\b/i
+
+export function detectClickFix(evidence: ClickFixEvidence): ClickFixVerdict | null {
+  const signals: string[] = []
+  const text = evidence.text
+
+  if (evidence.scriptedCopy) signals.push('copy-not-made-by-you')
+  if (RUN_TARGET.test(text)) signals.push('names-a-place-outside-the-browser')
+  if (PASTE_STEP.test(text)) signals.push('tells-you-to-paste')
+  if (PRETEXT.test(text)) signals.push('fake-verification')
+  if (evidence.copied !== null && PAYLOAD.test(evidence.copied)) signals.push('copied-text-is-a-command')
+
+  const pagePattern =
+    signals.includes('names-a-place-outside-the-browser') && signals.includes('tells-you-to-paste')
+  const pretext = signals.includes('fake-verification')
+
+  // Without the pretext this is a documentation page, however much the rest of
+  // it matches. With it, a copy that happened or a command on the clipboard is
+  // what turns suspicion into a verdict.
+  if (!(pretext && pagePattern)) return null
+  const strong = evidence.scriptedCopy || signals.includes('copied-text-is-a-command')
+
+  return {
+    confidence: strong ? 'high' : 'medium',
+    signals,
+    copied: evidence.copied,
+    copyUnreadable: evidence.scriptedCopy && evidence.copied === null,
+  }
+}

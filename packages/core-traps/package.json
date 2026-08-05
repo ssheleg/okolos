@@ -1,0 +1,10 @@
+{
+  "name": "@okolos/core-traps",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "description": "Recognises ClickFix and tech-support traps from page evidence. Pure.",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "build": "tsc -b" }
+}

@@ -35,6 +35,10 @@ platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>) => {
       return blockContext() as Promise<RpcMap[T]['res']>
     case 'block/allow':
       return allowBlocked(message.payload as { url: string }) as Promise<RpcMap[T]['res']>
+    case 'trap/warned':
+      return journalTrap(message.payload as { kind: string; signals: string }) as Promise<RpcMap[T]['res']>
+    case 'recovery/open':
+      return openRecovery(message.payload as { kind: string }) as Promise<RpcMap[T]['res']>
     case 'trust/list':
       return listTrusted() as Promise<RpcMap[T]['res']>
     case 'trust/add':
@@ -258,6 +262,33 @@ async function allowBlocked(payload: { url: string }): Promise<{ url: string } |
   }
 
   return { url: target }
+}
+
+async function journalTrap(payload: { kind: string; signals: string }): Promise<{ ok: true }> {
+  const wording: Record<string, string> = {
+    clickfix: 'A page copied a command and asked you to run it outside the browser.',
+    techsupport: 'A page claimed your computer was locked and gave a number to call.',
+  }
+  try {
+    const db = await openDb()
+    const now = new Date().toISOString()
+    await db.put('journal', {
+      id: `trap:${payload.kind}:${now}`,
+      createdAt: now,
+      kind: 'verdict',
+      detail: { explain: wording[payload.kind] ?? 'A page trap was detected.', signals: payload.signals },
+    })
+  } catch (cause) {
+    console.warn('okolos: could not journal a page trap', cause)
+  }
+  return { ok: true }
+}
+
+async function openRecovery(payload: { kind: string }): Promise<{ ok: true }> {
+  // The checklist itself lands with REQ-22; until then the entry point exists
+  // and goes somewhere real rather than being a control that does nothing.
+  await platform.tabs.create(platform.runtime.getUrl(`options.html#recovery=${encodeURIComponent(payload.kind)}`))
+  return { ok: true }
 }
 
 async function listTrusted(): Promise<{ domains: string[] }> {

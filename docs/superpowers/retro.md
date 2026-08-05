@@ -392,3 +392,26 @@ happens before adding.
   anchor had been removed by an earlier edit in the same script silently did
   nothing, so the row never appeared. The habit that ends it is asserting the
   anchor exists before writing — now done in the edit script itself.
+
+### 2026-08-05 — a plan that had quietly become a claim
+
+- **Symptom:** `coverage-matrix.md` listed forty-two attack vectors with a
+  milestone each, written the day before implementation began. Seventeen of them
+  were built. The other twenty-five read exactly like the seventeen.
+- **Surfaced at:** a documentation sweep, reading it as a stranger would.
+- **Owned by:** nobody in particular, which is the problem: a forward-looking
+  document ages into a claim without anyone editing it.
+- **Fix, by grade:** a header saying outright what the document is and is not,
+  and a Готово column. Seventeen rows carry a tick, each citing the requirement
+  and the spec behind it; the rest carry a dash and the header says a row
+  without a tick is an intention and must not be read as a capability. The
+  `v0.3`/`v0.7` milestone labels are named as planning-only — they correspond to
+  nothing in the repository, which ships R1–R5.
+- **Catches it next time:** `tools/docs.test.ts` resolves every tick against the
+  requirement ledger and checks the cited spec exists. Ticking an unbuilt row
+  fails two tests.
+- **Same sweep, the module map:** it named `core-url`, `core-page`, `playbooks`
+  and `ui/a11y` — modules from the plan that never existed under those names,
+  because the work landed inside `core-feeds`, `core-lookalike`, `core-recovery`
+  and an axe sweep in the e2e suite. Now gated against the workspace: a map may
+  not name a package or a UI surface that is not on disk.

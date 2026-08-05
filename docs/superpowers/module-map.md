@@ -19,19 +19,19 @@
 |---|---|---|---|---|
 | **M0** | Каркас и контракты | REQ-01, REQ-02, REQ-27, REQ-30, REQ-31 | `contracts`, `platform`, `storage`, конфиги, CI | — |
 | **M1** | Сеть и самоаудит | REQ-08, REQ-28 | `net`, `ui/self-audit` | M0 |
-| **M2** | Стенд производительности | REQ-09 | `bench`, CI-джоб | M0 |
+| **M2** | Стенд производительности | REQ-09 | `tools/gates/`, `e2e/budget.spec.ts`, `e2e/memory.spec.ts` | M0 |
 | **M3** | Детект инъекций | REQ-03, REQ-04, REQ-05 | `core-injection`, `corpora/injections` | M0 |
 | **M4** | Поверхности AI Shield | REQ-06, REQ-07 | `ui/banner`, `ui/inspector`, `ui/first-run` | M0, M1, M3 |
-| **M5** | Санитайзер и гейт агента | REQ-10, REQ-11 | `core-sanitizer`, `core-gate`, `ui/gate`, `content/agent-gate` | M3, M4 |
-| **M6** | Ежедневные поверхности | REQ-12 | `core-queue`, `ui/popup`, `ui/journal`, `popup/state` | M0, M1 |
+| **M5** | Санитайзер и гейт агента | REQ-10, REQ-11 | `core-sanitizer`, `core-gate`, `ui/gate`, `content/agent-gate`, `content/sanitize` | M3, M4 |
+| **M6** | Ежедневные поверхности | REQ-12 | `core-queue`, `ui/popup`, `ui/queue`, `ui/journal`, `popup/state` | M0, M1 |
 | **M7** | Фиды и подпись | REQ-13 | `core-feeds`, `core-lookalike`, `core-traps`, `ui/interstitial`, `ui/comparison`, `content/traps` | M0, M1 |
-| **M8** | Guard ссылок и страниц | REQ-14, REQ-15, REQ-16, REQ-17, REQ-18 | `core-url`, `core-page`, `ui/interstitial` | M7, M4 |
-| **M9** | Загрузки | REQ-19 | `core-download` | M7, M4 |
-| **M10** | Пароли и утечки | REQ-20, REQ-21 | `core-credential`, `sources/*` | M1, M6 |
-| **M11** | Восстановление | REQ-22 | `playbooks`, `ui/recovery` | M6 |
-| **M12** | Extension Guard | REQ-23, REQ-24 | `core-extensions`, `background/extensions` | M0, M6 |
+| **M8** | Guard ссылок и страниц | REQ-14, REQ-15, REQ-16, REQ-17, REQ-18 | `core-feeds` (правила блокировки), `core-lookalike`, `ui/interstitial`, `ui/comparison` | M7, M4 |
+| **M9** | Загрузки | REQ-19 | `core-download`, `background/downloads` | M7, M4 |
+| **M10** | Пароли и утечки | REQ-20, REQ-21 | `core-credential`, `core-leaks`, `background/password`, `background/leaks` | M1, M6 |
+| **M11** | Восстановление | REQ-22 | `core-recovery`, `ui/recovery` | M6 |
+| **M12** | Extension Guard | REQ-23, REQ-24 | `core-extensions`, `ui/extensions`, `background/extensions` | M0, M6 |
 | **M13** | Воркер и публичный статус | REQ-25, REQ-26 | `apps/proxy`, `apps/status-page` | M7 |
-| **M14** | Доступность и i18n | REQ-29 | `ui/a11y`, axe-джоб | параллельно UI-модулям |
+| **M14** | Доступность и i18n | REQ-29 | `e2e/a11y.spec.ts` (5 поверхностей) | параллельно UI-модулям |
 
 ## Порядок и релизы
 

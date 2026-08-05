@@ -29,7 +29,7 @@
 | **M9** | Загрузки | REQ-19 | `core-download` | M7, M4 |
 | **M10** | Пароли и утечки | REQ-20, REQ-21 | `core-credential`, `sources/*` | M1, M6 |
 | **M11** | Восстановление | REQ-22 | `playbooks`, `ui/recovery` | M6 |
-| **M12** | Extension Guard | REQ-23, REQ-24 | `core-extension`, `crx-analyzer` | M0, M6 |
+| **M12** | Extension Guard | REQ-23, REQ-24 | `core-extensions`, `background/extensions` | M0, M6 |
 | **M13** | Воркер и публичный статус | REQ-25, REQ-26 | `apps/proxy`, `apps/status-page` | M7 |
 | **M14** | Доступность и i18n | REQ-29 | `ui/a11y`, axe-джоб | параллельно UI-модулям |
 

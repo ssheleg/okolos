@@ -19,7 +19,7 @@ self-audit panel.
 | SCR-04 | Finding inspector | FLW-02, FLW-03 | - | built | packages/ui/src/inspector/inspector.ts:57 |
 | SCR-05 | Block interstitial | FLW-04 | - | built | e2e/scn-007.spec.ts |
 | SCR-06 | Agent action gate | FLW-03 | - | built | e2e/scn-010.spec.ts |
-| SCR-07 | Findings queue | FLW-01, FLW-17 | - | built | e2e/scn-020.spec.ts |
+| SCR-07 | Findings queue | FLW-01, FLW-17 | - | built | e2e/scn-020.spec.ts, e2e/scn-002.spec.ts |
 | SCR-08 | Leaks and repair | FLW-10, FLW-11, FLW-16 | - | designed | none yet |
 | SCR-09 | Extensions watch | FLW-12 | - | designed | none yet |
 | SCR-10 | Self-audit | FLW-13, FLW-17 | - | built | packages/ui/src/self-audit/panel.ts:26 |

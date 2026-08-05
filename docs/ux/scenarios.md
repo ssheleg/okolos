@@ -11,7 +11,7 @@ are specified once in [screens.md](screens.md).
 | ID | Title | Feature | Persona | Traces | Status | Last audit |
 |----|-------|---------|---------|--------|--------|------------|
 | SCN-001 | First run — clean result | onboarding | P-01 | ST-018, FLW-01 | implemented | 2026-08-04 PARTIAL |
-| SCN-002 | First run — findings found | onboarding | P-01 | ST-018, ST-015, FLW-01 | draft | — |
+| SCN-002 | First run — findings found | onboarding | P-01 | ST-018, ST-015, FLW-01 | implemented | 2026-08-05 PASS |
 | SCN-003 | Hidden instruction detected on a page | ai-shield | P-01 | ST-001, FLW-02 | implemented | 2026-08-04 PASS |
 | SCN-004 | Inspect what was hidden | ai-shield | P-01 | ST-002, FLW-02 | implemented | 2026-08-04 PASS |
 | SCN-005 | Neutralise and restore | ai-shield | P-01 | ST-003, FLW-02 | implemented | 2026-08-04 PASS |
@@ -75,9 +75,9 @@ See [foundation.md](foundation.md) → Personas.
 - **Alt paths:** user ignores the queue and closes it -> items stay in the queue and the toolbar badge shows the count
 - **UI elements:** findings summary by category, "See what to do first", queue items, per-item primary action, "not now"
 - **States covered:** loading, error, success
-- **Errors & recovery:** queue store unreadable -> screen states the storage problem and offers repair rather than showing an empty queue
-- **Status:** draft
-- **Coverage:** none yet
+- **Errors & recovery:** queue store unreadable -> the queue states the storage problem rather than showing an empty list
+- **Status:** implemented
+- **Coverage:** packages/ui/src/queue/queue.ts:15, apps/extension/src/first-run/index.ts:71, e2e/scn-002.spec.ts:45
 
 ## ai-shield
 

@@ -1,4 +1,6 @@
-import type { Queue, QueueItem } from '@okolos/core-queue'
+import type { Queue } from '@okolos/core-queue'
+
+import { renderQueue } from '../queue/queue.js'
 
 /**
  * SCR-02 — the popup.
@@ -66,7 +68,7 @@ export function renderPopup(
   root.setAttribute('data-verdict', state.page.verdict)
   root.append(text(doc, 'verdict', state.page.reason))
   root.append(changedLine(doc, state.changed, state.lastCheck, handlers))
-  root.append(queueBlock(doc, state.queue, handlers))
+  root.append(renderQueue(doc, state.queue, { onAct: handlers.onAct, onShowAll: handlers.onShowAll }))
   root.append(footer(doc, handlers))
   return root
 }
@@ -86,44 +88,6 @@ function changedLine(
       : `Nothing new since ${lastCheck ? shortTime(lastCheck) : 'your first run'}`
   el.addEventListener('click', handlers.onWhatChanged)
   return el
-}
-
-function queueBlock(doc: Document, queue: Queue, handlers: PopupHandlers): HTMLElement {
-  const list = doc.createElement('div')
-  list.setAttribute('data-role', 'queue')
-
-  if (queue.shown.length === 0) {
-    list.append(text(doc, 'queue-empty', 'Nothing needs you right now.'))
-    return list
-  }
-
-  for (const item of queue.shown) list.append(itemRow(doc, item, handlers))
-
-  if (queue.rankedBy === 'severity-only') {
-    // Saying "ranked by severity alone" costs a line. Presenting a reduced
-    // ranking as the considered one costs the user's trust the first time they
-    // notice the order makes no sense.
-    list.append(
-      text(doc, 'ranking-note', 'Ordered by severity alone — the rest of the ranking data is unavailable.'),
-    )
-  }
-
-  if (queue.hidden > 0) {
-    list.append(button(doc, 'show-all', `Show all (${queue.hidden} more)`, handlers.onShowAll))
-  }
-
-  return list
-}
-
-function itemRow(doc: Document, item: QueueItem, handlers: PopupHandlers): HTMLElement {
-  const row = doc.createElement('article')
-  row.setAttribute('data-role', 'item')
-  row.setAttribute('data-severity', item.severity)
-  row.append(text(doc, 'summary', item.summary))
-  row.append(
-    button(doc, 'act', item.actionLabel ?? 'Open', () => handlers.onAct(item.id)),
-  )
-  return row
 }
 
 function footer(doc: Document, handlers: PopupHandlers): HTMLElement {

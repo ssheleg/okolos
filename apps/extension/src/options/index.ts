@@ -1,8 +1,11 @@
 import { buildChecklist, type StepProgress } from '@okolos/core-recovery'
 import { diffSince } from '@okolos/core-queue'
 import { detectPlatform } from '@okolos/platform'
+import { buildQueue } from '@okolos/core-queue'
+import { toQueueItems } from '../popup/state.js'
 import {
   renderDataControls,
+  renderQueue,
   renderLeaks,
   type LeaksState,
   renderJournal,
@@ -79,6 +82,51 @@ function leaksSection(): HTMLElement {
       },
     }),
   )
+  return container
+}
+
+/**
+ * The same queue the popup shows, in the place the first run sends people. One
+ * implementation, because the promise is that whatever the user faces is at
+ * most three things and always the same three.
+ */
+let queueExpanded = false
+
+async function queueSection(): Promise<HTMLElement> {
+  const container = document.createElement('section')
+  container.setAttribute('data-role', 'queue-section')
+
+  const heading = document.createElement('h1')
+  heading.textContent = 'What needs you'
+  container.append(heading)
+
+  try {
+    const db = await openDb()
+    const items = toQueueItems(await db.getAll('findings'))
+    container.append(
+      renderQueue(document, buildQueue(items, queueExpanded ? Math.max(items.length, 3) : 3), {
+        onAct: (id) => {
+          void (async () => {
+            const finding = await (await openDb()).get('findings', id)
+            const url = finding?.verdict?.subject.ref
+            if (url) await platform.tabs.create(url)
+          })()
+        },
+        onShowAll: () => {
+          queueExpanded = true
+          void reload()
+        },
+      }),
+    )
+  } catch (cause) {
+    // Never an empty queue in place of a failure: "nothing needs you" is the
+    // most damaging sentence in this product to say wrongly.
+    const failed = document.createElement('p')
+    failed.setAttribute('data-role', 'queue-error')
+    failed.textContent = `The queue could not be read: ${String(cause)}`
+    container.append(failed)
+  }
+
   return container
 }
 
@@ -198,6 +246,7 @@ async function paint(state: PanelState): Promise<void> {
     await journalSection(),
     await recoverySection(),
     leaksSection(),
+    await queueSection(),
     renderDataControls(document, {
       onExport: download,
       onWipe: async () => {

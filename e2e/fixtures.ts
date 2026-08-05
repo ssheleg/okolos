@@ -14,8 +14,9 @@ const BUILD = path.join(here, '..', 'apps', 'extension', 'dist', 'chrome')
  * would pass by doing nothing.
  */
 export const test = base.extend<{ context: BrowserContext; extensionId: string }>({
-  // eslint-disable-next-line no-empty-pattern -- Playwright's fixture API
-  // requires the destructured first argument even when nothing is taken.
+  // Playwright's fixture API requires the destructured first argument even
+  // when this fixture takes nothing from it.
+  // eslint-disable-next-line no-empty-pattern
   context: async ({}, use) => {
     const context = await chromium.launchPersistentContext('', {
       channel: 'chromium',

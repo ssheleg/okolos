@@ -96,6 +96,14 @@ export default tseslint.config(
     },
   },
 
+  // Build scripts run in Node, not in a page or a worker.
+  {
+    files: ['tools/**/*.mjs', '*.config.js'],
+    languageOptions: {
+      globals: { console: 'readonly', process: 'readonly', URL: 'readonly' },
+    },
+  },
+
   {
     files: ['**/*.test.ts', '**/*.bench.ts', 'tools/**/*.ts'],
     rules: {

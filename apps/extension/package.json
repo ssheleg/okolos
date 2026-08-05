@@ -5,12 +5,15 @@
   "type": "module",
   "license": "AGPL-3.0-only",
   "description": "The extension itself: collectors, background wiring, surfaces.",
-  "scripts": { "build": "echo 'build lands with T10'" },
+  "scripts": {
+    "build": "echo 'build lands with T10'"
+  },
   "dependencies": {
     "@okolos/contracts": "workspace:*",
     "@okolos/core-injection": "workspace:*",
     "@okolos/net": "workspace:*",
     "@okolos/platform": "workspace:*",
-    "@okolos/storage": "workspace:*"
+    "@okolos/storage": "workspace:*",
+    "@okolos/ui": "workspace:*"
   }
 }

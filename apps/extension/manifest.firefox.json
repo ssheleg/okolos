@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "Okolos",
+  "version": "0.0.1",
+  "description": "Finds instructions hidden on a page for your AI assistant, and shows you everything it sends.",
+  "background": {
+    "scripts": ["background.js"],
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Okolos"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "permissions": ["storage", "alarms", "activeTab"],
+  "icons": {},
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "okolos@ssheleg.dev",
+      "strict_min_version": "128.0"
+    }
+  }
+}

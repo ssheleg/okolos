@@ -1,3 +1,4 @@
+import { detectPlatform } from '@okolos/platform'
 import { mountBanner, type BannerHandle } from '@okolos/ui'
 import type { Severity, Verdict } from '@okolos/contracts'
 
@@ -14,6 +15,18 @@ import { collect, DEFAULT_BUDGET } from './collect.js'
 const SEVERITY_ORDER: Record<Severity, number> = { critical: 3, major: 2, minor: 1, info: 0 }
 const RESCAN_DEBOUNCE_MS = 250
 const MAX_RESCANS_PER_SECOND = 2
+
+const platform = detectPlatform()
+
+/**
+ * Only the top frame shows a warning.
+ *
+ * The script runs in every frame because injections hide in iframes too, but a
+ * banner mounted inside a subframe can be invisible, clipped, or duplicated
+ * across a dozen ad frames. Subframes still collect and report; the top frame
+ * is the one that speaks.
+ */
+const isTopFrame = window.top === window
 
 let banner: BannerHandle | null = null
 let lastRescans: number[] = []
@@ -34,7 +47,7 @@ async function scan(): Promise<void> {
   performance.mark(MARK_START)
   const page = collect(document, {
     url: location.href,
-    frameId: 0,
+    frameId: isTopFrame ? 0 : 1,
     budget: DEFAULT_BUDGET,
     elapsed: () => performance.now() - started,
   })
@@ -43,14 +56,15 @@ async function scan(): Promise<void> {
 
   if (page.candidates.length === 0) return
 
-  const response = (await chrome.runtime.sendMessage({
-    v: 1,
-    type: 'page/candidates',
-    payload: page,
-  })) as { verdicts?: Verdict[] } | undefined
+  // Through the platform adapter, not chrome.runtime directly: Firefox's
+  // `chrome` namespace is callback-based, so awaiting it there returns
+  // undefined and the verdict is silently lost. The bug would have been
+  // invisible in Chrome and total in Firefox.
+  const response = await platform.runtime.send('page/candidates', page)
 
-  const verdicts = response?.verdicts ?? []
+  const verdicts: Verdict[] = response?.verdicts ?? []
   if (verdicts.length === 0) return
+  if (!isTopFrame) return
 
   show(worst(verdicts), verdicts.length, page.truncated)
 }

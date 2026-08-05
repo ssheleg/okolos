@@ -59,7 +59,15 @@ export async function request(spec: RequestSpec, deps: RequestDeps): Promise<Res
     throw new Error(`Refused to send: unknown purpose '${spec.purpose}'`)
   }
 
-  const destination = new URL(spec.url).hostname
+  // A malformed URL must be a refusal, not a crash: throwing out of `new URL`
+  // here would skip the audit entry entirely, and an unlogged attempt is the
+  // one thing this module exists to make impossible.
+  let destination: string
+  try {
+    destination = new URL(spec.url).hostname
+  } catch {
+    throw new Error(`Refused to send: '${spec.url}' is not a valid URL`)
+  }
   const entry = (outcome: AuditEntry['outcome']): AuditEntry => ({
     id: deps.newId(),
     createdAt: deps.now(),

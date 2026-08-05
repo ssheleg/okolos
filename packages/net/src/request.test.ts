@@ -124,6 +124,14 @@ describe('transport failure', () => {
   })
 })
 
+describe('a malformed request is refused, not crashed through', () => {
+  it('rejects an unparseable url before anything else happens', async () => {
+    const d = deps()
+    await expect(request(spec({ url: 'not a url' }), d)).rejects.toThrow(/not a valid URL/)
+    expect(d.calls).not.toContain('transport')
+  })
+})
+
 describe('purpose is closed', () => {
   it('rejects a purpose the audit panel has no wording for', async () => {
     const d = deps()

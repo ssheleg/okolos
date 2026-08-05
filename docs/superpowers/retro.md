@@ -415,3 +415,29 @@ happens before adding.
   because the work landed inside `core-feeds`, `core-lookalike`, `core-recovery`
   and an axe sweep in the e2e suite. Now gated against the workspace: a map may
   not name a package or a UI surface that is not on disk.
+
+### 2026-08-05 — I wrote the vacuous green I had spent the day hunting
+
+- **Symptom:** `e2e/scn-017.spec.ts` opened with
+  `const state = await panel.getAttribute('data-state'); if (state !== 'ready') return`.
+  It reads as caution. It behaves as a skip: every assertion after it is
+  abandoned, the run is green, and the report says the scenario passed.
+- **Surfaced at:** a sweep for the pattern, two hours after writing it — in the
+  same session whose recurring finding is that a green nobody has watched fail
+  is not evidence.
+- **Owned by:** me, and the honest reason is worth recording: the branch was
+  written defensively because a test profile *might* not grant `management`.
+  Defensive branching in a test is how a test stops testing.
+- **What it would have hidden:** losing the `management` permission — precisely
+  the regression that screen exists to survive. Dropping it from the manifest
+  now turns both tests red; before, it turned them green.
+- **Fix, by grade:** both assertions are unconditional. `management` is in the
+  manifest, so `ready` is not a maybe, and the inventory count is asserted
+  exactly (`Installed (0)`) rather than by substring.
+- **Catches it next time:** `tools/e2e-quality.test.ts` fails any spec
+  containing a bare early return. The rule is narrow on purpose — a
+  `return <value>` is a helper computing something, and `memory.spec.ts`
+  legitimately returns `-1`, which its caller rejects with
+  `toBeGreaterThan(0)`. A branch that genuinely cannot be asserted belongs in a
+  unit test where the condition can be constructed, not in an end-to-end run
+  where it is left to chance.

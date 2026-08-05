@@ -138,3 +138,33 @@ happens before adding.
 - **Fix, by grade:** none needed — the guard was already there; the plant
   confirmed it is load-bearing.
 - **Catches it next time:** "does not gate the action it was just told to allow".
+
+### 2026-08-05 — a bundle gate tripped by an English full stop
+
+- **Symptom:** the core-* browser-API scan failed on `packages/core-queue/dist/diff.js`,
+  reporting the token `browser.` — which came from the sentence "in a test and
+  in a browser." in a doc comment.
+- **Surfaced at:** stage 6, on the first full run after the module was written.
+- **Owned by:** nobody — this is the gate behaving correctly.
+- **Root cause:** the scan is a substring search over built output, and tsc
+  keeps comments.
+- **Fix, by grade:** the comment was reworded. Loosening the scan to skip
+  comments would trade a certain, cheap false positive for an uncertain, silent
+  false negative, and the whole value of that gate is that it cannot be talked
+  out of a match.
+- **Catches it next time:** `tools/gates/bundle-scan.test.ts`.
+
+### 2026-08-05 — an e2e assertion that was true for two different reasons
+
+- **Symptom:** removing the popup's "no active URL" guard did not turn any e2e
+  red. The verdict stayed `unknown` — but by a different route: `new URL(null)`
+  throws, and the catch returns the same answer.
+- **Surfaced at:** stage 6, planted-defect check on REQ-12.
+- **Owned by:** stage 6 — the assertion was weaker than it looked.
+- **Root cause:** opened as a tab rather than from the toolbar, the popup has no
+  `activeTab` grant, so both guards collapse to the same output.
+- **Fix, by grade:** documentary — the unit tests separate the two causes and do
+  go red; the e2e now states in a comment exactly which claim it proves
+  (the product refuses to say "clean" about a page it cannot see) so nobody
+  reads more into it later.
+- **Catches it next time:** `apps/extension/src/popup/state.test.ts:63`.

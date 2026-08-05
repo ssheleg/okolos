@@ -19,11 +19,11 @@ self-audit panel.
 | SCR-04 | Finding inspector | FLW-02, FLW-03 | - | built | packages/ui/src/inspector/inspector.ts:57 |
 | SCR-05 | Block interstitial | FLW-04 | - | designed | none yet |
 | SCR-06 | Agent action gate | FLW-03 | - | built | e2e/scn-010.spec.ts |
-| SCR-07 | Findings queue | FLW-01, FLW-17 | - | designed | none yet |
+| SCR-07 | Findings queue | FLW-01, FLW-17 | - | built | e2e/scn-020.spec.ts |
 | SCR-08 | Leaks and repair | FLW-10, FLW-11, FLW-16 | - | designed | none yet |
 | SCR-09 | Extensions watch | FLW-12 | - | designed | none yet |
 | SCR-10 | Self-audit | FLW-13, FLW-17 | - | built | packages/ui/src/self-audit/panel.ts:26 |
-| SCR-11 | Journal and weekly diff | FLW-17 | - | designed | none yet |
+| SCR-11 | Journal and weekly diff | FLW-17 | - | built | e2e/scn-020.spec.ts |
 | SCR-12 | Settings | FLW-05, FLW-14 | - | built | packages/ui/src/settings/data-controls.ts:31 |
 | SCR-13 | Recovery checklist | FLW-06, FLW-07, FLW-16 | - | designed | none yet |
 | SCR-14 | Public domain status | FLW-04, FLW-15 | - | designed | none yet |
@@ -82,10 +82,10 @@ self-audit panel.
   | error | local storage unreadable | - | states the failure and offers repair; never silently blank |
   | success | verdict and/or queue present | - | verdict line + up to 3 actions |
 - **Wireframe:** wireframes/SCR-02.md
-- **Coverage:** none yet
+- **Coverage:** packages/ui/src/popup/popup.ts:39, apps/extension/src/popup/index.ts:44, e2e/scn-020.spec.ts:65
 - **Scenarios:** SCN-020, SCN-021
 - **Resources:** verdict store, queue selector
-- **Status:** designed
+- **Status:** built
 
 ### SCR-03: In-page warning banner
 - **Status note:** built for the injection variant only
@@ -164,10 +164,10 @@ self-audit panel.
   | success | items exist | - | max 3 shown; the rest behind "show all" |
 - **Behavior notes:** the queue never exceeds three visible items — this is the anti-pattern this product exists to avoid (203 alerts, nothing done)
 - **Wireframe:** wireframes/SCR-07.md
-- **Coverage:** none yet
+- **Coverage:** packages/core-queue/src/rank.ts:41, packages/ui/src/popup/popup.ts:92, e2e/scn-020.spec.ts:77
 - **Scenarios:** SCN-002, SCN-022
 - **Resources:** priority scorer, action registry
-- **Status:** designed
+- **Status:** built
 
 ### SCR-08: Leaks and repair
 - **Used by:** FLW-10 (reuse list), FLW-11, FLW-16
@@ -231,10 +231,10 @@ self-audit panel.
   | empty | nothing changed | - | "Nothing changed since <time>" |
   | success | changes exist | - | grouped diff, newest first |
 - **Wireframe:** wireframes/SCR-11.md
-- **Coverage:** none yet
+- **Coverage:** packages/core-queue/src/diff.ts:45, packages/ui/src/journal/journal.ts:32, e2e/scn-020.spec.ts:106
 - **Scenarios:** SCN-021
 - **Resources:** event journal, diff selector
-- **Status:** designed
+- **Status:** built
 
 ### SCR-12: Settings
 - **Used by:** FLW-05 (watchlist edit), FLW-14

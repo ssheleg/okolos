@@ -11,6 +11,17 @@ export {
   type InspectorHandlers,
   type InspectorProps,
 } from './inspector/inspector.js'
+export {
+  renderJournal,
+  type JournalHandlers,
+  type JournalMeta,
+} from './journal/journal.js'
+export {
+  renderPopup,
+  type PageVerdict,
+  type PopupHandlers,
+  type PopupState,
+} from './popup/popup.js'
 export { mountGate, type GateHandle, type GateHandlers, type GateProps } from './gate/gate.js'
 export {
   renderFirstRun,

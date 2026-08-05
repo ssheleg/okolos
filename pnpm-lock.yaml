@@ -74,6 +74,9 @@ importers:
       '@okolos/core-injection':
         specifier: workspace:*
         version: link:../../packages/core-injection
+      '@okolos/core-queue':
+        specifier: workspace:*
+        version: link:../../packages/core-queue
       '@okolos/core-sanitizer':
         specifier: workspace:*
         version: link:../../packages/core-sanitizer
@@ -99,6 +102,12 @@ importers:
         version: link:../contracts
 
   packages/core-injection:
+    dependencies:
+      '@okolos/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+
+  packages/core-queue:
     dependencies:
       '@okolos/contracts':
         specifier: workspace:*
@@ -142,6 +151,9 @@ importers:
       '@okolos/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@okolos/core-queue':
+        specifier: workspace:*
+        version: link:../core-queue
 
 packages:
 

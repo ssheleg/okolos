@@ -1,0 +1,11 @@
+{
+  "name": "@okolos/core-queue",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "description": "Turns everything found into at most three next actions, and says what changed. Pure.",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "build": "tsc -b" },
+  "dependencies": { "@okolos/contracts": "workspace:*" }
+}

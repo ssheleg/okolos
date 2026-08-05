@@ -1,0 +1,126 @@
+import type { Diff, DiffGroup, JournalEntry } from '@okolos/core-queue'
+
+/**
+ * SCR-11 — the journal, shown as a diff.
+ *
+ * The default view is "since your last check", not "everything". A security
+ * product whose history page is an ever-growing red list teaches people to stop
+ * opening it, and the entry they needed to see is then buried under fifty they
+ * already handled.
+ *
+ * Two honesty rules. Every entry says whether the product acted or the user
+ * did, because "it was handled" means different things in those two cases. And
+ * a partially unreadable journal says so — a short list that quietly omits
+ * records reads as "little happened".
+ */
+
+const KIND_TITLE: Record<JournalEntry['kind'], string> = {
+  verdict: 'Found',
+  action: 'Actions',
+  error: 'Problems',
+  'detector-disabled': 'Turned off',
+}
+
+export interface JournalMeta {
+  readonly retentionDays: number
+}
+
+export interface JournalHandlers {
+  readonly onToggleHistory: () => void
+  readonly onOpenEntry: (entryId: string) => void
+}
+
+export function renderJournal(
+  doc: Document,
+  diff: Diff,
+  meta: JournalMeta,
+  handlers: JournalHandlers,
+): HTMLElement {
+  const root = doc.createElement('section')
+  root.setAttribute('data-role', 'journal')
+
+  const heading = doc.createElement('h1')
+  heading.textContent = 'What changed since last time'
+  root.append(heading)
+
+  if (diff.total === 0) {
+    root.append(
+      text(
+        doc,
+        'empty',
+        diff.since === null
+          ? 'Nothing to show yet — this is your first check.'
+          : `Nothing changed since ${shortTime(diff.since)}.`,
+      ),
+    )
+  } else {
+    for (const group of diff.groups) root.append(groupBlock(doc, group, handlers))
+  }
+
+  if (diff.incomplete) {
+    root.append(
+      text(
+        doc,
+        'incomplete',
+        `${diff.unreadable} record${diff.unreadable === 1 ? '' : 's'} could not be read, so this view is incomplete.`,
+      ),
+    )
+  }
+
+  root.append(
+    button(doc, 'history', 'Show full history', handlers.onToggleHistory),
+    text(doc, 'retention', `Anything older than ${meta.retentionDays} days is deleted.`),
+  )
+
+  return root
+}
+
+function groupBlock(doc: Document, group: DiffGroup, handlers: JournalHandlers): HTMLElement {
+  const el = doc.createElement('section')
+  el.setAttribute('data-role', 'group')
+  el.setAttribute('data-kind', group.kind)
+
+  const title = doc.createElement('h2')
+  title.textContent = `${KIND_TITLE[group.kind]} (${group.entries.length})`
+  el.append(title)
+
+  for (const item of group.entries) el.append(entryRow(doc, item, handlers))
+  return el
+}
+
+function entryRow(doc: Document, item: JournalEntry, handlers: JournalHandlers): HTMLElement {
+  const row = doc.createElement('button')
+  row.type = 'button'
+  row.setAttribute('data-role', 'entry')
+  row.setAttribute('data-entry', item.id)
+  row.textContent = `${shortTime(item.createdAt)} — ${item.summary} (${
+    item.automatic ? 'done automatically' : 'you did this'
+  })`
+  row.addEventListener('click', () => handlers.onOpenEntry(item.id))
+  return row
+}
+
+function shortTime(iso: string): string {
+  return iso.replace('T', ' ').replace(/\.\d+Z$/, ' UTC')
+}
+
+function text(doc: Document, role: string, content: string): HTMLParagraphElement {
+  const el = doc.createElement('p')
+  el.setAttribute('data-role', role)
+  el.textContent = content
+  return el
+}
+
+function button(
+  doc: Document,
+  role: string,
+  label: string,
+  onClick: () => void,
+): HTMLButtonElement {
+  const el = doc.createElement('button')
+  el.type = 'button'
+  el.setAttribute('data-role', role)
+  el.textContent = label
+  el.addEventListener('click', onClick)
+  return el
+}

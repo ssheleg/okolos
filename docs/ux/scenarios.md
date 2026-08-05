@@ -29,9 +29,9 @@ are specified once in [screens.md](screens.md).
 | SCN-017 | Extension gained permissions — disable it | extensions | P-01 | ST-013, ST-014, FLW-12 | draft | — |
 | SCN-018 | Extension changed publisher, package unavailable | extensions | P-01 | ST-013, FLW-12 | draft | — |
 | SCN-019 | Verify what left the device | privacy | P-01 | ST-017, FLW-13 | implemented | 2026-08-04 PASS |
-| SCN-020 | Popup — verdict for the current page | daily-use | P-01 | ST-015, FLW-17 | draft | — |
-| SCN-021 | What changed since last time | daily-use | P-01 | ST-015, FLW-17 | draft | — |
-| SCN-022 | Queue never exceeds three actions | daily-use | P-01 | ST-015, FLW-01 | draft | — |
+| SCN-020 | Popup — verdict for the current page | daily-use | P-01 | ST-015, FLW-17 | implemented | 2026-08-05 PASS |
+| SCN-021 | What changed since last time | daily-use | P-01 | ST-015, FLW-17 | implemented | 2026-08-05 PASS |
+| SCN-022 | Queue never exceeds three actions | daily-use | P-01 | ST-015, FLW-01 | implemented | 2026-08-05 PASS |
 | SCN-023 | Wipe all local data | privacy | P-01 | ST-019, FLW-14 | implemented | 2026-08-04 PARTIAL |
 | SCN-024 | Export all local data | privacy | P-01 | ST-019, FLW-14 | implemented | 2026-08-04 PARTIAL |
 | SCN-025 | Recovery after running a pasted command | recovery | P-02 | ST-015, FLW-16 | draft | — |
@@ -448,9 +448,9 @@ See [foundation.md](foundation.md) → Personas.
 - **Alt paths:** verdict still computing -> the popup shows "checking this page" rather than a blank or a premature clean verdict
 - **UI elements:** verdict line with reason, "what changed" count, up to 3 actions, footer links (Self-audit, Journal, Settings)
 - **States covered:** loading, empty, error, success
-- **Errors & recovery:** local storage unreadable -> the popup states the failure and offers repair; it never shows a clean verdict it could not compute
-- **Status:** draft
-- **Coverage:** none yet
+- **Errors & recovery:** local storage unreadable -> the popup states the failure and offers repair; it never shows a clean verdict it could not compute; the active page cannot be identified -> the verdict is `unknown`, never `clean`
+- **Status:** implemented
+- **Coverage:** apps/extension/src/popup/state.ts:84, packages/ui/src/popup/popup.ts:39, e2e/scn-020.spec.ts:65
 
 ### SCN-021: What changed since last time
 - **Persona:** P-01
@@ -467,8 +467,8 @@ See [foundation.md](foundation.md) → Personas.
 - **UI elements:** diff list grouped by type, entry detail, full-history toggle, retention statement
 - **States covered:** empty, success
 - **Errors & recovery:** journal partially unreadable -> system shows what it can and states that the view is incomplete
-- **Status:** draft
-- **Coverage:** none yet
+- **Status:** implemented
+- **Coverage:** packages/core-queue/src/diff.ts:45, packages/ui/src/journal/journal.ts:32, e2e/scn-020.spec.ts:106
 
 ### SCN-022: Queue never exceeds three actions
 - **Persona:** P-01
@@ -485,8 +485,8 @@ See [foundation.md](foundation.md) → Personas.
 - **UI elements:** three prioritised items, per-item action, "Show all", resolved state
 - **States covered:** empty, success
 - **Errors & recovery:** the ranking data is incomplete -> items are ordered by severity alone and the UI states the reduced ranking
-- **Status:** draft
-- **Coverage:** none yet
+- **Status:** implemented
+- **Coverage:** packages/core-queue/src/rank.ts:41, packages/ui/src/popup/popup.ts:92, e2e/scn-020.spec.ts:77
 
 ## recovery
 

@@ -1,26 +1,99 @@
+import { detectPlatform } from '@okolos/platform'
 import { openDb } from '@okolos/storage'
+import { renderPopup, type PopupState } from '@okolos/ui'
+
+import { buildPopupState } from './state.js'
 
 /**
- * The three-second answer: is this page fine, and is anything waiting for me.
- * The full popup lands with M6; this is the skeleton's honest minimum.
+ * The popup: is this page fine, and is anything waiting for me.
+ *
+ * Every read is wrapped, and a failed read becomes a stated failure rather than
+ * a clean verdict. The one thing this surface must never do is answer "nothing
+ * needs you" when it does not know.
  */
 
+const LAST_CHECK_KEY = 'popup:lastCheck'
+
+const platform = detectPlatform()
 const root = document.getElementById('root')
 
-async function paint(): Promise<void> {
-  if (!root) return
+let expanded = false
+
+async function load(): Promise<PopupState> {
   try {
     const db = await openDb()
-    const findings = await db.getAll('findings')
-    const open = findings.filter((f) => f.resolvedAt === null)
-    root.textContent =
-      open.length === 0
-        ? 'Nothing needs you right now.'
-        : `${open.length} finding${open.length === 1 ? '' : 's'} waiting for you.`
-  } catch {
-    // Never a clean verdict we could not compute.
-    root.textContent = 'Local data could not be read. Open settings to repair it.'
+    const [findings, journal, setting, activeUrl] = await Promise.all([
+      db.getAll('findings'),
+      db.getAll('journal'),
+      db.get('settings', LAST_CHECK_KEY),
+      platform.tabs.activeUrl().catch(() => null),
+    ])
+
+    return buildPopupState({
+      findings,
+      journal,
+      activeUrl,
+      lastCheck: typeof setting?.value === 'string' ? setting.value : null,
+      expanded,
+    })
+  } catch (cause) {
+    return { kind: 'error', message: String(cause) }
   }
 }
 
-void paint()
+function paint(state: PopupState): void {
+  if (!root) return
+  root.replaceChildren(
+    renderPopup(document, state, {
+      onAct: (itemId) => void openFinding(itemId),
+      onShowAll: () => {
+        expanded = true
+        void reload()
+      },
+      onWhatChanged: () => void openPage('options.html#journal'),
+      onOpen: (target) =>
+        void openPage(target === 'journal' ? 'options.html#journal' : 'options.html'),
+      onRepair: () => void reload(),
+    }),
+  )
+}
+
+async function reload(): Promise<void> {
+  paint({ kind: 'loading' })
+  paint(await load())
+}
+
+async function openFinding(itemId: string): Promise<void> {
+  try {
+    const db = await openDb()
+    const finding = await db.get('findings', itemId)
+    const url = finding?.verdict?.subject.ref
+    if (url) await platform.tabs.create(url)
+  } catch {
+    // The action failed and the popup is about to close, so there is nowhere
+    // left to say so. Better than throwing inside a click handler.
+  }
+}
+
+async function openPage(page: string): Promise<void> {
+  await platform.tabs.create(platform.runtime.getUrl(page))
+}
+
+/**
+ * The check time is written when the popup goes away, not when it opens —
+ * otherwise "what changed since last time" would be empty the moment you looked
+ * at it. `pagehide` is the event a closing popup actually fires.
+ */
+window.addEventListener('pagehide', () => {
+  void (async () => {
+    try {
+      const db = await openDb()
+      await db.put('settings', { key: LAST_CHECK_KEY, value: new Date().toISOString() })
+    } catch {
+      // Losing the baseline means the next diff is wider than it should be,
+      // which errs towards showing too much — the safe direction.
+    }
+  })()
+})
+
+void reload()

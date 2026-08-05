@@ -34,14 +34,28 @@ const TECHSUPPORT = `<!doctype html>
   <script>document.documentElement.requestFullscreen?.().catch(() => {})</script>
 </body></html>`
 
-test('SCN-008 — the page copies a command, and the warning interrupts', async ({ context }) => {
+test('SCN-008 — the warning arrives before the user can click the fake control', async ({
+  context,
+}) => {
+  // The best moment to warn is before the payload is on the clipboard, and the
+  // wording alone is enough to know. The banner blocks, so the fake "I am not a
+  // robot" button is not reachable through it — which is the protection.
   await serve(context, CLICKFIX)
   const page = await context.newPage()
   await page.goto('https://fixture.test/verify')
 
-  await page.locator('#verify').click()
   await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: 10_000 })
-  await expect(page.locator('okolos-banner [data-role=headline]')).toContainText('copied a command')
+  await expect(page.locator('okolos-banner [data-role=headline]')).toContainText(
+    'run a command outside the browser',
+  )
+  await expect(page.locator('okolos-banner [data-role=detail]')).toContainText(
+    'Nothing has been copied yet',
+  )
+
+  // The fake control is behind the blocking banner: the click does not reach it.
+  await expect(page.locator('#verify').click({ timeout: 1500 })).rejects.toThrow(
+    /intercepts pointer events/,
+  )
 })
 
 test('SCN-008 — an ordinary page that copies for you is not accused', async ({ context }) => {

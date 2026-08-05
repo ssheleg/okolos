@@ -83,12 +83,18 @@ importers:
       '@okolos/core-injection':
         specifier: workspace:*
         version: link:../../packages/core-injection
+      '@okolos/core-leaks':
+        specifier: workspace:*
+        version: link:../../packages/core-leaks
       '@okolos/core-lookalike':
         specifier: workspace:*
         version: link:../../packages/core-lookalike
       '@okolos/core-queue':
         specifier: workspace:*
         version: link:../../packages/core-queue
+      '@okolos/core-recovery':
+        specifier: workspace:*
+        version: link:../../packages/core-recovery
       '@okolos/core-sanitizer':
         specifier: workspace:*
         version: link:../../packages/core-sanitizer
@@ -135,6 +141,8 @@ importers:
         specifier: workspace:*
         version: link:../contracts
 
+  packages/core-leaks: {}
+
   packages/core-lookalike: {}
 
   packages/core-queue:
@@ -142,6 +150,8 @@ importers:
       '@okolos/contracts':
         specifier: workspace:*
         version: link:../contracts
+
+  packages/core-recovery: {}
 
   packages/core-sanitizer:
     dependencies:
@@ -183,12 +193,18 @@ importers:
       '@okolos/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@okolos/core-leaks':
+        specifier: workspace:*
+        version: link:../core-leaks
       '@okolos/core-lookalike':
         specifier: workspace:*
         version: link:../core-lookalike
       '@okolos/core-queue':
         specifier: workspace:*
         version: link:../core-queue
+      '@okolos/core-recovery':
+        specifier: workspace:*
+        version: link:../core-recovery
 
 packages:
 

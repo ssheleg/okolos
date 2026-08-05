@@ -7,5 +7,7 @@
   },
   "include": ["src/**/*.ts"],
   "references": [{ "path": "../contracts" },
-    { "path": "../core-queue" }]
+    { "path": "../core-queue" },
+    { "path": "../core-leaks" },
+    { "path": "../core-recovery" }]
 }

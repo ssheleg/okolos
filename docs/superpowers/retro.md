@@ -216,3 +216,35 @@ happens before adding.
 - **Fix, by grade:** the watcher now reports the signals behind each warning
   through a callback — used to journal the trap, and asserted in a test that
   goes red without the guard. A claim worth making is a claim worth testing.
+
+### 2026-08-05 — three watchers installed on every DOM mutation
+
+- **Symptom:** two ClickFix banners on one page, and a blocking banner that made
+  the fixture's own button unclickable — surfacing as an e2e failure two
+  requirements after the mistake was made.
+- **Surfaced at:** stage 6, on the full e2e run. Lint, typecheck and every unit
+  test were green throughout: the code was valid, just in the wrong place.
+- **Owned by:** stage 5 — a mechanical edit anchored on the string
+  `void safely(scan)`, which appears twice in the content script. Each of the
+  three wirings was therefore also inserted inside `rescanSoon`, where it ran
+  on every mutation, up to twice a second, installing a fresh lookalike check,
+  trap watcher and credential watcher each time.
+- **Fix, by grade:** the duplicated block was removed. The deeper fix is the
+  habit: an anchor for a mechanical edit has to be checked for uniqueness
+  before it is used, and the result read back rather than assumed.
+- **Catches it next time:** the e2e that failed. It is worth saying plainly that
+  no unit test could have caught this — the fault was in composition, not in any
+  module, and only a real page running the real script exhibited it.
+
+### 2026-08-05 — a headline that was true half the time
+
+- **Symptom:** the ClickFix banner said "This page copied a command for you to
+  run" in the case where nothing had been copied yet.
+- **Surfaced at:** stage 6, while correcting the e2e above — the assertion had
+  to be written against what the banner actually says, and what it said was
+  wrong.
+- **Root cause:** the detector reports two confidence levels and the banner had
+  one sentence.
+- **Fix, by grade:** two headlines, and the warning now says "Nothing has been
+  copied yet" when that is the case. The earlier moment is the more useful one
+  to warn at; it is not a reason to describe it inaccurately.

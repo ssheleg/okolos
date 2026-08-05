@@ -23,6 +23,8 @@
     "@okolos/core-lookalike": "workspace:*",
     "@okolos/core-traps": "workspace:*",
     "@okolos/core-credential": "workspace:*",
-    "@okolos/core-download": "workspace:*"
+    "@okolos/core-download": "workspace:*",
+    "@okolos/core-leaks": "workspace:*",
+    "@okolos/core-recovery": "workspace:*"
   }
 }

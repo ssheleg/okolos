@@ -11,6 +11,8 @@ export {
   type InspectorHandlers,
   type InspectorProps,
 } from './inspector/inspector.js'
+export { renderLeaks, type LeaksHandlers, type LeaksState } from './leaks/leaks.js'
+export { renderRecovery, type RecoveryHandlers } from './recovery/recovery.js'
 export {
   renderComparison,
   type ComparisonHandlers,

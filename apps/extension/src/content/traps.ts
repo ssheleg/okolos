@@ -92,10 +92,20 @@ export function watchForTraps(deps: TrapDeps): TrapWatcher {
         {
           variant: 'clickfix',
           severity: 'critical',
-          headline: 'This page copied a command for you to run',
-          detail: clickfix.copyUnreadable
-            ? 'A real verification never asks you to leave the browser and run something. What was copied could not be read, so it is not shown.'
-            : `A real verification never asks you to leave the browser and run something. It copied: ${clickfix.copied ?? ''}`,
+          // Two different claims, and the difference is not cosmetic: before
+          // anything is on the clipboard, saying it was copied is untrue.
+          headline:
+            clickfix.confidence === 'high'
+              ? 'This page copied a command for you to run'
+              : 'This page wants you to run a command outside the browser',
+          detail: [
+            'A real verification never asks you to leave the browser and run something.',
+            clickfix.confidence === 'high'
+              ? clickfix.copyUnreadable
+                ? 'What was copied could not be read, so it is not shown.'
+                : `It copied: ${clickfix.copied ?? ''}`
+              : 'Nothing has been copied yet.',
+          ].join(' '),
           sourceLine: `Found by: ${clickfix.signals.join(', ')}`,
         },
         {

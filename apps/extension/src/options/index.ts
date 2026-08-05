@@ -1,5 +1,12 @@
+import { buildChecklist, type StepProgress } from '@okolos/core-recovery'
 import { diffSince } from '@okolos/core-queue'
-import { renderDataControls, renderJournal, renderSelfAudit, type PanelState } from '@okolos/ui'
+import {
+  renderDataControls,
+  renderJournal,
+  renderRecovery,
+  renderSelfAudit,
+  type PanelState,
+} from '@okolos/ui'
 import { exportAll, openDb, RETENTION_DAYS, wipeAll, type JournalRecord } from '@okolos/storage'
 
 import { mapJournal } from '../popup/state.js'
@@ -68,6 +75,54 @@ async function readJournal(): Promise<{
   return { entries, lastCheck: typeof setting?.value === 'string' ? setting.value : null }
 }
 
+/**
+ * The recovery checklist appears when something sent the user here — the hash
+ * carries which incident. Progress is kept in storage so closing the tab in the
+ * middle of a bad afternoon does not lose it.
+ */
+async function recoverySection(): Promise<HTMLElement> {
+  const kind = /#recovery=([^&]+)/.exec(location.hash)?.[1]
+  const container = document.createElement('div')
+  if (!kind) return container
+
+  let progress: StepProgress[] = []
+  try {
+    const db = await openDb()
+    const stored = await db.get('settings', `recovery:${kind}`)
+    progress = typeof stored?.value === 'string' ? (JSON.parse(stored.value) as StepProgress[]) : []
+  } catch {
+    // Progress is a convenience; the checklist itself is the point.
+  }
+
+  container.append(
+    renderRecovery(document, buildChecklist(decodeURIComponent(kind), progress), {
+      onToggle: (stepId, done) => {
+        void (async () => {
+          const next = done
+            ? [...progress.filter((entry) => entry.stepId !== stepId), { stepId, doneAt: new Date().toISOString() }]
+            : progress.filter((entry) => entry.stepId !== stepId)
+          try {
+            const db = await openDb()
+            await db.put('settings', { key: `recovery:${kind}`, value: JSON.stringify(next) })
+          } catch {
+            // Losing a tick is survivable; losing the checklist is not.
+          }
+          await reload()
+        })()
+      },
+      onArchive: () => {
+        void (async () => {
+          const db = await openDb()
+          await db.delete('settings', `recovery:${kind}`)
+          location.hash = ''
+          await reload()
+        })()
+      },
+    }),
+  )
+  return container
+}
+
 async function paint(state: PanelState): Promise<void> {
   if (!root) return
   root.replaceChildren(
@@ -76,6 +131,7 @@ async function paint(state: PanelState): Promise<void> {
       onRepair: () => void reload(),
     }),
     await journalSection(),
+    await recoverySection(),
     renderDataControls(document, {
       onExport: download,
       onWipe: async () => {

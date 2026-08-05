@@ -23,9 +23,9 @@ are specified once in [screens.md](screens.md).
 | SCN-011 | Credential-entry guard on a new domain | web-guard | P-02 | ST-010, FLW-09 | implemented | 2026-08-05 PASS |
 | SCN-012 | Download stopped by feed or hash | web-guard | P-01 | ST-009, FLW-08 | implemented | 2026-08-05 unit |
 | SCN-013 | Download partially checked — hash unavailable | web-guard | P-01 | ST-009, FLW-08 | implemented | 2026-08-05 unit |
-| SCN-014 | Submitted password is compromised | credentials | P-01 | ST-011, FLW-10 | draft | — |
-| SCN-015 | Leak inventory with one source unavailable | credentials | P-01 | ST-012, FLW-11 | draft | — |
-| SCN-016 | Repair a leak and mark it resolved | credentials | P-01 | ST-015, ST-012, FLW-11 | draft | — |
+| SCN-014 | Submitted password is compromised | credentials | P-01 | ST-011, FLW-10 | implemented | 2026-08-05 unit |
+| SCN-015 | Leak inventory with one source unavailable | credentials | P-01 | ST-012, FLW-11 | implemented | 2026-08-05 unit |
+| SCN-016 | Repair a leak and mark it resolved | credentials | P-01 | ST-015, ST-012, FLW-11 | implemented | 2026-08-05 unit |
 | SCN-017 | Extension gained permissions — disable it | extensions | P-01 | ST-013, ST-014, FLW-12 | draft | — |
 | SCN-018 | Extension changed publisher, package unavailable | extensions | P-01 | ST-013, FLW-12 | draft | — |
 | SCN-019 | Verify what left the device | privacy | P-01 | ST-017, FLW-13 | implemented | 2026-08-04 PASS |
@@ -34,7 +34,7 @@ are specified once in [screens.md](screens.md).
 | SCN-022 | Queue never exceeds three actions | daily-use | P-01 | ST-015, FLW-01 | implemented | 2026-08-05 PASS |
 | SCN-023 | Wipe all local data | privacy | P-01 | ST-019, FLW-14 | implemented | 2026-08-04 PARTIAL |
 | SCN-024 | Export all local data | privacy | P-01 | ST-019, FLW-14 | implemented | 2026-08-04 PARTIAL |
-| SCN-025 | Recovery after running a pasted command | recovery | P-02 | ST-015, FLW-16 | draft | — |
+| SCN-025 | Recovery after running a pasted command | recovery | P-02 | ST-015, FLW-16 | implemented | 2026-08-05 PASS |
 | SCN-026 | Site owner checks and appeals a verdict | site-owner | P-03 | ST-016, FLW-15 | draft | — |
 
 ## Personas
@@ -504,9 +504,9 @@ See [foundation.md](foundation.md) → Personas.
 - **Alt paths:** a step must be done on another device -> system shows what to do there and preserves progress; user is unsure what happened -> system offers the "not sure" path with the broadest safe checklist
 - **UI elements:** incident type picker, ordered steps with reasons, per-step done control, "continue on another device", archive
 - **States covered:** loading, empty, success
-- **Errors & recovery:** playbook data missing -> system shows the generic credential-compromise checklist and says the specific one is unavailable
-- **Status:** draft
-- **Coverage:** none yet
+- **Errors & recovery:** playbook data missing -> system shows the broadest safe checklist and says that is what it is showing
+- **Status:** implemented
+- **Coverage:** packages/core-recovery/src/checklist.ts:120, packages/ui/src/recovery/recovery.ts:17, e2e/scn-025.spec.ts:8
 
 ## site-owner
 

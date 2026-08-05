@@ -4,3 +4,10 @@ export {
   type CredentialContext,
   type CredentialWarning,
 } from './guard.js'
+export {
+  checkPassword,
+  PREFIX_LENGTH,
+  type PasswordCheckDeps,
+  type PasswordVerdict,
+  type RangeResponse,
+} from './password.js'

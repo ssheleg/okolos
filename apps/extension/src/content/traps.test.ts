@@ -143,3 +143,17 @@ describe('stopping', () => {
     expect(banner()).toBeNull()
   })
 })
+
+describe('what the banner claims', () => {
+  it('does not say the page copied anything before it has', async () => {
+    // The medium case is the most useful moment to warn — and the moment when
+    // "this page copied a command for you" would be a false statement.
+    document.body.textContent = CLICKFIX_TEXT
+    const deps = watch()
+    await settle()
+
+    expect(deps.warned).toHaveBeenCalled()
+    const signals = deps.warned.mock.calls[0]?.[1] as string[]
+    expect(signals).not.toContain('copy-not-made-by-you')
+  })
+})

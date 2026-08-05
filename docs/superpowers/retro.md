@@ -345,3 +345,29 @@ happens before adding.
   more than two elements.
 - **Catches it next time:** `docs/ux/lint.py` now errors on a named wireframe
   that is not on disk, and `tools/wireframes.test.ts` on one that is stale.
+
+### 2026-08-05 — CI described a project that no longer existed
+
+- **Symptom:** a step named "scenarios SCN-003 and SCN-019" was running
+  fifty-five specs across fifteen files, and the comment above it explained that
+  Firefox was deliberately absent "and sits in the carry-over ledger rather than
+  being quietly claimed here" — two jobs above the Firefox job, which had been
+  added and had been green for hours.
+- **Surfaced at:** a backlog sweep. Nothing was failing; CI was correct in what
+  it *did* and wrong in what it *said*.
+- **Owned by:** every commit that added a spec without reading the file it was
+  running under.
+- **Fix, by grade:** names and comments corrected, and `tools/ci.test.ts` now
+  asserts the claims — no step may name an individual scenario while running all
+  of them. Comments are not testable in general; this one was, because the
+  failure mode was specific.
+- **The heavier find, same file:** the Firefox job pinned
+  `firefox-1538`, a Playwright build number, in an env var. An unrelated
+  dependency bump would have turned that job red for a reason having nothing to
+  do with the product — which is precisely the pressure that gets a browser
+  quietly dropped from CI. The runner now finds the newest installed build
+  itself and, when there is none, prints one sentence naming the command to run
+  instead of a stack trace.
+- **And a stale green in the local shortcut:** `pnpm gates` skipped `pnpm build`,
+  so the bundle scanners inside it read whatever `dist/` happened to be lying
+  around. It builds first now, and a test asserts the order.

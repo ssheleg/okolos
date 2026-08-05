@@ -74,10 +74,11 @@ jobs:
       - run: pnpm build
 
       # Extensions only load in a headed persistent context, hence xvfb.
-      # Firefox is absent on purpose: Playwright cannot load an MV3 extension
-      # into it. That side is covered by web-ext and sits in the carry-over
-      # ledger rather than being quietly claimed here.
-      - name: scenarios SCN-003 and SCN-019
+      # `pnpm test:e2e` builds both the shipping artefact and the test-hook one
+      # before running: the hook build is what lets a click reach a closed
+      # shadow root, and a run against a stale build would pass by testing
+      # yesterday's code.
+      - name: every scenario, against the built extension
         run: xvfb-run --auto-servernum pnpm test:e2e
 
   e2e-firefox:
@@ -102,7 +103,11 @@ jobs:
       # geckodriver installs the extension the way Mozilla supports for
       # unpacked builds; the run fails loudly if the add-on is absent, so a
       # browser without it can never produce a green result.
+      #
+      # No FIREFOX_BINARY here on purpose. It used to name a Playwright build
+      # number, which changes on every upgrade and turned an unrelated
+      # dependency bump into a red Firefox job — the exact pressure that gets a
+      # browser quietly dropped from CI. The runner finds the newest installed
+      # build itself and says what to run if there is none.
       - name: scenarios in Firefox
-        env:
-          FIREFOX_BINARY: /root/.cache/ms-playwright/firefox-1538/firefox/firefox
         run: node tools/firefox-e2e.mjs

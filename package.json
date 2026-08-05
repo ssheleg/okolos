@@ -23,7 +23,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "ux:lint": "python3 docs/ux/lint.py",
-    "gates": "pnpm lint && pnpm typecheck && pnpm test && pnpm ux:lint",
+    "gates": "pnpm lint && pnpm typecheck && pnpm build && pnpm test && pnpm ux:lint",
     "build:e2e": "node tools/build.mjs --with-test-hooks",
     "test:e2e:firefox": "pnpm build && node tools/firefox-e2e.mjs",
     "wireframes": "node tools/wireframes.mjs"

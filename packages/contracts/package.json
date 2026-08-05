@@ -1,0 +1,14 @@
+{
+  "name": "@okolos/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "description": "Shared types and the confidence-to-action policy. No runtime dependencies.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  }
+}

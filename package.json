@@ -1,0 +1,41 @@
+{
+  "name": "okolos",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "description": "Browser security for the age of AI agents — local-first, verifiable.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ssheleg/okolos.git"
+  },
+  "packageManager": "pnpm@11.10.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "pnpm -r --filter \"./packages/*\" build",
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "bench": "vitest bench --run",
+    "test:e2e": "playwright test",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "ux:lint": "python3 docs/ux/lint.py",
+    "gates": "pnpm lint && pnpm typecheck && pnpm test && pnpm ux:lint"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@playwright/test": "^1.57.0",
+    "@types/node": "^22.18.0",
+    "eslint": "^9.39.0",
+    "fake-indexeddb": "^6.2.2",
+    "fast-check": "^4.3.0",
+    "happy-dom": "^20.0.0",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.0",
+    "vitest": "^3.2.4"
+  }
+}

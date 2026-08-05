@@ -1,0 +1,7 @@
+packages:
+  - 'packages/*'
+  - 'apps/*'
+
+# esbuild ships a platform binary its install script unpacks; vitest needs it.
+allowBuilds:
+  esbuild: true

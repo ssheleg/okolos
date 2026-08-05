@@ -79,3 +79,30 @@ jobs:
       # ledger rather than being quietly claimed here.
       - name: scenarios SCN-003 and SCN-019
         run: xvfb-run --auto-servernum pnpm test:e2e
+
+  e2e-firefox:
+    name: e2e (firefox)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps firefox
+      - run: pnpm build
+
+      # geckodriver installs the extension the way Mozilla supports for
+      # unpacked builds; the run fails loudly if the add-on is absent, so a
+      # browser without it can never produce a green result.
+      - name: scenarios in Firefox
+        env:
+          FIREFOX_BINARY: /root/.cache/ms-playwright/firefox-1538/firefox/firefox
+        run: node tools/firefox-e2e.mjs

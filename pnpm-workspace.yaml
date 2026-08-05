@@ -5,3 +5,5 @@ packages:
 # esbuild ships a platform binary its install script unpacks; vitest needs it.
 allowBuilds:
   esbuild: true
+  # geckodriver downloads the WebDriver binary Firefox e2e needs (REQ-34).
+  geckodriver: true

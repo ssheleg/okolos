@@ -96,11 +96,21 @@ export default tseslint.config(
     },
   },
 
-  // Build scripts run in Node, not in a page or a worker.
+  // Build and test-harness scripts run in Node, not in a page or a worker.
+  // The Firefox harness is the one exception that touches both: `document`
+  // appears inside functions it serialises into the browser via executeScript,
+  // never in the Node process itself.
   {
     files: ['tools/**/*.mjs', '*.config.js'],
     languageOptions: {
-      globals: { console: 'readonly', process: 'readonly', URL: 'readonly' },
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        URL: 'readonly',
+        fetch: 'readonly',
+        setTimeout: 'readonly',
+        document: 'readonly',
+      },
     },
   },
 

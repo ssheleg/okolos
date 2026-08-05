@@ -1,0 +1,11 @@
+{
+  "name": "@okolos/model",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "description": "Getting the classifier's weights onto the device: consent, audited download, pinned digest, cache.",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "build": "tsc -b" },
+  "dependencies": { "@okolos/contracts": "workspace:*" }
+}

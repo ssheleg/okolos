@@ -89,6 +89,12 @@ importers:
         specifier: ^8.0.3
         version: 8.0.3
 
+  packages/ui:
+    dependencies:
+      '@okolos/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+
 packages:
 
   '@esbuild/aix-ppc64@0.28.1':

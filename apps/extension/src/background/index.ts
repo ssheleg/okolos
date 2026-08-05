@@ -1,4 +1,4 @@
-import { detectHidden } from '@okolos/core-injection'
+import { classifyUndecided, detectHidden, type InferenceHost } from '@okolos/core-injection'
 import { detectPlatform } from '@okolos/platform'
 import { openDb, pruneExpired } from '@okolos/storage'
 import type { Envelope, PageCandidates, RpcMap, RpcType, Verdict } from '@okolos/contracts'
@@ -25,9 +25,26 @@ platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>) => {
   }
 })
 
+/**
+ * The classifier host. No model ships yet, so it reports itself unavailable and
+ * stage 3 skips entirely — which is the same code path a device without WebGPU
+ * will take, exercised on every run rather than only in a test.
+ *
+ * The ONNX session lands with REQ-36; nothing above it changes when it does.
+ */
+const inference: InferenceHost = {
+  available: () => false,
+  score: () => Promise.reject(new Error('no model installed')),
+}
+
 async function handleCandidates(page: PageCandidates): Promise<{ verdicts: Verdict[] }> {
   const now = new Date().toISOString()
-  const verdicts = detectHidden(page, { now, newId: () => crypto.randomUUID() })
+  const ctx = { now, newId: () => crypto.randomUUID() }
+  const verdicts = detectHidden(page, ctx)
+
+  // Stage 3 sees only what the rules left undecided.
+  const decidedLocators = verdicts.flatMap((v) => v.evidence.map((e) => e.locator ?? ''))
+  verdicts.push(...(await classifyUndecided(page, decidedLocators, inference, ctx)))
 
   if (verdicts.length > 0) {
     try {

@@ -16,7 +16,7 @@ self-audit panel.
 | SCR-01 | First-run check | FLW-01, FLW-14 | - | designed | none yet |
 | SCR-02 | Popup | FLW-17 | - | designed | none yet |
 | SCR-03 | In-page warning banner | FLW-02, FLW-05, FLW-06, FLW-07, FLW-08, FLW-09, FLW-10 | - | built | packages/ui/src/banner/banner.ts:52 |
-| SCR-04 | Finding inspector | FLW-02, FLW-03 | - | designed | none yet |
+| SCR-04 | Finding inspector | FLW-02, FLW-03 | - | built | packages/ui/src/inspector/inspector.ts:57 |
 | SCR-05 | Block interstitial | FLW-04 | - | designed | none yet |
 | SCR-06 | Agent action gate | FLW-03 | - | designed | none yet |
 | SCR-07 | Findings queue | FLW-01, FLW-17 | - | designed | none yet |
@@ -115,10 +115,10 @@ self-audit panel.
   | success | evidence available | - | text + technique + location + stage |
   | error | evidence lost (page mutated) | - | says the page changed, offers a re-scan |
 - **Wireframe:** wireframes/SCR-04.md
-- **Coverage:** none yet
+- **Coverage:** packages/ui/src/inspector/inspector.ts:57 (restore lands with the sanitizer, M5)
 - **Scenarios:** SCN-004, SCN-005
 - **Resources:** evidence store, DOM locator renderer
-- **Status:** designed
+- **Status:** built
 
 ### SCR-05: Block interstitial
 - **Used by:** FLW-04

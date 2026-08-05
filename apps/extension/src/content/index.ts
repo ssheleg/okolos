@@ -1,5 +1,5 @@
 import { detectPlatform } from '@okolos/platform'
-import { mountBanner, type BannerHandle } from '@okolos/ui'
+import { mountBanner, mountInspector, type BannerHandle, type InspectorHandle } from '@okolos/ui'
 import type { Severity, Verdict } from '@okolos/contracts'
 
 import { collect, DEFAULT_BUDGET } from './collect.js'
@@ -29,6 +29,7 @@ const platform = detectPlatform()
 const isTopFrame = window.top === window
 
 let banner: BannerHandle | null = null
+let inspector: InspectorHandle | null = null
 let lastRescans: number[] = []
 let pending: ReturnType<typeof setTimeout> | null = null
 
@@ -93,13 +94,14 @@ function show(verdict: Verdict, total: number, partialScan: boolean): void {
       sourceLine: `Found by: ${verdict.sources.map((s) => s.name).join(', ')}`,
     },
     {
-      onPrimary: () => void openInspector(verdict),
-      onInspect: () => void openInspector(verdict),
+      onPrimary: () => openInspector(verdict),
+      onInspect: () => openInspector(verdict),
       onDispute: () => {
         banner?.destroy()
         banner = null
       },
       onDismiss: () => {
+        closeInspector()
         banner?.destroy()
         banner = null
       },
@@ -107,10 +109,32 @@ function show(verdict: Verdict, total: number, partialScan: boolean): void {
   )
 }
 
-async function openInspector(verdict: Verdict): Promise<void> {
-  // The inspector lands with M4; until then the evidence goes to the console
-  // rather than pretending a panel exists.
-  console.info('okolos: finding', verdict.evidence)
+function openInspector(verdict: Verdict): void {
+  inspector?.destroy()
+  inspector = mountInspector(
+    document,
+    { evidence: verdict.evidence, confidence: verdict.confidence },
+    {
+      onKeep: closeInspector,
+      onRestore: () => {
+        // Restoring the page is the sanitizer's job and lands with M5. Until it
+        // exists, saying so beats a button that quietly does nothing.
+        console.info('okolos: restore arrives with the sanitizer (M5)')
+        closeInspector()
+      },
+      onDispute: () => {
+        closeInspector()
+        banner?.destroy()
+        banner = null
+      },
+      onClose: closeInspector,
+    },
+  )
+}
+
+function closeInspector(): void {
+  inspector?.destroy()
+  inspector = null
 }
 
 function rescanSoon(): void {

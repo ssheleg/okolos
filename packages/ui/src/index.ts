@@ -12,7 +12,7 @@ export {
   type InspectorProps,
 } from './inspector/inspector.js'
 export { renderQueue, type QueueHandlers } from './queue/queue.js'
-export { renderLeaks, type LeaksHandlers, type LeaksState } from './leaks/leaks.js'
+export { renderLeaks, HIBP_ATTRIBUTION, type LeaksHandlers, type LeaksState } from './leaks/leaks.js'
 export { renderRecovery, type RecoveryHandlers } from './recovery/recovery.js'
 export {
   renderComparison,

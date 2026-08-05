@@ -6,9 +6,10 @@ import { describe, expect, it } from 'vitest'
  * REQ-30 — the licence and the attributions this project owes.
  *
  * HIBP breach data is CC BY 4.0 and requires visible attribution wherever it
- * appears. No feature uses it yet, so what is checked now is that the promise
- * is recorded where a contributor will see it; the UI assertion arrives with
- * the leak features in R4, and this test grows then.
+ * appears — which, now that the leak and password features ship, means on the
+ * screens that show it and not only in a README. This file asserts both, and
+ * the second assertion is the one that would actually be missed: a README line
+ * survives every refactor, and a line of UI copy does not.
  */
 
 const root = process.cwd()
@@ -35,6 +36,17 @@ describe('attribution owed to data sources', () => {
     const readme = read('README.md')
     expect(readme).toContain('Have I Been Pwned')
     expect(readme).toContain('CC BY 4.0')
+  })
+
+  it('puts the credit on the surface that shows the data, not only in the README', () => {
+    const panel = read('packages/ui/src/leaks/leaks.ts')
+    expect(panel).toContain('Have I Been Pwned')
+    expect(panel).toContain('CC BY 4.0')
+  })
+
+  it('credits the range query on the banner it produces', () => {
+    const content = read('apps/extension/src/content/index.ts')
+    expect(content).toMatch(/Have I Been Pwned \(CC BY 4\.0\)/)
   })
 
   it('names the URL intelligence feeds it will consume', () => {

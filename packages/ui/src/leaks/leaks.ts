@@ -8,7 +8,17 @@ import type { LeakInventory } from '@okolos/core-leaks'
  * list assembled from two of three sources says so in the same breath as its
  * count, and "nothing found" from a source that never answered is never shown
  * as reassurance.
+ *
+ * The attribution is not decoration either. Have I Been Pwned's breach data is
+ * CC BY 4.0, which requires credit wherever the data appears — so it appears
+ * here, on the screen that shows it, rather than only in a README a user will
+ * never open. It is rendered in every state, including the empty one: a result
+ * of "nothing found" is still a result computed from someone else's work.
  */
+
+/** Required by CC BY 4.0 wherever the data is shown. */
+export const HIBP_ATTRIBUTION =
+  'Breach data from Have I Been Pwned, used under CC BY 4.0.'
 
 export type LeaksState =
   | { readonly kind: 'idle' }
@@ -34,12 +44,13 @@ export function renderLeaks(doc: Document, state: LeaksState, handlers: LeaksHan
     root.append(
       text(doc, 'idle', 'Nothing has been looked up yet. Checking sends a hashed form of your address, never the address itself.'),
       button(doc, 'check', 'Check now', handlers.onCheck, true),
+      attribution(doc),
     )
     return root
   }
 
   if (state.kind === 'checking') {
-    root.append(text(doc, 'status', 'Asking the sources…'))
+    root.append(text(doc, 'status', 'Asking the sources…'), attribution(doc))
     return root
   }
 
@@ -48,6 +59,7 @@ export function renderLeaks(doc: Document, state: LeaksState, handlers: LeaksHan
       text(doc, 'error', `The check could not be completed: ${state.message}`),
       text(doc, 'error-note', 'This is not a statement that nothing has leaked.'),
       button(doc, 'check', 'Try again', handlers.onCheck),
+      attribution(doc),
     )
     return root
   }
@@ -76,8 +88,15 @@ export function renderLeaks(doc: Document, state: LeaksState, handlers: LeaksHan
     root.append(row)
   }
 
-  root.append(button(doc, 'check', 'Check again', handlers.onCheck))
+  root.append(button(doc, 'check', 'Check again', handlers.onCheck), attribution(doc))
   return root
+}
+
+function attribution(doc: Document): HTMLElement {
+  const el = doc.createElement('p')
+  el.setAttribute('data-role', 'attribution')
+  el.textContent = HIBP_ATTRIBUTION
+  return el
 }
 
 function text(doc: Document, role: string, content: string): HTMLParagraphElement {

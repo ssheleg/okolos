@@ -79,3 +79,27 @@ describe('when it fails', () => {
     expect(role(el, 'total')).toBeNull()
   })
 })
+
+describe('the credit the data carries with it', () => {
+  it('names Have I Been Pwned and CC BY 4.0 on the screen that shows its data', () => {
+    // The licence requires attribution wherever the data appears. A README a
+    // user never opens is not where it appears.
+    const inventory = mergeLeaks([{ name: 'HIBP', answered: true, leaks: [LEAK] }])
+    const el = render({ kind: 'ready', inventory })
+    expect(role(el, 'attribution')?.textContent).toContain('Have I Been Pwned')
+    expect(role(el, 'attribution')?.textContent).toContain('CC BY 4.0')
+  })
+
+  it('carries it in every state, including the one that found nothing', () => {
+    // "Nothing found" is still a result computed from someone else's work.
+    for (const state of [
+      { kind: 'idle' } as const,
+      { kind: 'checking' } as const,
+      { kind: 'error', message: 'offline' } as const,
+      { kind: 'ready', inventory: mergeLeaks([{ name: 'HIBP', answered: true, leaks: [] }]) } as const,
+    ]) {
+      document.body.innerHTML = ''
+      expect(role(render(state), 'attribution')).not.toBeNull()
+    }
+  })
+})

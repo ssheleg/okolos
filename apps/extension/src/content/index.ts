@@ -396,7 +396,7 @@ if (isTopFrame) {
               detail: verdict.explain,
               sourceLine: verdict.offline
                 ? 'Found by: a list built into this extension — nothing was sent'
-                : 'Found by: a range query that sent five characters of the fingerprint',
+                : 'Found by: Have I Been Pwned (CC BY 4.0), via a range query that sent five characters of the fingerprint',
             },
             {
               onPrimary: () => undefined,

@@ -265,3 +265,23 @@ happens before adding.
 - **Standing instruction (7):** when a new user-facing surface ships, it joins
   the axe sweep in the same change. Four surfaces had accumulated outside it,
   and the one with the defect was the one written most recently.
+
+### 2026-08-05 — a test that said it would grow, and did not
+
+- **Symptom:** the HIBP attribution existed only in the README. The leak panel
+  and the password banner both display data derived from Have I Been Pwned,
+  whose CC BY 4.0 terms require credit *wherever the data appears*.
+- **Surfaced at:** a backlog sweep after acceptance — not by a failing gate.
+- **Owned by:** the gate itself, which had written its own excuse: "No feature
+  uses it yet… the UI assertion arrives with the leak features in R4, and this
+  test grows then." R4 shipped and the test did not grow. A comment describing
+  future work does not perform it.
+- **Fix, by grade:** the attribution renders in every state of the panel,
+  including the empty one — "nothing found" is still a result computed from
+  someone else's data — and on the password banner. The licensing gate now
+  asserts the UI source, and an e2e asserts it on screen. Removing it turns
+  three tests red.
+- **Standing instruction (8):** a test comment that defers an assertion to a
+  later release names the release *and* the requirement, so the ledger row
+  carries the obligation. A promise living only in a comment is not tracked by
+  anything.

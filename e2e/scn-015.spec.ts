@@ -36,3 +36,14 @@ test('a source that cannot run is named, and the total says it may be incomplete
   await expect(coverage).toContainText('Have I Been Pwned', { timeout: 10_000 })
   await expect(coverage).toContainText('may be incomplete')
 })
+
+test('the credit for the data is on the page that shows it', async ({ context, extensionId }) => {
+  // CC BY 4.0 asks for attribution wherever the data appears. This is where it
+  // appears; a README is not.
+  const page = await context.newPage()
+  await page.goto(`chrome-extension://${extensionId}/options.html`)
+
+  const attribution = page.locator('[data-role=leaks] [data-role=attribution]')
+  await expect(attribution).toContainText('Have I Been Pwned')
+  await expect(attribution).toContainText('CC BY 4.0')
+})

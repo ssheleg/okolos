@@ -36,7 +36,8 @@
     "activeTab",
     "declarativeNetRequest",
     "webNavigation",
-    "downloads"
+    "downloads",
+    "management"
   ],
   "icons": {},
   "browser_specific_settings": {

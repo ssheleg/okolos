@@ -6,6 +6,7 @@ export type {
   Alarms,
   Blocking,
   Downloads,
+  Extensions,
   Inference,
   InferenceHostKind,
   KeyValueStore,

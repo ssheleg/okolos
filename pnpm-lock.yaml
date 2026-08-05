@@ -74,6 +74,9 @@ importers:
       '@okolos/core-download':
         specifier: workspace:*
         version: link:../../packages/core-download
+      '@okolos/core-extensions':
+        specifier: workspace:*
+        version: link:../../packages/core-extensions
       '@okolos/core-feeds':
         specifier: workspace:*
         version: link:../../packages/core-feeds
@@ -117,11 +120,21 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
 
+  apps/proxy:
+    dependencies:
+      '@okolos/core-feeds':
+        specifier: workspace:*
+        version: link:../../packages/core-feeds
+
+  apps/status-page: {}
+
   packages/contracts: {}
 
   packages/core-credential: {}
 
   packages/core-download: {}
+
+  packages/core-extensions: {}
 
   packages/core-feeds:
     dependencies:

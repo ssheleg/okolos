@@ -18,6 +18,25 @@ export interface Platform {
   readonly inference: Inference
   readonly blocking: Blocking
   readonly downloads: Downloads
+  readonly extensions: Extensions
+}
+
+/** The other extensions installed, and the ability to turn one off. */
+export interface Extensions {
+  available(): boolean
+  list(): Promise<
+    ReadonlyArray<{
+      id: string
+      name: string
+      version: string
+      permissions: readonly string[]
+      hostPermissions: readonly string[]
+      publisher: string | null
+      enabled: boolean
+    }>
+  >
+  disable(id: string): Promise<void>
+  selfId(): string
 }
 
 /** Downloads, where the only moment to intervene is before the bytes land. */
@@ -128,6 +147,22 @@ export interface WebExtensionApi {
       ): void
     }
     cancel(id: number): Promise<void>
+  }
+  management?: {
+    getAll(): Promise<
+      Array<{
+        id: string
+        name: string
+        version: string
+        permissions?: string[]
+        hostPermissions?: string[]
+        installType?: string
+        enabled: boolean
+        updateUrl?: string
+      }>
+    >
+    setEnabled(id: string, enabled: boolean): Promise<void>
+    getSelf(): Promise<{ id: string }>
   }
   webNavigation?: {
     onBeforeNavigate: {

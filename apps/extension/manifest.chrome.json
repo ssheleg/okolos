@@ -32,7 +32,8 @@
     "offscreen",
     "declarativeNetRequest",
     "webNavigation",
-    "downloads"
+    "downloads",
+    "management"
   ],
   "icons": {},
   "minimum_chrome_version": "116",

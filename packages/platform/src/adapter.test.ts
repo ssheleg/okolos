@@ -9,7 +9,12 @@ import type { WebExtensionApi } from './types.js'
  * is the exception: it has no base to merge into, so a test that wants one
  * supplies the whole thing.
  */
-type OptionalSection = 'offscreen' | 'declarativeNetRequest' | 'webNavigation' | 'downloads'
+type OptionalSection =
+  | 'offscreen'
+  | 'declarativeNetRequest'
+  | 'webNavigation'
+  | 'downloads'
+  | 'management'
 type ApiOverrides = {
   [K in Exclude<keyof WebExtensionApi, OptionalSection>]?: Partial<WebExtensionApi[K]>
 } & { [K in OptionalSection]?: WebExtensionApi[K] }
@@ -45,7 +50,8 @@ function fakeApi(overrides: ApiOverrides = {}): WebExtensionApi {
   // Merged one level deep on purpose. With a flat spread, adding a capability
   // to Platform forced every test that stubs one runtime method to restate all
   // of them — churn that hides what each test actually cares about.
-  const { offscreen, declarativeNetRequest, webNavigation, downloads, ...sections } = overrides
+  const { offscreen, declarativeNetRequest, webNavigation, downloads, management, ...sections } =
+    overrides
   return {
     ...base,
     ...sections,
@@ -53,6 +59,7 @@ function fakeApi(overrides: ApiOverrides = {}): WebExtensionApi {
     ...(declarativeNetRequest ? { declarativeNetRequest } : {}),
     ...(webNavigation ? { webNavigation } : {}),
     ...(downloads ? { downloads } : {}),
+    ...(management ? { management } : {}),
     runtime: { ...base.runtime, ...overrides.runtime },
     tabs: { ...base.tabs, ...overrides.tabs },
     storage: { ...base.storage, ...overrides.storage },
@@ -274,5 +281,35 @@ describe('downloads', () => {
 
   it('says when the browser has no downloads API rather than pretending', () => {
     expect(createPlatform('chrome', fakeApi()).downloads.available()).toBe(false)
+  })
+})
+
+describe('the other extensions', () => {
+  it('reports what each one is allowed to do', async () => {
+    const platform = createPlatform('chrome', fakeApi({
+      management: {
+        getAll: async () => [
+          {
+            id: 'abc',
+            name: 'Colour Picker',
+            version: '1.0.0',
+            permissions: ['storage'],
+            hostPermissions: ['<all_urls>'],
+            enabled: true,
+            updateUrl: 'https://clients2.google.com/service/update2/crx',
+          },
+        ],
+        setEnabled: async () => undefined,
+        getSelf: async () => ({ id: 'self' }),
+      },
+    }))
+
+    const [entry] = await platform.extensions.list()
+    expect(entry).toMatchObject({ id: 'abc', hostPermissions: ['<all_urls>'] })
+    expect(entry?.publisher).toContain('clients2.google.com')
+  })
+
+  it('says plainly when the browser will not tell it', () => {
+    expect(createPlatform('chrome', fakeApi()).extensions.available()).toBe(false)
   })
 })

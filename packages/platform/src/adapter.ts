@@ -26,6 +26,13 @@ export function toSafeUrl(raw: string | undefined): string | null {
  * extension composition, not in these calls.
  */
 export function createPlatform(kind: Platform['kind'], api: WebExtensionApi): Platform {
+  // Resolved lazily and cached: `getSelf` is async, and every caller of
+  // `selfId` is on a path that must not await for it.
+  let selfExtensionId = ''
+  void api.management?.getSelf().then((self) => {
+    selfExtensionId = self.id
+  })
+
   return {
     kind,
 
@@ -93,6 +100,32 @@ export function createPlatform(kind: Platform['kind'], api: WebExtensionApi): Pl
           return true
         })
       },
+    },
+
+    extensions: {
+      available: () => Boolean(api.management),
+
+      async list() {
+        const all = (await api.management?.getAll()) ?? []
+        return all.map((entry) => ({
+          id: entry.id,
+          name: entry.name,
+          version: entry.version,
+          permissions: entry.permissions ?? [],
+          hostPermissions: entry.hostPermissions ?? [],
+          // The store does not expose an author field, so the update URL is
+          // the closest thing to "who ships this" the browser will tell us —
+          // and a change of it is exactly the event worth reporting.
+          publisher: entry.updateUrl ?? entry.installType ?? null,
+          enabled: entry.enabled,
+        }))
+      },
+
+      async disable(id: string): Promise<void> {
+        await api.management?.setEnabled(id, false)
+      },
+
+      selfId: () => selfExtensionId,
     },
 
     downloads: {

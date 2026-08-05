@@ -1,0 +1,12 @@
+name = "okolos-proxy"
+main = "src/index.ts"
+compatibility_date = "2026-01-01"
+
+# Retention is 180 days and enforced by a scheduled sweep, not by hope.
+[[d1_databases]]
+binding = "DB"
+database_name = "okolos"
+database_id = "set-at-deploy"
+
+[triggers]
+crons = ["17 3 * * *"]

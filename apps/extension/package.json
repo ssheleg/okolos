@@ -25,6 +25,7 @@
     "@okolos/core-credential": "workspace:*",
     "@okolos/core-download": "workspace:*",
     "@okolos/core-leaks": "workspace:*",
-    "@okolos/core-recovery": "workspace:*"
+    "@okolos/core-recovery": "workspace:*",
+    "@okolos/core-extensions": "workspace:*"
   }
 }

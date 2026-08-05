@@ -1,0 +1,10 @@
+{
+  "name": "@okolos/proxy",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "description": "The thin backend: signed feeds, model files, domain status and appeals.",
+  "scripts": { "build": "tsc -b" },
+  "dependencies": { "@okolos/core-feeds": "workspace:*" }
+}

@@ -13,6 +13,7 @@ import type {
 } from '@okolos/contracts'
 
 import { handleDownload } from './downloads.js'
+import { reviewInventory } from './extensions.js'
 import { CAVALIER, hibp, lookupLeaks } from './leaks.js'
 import { checkSubmittedPassword } from './password.js'
 import { createInferenceHost } from './inference.js'
@@ -27,6 +28,7 @@ import { createInferenceHost } from './inference.js'
 
 const platform = detectPlatform()
 const RETENTION_ALARM = 'okolos:retention'
+const INVENTORY_ALARM = 'okolos:inventory'
 
 platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>) => {
   switch (message.type) {
@@ -421,6 +423,7 @@ platform.blocking.onBlocked((url) => {
 })
 
 void refreshBlockRules().catch(() => undefined)
+void reviewExtensions()
 
 /**
  * Downloads are judged as they are created — the only moment the bytes have not
@@ -455,8 +458,32 @@ platform.downloads.onCreated((item) => {
   })
 })
 
+/**
+ * The extension inventory is reviewed daily rather than on every wake-up: what
+ * it looks for is an update that happened while nobody was watching, and that
+ * does not need checking twice an hour.
+ */
+async function reviewExtensions(): Promise<void> {
+  if (!platform.extensions.available()) return
+  try {
+    await reviewInventory({
+      db: await openDb(),
+      list: () => platform.extensions.list(),
+      now: () => new Date().toISOString(),
+      selfId: platform.extensions.selfId(),
+    })
+  } catch (cause) {
+    console.warn('okolos: the extension review failed', cause)
+  }
+}
+
+void platform.alarms.create(INVENTORY_ALARM, 60 * 24)
 void platform.alarms.create(RETENTION_ALARM, 60 * 24)
 platform.alarms.onFired((name) => {
+  if (name === INVENTORY_ALARM) {
+    void reviewExtensions()
+    return
+  }
   if (name !== RETENTION_ALARM) return
   void (async () => {
     try {

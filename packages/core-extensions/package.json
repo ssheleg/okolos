@@ -1,0 +1,10 @@
+{
+  "name": "@okolos/core-extensions",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "description": "Compares extension snapshots and reads what a package does. Pure.",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "build": "tsc -b" }
+}

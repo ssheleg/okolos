@@ -28,6 +28,23 @@ happens before adding.
    carries a Scope and limits section, and the carry-over count is printed
    beside the verdict.
 
+### 2026-08-04 — a Firefox suite that would have passed with no extension loaded
+
+- **Symptom:** the first Firefox e2e run had one spec fail and one pass. The
+  passing one asserted "no banner on an ordinary page" — which is also true of
+  a browser with no extension at all. Diagnostics showed the add-on was never
+  installed: the profile held only Firefox's built-ins.
+- **Surfaced at:** the first Firefox run, before any of it was trusted.
+- **Owned by:** the fixture — a harness that cannot tell "absent" from "silent"
+  produces green for the wrong reason.
+- **Root cause:** installing an unpacked extension through a profile proxy file
+  no longer works on this Firefox build; it needs the remote-debugging install
+  path that `web-ext` and geckodriver use.
+- **Fix, by grade:** mechanical — the fixture now fails unless a background page
+  appears, and the Firefox spec runs in its own project so a known-open REQ does
+  not sit red in the default suite while also not being claimed as covered.
+- **Catches it next time:** the fixture's own precondition.
+
 ## Run stamps
 
 - **2026-08-04** — P0–P5 brief; stages 0–10 (stage 8 blocked on a human step).

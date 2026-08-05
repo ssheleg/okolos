@@ -8,6 +8,11 @@ import { defineConfig } from '@playwright/test'
  */
 export default defineConfig({
   testDir: 'e2e',
+  // Firefox lives in its own project because its loader is still unsolved
+  // (REQ-34). It is excluded from the default run rather than quietly passing:
+  // `pnpm test:e2e:firefox` runs it and fails loudly until the extension
+  // actually installs.
+  testIgnore: process.env.OKOLOS_FIREFOX === '1' ? [] : ['**/firefox.spec.ts'],
   timeout: 30_000,
   fullyParallel: false,
   workers: 1,

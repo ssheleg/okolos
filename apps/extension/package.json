@@ -14,6 +14,7 @@
     "@okolos/net": "workspace:*",
     "@okolos/platform": "workspace:*",
     "@okolos/storage": "workspace:*",
-    "@okolos/ui": "workspace:*"
+    "@okolos/ui": "workspace:*",
+    "@okolos/core-sanitizer": "workspace:*"
   }
 }

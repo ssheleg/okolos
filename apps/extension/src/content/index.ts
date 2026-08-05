@@ -1,8 +1,10 @@
+import { planSanitisation } from '@okolos/core-sanitizer'
 import { detectPlatform } from '@okolos/platform'
 import { mountBanner, mountInspector, type BannerHandle, type InspectorHandle } from '@okolos/ui'
 import type { Severity, Verdict } from '@okolos/contracts'
 
 import { collect, DEFAULT_BUDGET } from './collect.js'
+import { Sanitiser } from './sanitize.js'
 
 /**
  * The content script: collect, ask the background for a verdict, warn.
@@ -27,6 +29,8 @@ const platform = detectPlatform()
  * is the one that speaks.
  */
 const isTopFrame = window.top === window
+
+const sanitiser = new Sanitiser(document)
 
 let banner: BannerHandle | null = null
 let inspector: InspectorHandle | null = null
@@ -65,9 +69,14 @@ async function scan(): Promise<void> {
 
   const verdicts: Verdict[] = response?.verdicts ?? []
   if (verdicts.length === 0) return
-  if (!isTopFrame) return
 
-  show(worst(verdicts), verdicts.length, page.truncated)
+  // Neutralise in every frame, including the ones that never show a banner: an
+  // injection inside an iframe is read by an assistant just as readily as one
+  // in the top document.
+  const neutralised = sanitiser.apply(planSanitisation(verdicts))
+
+  if (!isTopFrame) return
+  show(worst(verdicts), verdicts.length, page.truncated, neutralised)
 }
 
 function worst(verdicts: readonly Verdict[]): Verdict {
@@ -76,7 +85,7 @@ function worst(verdicts: readonly Verdict[]): Verdict {
   )[0] as Verdict
 }
 
-function show(verdict: Verdict, total: number, partialScan: boolean): void {
+function show(verdict: Verdict, total: number, partialScan: boolean, neutralised: number): void {
   banner?.destroy()
 
   const others = total > 1 ? ` and ${total - 1} more on this page` : ''
@@ -90,7 +99,10 @@ function show(verdict: Verdict, total: number, partialScan: boolean): void {
       variant: 'injection',
       severity: verdict.severity,
       headline: 'This page carries instructions written for an AI assistant',
-      detail: `Hidden text is addressing an assistant rather than you${others}.${scanNote}`,
+      detail:
+        neutralised > 0
+          ? `Hidden text is addressing an assistant rather than you${others}. It has been removed from the page, and you can put it back.${scanNote}`
+          : `Hidden text is addressing an assistant rather than you${others}.${scanNote}`,
       sourceLine: `Found by: ${verdict.sources.map((s) => s.name).join(', ')}`,
     },
     {
@@ -117,9 +129,7 @@ function openInspector(verdict: Verdict): void {
     {
       onKeep: closeInspector,
       onRestore: () => {
-        // Restoring the page is the sanitizer's job and lands with M5. Until it
-        // exists, saying so beats a button that quietly does nothing.
-        console.info('okolos: restore arrives with the sanitizer (M5)')
+        sanitiser.restore()
         closeInspector()
       },
       onDispute: () => {

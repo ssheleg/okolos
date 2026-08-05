@@ -14,7 +14,7 @@ are specified once in [screens.md](screens.md).
 | SCN-002 | First run — findings found | onboarding | P-01 | ST-018, ST-015, FLW-01 | draft | — |
 | SCN-003 | Hidden instruction detected on a page | ai-shield | P-01 | ST-001, FLW-02 | implemented | 2026-08-04 PASS |
 | SCN-004 | Inspect what was hidden | ai-shield | P-01 | ST-002, FLW-02 | implemented | 2026-08-04 PASS |
-| SCN-005 | Neutralise and restore | ai-shield | P-01 | ST-003, FLW-02 | draft | — |
+| SCN-005 | Neutralise and restore | ai-shield | P-01 | ST-003, FLW-02 | implemented | 2026-08-04 PASS |
 | SCN-006 | Lookalike domain warning | web-guard | P-01 | ST-006, FLW-05 | draft | — |
 | SCN-007 | Known-malicious page blocked | web-guard | P-02 | ST-005, ST-016, FLW-04 | draft | — |
 | SCN-008 | ClickFix — page copies a command | web-guard | P-02 | ST-007, FLW-06 | draft | — |
@@ -133,8 +133,8 @@ See [foundation.md](foundation.md) → Personas.
 - **UI elements:** banner statement "hidden instructions removed", "Restore page", "Keep it neutralised"
 - **States covered:** success, error
 - **Errors & recovery:** removal fails on a protected node -> system reports which nodes could not be neutralised and keeps warning; restore always returns the DOM to its pre-change state
-- **Status:** draft
-- **Coverage:** none yet
+- **Status:** implemented
+- **Coverage:** packages/core-sanitizer/src/plan.ts:25, apps/extension/src/content/sanitize.ts:28, e2e/scn-005.spec.ts:20
 
 ### SCN-010: Agent blocked from acting on a poisoned page
 - **Persona:** P-01

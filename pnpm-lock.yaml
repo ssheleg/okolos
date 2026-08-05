@@ -71,6 +71,9 @@ importers:
       '@okolos/core-injection':
         specifier: workspace:*
         version: link:../../packages/core-injection
+      '@okolos/core-sanitizer':
+        specifier: workspace:*
+        version: link:../../packages/core-sanitizer
       '@okolos/net':
         specifier: workspace:*
         version: link:../../packages/net
@@ -87,6 +90,12 @@ importers:
   packages/contracts: {}
 
   packages/core-injection:
+    dependencies:
+      '@okolos/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+
+  packages/core-sanitizer:
     dependencies:
       '@okolos/contracts':
         specifier: workspace:*

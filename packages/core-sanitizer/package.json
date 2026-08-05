@@ -1,0 +1,11 @@
+{
+  "name": "@okolos/core-sanitizer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "description": "Decides which nodes to neutralise. Pure — the DOM work lives in the content script.",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "build": "tsc -b" },
+  "dependencies": { "@okolos/contracts": "workspace:*" }
+}

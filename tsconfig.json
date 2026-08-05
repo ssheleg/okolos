@@ -17,6 +17,9 @@
       "path": "packages/core-injection"
     },
     {
+      "path": "packages/core-sanitizer"
+    },
+    {
       "path": "packages/model"
     },
     {

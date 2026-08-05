@@ -371,3 +371,24 @@ happens before adding.
 - **And a stale green in the local shortcut:** `pnpm gates` skipped `pnpm build`,
   so the bundle scanners inside it read whatever `dist/` happened to be lying
   around. It builds first now, and a test asserts the order.
+
+### 2026-08-05 — the first file anyone opens, describing a different project
+
+- **Symptom:** `docs/README.md` said the project was at pipeline stage 2 with
+  "the skeleton in progress", listed 31 requirements and 3 human steps, and
+  ended with "none of steps 1–5 has been started". By then there were 37
+  requirements, 18 packages, 3 applications and a closed acceptance.
+- **Surfaced at:** a backlog sweep. Nothing broke — it simply misled every
+  reader at the moment they most needed orientation.
+- **Owned by:** every commit that added a package without opening the map.
+- **Fix, by grade:** rewritten to the truth, given a code map, and gated.
+  `tools/docs.test.ts` asserts only what is falsifiable: every package and
+  application on the map, the counts, and the requirement totals counted from
+  the brief rather than remembered. "Phase" is a judgement and stays one.
+- **The gate earned its keep in the first minute:** it failed on the count,
+  because the map said 17 packages and there are 18. Written from memory, the
+  wrong number would have shipped.
+- **And the same anchor bug as before, in the same session:** a `replace` whose
+  anchor had been removed by an earlier edit in the same script silently did
+  nothing, so the row never appeared. The habit that ends it is asserting the
+  anchor exists before writing — now done in the edit script itself.

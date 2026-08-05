@@ -53,3 +53,29 @@ jobs:
       # REQ-31 — the UX chain must not drift
       - name: ux lint
         run: python3 docs/ux/lint.py
+
+  e2e:
+    name: e2e (chromium)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm build
+
+      # Extensions only load in a headed persistent context, hence xvfb.
+      # Firefox is absent on purpose: Playwright cannot load an MV3 extension
+      # into it. That side is covered by web-ext and sits in the carry-over
+      # ledger rather than being quietly claimed here.
+      - name: scenarios SCN-003 and SCN-019
+        run: xvfb-run --auto-servernum pnpm test:e2e

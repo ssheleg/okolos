@@ -12,7 +12,7 @@ are specified once in [screens.md](screens.md).
 |----|-------|---------|---------|--------|--------|------------|
 | SCN-001 | First run — clean result | onboarding | P-01 | ST-018, FLW-01 | draft | — |
 | SCN-002 | First run — findings found | onboarding | P-01 | ST-018, ST-015, FLW-01 | draft | — |
-| SCN-003 | Hidden instruction detected on a page | ai-shield | P-01 | ST-001, FLW-02 | draft | — |
+| SCN-003 | Hidden instruction detected on a page | ai-shield | P-01 | ST-001, FLW-02 | implemented | 2026-08-04 PASS |
 | SCN-004 | Inspect what was hidden | ai-shield | P-01 | ST-002, FLW-02 | draft | — |
 | SCN-005 | Neutralise and restore | ai-shield | P-01 | ST-003, FLW-02 | draft | — |
 | SCN-006 | Lookalike domain warning | web-guard | P-01 | ST-006, FLW-05 | draft | — |
@@ -28,7 +28,7 @@ are specified once in [screens.md](screens.md).
 | SCN-016 | Repair a leak and mark it resolved | credentials | P-01 | ST-015, ST-012, FLW-11 | draft | — |
 | SCN-017 | Extension gained permissions — disable it | extensions | P-01 | ST-013, ST-014, FLW-12 | draft | — |
 | SCN-018 | Extension changed publisher, package unavailable | extensions | P-01 | ST-013, FLW-12 | draft | — |
-| SCN-019 | Verify what left the device | privacy | P-01 | ST-017, FLW-13 | draft | — |
+| SCN-019 | Verify what left the device | privacy | P-01 | ST-017, FLW-13 | implemented | 2026-08-04 PASS |
 | SCN-020 | Popup — verdict for the current page | daily-use | P-01 | ST-015, FLW-17 | draft | — |
 | SCN-021 | What changed since last time | daily-use | P-01 | ST-015, FLW-17 | draft | — |
 | SCN-022 | Queue never exceeds three actions | daily-use | P-01 | ST-015, FLW-01 | draft | — |
@@ -97,8 +97,8 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** success
 - **Errors & recovery:** the classifier stage fails or times out -> the verdict falls back to the deterministic stages, the banner states that detection was partial; a detector exception disables that detector for the session and is journalled, and the page is never broken
 - **Telemetry:** none — no analytics events are emitted by this product
-- **Status:** draft
-- **Coverage:** none yet
+- **Status:** implemented
+- **Coverage:** apps/extension/src/content/collect.ts:56, packages/core-injection/src/stage1.ts:38, packages/ui/src/banner/banner.ts:52, e2e/scn-003.spec.ts:32
 
 ### SCN-004: Inspect what was hidden
 - **Persona:** P-01
@@ -393,8 +393,8 @@ See [foundation.md](foundation.md) → Personas.
 - **UI elements:** weekly summary line, log rows (time, destination, purpose, payload shape), filters, row detail, "Export log"
 - **States covered:** loading, empty, error, success
 - **Errors & recovery:** the journal is unreadable -> system states the storage problem and offers repair; it never renders an empty log on error, because an empty log is a claim
-- **Status:** draft
-- **Coverage:** none yet
+- **Status:** implemented
+- **Coverage:** packages/ui/src/self-audit/panel.ts:26, apps/extension/src/options/index.ts:12, e2e/scn-019.spec.ts:9
 
 ### SCN-023: Wipe all local data
 - **Persona:** P-01

@@ -4,8 +4,10 @@
 
 Figma is disabled for now (see [foundation.md](foundation.md) → Design
 tooling), so the `Figma frame` column holds `-` until Figma is switched on
-before UI implementation. Every screen below is `designed`: specified, not
-built.
+before UI implementation. Most screens below are `designed` — specified, not
+built. Two are `built` and carry their code coverage: the banner (injection
+variant only; the other six variants land with their modules) and the
+self-audit panel.
 
 ## Index
 
@@ -13,14 +15,14 @@ built.
 |----|--------|---------|-------|--------|----------|
 | SCR-01 | First-run check | FLW-01, FLW-14 | - | designed | none yet |
 | SCR-02 | Popup | FLW-17 | - | designed | none yet |
-| SCR-03 | In-page warning banner | FLW-02, FLW-05, FLW-06, FLW-07, FLW-08, FLW-09, FLW-10 | - | designed | none yet |
+| SCR-03 | In-page warning banner | FLW-02, FLW-05, FLW-06, FLW-07, FLW-08, FLW-09, FLW-10 | - | built | packages/ui/src/banner/banner.ts:52 |
 | SCR-04 | Finding inspector | FLW-02, FLW-03 | - | designed | none yet |
 | SCR-05 | Block interstitial | FLW-04 | - | designed | none yet |
 | SCR-06 | Agent action gate | FLW-03 | - | designed | none yet |
 | SCR-07 | Findings queue | FLW-01, FLW-17 | - | designed | none yet |
 | SCR-08 | Leaks and repair | FLW-10, FLW-11, FLW-16 | - | designed | none yet |
 | SCR-09 | Extensions watch | FLW-12 | - | designed | none yet |
-| SCR-10 | Self-audit | FLW-13, FLW-17 | - | designed | none yet |
+| SCR-10 | Self-audit | FLW-13, FLW-17 | - | built | packages/ui/src/self-audit/panel.ts:26 |
 | SCR-11 | Journal and weekly diff | FLW-17 | - | designed | none yet |
 | SCR-12 | Settings | FLW-05, FLW-14 | - | designed | none yet |
 | SCR-13 | Recovery checklist | FLW-06, FLW-07, FLW-16 | - | designed | none yet |
@@ -86,6 +88,7 @@ built.
 - **Status:** designed
 
 ### SCR-03: In-page warning banner
+- **Status note:** built for the injection variant only
 - **Used by:** FLW-02, FLW-05, FLW-06, FLW-07, FLW-08, FLW-09, FLW-10
 - **Purpose:** speak at the moment of the decision, inside the page, without stealing the page
 - **Elements:** severity icon + label; one-sentence plain-language reason; **one primary action per variant**; secondary "Show me" → SCR-04 where applicable; "This is wrong"; dismiss. Variants: `injection`, `lookalike`, `clickfix` (blocking), `techsupport`, `download`, `credential`, `password`
@@ -96,10 +99,10 @@ built.
   | error | detail view or action failed | - | inline failure text with retry; the warning itself never disappears on error |
 - **Behavior notes:** closed Shadow DOM; keyboard reachable; announced to screen readers; never covers a form field it warns about; low-confidence findings never block
 - **Wireframe:** wireframes/SCR-03.md
-- **Coverage:** none yet
+- **Coverage:** packages/ui/src/banner/banner.ts:52 (injection variant built; the other six land with their modules)
 - **Scenarios:** SCN-003, SCN-006, SCN-008, SCN-009, SCN-011, SCN-012, SCN-013
 - **Resources:** shared banner component, variant copy table, i18n strings
-- **Status:** designed
+- **Status:** built
 
 ### SCR-04: Finding inspector
 - **Used by:** FLW-02 (inspect), FLW-03 (from the gate)
@@ -213,10 +216,10 @@ built.
   | success | entries exist | - | newest first, grouped by purpose |
 - **Behavior notes:** this log is written by the single network choke point before each request; if a request could bypass it, the guarantee is void — enforced by lint and test, not by convention
 - **Wireframe:** wireframes/SCR-10.md
-- **Coverage:** none yet
+- **Coverage:** packages/ui/src/self-audit/panel.ts:26, apps/extension/src/options/index.ts:12
 - **Scenarios:** SCN-019
 - **Resources:** net layer journal, exporter
-- **Status:** designed
+- **Status:** built
 
 ### SCR-11: Journal and weekly diff
 - **Used by:** FLW-17

@@ -24,7 +24,7 @@ self-audit panel.
 | SCR-09 | Extensions watch | FLW-12 | - | designed | none yet |
 | SCR-10 | Self-audit | FLW-13, FLW-17 | - | built | packages/ui/src/self-audit/panel.ts:26 |
 | SCR-11 | Journal and weekly diff | FLW-17 | - | designed | none yet |
-| SCR-12 | Settings | FLW-05, FLW-14 | - | designed | none yet |
+| SCR-12 | Settings | FLW-05, FLW-14 | - | built | packages/ui/src/settings/data-controls.ts:31 |
 | SCR-13 | Recovery checklist | FLW-06, FLW-07, FLW-16 | - | designed | none yet |
 | SCR-14 | Public domain status | FLW-04, FLW-15 | - | designed | none yet |
 
@@ -246,10 +246,10 @@ self-audit panel.
   | success | default | - | grouped settings |
   | error | export or wipe failed | - | inline failure with retry; state left unchanged |
 - **Wireframe:** wireframes/SCR-12.md
-- **Coverage:** none yet
+- **Coverage:** packages/ui/src/settings/data-controls.ts:31 (data controls built; watchlist, trusted domains, quiet mode and proxy toggle land with their modules)
 - **Scenarios:** SCN-023, SCN-024
 - **Resources:** settings store, exporter, wipe routine
-- **Status:** designed
+- **Status:** built
 
 ### SCR-13: Recovery checklist
 - **Used by:** FLW-06, FLW-07, FLW-16

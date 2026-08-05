@@ -19,4 +19,9 @@ export {
   type FirstRunProps,
 } from './first-run/screen.js'
 export { renderSelfAudit, type PanelHandlers, type PanelState } from './self-audit/panel.js'
+export {
+  renderDataControls,
+  type DataControlsHandlers,
+  type WipeOutcome,
+} from './settings/data-controls.js'
 export { shadowMode } from './shadow.js'

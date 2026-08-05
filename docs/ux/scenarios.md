@@ -32,8 +32,8 @@ are specified once in [screens.md](screens.md).
 | SCN-020 | Popup — verdict for the current page | daily-use | P-01 | ST-015, FLW-17 | draft | — |
 | SCN-021 | What changed since last time | daily-use | P-01 | ST-015, FLW-17 | draft | — |
 | SCN-022 | Queue never exceeds three actions | daily-use | P-01 | ST-015, FLW-01 | draft | — |
-| SCN-023 | Wipe all local data | privacy | P-01 | ST-019, FLW-14 | draft | — |
-| SCN-024 | Export all local data | privacy | P-01 | ST-019, FLW-14 | draft | — |
+| SCN-023 | Wipe all local data | privacy | P-01 | ST-019, FLW-14 | implemented | 2026-08-04 PARTIAL |
+| SCN-024 | Export all local data | privacy | P-01 | ST-019, FLW-14 | implemented | 2026-08-04 PARTIAL |
 | SCN-025 | Recovery after running a pasted command | recovery | P-02 | ST-015, FLW-16 | draft | — |
 | SCN-026 | Site owner checks and appeals a verdict | site-owner | P-03 | ST-016, FLW-15 | draft | — |
 
@@ -411,8 +411,8 @@ See [foundation.md](foundation.md) → Personas.
 - **UI elements:** "Wipe all data" (destructive), confirmation listing data categories, cancel
 - **States covered:** success, error
 - **Errors & recovery:** deletion partially fails -> system names what could not be deleted and offers retry; it never reports success on a partial wipe
-- **Status:** draft
-- **Coverage:** none yet
+- **Status:** implemented
+- **Coverage:** packages/ui/src/settings/data-controls.ts:31, apps/extension/src/options/index.ts:26 — PARTIAL: covered by unit tests including the partial-failure path; no end-to-end run yet, since asserting a real wipe needs a profile seeded with data first
 
 ### SCN-024: Export all local data
 - **Persona:** P-01
@@ -428,8 +428,8 @@ See [foundation.md](foundation.md) → Personas.
 - **UI elements:** "Export all data" (primary), completion confirmation with contents list
 - **States covered:** success, error
 - **Errors & recovery:** export fails -> inline failure with retry; no partial file is left behind
-- **Status:** draft
-- **Coverage:** none yet
+- **Status:** implemented
+- **Coverage:** packages/ui/src/settings/data-controls.ts:31, apps/extension/src/options/index.ts:32 — PARTIAL: unit-tested; the download itself is not yet asserted end-to-end
 
 ## daily-use
 

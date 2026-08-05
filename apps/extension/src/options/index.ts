@@ -1,9 +1,11 @@
-import { renderSelfAudit, type PanelState } from '@okolos/ui'
+import { renderDataControls, renderSelfAudit, type PanelState } from '@okolos/ui'
 import { exportAll, openDb, wipeAll } from '@okolos/storage'
 
 /**
  * The options page is, first of all, the self-audit panel: the product's
- * central claim in a form the user can read and export.
+ * central claim in a form the user can read and export. Beneath it sit the
+ * data controls, so "you own what this stores" is something a person can act
+ * on rather than a sentence in a README.
  */
 
 const root = document.getElementById('root')
@@ -26,6 +28,14 @@ async function paint(state: PanelState): Promise<void> {
       onExport: () => void download(),
       onRepair: () => void reload(),
     }),
+    renderDataControls(document, {
+      onExport: download,
+      onWipe: async () => {
+        const db = await openDb()
+        return wipeAll(db)
+      },
+      onWiped: () => void reload(),
+    }),
   )
 }
 
@@ -43,14 +53,6 @@ async function download(): Promise<void> {
 async function reload(): Promise<void> {
   await paint({ kind: 'loading' })
   await paint(await load())
-}
-
-/** Exposed for the wipe control that lands with the settings screen (M6). */
-export async function wipe(): Promise<void> {
-  const db = await openDb()
-  const result = await wipeAll(db)
-  if (!result.ok) throw new Error(`could not clear: ${result.failed.join(', ')}`)
-  await reload()
 }
 
 void reload()

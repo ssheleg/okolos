@@ -322,3 +322,26 @@ happens before adding.
   package `dist/`. Test fixtures contain deliberate examples of the calls these
   gates forbid, so the artefact the gate reads was carrying its own false
   positives. Tests are now excluded from every built package.
+
+### 2026-08-05 — fourteen documents that were never there
+
+- **Symptom:** every screen record named a wireframe at `wireframes/SCR-NN.md`.
+  The directory did not exist. Fourteen dangling paths, from the first commit.
+- **Surfaced at:** a backlog sweep. Not by the linter, which validates markdown
+  links `[text](path)` and never looked at a bare path in a field.
+- **Owned by:** the linter, and worth stating precisely: it checked the form of
+  a reference rather than the fact of it, so a whole class of reference was
+  invisible to it.
+- **Fix, by grade:** the wireframes are now generated from the renderers by
+  `pnpm wireframes`, and a test asserts the committed files still match. A
+  screen that gains a control fails the build until its wireframe is
+  regenerated. Hand-writing them was the obvious alternative and the wrong one:
+  a wireframe for a screen that is already built is a fourth copy of the truth —
+  after the code, the scenario and the screen record — and the one nobody
+  updates.
+- **The trap the generator test almost fell into:** two empty strings compare
+  equal, so a silently-failing extraction would have turned all fourteen
+  assertions green on nothing. A separate test requires every screen to yield
+  more than two elements.
+- **Catches it next time:** `docs/ux/lint.py` now errors on a named wireframe
+  that is not on disk, and `tools/wireframes.test.ts` on one that is stale.

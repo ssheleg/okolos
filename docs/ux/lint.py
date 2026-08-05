@@ -205,6 +205,13 @@ def main() -> int:
                     frame = cells[1] if len(cells) >= 2 else ""
                     if not frame or frame in ("-", "—", "<frame deep-link>", "<frame link>"):
                         err(f"screens.md: {sid} state '{state}' has no Figma frame link")
+            # The wireframe path is a bare path, not a markdown link, so the
+            # link checker never looked at it — and fourteen of them pointed at
+            # files that did not exist.
+            wf_m = re.search(r"\*\*Wireframe:\*\*\s*(\S+)", body)
+            if wf_m and not (ux / wf_m.group(1)).exists():
+                err(f"screens.md: {sid} names a wireframe that is not there -> {wf_m.group(1)}")
+
             cov_m = re.search(r"\*\*Coverage:\*\*\s*(.+)", body)
             cov = cov_m.group(1).strip() if cov_m else ""
             if status == "built" and (not cov or cov.lower().startswith("none")):

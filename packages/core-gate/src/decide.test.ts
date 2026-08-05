@@ -5,6 +5,7 @@ import {
   resolveGate,
   type AgentAction,
   type GateAssessment,
+  type GateDecision,
   type UnresolvedFinding,
 } from './decide.js'
 
@@ -28,20 +29,37 @@ function action(overrides: Partial<AgentAction> = {}): AgentAction {
 const never = () => new Promise<never>(() => {})
 const pending = new Promise<void>(() => {})
 
-function asked(assessment: GateAssessment): assessment is Extract<GateAssessment, { ask: true }> {
-  return assessment.ask
+/**
+ * Narrows and asserts in one move.
+ *
+ * The obvious idiom — `if (!assessment.ask) { expect(...) }` — type-checks and
+ * quietly stops testing the moment the branch is not taken: nothing inside runs
+ * and the test still passes. These throw instead, so a wrong shape is a failure
+ * with a sentence rather than an absence of assertions.
+ */
+function settled(assessment: GateAssessment): GateDecision {
+  if (assessment.ask) {
+    throw new Error('expected an assessment that settles on its own, got one that asks a human')
+  }
+  return assessment.decision
+}
+
+function asking(assessment: GateAssessment): Extract<GateAssessment, { ask: true }> {
+  if (!assessment.ask) {
+    throw new Error(
+      `expected the gate to ask, but it settled: ${assessment.decision.reason}`,
+    )
+  }
+  return assessment
 }
 
 describe('when the gate stays out of the way', () => {
   it('does not open on a page with nothing unresolved', () => {
     // The gate is scoped to compromised pages. Opening it anywhere else would
     // make the product unusable, and an unusable guard gets uninstalled.
-    const assessment = assessAction(action(), [])
-    expect(assessment.ask).toBe(false)
-    if (!asked(assessment)) {
-      expect(assessment.decision.outcome).toBe('ungated')
-      expect(assessment.decision.reason).toBe('no-finding')
-    }
+    const decision = settled(assessAction(action(), []))
+    expect(decision.outcome).toBe('ungated')
+    expect(decision.reason).toBe('no-finding')
   })
 
   it('does not open on a finding the user already handled', () => {
@@ -52,46 +70,41 @@ describe('when the gate stays out of the way', () => {
   it('lets a person act on their own page', () => {
     // A human who clicks their own button has already made the decision the
     // gate exists to obtain. Only actions no human initiated are held.
-    const assessment = assessAction(action({ humanGesture: true }), [FINDING])
-    expect(assessment.ask).toBe(false)
-    if (!asked(assessment)) expect(assessment.decision.reason).toBe('human-gesture')
+    expect(settled(assessAction(action({ humanGesture: true }), [FINDING])).reason).toBe(
+      'human-gesture',
+    )
   })
 })
 
 describe('when the gate opens', () => {
   it('holds a scripted action on a page with an unresolved finding', () => {
-    const assessment = assessAction(action(), [FINDING])
-    expect(assessment.ask).toBe(true)
-    if (asked(assessment)) expect(assessment.findings).toEqual([FINDING])
+    expect(asking(assessAction(action(), [FINDING])).findings).toEqual([FINDING])
   })
 
   it('names the action and the finding, so the modal has something to say', () => {
-    const assessment = assessAction(action(), [FINDING])
-    if (asked(assessment)) {
-      expect(assessment.action.description).toBe('Submit the payment form')
-      expect(assessment.findings[0]?.summary).toContain('approve a transfer')
-    }
+    const assessment = asking(assessAction(action(), [FINDING]))
+    expect(assessment.action.description).toBe('Submit the payment form')
+    expect(assessment.findings[0]?.summary).toContain('approve a transfer')
   })
 })
 
 describe('an action nobody can identify', () => {
   it('is blocked without asking — there is no question to put to the user', () => {
-    const assessment = assessAction(action({ kind: 'unknown' }), [FINDING])
-    expect(assessment.ask).toBe(false)
-    if (!asked(assessment)) {
-      expect(assessment.decision.outcome).toBe('blocked')
-      expect(assessment.decision.reason).toBe('unidentified')
-    }
+    const decision = settled(assessAction(action({ kind: 'unknown' }), [FINDING]))
+    expect(decision.outcome).toBe('blocked')
+    expect(decision.reason).toBe('unidentified')
   })
 
   it('says what could not be determined rather than failing mutely', () => {
-    const assessment = assessAction(action({ kind: 'unknown' }), [FINDING])
-    if (!asked(assessment)) expect(assessment.decision.explain).toMatch(/what kind of action/i)
+    expect(settled(assessAction(action({ kind: 'unknown' }), [FINDING])).explain).toMatch(
+      /what kind of action/i,
+    )
   })
 
   it('treats a blank description the same way', () => {
-    const assessment = assessAction(action({ description: '   ' }), [FINDING])
-    if (!asked(assessment)) expect(assessment.decision.reason).toBe('unidentified')
+    expect(settled(assessAction(action({ description: '   ' }), [FINDING])).reason).toBe(
+      'unidentified',
+    )
   })
 })
 

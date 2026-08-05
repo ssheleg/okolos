@@ -441,3 +441,24 @@ happens before adding.
   `toBeGreaterThan(0)`. A branch that genuinely cannot be asserted belongs in a
   unit test where the condition can be constructed, not in an end-to-end run
   where it is left to chance.
+
+### 2026-08-05 — the same shape again, thirteen times, in unit tests
+
+- **Symptom:** thirteen assertions across `core-gate` and `core-feeds` sat
+  inside `if (!outcome.accepted) { … }` and `if (asked(assessment)) expect(…)`.
+  When the branch is not taken the assertions do not run and the test passes.
+- **Surfaced at:** a sweep for the pattern, one iteration after finding it in
+  an end-to-end spec. The same hand wrote both.
+- **Root cause, precisely:** TypeScript needs the discriminant narrowed before
+  the union's fields are reachable, and `if` is the first tool that comes to
+  hand. It narrows and it skips, and only the narrowing is intended.
+- **Fix, by grade:** narrowing helpers that throw — `settled()`, `asking()`,
+  `refusal()`, `accepted()`. They narrow identically and turn a wrong shape into
+  a failure with a sentence naming what came instead. Flipping the
+  human-gesture rule now reports "expected an assessment that settles on its
+  own, got one that asks a human" rather than passing.
+- **Catches it next time:** `tools/test-quality.test.ts` sweeps every unit test
+  and every spec in the repository — found rather than listed — for both shapes:
+  `if (x) expect(…)` and an `if` block opening on an assertion. It also asserts
+  it found something to check, because a sweep over an empty list is the same
+  vacuous green in a different costume.

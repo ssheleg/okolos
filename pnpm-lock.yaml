@@ -44,6 +44,12 @@ importers:
 
   packages/contracts: {}
 
+  packages/core-injection:
+    dependencies:
+      '@okolos/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+
   packages/net:
     dependencies:
       '@okolos/contracts':

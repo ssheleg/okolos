@@ -12,6 +12,9 @@
     },
     {
       "path": "packages/platform"
+    },
+    {
+      "path": "packages/core-injection"
     }
   ]
 }

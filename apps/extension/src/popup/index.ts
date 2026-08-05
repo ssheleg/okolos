@@ -22,12 +22,19 @@ let expanded = false
 async function load(): Promise<PopupState> {
   try {
     const db = await openDb()
-    const [findings, journal, setting, activeUrl] = await Promise.all([
+    const [findings, journal, setting, settings, activeUrl] = await Promise.all([
       db.getAll('findings'),
       db.getAll('journal'),
       db.get('settings', LAST_CHECK_KEY),
+      db.getAll('settings'),
       platform.tabs.activeUrl().catch(() => null),
     ])
+
+    const deferrals = new Map(
+      settings
+        .filter((row) => row.key.startsWith('defer:') && typeof row.value === 'string')
+        .map((row) => [row.key.slice('defer:'.length), row.value as string]),
+    )
 
     return buildPopupState({
       findings,
@@ -35,6 +42,8 @@ async function load(): Promise<PopupState> {
       activeUrl,
       lastCheck: typeof setting?.value === 'string' ? setting.value : null,
       expanded,
+      deferrals,
+      now: new Date().toISOString(),
     })
   } catch (cause) {
     return { kind: 'error', message: String(cause) }
@@ -46,6 +55,21 @@ function paint(state: PopupState): void {
   root.replaceChildren(
     renderPopup(document, state, {
       onAct: (itemId) => void openFinding(itemId),
+      onResolve: (itemId) => {
+        void (async () => {
+          await platform.runtime.send('finding/resolve', { id: itemId })
+          await reload()
+        })()
+      },
+      onDefer: (itemId) => {
+        void (async () => {
+          // Tomorrow, not forever: "not now" that never comes back is the same
+          // as dismissing, and the user did not say that.
+          const until = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+          await platform.runtime.send('finding/defer', { id: itemId, until })
+          await reload()
+        })()
+      },
       onShowAll: () => {
         expanded = true
         void reload()

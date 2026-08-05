@@ -8,6 +8,8 @@ function handlers(overrides: Partial<PopupHandlers> = {}): PopupHandlers {
   return {
     onAct: vi.fn(),
     onShowAll: vi.fn(),
+    onResolve: vi.fn(),
+    onDefer: vi.fn(),
     onWhatChanged: vi.fn(),
     onOpen: vi.fn(),
     onRepair: vi.fn(),

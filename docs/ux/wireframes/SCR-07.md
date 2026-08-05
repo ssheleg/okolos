@@ -10,11 +10,14 @@
 
 - `queue`
 - `item`
+- `item-actions`
 - `queue-empty`
 - `ranking-note`
 - `show-all`
-- `summary`
 - `act`
+- `resolve`
+- `defer`
+- `summary`
 
 **States**
 

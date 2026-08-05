@@ -122,6 +122,19 @@ async function queueSection(): Promise<HTMLElement> {
           queueExpanded = true
           void reload()
         },
+        onResolve: (id: string) => {
+          void (async () => {
+            await platform.runtime.send('finding/resolve', { id })
+            await reload()
+          })()
+        },
+        onDefer: (id: string) => {
+          void (async () => {
+            const until = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+            await platform.runtime.send('finding/defer', { id, until })
+            await reload()
+          })()
+        },
       }),
     )
   } catch (cause) {

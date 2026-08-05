@@ -164,3 +164,41 @@ describe('subject keys', () => {
     expect(subjectOf('not a url')).toBeNull()
   })
 })
+
+describe('"not now" survives the popup closing', () => {
+  it('ranks a deferred finding last', () => {
+    const findings = [finding({ id: 'deferred' }), finding({ id: 'ordinary' })]
+    const state = buildPopupState(
+      inputs({
+        findings,
+        deferrals: new Map([['deferred', '2026-08-06T12:00:00.000Z']]),
+        now: '2026-08-05T12:00:00.000Z',
+      }),
+    )
+    expect(state.queue.shown[0]?.id).toBe('ordinary')
+  })
+
+  it('brings it back when its time is up', () => {
+    const state = buildPopupState(
+      inputs({
+        findings: [finding({ id: 'deferred' })],
+        deferrals: new Map([['deferred', '2026-08-04T12:00:00.000Z']]),
+        now: '2026-08-05T12:00:00.000Z',
+      }),
+    )
+    expect(state.queue.shown[0]?.id).toBe('deferred')
+  })
+
+  it('still counts it, because deferring is not resolving', () => {
+    // A "not now" that removed the item would be a dismissal the user never
+    // asked for.
+    const state = buildPopupState(
+      inputs({
+        findings: [finding({ id: 'deferred' })],
+        deferrals: new Map([['deferred', '2026-08-06T12:00:00.000Z']]),
+        now: '2026-08-05T12:00:00.000Z',
+      }),
+    )
+    expect(state.queue.shown).toHaveLength(1)
+  })
+})

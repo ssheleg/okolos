@@ -11,6 +11,12 @@ import type { Severity } from '@okolos/contracts'
  * Ranking is severity first, then how easily a thing can be finished, then how
  * fresh it is. The middle term is deliberate: between two equal problems, the
  * one that takes a click is the one that actually gets done.
+ *
+ * "Not now" is the other half of a finishable list. Without it the only way to
+ * clear something you cannot deal with today is to resolve it dishonestly, and
+ * a queue people lie to stops being a queue. A deferred item is not hidden — it
+ * ranks last until its time is up, and the count of what is held back still
+ * includes it.
  */
 
 export const QUEUE_LIMIT = 3
@@ -25,6 +31,8 @@ export interface QueueItem {
   readonly fixability?: Fixability
   readonly summary: string
   readonly actionLabel?: string
+  /** ISO time until which the user asked not to be shown this. */
+  readonly deferredUntil?: string
 }
 
 /** `severity-only` means one or more items could not be ranked in full. */
@@ -39,12 +47,26 @@ export interface Queue {
 const SEVERITY_WEIGHT: Record<Severity, number> = { critical: 3, major: 2, minor: 1, info: 0 }
 const FIXABILITY_WEIGHT: Record<Fixability, number> = { 'one-click': 2, guided: 1, manual: 0 }
 
-export function buildQueue(items: readonly QueueItem[], limit = QUEUE_LIMIT): Queue {
+export function buildQueue(
+  items: readonly QueueItem[],
+  limit = QUEUE_LIMIT,
+  /** ISO now, supplied by the caller: a ranker that reads the clock is untestable. */
+  now = '',
+): Queue {
   const rankedBy: RankingBasis = items.every((item) => item.fixability !== undefined)
     ? 'full'
     : 'severity-only'
 
+  const deferred = (item: QueueItem): boolean =>
+    item.deferredUntil !== undefined && now !== '' && item.deferredUntil > now
+
   const ordered = [...items].sort((a, b) => {
+    // Deferred items go last, whatever else is true of them. The user has
+    // already said "not today" and repeating the question is how a queue earns
+    // being ignored.
+    const byDeferral = Number(deferred(a)) - Number(deferred(b))
+    if (byDeferral !== 0) return byDeferral
+
     const bySeverity = SEVERITY_WEIGHT[b.severity] - SEVERITY_WEIGHT[a.severity]
     if (bySeverity !== 0) return bySeverity
 

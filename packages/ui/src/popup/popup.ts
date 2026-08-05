@@ -32,6 +32,8 @@ export type PopupState =
 export interface PopupHandlers {
   readonly onAct: (itemId: string) => void
   readonly onShowAll: () => void
+  readonly onResolve: (itemId: string) => void
+  readonly onDefer: (itemId: string) => void
   readonly onWhatChanged: () => void
   readonly onOpen: (target: 'self-audit' | 'journal' | 'settings') => void
   readonly onRepair: () => void
@@ -68,7 +70,14 @@ export function renderPopup(
   root.setAttribute('data-verdict', state.page.verdict)
   root.append(text(doc, 'verdict', state.page.reason))
   root.append(changedLine(doc, state.changed, state.lastCheck, handlers))
-  root.append(renderQueue(doc, state.queue, { onAct: handlers.onAct, onShowAll: handlers.onShowAll }))
+  root.append(
+    renderQueue(doc, state.queue, {
+      onAct: handlers.onAct,
+      onShowAll: handlers.onShowAll,
+      onResolve: handlers.onResolve,
+      onDefer: handlers.onDefer,
+    }),
+  )
   root.append(footer(doc, handlers))
   return root
 }

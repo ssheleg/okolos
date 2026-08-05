@@ -156,3 +156,45 @@ test('SCN-021 — an empty diff names the moment it is empty since', async ({
   await expect(journal.locator('[data-role=empty]')).toContainText('2026-08-04')
   await expect(journal.locator('[data-role=retention]')).toContainText('90 days')
 })
+
+test('SCN-022 — an item can be finished, and the next one takes its place', async ({
+  context,
+  extensionId,
+}) => {
+  // The queue's whole promise is a list you can finish. Until these controls
+  // existed the only action opened the page, so it could be read and never
+  // cleared.
+  const page = await context.newPage()
+  await page.goto(`chrome-extension://${extensionId}/popup.html`)
+  await seed(page, { findings: Array.from({ length: 4 }, (_, i) => finding(`f${i}`)) })
+  await page.reload()
+
+  await expect(page.locator('[data-role=item]')).toHaveCount(3)
+  await expect(page.locator('[data-role=show-all]')).toContainText('1 more')
+
+  await page.locator('[data-role=item] [data-role=resolve]').first().click()
+
+  // Three still shown, because the fourth was promoted — and nothing is held
+  // back any more.
+  await expect(page.locator('[data-role=item]')).toHaveCount(3)
+  await expect(page.locator('[data-role=show-all]')).toHaveCount(0)
+})
+
+test('SCN-022 — "not now" moves an item without pretending it is gone', async ({
+  context,
+  extensionId,
+}) => {
+  const page = await context.newPage()
+  await page.goto(`chrome-extension://${extensionId}/popup.html`)
+  await seed(page, {
+    findings: [finding('critical', 'critical'), finding('minor', 'minor')],
+  })
+  await page.reload()
+
+  await expect(page.locator('[data-role=item]').first()).toHaveAttribute('data-severity', 'critical')
+  await page.locator('[data-role=item] [data-role=defer]').first().click()
+
+  // Still two items: deferring is not dismissing. The worse one is simply last.
+  await expect(page.locator('[data-role=item]')).toHaveCount(2)
+  await expect(page.locator('[data-role=item]').first()).toHaveAttribute('data-severity', 'minor')
+})

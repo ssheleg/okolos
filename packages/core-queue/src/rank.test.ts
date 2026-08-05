@@ -135,3 +135,50 @@ describe('resolving the top item', () => {
     expect(after.hidden).toBe(1)
   })
 })
+
+describe('"not now"', () => {
+  const NOW = '2026-08-05T12:00:00.000Z'
+  const later = '2026-08-06T12:00:00.000Z'
+
+  it('sends a deferred item to the back, whatever its severity', () => {
+    // Without this the only way to clear something you cannot deal with today
+    // is to resolve it dishonestly, and a queue people lie to is not a queue.
+    const queue = buildQueue(
+      [
+        item({ id: 'deferred', severity: 'critical', deferredUntil: later }),
+        item({ id: 'ordinary', severity: 'minor' }),
+      ],
+      3,
+      NOW,
+    )
+    expect(queue.shown.map((entry) => entry.id)).toEqual(['ordinary', 'deferred'])
+  })
+
+  it('brings it back once its time is up', () => {
+    const queue = buildQueue(
+      [
+        item({ id: 'deferred', severity: 'critical', deferredUntil: '2026-08-04T00:00:00.000Z' }),
+        item({ id: 'ordinary', severity: 'minor' }),
+      ],
+      3,
+      NOW,
+    )
+    expect(queue.shown[0]?.id).toBe('deferred')
+  })
+
+  it('still counts it, because deferring is not hiding', () => {
+    const items = [
+      ...many(3),
+      item({ id: 'deferred', deferredUntil: later }),
+    ]
+    expect(buildQueue(items, 3, NOW).hidden).toBe(1)
+  })
+
+  it('ignores deferral when the caller gives no clock, rather than guessing', () => {
+    const queue = buildQueue(
+      [item({ id: 'deferred', severity: 'critical', deferredUntil: later }), item({ id: 'ordinary', severity: 'minor' })],
+      3,
+    )
+    expect(queue.shown[0]?.id).toBe('deferred')
+  })
+})

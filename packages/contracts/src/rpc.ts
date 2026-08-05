@@ -67,6 +67,10 @@ export interface RpcMap {
   }
   'extensions/disable': { req: { id: string }; res: { ok: boolean; why?: string } }
   'extensions/trust': { req: { id: string }; res: { ok: true } }
+  /** The user dealt with a finding; it leaves the queue. */
+  'finding/resolve': { req: { id: string }; res: { ok: true } }
+  /** Not today. It ranks last until the given time rather than disappearing. */
+  'finding/defer': { req: { id: string; until: string }; res: { ok: true } }
   'site/facts': { req: { host: string }; res: { trusted: boolean; firstSeen: string | null } }
   'trap/warned': { req: { kind: string; signals: string }; res: { ok: true } }
   'recovery/open': { req: { kind: string }; res: { ok: true } }

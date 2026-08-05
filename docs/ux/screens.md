@@ -164,7 +164,7 @@ self-audit panel.
   | success | items exist | - | max 3 shown; the rest behind "show all" |
 - **Behavior notes:** the queue never exceeds three visible items — this is the anti-pattern this product exists to avoid (203 alerts, nothing done)
 - **Wireframe:** wireframes/SCR-07.md
-- **Coverage:** packages/core-queue/src/rank.ts:41, packages/ui/src/popup/popup.ts:92, e2e/scn-020.spec.ts:77
+- **Coverage:** packages/core-queue/src/rank.ts:52, packages/ui/src/queue/queue.ts:30, e2e/scn-020.spec.ts:160
 - **Scenarios:** SCN-002, SCN-022
 - **Resources:** priority scorer, action registry
 - **Status:** built

@@ -524,3 +524,27 @@ happens before adding.
   unit rule only looked for `if (x) expect(…)`, so it sailed through. It now
   looks for bare early returns too, and the exception is applied where the test
   is created rather than inside one that exists and gives up.
+
+### 2026-08-05 — the finishable list with no finishing move
+
+- **Symptom:** SCR-07's record had promised per-item "resolve" and "not now"
+  since it was designed. Neither existed. The queue's only control opened the
+  page, so a user could read the list forever and never clear it.
+- **Surfaced at:** sweeping the Elements line of every screen record against the
+  literal labels its renderer produces — the third level of the same method that
+  found an analyser with no caller and a verdict announced to nobody.
+- **Owned by:** stage 5. The queue was built around its central claim, "at most
+  three things", and the claim it forgot is the one that makes three a number
+  worth having: that the list ends.
+- **Fix, by grade:** "Done" resolves the finding and the next item is promoted;
+  "Not now" ranks it last for a day. Deferring is deliberately not hiding — the
+  item stays in the count, because a "not now" that removed it would be a
+  dismissal the user never asked for, and a queue people have to lie to stops
+  being a queue.
+- **Where the deferral lives:** beside the finding, in settings, not inside it.
+  The finding record is what the detector saw; "the user is not ready today" is
+  not a fact about the page.
+- **What the sweep also found, unfixed and now written down:** SCR-08 promises
+  grouping by fresh-versus-historical and the actions "Change password" and
+  "Check reuse"; SCR-12 promises a trusted-domain list. All three are real gaps
+  between record and screen, recorded rather than quietly closed.

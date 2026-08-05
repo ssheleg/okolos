@@ -9,11 +9,19 @@ import type { Queue, QueueItem } from '@okolos/core-queue'
  *
  * Everything the ranker held back is counted out loud. A hidden remainder is
  * how an inbox of 203 alerts starts.
+ *
+ * Each item carries the two verbs that let the list actually end: "Done" and
+ * "Not now". Until they existed the only control opened the page, so the queue
+ * could be read and never cleared — a finishable list with no finishing move.
  */
 
 export interface QueueHandlers {
   readonly onAct: (itemId: string) => void
   readonly onShowAll: () => void
+  /** The user has dealt with it. It leaves the queue and the next item rises. */
+  readonly onResolve: (itemId: string) => void
+  /** Not today. It ranks last for a while rather than disappearing. */
+  readonly onDefer: (itemId: string) => void
 }
 
 export function renderQueue(doc: Document, queue: Queue, handlers: QueueHandlers): HTMLElement {
@@ -51,10 +59,15 @@ function row(doc: Document, item: QueueItem, handlers: QueueHandlers): HTMLEleme
   const el = doc.createElement('article')
   el.setAttribute('data-role', 'item')
   el.setAttribute('data-severity', item.severity)
-  el.append(
-    text(doc, 'summary', item.summary),
+  const actions = doc.createElement('div')
+  actions.setAttribute('data-role', 'item-actions')
+  actions.append(
     button(doc, 'act', item.actionLabel ?? 'Open', () => handlers.onAct(item.id)),
+    button(doc, 'resolve', 'Done', () => handlers.onResolve(item.id)),
+    button(doc, 'defer', 'Not now', () => handlers.onDefer(item.id)),
   )
+
+  el.append(text(doc, 'summary', item.summary), actions)
   return el
 }
 

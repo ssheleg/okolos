@@ -19,7 +19,11 @@ export interface MappedJournal {
   readonly unreadable: number
 }
 
-export function toQueueItems(findings: readonly FindingRecord[]): QueueItem[] {
+export function toQueueItems(
+  findings: readonly FindingRecord[],
+  /** `defer:<id>` settings, so "not now" survives the popup closing. */
+  deferrals: ReadonlyMap<string, string> = new Map(),
+): QueueItem[] {
   return findings
     .filter((finding) => finding.resolvedAt === null)
     .map((finding) => {
@@ -36,6 +40,7 @@ export function toQueueItems(findings: readonly FindingRecord[]): QueueItem[] {
         // Absent on purpose when there is no verdict to read it from: the queue
         // then says it is ranking by severity alone rather than implying more.
         ...(verdict ? { fixability: 'one-click' as const } : {}),
+        ...(deferrals.has(finding.id) ? { deferredUntil: deferrals.get(finding.id) as string } : {}),
       }
       return item
     })
@@ -79,11 +84,18 @@ export interface PopupInputs {
   readonly activeUrl: string | null
   readonly lastCheck: string | null
   readonly expanded: boolean
+  readonly deferrals?: ReadonlyMap<string, string>
+  /** ISO now. Without it the ranker cannot tell a live deferral from a stale one. */
+  readonly now?: string
 }
 
 export function buildPopupState(inputs: PopupInputs): ReadyState {
-  const items = toQueueItems(inputs.findings)
-  const queue = buildQueue(items, inputs.expanded ? Math.max(items.length, QUEUE_LIMIT) : QUEUE_LIMIT)
+  const items = toQueueItems(inputs.findings, inputs.deferrals)
+  const queue = buildQueue(
+    items,
+    inputs.expanded ? Math.max(items.length, QUEUE_LIMIT) : QUEUE_LIMIT,
+    inputs.now ?? '',
+  )
   const { entries, unreadable } = mapJournal(inputs.journal)
 
   return {

@@ -50,6 +50,10 @@ platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>) => {
       return disableExtension(message.payload as { id: string }) as Promise<RpcMap[T]['res']>
     case 'extensions/trust':
       return trustExtensionChange(message.payload as { id: string }) as Promise<RpcMap[T]['res']>
+    case 'finding/resolve':
+      return resolveFinding(message.payload as { id: string }) as Promise<RpcMap[T]['res']>
+    case 'finding/defer':
+      return deferFinding(message.payload as { id: string; until: string }) as Promise<RpcMap[T]['res']>
     case 'site/facts':
       return siteFacts(message.payload as { host: string }) as Promise<RpcMap[T]['res']>
     case 'trap/warned':
@@ -413,6 +417,33 @@ async function trustExtensionChange(payload: { id: string }): Promise<{ ok: true
     })
   } catch (cause) {
     console.warn('okolos: could not record the accepted change', cause)
+  }
+  return { ok: true }
+}
+
+async function resolveFinding(payload: { id: string }): Promise<{ ok: true }> {
+  try {
+    const db = await openDb()
+    const finding = await db.get('findings', payload.id)
+    if (finding) await db.put('findings', { ...finding, resolvedAt: new Date().toISOString() })
+  } catch (cause) {
+    console.warn('okolos: could not resolve a finding', cause)
+  }
+  return { ok: true }
+}
+
+/**
+ * Deferral is kept beside the finding rather than inside it: the record is
+ * what the detector saw, and "the user is not ready today" is not a fact about
+ * the page. It also means a wipe of settings clears deferrals without touching
+ * the findings themselves.
+ */
+async function deferFinding(payload: { id: string; until: string }): Promise<{ ok: true }> {
+  try {
+    const db = await openDb()
+    await db.put('settings', { key: `defer:${payload.id}`, value: payload.until })
+  } catch (cause) {
+    console.warn('okolos: could not defer a finding', cause)
   }
   return { ok: true }
 }

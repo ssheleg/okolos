@@ -375,7 +375,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** error, success
 - **Errors & recovery:** store metadata itself is unreachable -> system states that the publisher could not be verified and keeps the previous baseline rather than assuming a change
 - **Status:** implemented
-- **Coverage:** packages/core-extensions/src/analyse.ts:31, packages/ui/src/extensions/extensions.ts:70, e2e/scn-017.spec.ts:28
+- **Coverage:** packages/core-extensions/src/analyse.ts:38, packages/ui/src/extensions/extensions.ts:117, e2e/scn-017.spec.ts:50
 
 ## privacy
 

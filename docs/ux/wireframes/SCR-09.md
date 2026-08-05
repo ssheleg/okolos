@@ -11,6 +11,9 @@
 - `extensions`
 - `installed`
 - `installed-row`
+- `analysis`
+- `inspect`
+- `finding`
 - `change`
 - `change-actions`
 - `unsupported`
@@ -18,11 +21,14 @@
 - `error`
 - `error-note`
 - `no-changes`
-- `analysis-note`
 - `name`
 - `permissions`
 - `disable`
 - `disabled`
+- `analysis-note`
+- `analysis-summary`
+- `evidence`
+- `analysis-caveat`
 - `detail`
 - `trust`
 

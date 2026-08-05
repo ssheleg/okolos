@@ -462,3 +462,30 @@ happens before adding.
   `if (x) expect(…)` and an `if` block opening on an assertion. It also asserts
   it found something to check, because a sweep over an empty list is the same
   vacuous green in a different costume.
+
+### 2026-08-05 — a requirement closed on a module nothing called
+
+- **Symptom:** `analysePackage` — the whole of REQ-24, obfuscation, `eval`,
+  remote code and endpoints — had no caller anywhere in the product. It was
+  written, exported, and covered by fixtures. Nothing in the extension ever ran
+  it, and the screen's `analysisNote` was hard-coded to `null`.
+- **Surfaced at:** a sweep for exported entry points with no call site, nine
+  iterations after the requirement was marked DONE.
+- **Owned by:** the acceptance bar. REQ-24's evidence was "unit на фикстурах",
+  and that bar was honestly met — which is exactly how a requirement gets closed
+  over unreachable code. A test proves a function works; only a caller proves it
+  runs.
+- **What the screen record already said:** SCR-09's Elements line listed
+  "Inspect package". It was never built, so the analyser had nowhere to be
+  called from and the field for its output stayed null. The record was right and
+  the screen was short of it.
+- **Fix, by grade:** the control exists. No browser hands one extension
+  another's code, so the only runtime path is a file the user chooses — read in
+  the page, analysed in the page, never uploaded. The screen now says that
+  outright instead of leaving a silent null, which would read as "nothing to
+  report" rather than "this cannot be done from here".
+- **Catches it next time:** an e2e feeds a real file through the control and
+  asserts findings appear. Before this commit there was no code path from the
+  product to the analyser at all, so nothing could have caught it — which is the
+  argument for sweeping exports against call sites rather than trusting the
+  ledger.

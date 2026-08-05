@@ -1,4 +1,4 @@
-import type { InventoryChange } from '@okolos/core-extensions'
+import { analysePackage, type InventoryChange, type PackageReport } from '@okolos/core-extensions'
 import { buildChecklist, type StepProgress } from '@okolos/core-recovery'
 import { diffSince } from '@okolos/core-queue'
 import { detectPlatform } from '@okolos/platform'
@@ -95,6 +95,9 @@ function leaksSection(): HTMLElement {
  */
 let queueExpanded = false
 
+/** The last package the user asked about. Nothing is kept across a reload. */
+let lastAnalysis: PackageReport | null = null
+
 async function queueSection(): Promise<HTMLElement> {
   const container = document.createElement('section')
   container.setAttribute('data-role', 'queue-section')
@@ -161,7 +164,10 @@ async function extensionsSection(): Promise<HTMLElement> {
           severity: change.severity as InventoryChange['severity'],
         })),
         installed: result.installed,
-        analysisNote: null,
+        analysis: lastAnalysis,
+        analysisNote:
+          'No browser hands one extension another’s code, so nothing here can be analysed on its own. ' +
+          'Choose a package you downloaded and it is read on this device — nothing is uploaded.',
       }
     }
   } catch (cause) {
@@ -181,6 +187,23 @@ async function extensionsSection(): Promise<HTMLElement> {
       onTrust: (id: string) => {
         void (async () => {
           await platform.runtime.send('extensions/trust', { id })
+          await reload()
+        })()
+      },
+      onInspect: (file: File) => {
+        void (async () => {
+          try {
+            // Read here, in the page, and analysed here. The file never reaches
+            // the background, let alone the network.
+            lastAnalysis = analysePackage(await file.text(), file.name)
+          } catch (cause) {
+            lastAnalysis = {
+              findings: [],
+              endpoints: [],
+              minified: false,
+              note: `That file could not be read: ${String(cause)}`,
+            }
+          }
           await reload()
         })()
       },

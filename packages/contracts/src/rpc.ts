@@ -53,6 +53,17 @@ export interface RpcMap {
       coverage: string
     }
   }
+  /** The extension inventory, its deltas, and the two actions on them. */
+  'extensions/state': {
+    req: Record<string, never>
+    res: {
+      supported: boolean
+      changes: Array<{ kind: string; id: string; name: string; detail: string; severity: string }>
+      installed: Array<{ id: string; name: string; version: string; permissions: string[]; enabled: boolean }>
+    }
+  }
+  'extensions/disable': { req: { id: string }; res: { ok: boolean; why?: string } }
+  'extensions/trust': { req: { id: string }; res: { ok: true } }
   'site/facts': { req: { host: string }; res: { trusted: boolean; firstSeen: string | null } }
   'trap/warned': { req: { kind: string; signals: string }; res: { ok: true } }
   'recovery/open': { req: { kind: string }; res: { ok: true } }

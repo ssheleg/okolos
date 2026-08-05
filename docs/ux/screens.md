@@ -14,19 +14,19 @@ self-audit panel.
 | ID | Screen | Used by | Figma | Status | Coverage |
 |----|--------|---------|-------|--------|----------|
 | SCR-01 | First-run check | FLW-01, FLW-14 | - | built | packages/ui/src/first-run/screen.ts:45 |
-| SCR-02 | Popup | FLW-17 | - | designed | none yet |
+| SCR-02 | Popup | FLW-17, FLW-11, FLW-13 | - | built | e2e/scn-020.spec.ts |
 | SCR-03 | In-page warning banner | FLW-02, FLW-05, FLW-06, FLW-07, FLW-08, FLW-09, FLW-10 | - | built | packages/ui/src/banner/banner.ts:52 |
 | SCR-04 | Finding inspector | FLW-02, FLW-03 | - | built | packages/ui/src/inspector/inspector.ts:57 |
 | SCR-05 | Block interstitial | FLW-04 | - | built | e2e/scn-007.spec.ts |
 | SCR-06 | Agent action gate | FLW-03 | - | built | e2e/scn-010.spec.ts |
 | SCR-07 | Findings queue | FLW-01, FLW-17 | - | built | e2e/scn-020.spec.ts, e2e/scn-002.spec.ts |
-| SCR-08 | Leaks and repair | FLW-10, FLW-11, FLW-16 | - | designed | none yet |
-| SCR-09 | Extensions watch | FLW-12 | - | designed | none yet |
+| SCR-08 | Leaks and repair | FLW-10, FLW-11, FLW-16 | - | built | e2e/scn-015.spec.ts |
+| SCR-09 | Extensions watch | FLW-12 | - | built | e2e/scn-017.spec.ts |
 | SCR-10 | Self-audit | FLW-13, FLW-17 | - | built | packages/ui/src/self-audit/panel.ts:26 |
 | SCR-11 | Journal and weekly diff | FLW-17 | - | built | e2e/scn-020.spec.ts |
 | SCR-12 | Settings | FLW-05, FLW-14 | - | built | packages/ui/src/settings/data-controls.ts:31 |
-| SCR-13 | Recovery checklist | FLW-06, FLW-07, FLW-16 | - | designed | none yet |
-| SCR-14 | Public domain status | FLW-04, FLW-15 | - | designed | none yet |
+| SCR-13 | Recovery checklist | FLW-06, FLW-07, FLW-16 | - | built | e2e/scn-025.spec.ts |
+| SCR-14 | Public domain status | FLW-04, FLW-15 | - | built | apps/status-page/src/render.test.ts |
 
 ## Design system
 
@@ -133,7 +133,7 @@ self-audit panel.
 - **Coverage:** packages/ui/src/interstitial/interstitial.ts:38, e2e/scn-007.spec.ts:39
 - **Scenarios:** SCN-007
 - **Resources:** feed metadata store, exception store
-- **Status:** designed
+- **Status:** built
 
 ### SCR-06: Agent action gate
 - **Used by:** FLW-03
@@ -181,10 +181,10 @@ self-audit panel.
   | error | a source failed | - | that row states unavailable + retry; other results stand |
   | success | results present | - | freshest first, historical collapsed |
 - **Wireframe:** wireframes/SCR-08.md
-- **Coverage:** none yet
+- **Coverage:** packages/ui/src/leaks/leaks.ts:47, packages/core-leaks/src/merge.ts:39, e2e/scn-015.spec.ts:12
 - **Scenarios:** SCN-014, SCN-015, SCN-016
 - **Resources:** source adapters (HIBP, XposedOrNot, Hudson Rock), local hash store, reuse index
-- **Status:** designed
+- **Status:** built
 
 ### SCR-09: Extensions watch
 - **Used by:** FLW-12
@@ -198,10 +198,10 @@ self-audit panel.
   | error | package could not be fetched | - | permission delta still shown; analysis marked unavailable |
   | success | inventory with deltas | - | deltas first, then the rest by risk |
 - **Wireframe:** wireframes/SCR-09.md
-- **Coverage:** none yet
+- **Coverage:** packages/ui/src/extensions/extensions.ts:44, packages/core-extensions/src/diff.ts:37, e2e/scn-017.spec.ts:12
 - **Scenarios:** SCN-017, SCN-018
 - **Resources:** management adapter, snapshot store, CRX static analyser
-- **Status:** designed
+- **Status:** built
 
 ### SCR-10: Self-audit
 - **Used by:** FLW-13, FLW-17
@@ -263,10 +263,10 @@ self-audit panel.
   | success | checklist active | - | one current step highlighted, rest visible |
 - **Behavior notes:** no time estimates, no reassurance copy, no scare copy; progress survives a browser restart
 - **Wireframe:** wireframes/SCR-13.md
-- **Coverage:** none yet
+- **Coverage:** packages/ui/src/recovery/recovery.ts:17, packages/core-recovery/src/checklist.ts:120, e2e/scn-025.spec.ts:8
 - **Scenarios:** SCN-025
 - **Resources:** playbook definitions, incident store
-- **Status:** designed
+- **Status:** built
 
 ### SCR-14: Public domain status
 - **Used by:** FLW-04 (from the interstitial), FLW-15
@@ -281,7 +281,7 @@ self-audit panel.
   | success | verdict found | - | verdict, source, date, appeal path |
 - **Behavior notes:** a public web page, not an extension surface; no account, no tracking, no analytics
 - **Wireframe:** wireframes/SCR-14.md
-- **Coverage:** none yet
+- **Coverage:** apps/status-page/src/render.ts:38, apps/proxy/src/router.ts:60, apps/status-page/src/render.test.ts:29
 - **Scenarios:** SCN-026
 - **Resources:** worker status endpoint, feed metadata
-- **Status:** designed
+- **Status:** built

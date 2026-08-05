@@ -11,6 +11,12 @@ export {
   type InspectorHandlers,
   type InspectorProps,
 } from './inspector/inspector.js'
+export {
+  renderExtensions,
+  type ExtensionRow,
+  type ExtensionsHandlers,
+  type ExtensionsState,
+} from './extensions/extensions.js'
 export { renderQueue, type QueueHandlers } from './queue/queue.js'
 export { renderLeaks, HIBP_ATTRIBUTION, type LeaksHandlers, type LeaksState } from './leaks/leaks.js'
 export { renderRecovery, type RecoveryHandlers } from './recovery/recovery.js'

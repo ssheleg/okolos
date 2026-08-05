@@ -6,8 +6,13 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"]
   },
   "include": ["src/**/*.ts"],
+  // Tests are not part of a built package, and shipping them puts their
+  // fixtures — including deliberate examples of the very calls the bundle
+  // gates forbid — inside the artefact those gates read.
+  "exclude": ["src/**/*.test.ts"],
   "references": [{ "path": "../contracts" },
     { "path": "../core-queue" },
     { "path": "../core-leaks" },
-    { "path": "../core-recovery" }]
+    { "path": "../core-recovery" },
+    { "path": "../core-extensions" }]
 }

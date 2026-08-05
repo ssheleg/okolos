@@ -285,3 +285,40 @@ happens before adding.
   later release names the release *and* the requirement, so the ledger row
   carries the obligation. A promise living only in a comment is not tracked by
   anything.
+
+### 2026-08-05 — a screen recorded as designed, and never built
+
+- **Symptom:** SCR-09 (extensions watch) sat at `designed` in `screens.md` while
+  SCN-017 and SCN-018 were marked implemented. The detection, the snapshot diff
+  and the journal entry all existed; the user could not see the list or turn
+  anything off.
+- **Surfaced at:** a backlog sweep, by reading the screen record rather than the
+  scenario table.
+- **Owned by:** stage 5 — the scenarios were marked implemented on the strength
+  of their detection half.
+- **Fix, by grade:** the screen is built, with a Disable that disables. A
+  security screen whose only verb is "review" leaves the user where they
+  started.
+- **Catches it next time:** the UX linter now flags a screen still marked
+  `designed` that already carries Coverage, and errors when the table row and
+  the record disagree — drift in the direction nobody notices, because the
+  record understates the product and no reader goes looking.
+
+### 2026-08-05 — the bundle scanner could not tell mention from use
+
+- **Symptom:** `core-extensions` could not ship. Its whole job is to search
+  other people's code for `document.cookie` and `localStorage.getItem`, and the
+  gate scans built output for those very tokens.
+- **Owned by:** the gate, which was a raw substring search.
+- **Fix, by grade:** the scan now strips comments, then regex literals, then
+  string literals, and reads what is left. A browser API cannot be called from
+  inside a string, so nothing is lost — asserted by a test that requires real
+  calls to still be caught, which stops the stripper from being "fixed" into
+  stripping everything. The two rejected alternatives were exempting the
+  package, which blinds the gate for everything in it, and splicing the string
+  literals so the scanner cannot read them, which makes the source worse to
+  satisfy a tool.
+- **Found on the way:** sixteen `*.test.js` files were being emitted into
+  package `dist/`. Test fixtures contain deliberate examples of the calls these
+  gates forbid, so the artefact the gate reads was carrying its own false
+  positives. Tests are now excluded from every built package.

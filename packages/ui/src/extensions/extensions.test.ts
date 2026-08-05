@@ -1,0 +1,120 @@
+/** @vitest-environment happy-dom */
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { InventoryChange } from '@okolos/core-extensions'
+
+import { renderExtensions, type ExtensionsHandlers, type ExtensionsState } from './extensions.js'
+
+function handlers(overrides: Partial<ExtensionsHandlers> = {}): ExtensionsHandlers {
+  return { onDisable: vi.fn(), onTrust: vi.fn(), ...overrides }
+}
+
+const CHANGE: InventoryChange = {
+  kind: 'permission-added',
+  id: 'abc',
+  name: 'Colour Picker',
+  detail: 'Colour Picker now asks for cookies, which it did not before.',
+  severity: 'critical',
+}
+
+const ROW = { id: 'abc', name: 'Colour Picker', version: '2.0.0', permissions: ['storage'], enabled: true }
+
+function render(state: ExtensionsState, h = handlers()): HTMLElement {
+  const el = renderExtensions(document, state, h)
+  document.body.append(el)
+  return el
+}
+
+const role = (root: HTMLElement, name: string) => root.querySelector<HTMLElement>(`[data-role=${name}]`)
+
+beforeEach(() => {
+  document.body.innerHTML = ''
+})
+
+describe('the delta comes first', () => {
+  it('shows what changed above the inventory', () => {
+    const el = render({ kind: 'ready', changes: [CHANGE], installed: [ROW], analysisNote: null })
+    const roles = [...el.querySelectorAll('[data-role=change], [data-role=installed]')].map((node) =>
+      node.getAttribute('data-role'),
+    )
+    expect(roles[0]).toBe('change')
+  })
+
+  it('says what the change actually was', () => {
+    const el = render({ kind: 'ready', changes: [CHANGE], installed: [], analysisNote: null })
+    expect(role(el, 'detail')?.textContent).toContain('cookies')
+  })
+
+  it('carries the severity, so the styling has something to key off', () => {
+    const el = render({ kind: 'ready', changes: [CHANGE], installed: [], analysisNote: null })
+    expect(role(el, 'change')?.getAttribute('data-severity')).toBe('critical')
+  })
+
+  it('says plainly when nothing changed', () => {
+    const el = render({ kind: 'ready', changes: [], installed: [ROW], analysisNote: null })
+    expect(role(el, 'no-changes')?.textContent).toMatch(/nothing has changed/i)
+  })
+})
+
+describe('the action is real', () => {
+  it('disables the extension the change was about', () => {
+    // A security screen whose only verb is "review" leaves the user exactly
+    // where they started.
+    const h = handlers()
+    const el = render({ kind: 'ready', changes: [CHANGE], installed: [], analysisNote: null }, h)
+    role(el, 'change-actions')?.querySelector<HTMLElement>('[data-role=disable]')?.click()
+    expect(h.onDisable).toHaveBeenCalledWith('abc')
+  })
+
+  it('lets the user accept a change instead', () => {
+    const h = handlers()
+    const el = render({ kind: 'ready', changes: [CHANGE], installed: [], analysisNote: null }, h)
+    role(el, 'trust')?.click()
+    expect(h.onTrust).toHaveBeenCalledWith('abc')
+  })
+
+  it('offers disabling from the inventory too, not only from a change', () => {
+    const h = handlers()
+    const el = render({ kind: 'ready', changes: [], installed: [ROW], analysisNote: null }, h)
+    role(el, 'installed')?.querySelector<HTMLElement>('[data-role=disable]')?.click()
+    expect(h.onDisable).toHaveBeenCalledWith('abc')
+  })
+
+  it('does not offer to disable something already off', () => {
+    const el = render({
+      kind: 'ready',
+      changes: [],
+      installed: [{ ...ROW, enabled: false }],
+      analysisNote: null,
+    })
+    expect(role(el, 'installed')?.querySelector('[data-role=disable]')).toBeNull()
+    expect(role(el, 'disabled')?.textContent).toMatch(/already off/i)
+  })
+})
+
+describe('what it will not claim', () => {
+  it('never shows an empty list in place of a failure', () => {
+    const el = render({ kind: 'error', message: 'the store is unreadable' })
+    expect(role(el, 'error-note')?.textContent).toMatch(/not a statement that nothing changed/i)
+    expect(role(el, 'no-changes')).toBeNull()
+  })
+
+  it('says when this browser will not answer at all', () => {
+    const el = render({ kind: 'unsupported', why: 'this browser does not let an extension read the others' })
+    expect(role(el, 'unsupported')?.textContent).toMatch(/does not let/i)
+  })
+
+  it('states when a package could not be read rather than implying it was clean', () => {
+    const el = render({
+      kind: 'ready',
+      changes: [],
+      installed: [ROW],
+      analysisNote: 'No package could be read, so nothing was analysed.',
+    })
+    expect(role(el, 'analysis-note')?.textContent).toMatch(/nothing was analysed/i)
+  })
+
+  it('is quiet about analysis when there is nothing to say', () => {
+    const el = render({ kind: 'ready', changes: [], installed: [ROW], analysisNote: null })
+    expect(role(el, 'analysis-note')).toBeNull()
+  })
+})

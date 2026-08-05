@@ -1,3 +1,4 @@
+import type { InventoryChange } from '@okolos/core-extensions'
 import { buildChecklist, type StepProgress } from '@okolos/core-recovery'
 import { diffSince } from '@okolos/core-queue'
 import { detectPlatform } from '@okolos/platform'
@@ -5,7 +6,9 @@ import { buildQueue } from '@okolos/core-queue'
 import { toQueueItems } from '../popup/state.js'
 import {
   renderDataControls,
+  renderExtensions,
   renderQueue,
+  type ExtensionsState,
   renderLeaks,
   type LeaksState,
   renderJournal,
@@ -130,6 +133,62 @@ async function queueSection(): Promise<HTMLElement> {
   return container
 }
 
+/**
+ * SCR-09. The review runs when the screen opens: this is the moment the user
+ * wants the current answer, not the one from last night's alarm.
+ */
+async function extensionsSection(): Promise<HTMLElement> {
+  let state: ExtensionsState
+  try {
+    const result = await platform.runtime.send('extensions/state', {})
+    if (!result) {
+      state = { kind: 'error', message: 'the background did not answer' }
+    } else if (!result.supported) {
+      state = {
+        kind: 'unsupported',
+        why: 'This browser does not let an extension read the others, so nothing can be watched here.',
+      }
+    } else {
+      state = {
+        kind: 'ready',
+        // The wire shape is deliberately loose (strings, not unions) so a newer
+        // background cannot break an older page; it is narrowed here, once.
+        changes: result.changes.map((change) => ({
+          kind: change.kind as InventoryChange['kind'],
+          id: change.id,
+          name: change.name,
+          detail: change.detail,
+          severity: change.severity as InventoryChange['severity'],
+        })),
+        installed: result.installed,
+        analysisNote: null,
+      }
+    }
+  } catch (cause) {
+    state = { kind: 'error', message: String(cause) }
+  }
+
+  const container = document.createElement('div')
+  container.append(
+    renderExtensions(document, state, {
+      onDisable: (id: string) => {
+        void (async () => {
+          const result = await platform.runtime.send('extensions/disable', { id })
+          if (result && !result.ok) window.alert(`Could not disable it: ${result.why ?? 'unknown reason'}`)
+          await reload()
+        })()
+      },
+      onTrust: (id: string) => {
+        void (async () => {
+          await platform.runtime.send('extensions/trust', { id })
+          await reload()
+        })()
+      },
+    }),
+  )
+  return container
+}
+
 async function paintCurrent(): Promise<void> {
   await paint(await load())
 }
@@ -247,6 +306,7 @@ async function paint(state: PanelState): Promise<void> {
     await recoverySection(),
     leaksSection(),
     await queueSection(),
+    await extensionsSection(),
     renderDataControls(document, {
       onExport: download,
       onWipe: async () => {

@@ -44,6 +44,12 @@ platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>) => {
       return handlePasswordCheck(message.payload as { sha1: string }) as Promise<RpcMap[T]['res']>
     case 'leaks/check':
       return handleLeakCheck(message.payload as { address: string }) as Promise<RpcMap[T]['res']>
+    case 'extensions/state':
+      return extensionsState() as Promise<RpcMap[T]['res']>
+    case 'extensions/disable':
+      return disableExtension(message.payload as { id: string }) as Promise<RpcMap[T]['res']>
+    case 'extensions/trust':
+      return trustExtensionChange(message.payload as { id: string }) as Promise<RpcMap[T]['res']>
     case 'site/facts':
       return siteFacts(message.payload as { host: string }) as Promise<RpcMap[T]['res']>
     case 'trap/warned':
@@ -331,6 +337,84 @@ async function readSetting(key: string): Promise<unknown> {
   } catch {
     return null
   }
+}
+
+async function extensionsState() {
+  if (!platform.extensions.available()) {
+    return { supported: false, changes: [], installed: [] }
+  }
+
+  // The review is run here rather than read from a cache: opening the screen is
+  // exactly the moment the user wants the current answer, and the comparison is
+  // cheap next to the wait they would otherwise not understand.
+  const changes = await reviewInventory({
+    db: await openDb(),
+    list: () => platform.extensions.list(),
+    now: () => new Date().toISOString(),
+    selfId: platform.extensions.selfId(),
+  }).catch(() => [])
+
+  const installed = (await platform.extensions.list()).filter(
+    (entry) => entry.id !== platform.extensions.selfId(),
+  )
+
+  return {
+    supported: true,
+    changes: changes.map((change) => ({ ...change })),
+    installed: installed.map((entry) => ({
+      id: entry.id,
+      name: entry.name,
+      version: entry.version,
+      permissions: [...entry.permissions],
+      enabled: entry.enabled,
+    })),
+  }
+}
+
+async function disableExtension(payload: { id: string }): Promise<{ ok: boolean; why?: string }> {
+  try {
+    await platform.extensions.disable(payload.id)
+  } catch (cause) {
+    // The browser refuses for policy-installed extensions, among others. Saying
+    // so beats a button that silently does nothing.
+    return { ok: false, why: cause instanceof Error ? cause.message : String(cause) }
+  }
+
+  try {
+    const db = await openDb()
+    const now = new Date().toISOString()
+    await db.put('journal', {
+      id: `extension-disabled:${payload.id}:${now}`,
+      createdAt: now,
+      kind: 'action',
+      detail: { explain: `You disabled the extension ${payload.id}.`, reason: 'user-blocked' },
+    })
+  } catch {
+    // The extension is off either way; the record is the lesser of the two.
+  }
+  return { ok: true }
+}
+
+async function trustExtensionChange(payload: { id: string }): Promise<{ ok: true }> {
+  try {
+    const db = await openDb()
+    const now = new Date().toISOString()
+    await db.put('exceptions', {
+      scope: 'extension',
+      ref: payload.id,
+      createdAt: now,
+      reason: 'the user accepted this change',
+    })
+    await db.put('journal', {
+      id: `extension-trusted:${payload.id}:${now}`,
+      createdAt: now,
+      kind: 'action',
+      detail: { explain: `You accepted the change to extension ${payload.id}.`, reason: 'user-allowed' },
+    })
+  } catch (cause) {
+    console.warn('okolos: could not record the accepted change', cause)
+  }
+  return { ok: true }
 }
 
 async function siteFacts(payload: { host: string }): Promise<{

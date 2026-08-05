@@ -49,10 +49,37 @@ function filesIn(pattern: string): string[] {
   return globSync(pattern, { cwd: root }).map((p) => path.join(root, p))
 }
 
+/**
+ * Removes string, template and regex literals, and comments.
+ *
+ * A browser API cannot be *called* from inside a string, so a token found
+ * there is a mention rather than a use — and one package's whole job is to
+ * mention them: the extension analyser searches other people's code for
+ * `document.cookie` and `localStorage.getItem`. Scanning the raw text made
+ * that package unshippable and the only alternatives were exempting it (which
+ * blinds the gate for everything in it) or splicing the strings so the scanner
+ * cannot read them (which makes the source worse to satisfy a tool).
+ *
+ * Stripping literals is the third option, and it narrows nothing: every real
+ * call still shows up, as the planted-defect check below asserts.
+ */
+function executable(source: string): string {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/\/\/[^\n]*/g, ' ')
+    // Regex literals last, and before the string passes above would have eaten
+    // their quotes: a pattern like /['"`]/ contains quote characters, and
+    // stripping strings first turns the rest of the file into nonsense.
+    .replace(/\/(?![*/])(?:[^/\\\n[]|\\.|\[(?:[^\]\\]|\\.)*\])+\/[gimsuy]*/g, '/re/')
+    .replace(/'(?:[^'\\\n]|\\.)*'/g, "''")
+    .replace(/"(?:[^"\\\n]|\\.)*"/g, '""')
+    .replace(/`(?:[^`\\]|\\.)*`/g, '``')
+}
+
 function offenders(files: string[], tokens: string[]): Array<{ file: string; token: string }> {
   const hits: Array<{ file: string; token: string }> = []
   for (const file of files) {
-    const source = readFileSync(file, 'utf8')
+    const source = executable(readFileSync(file, 'utf8'))
     for (const token of tokens) {
       if (source.includes(token)) hits.push({ file: path.relative(root, file), token })
     }
@@ -143,5 +170,24 @@ describe('what the shipped extension is made of', () => {
       ) as { manifest_version: number }
       expect(manifest.manifest_version).toBe(3)
     }
+  })
+})
+
+describe('the scanner reads code, not prose', () => {
+  it('loses a token that is only mentioned inside a string', () => {
+    expect(executable('const PATTERN = /document\\.cookie/')).not.toContain('document.')
+    expect(executable("const t = 'localStorage.getItem'")).not.toContain('localStorage')
+  })
+
+  it('keeps a token that is actually called', () => {
+    // The point of stripping literals is to lose mentions, not uses. Without
+    // this the previous test could be satisfied by stripping everything.
+    expect(executable('const c = document.cookie')).toContain('document.')
+    expect(executable('localStorage.setItem(k, v)')).toContain('localStorage')
+    expect(executable('await fetch("https://x.test")')).toContain('fetch(')
+  })
+
+  it('is not fooled by a comment either way', () => {
+    expect(executable('// never use document.cookie here')).not.toContain('document.')
   })
 })

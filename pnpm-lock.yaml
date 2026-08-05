@@ -206,6 +206,9 @@ importers:
       '@okolos/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@okolos/core-extensions':
+        specifier: workspace:*
+        version: link:../core-extensions
       '@okolos/core-leaks':
         specifier: workspace:*
         version: link:../core-leaks

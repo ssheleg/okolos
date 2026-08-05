@@ -26,8 +26,8 @@ are specified once in [screens.md](screens.md).
 | SCN-014 | Submitted password is compromised | credentials | P-01 | ST-011, FLW-10 | implemented | 2026-08-05 unit |
 | SCN-015 | Leak inventory with one source unavailable | credentials | P-01 | ST-012, FLW-11 | implemented | 2026-08-05 PASS |
 | SCN-016 | Repair a leak and mark it resolved | credentials | P-01 | ST-015, ST-012, FLW-11 | implemented | 2026-08-05 unit |
-| SCN-017 | Extension gained permissions — disable it | extensions | P-01 | ST-013, ST-014, FLW-12 | implemented | 2026-08-05 unit |
-| SCN-018 | Extension changed publisher, package unavailable | extensions | P-01 | ST-013, FLW-12 | implemented | 2026-08-05 unit |
+| SCN-017 | Extension gained permissions — disable it | extensions | P-01 | ST-013, ST-014, FLW-12 | implemented | 2026-08-05 PASS |
+| SCN-018 | Extension changed publisher, package unavailable | extensions | P-01 | ST-013, FLW-12 | implemented | 2026-08-05 PASS |
 | SCN-019 | Verify what left the device | privacy | P-01 | ST-017, FLW-13 | implemented | 2026-08-04 PASS |
 | SCN-020 | Popup — verdict for the current page | daily-use | P-01 | ST-015, FLW-17 | implemented | 2026-08-05 PASS |
 | SCN-021 | What changed since last time | daily-use | P-01 | ST-015, FLW-17 | implemented | 2026-08-05 PASS |
@@ -356,8 +356,8 @@ See [foundation.md](foundation.md) → Personas.
 - **UI elements:** deltas section, permission diff list, version dates, publisher, "Disable" (primary), "Trust this change", "Inspect package"
 - **States covered:** loading, success, error
 - **Errors & recovery:** the extension cannot be disabled (policy-installed) -> system says why and offers the manual steps
-- **Status:** draft
-- **Coverage:** none yet
+- **Status:** implemented
+- **Coverage:** packages/core-extensions/src/diff.ts:37, packages/ui/src/extensions/extensions.ts:44, e2e/scn-017.spec.ts:12
 
 ### SCN-018: Extension changed publisher, package unavailable
 - **Persona:** P-01
@@ -374,8 +374,8 @@ See [foundation.md](foundation.md) → Personas.
 - **UI elements:** delta entry, publisher before/after, "analysis unavailable" reason, "Disable", "Trust this change"
 - **States covered:** error, success
 - **Errors & recovery:** store metadata itself is unreachable -> system states that the publisher could not be verified and keeps the previous baseline rather than assuming a change
-- **Status:** draft
-- **Coverage:** none yet
+- **Status:** implemented
+- **Coverage:** packages/core-extensions/src/analyse.ts:31, packages/ui/src/extensions/extensions.ts:70, e2e/scn-017.spec.ts:28
 
 ## privacy
 

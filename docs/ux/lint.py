@@ -209,6 +209,17 @@ def main() -> int:
             cov = cov_m.group(1).strip() if cov_m else ""
             if status == "built" and (not cov or cov.lower().startswith("none")):
                 warn(f"screens.md: {sid} is 'built' but has no Coverage")
+            # And the mirror of it. A screen with real coverage still marked
+            # 'designed' is drift in the direction nobody notices: the record
+            # understates the product, so no reader goes looking for the gap.
+            if status == "designed" and cov and not cov.lower().startswith("none"):
+                warn(f"screens.md: {sid} is 'designed' but already has Coverage — status lags the code")
+            # The table row and the record must agree; a stale row is the copy
+            # most people actually read.
+            row = re.search(rf"^\|\s*{sid}\s*\|[^|]*\|[^|]*\|[^|]*\|\s*(\w+)\s*\|",
+                            screens, re.MULTILINE)
+            if row and status and row.group(1) != status:
+                err(f"screens.md: {sid} row says '{row.group(1)}' but its record says '{status}'")
 
     check_links(ux)
 

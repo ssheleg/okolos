@@ -1,0 +1,30 @@
+node_modules/
+dist/
+build/
+coverage/
+.turbo/
+*.tsbuildinfo
+
+# local pipeline artefacts
+.pipeline/logs/
+graphify-out/
+
+# extension build output
+apps/extension/.output/
+web-ext-artifacts/
+
+# worker
+.wrangler/
+
+# secrets — never commit
+.env
+.env.*
+!.env.example
+*.pem
+keys/
+
+# editors / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json

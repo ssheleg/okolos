@@ -70,3 +70,17 @@ describe('when we do not know what happened', () => {
     expect(role(render('something-nobody-defined'), 'generic')?.textContent).toMatch(/broadest safe/i)
   })
 })
+
+describe('reachable without a mouse', () => {
+  it('associates every checkbox with its label', () => {
+    // A checkbox whose label is merely adjacent is an unlabelled checkbox to
+    // everything except a sighted mouse user.
+    const el = render('pasted-command')
+    for (const item of el.querySelectorAll('[data-role=step]')) {
+      const box = item.querySelector('input[type=checkbox]')
+      const label = item.querySelector('label')
+      expect(box?.id).toBeTruthy()
+      expect(label?.getAttribute('for')).toBe(box?.id)
+    }
+  })
+})

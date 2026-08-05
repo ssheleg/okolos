@@ -248,3 +248,20 @@ happens before adding.
 - **Fix, by grade:** two headlines, and the warning now says "Nothing has been
   copied yet" when that is the case. The earlier moment is the more useful one
   to warn at; it is not a reason to describe it inaccurately.
+
+### 2026-08-05 — an accessibility bug that only the sweep could find
+
+- **Symptom:** every checkbox in the recovery checklist was unlabelled to a
+  screen reader. The `<label>` was there, next to the input, carrying the right
+  text — and associated with nothing.
+- **Surfaced at:** stage 6, on extending the axe sweep to the surfaces built
+  since it was written.
+- **Owned by:** stage 5, and worth naming precisely: the markup looked correct
+  in the source and correct on screen. Only a tool that reads it the way a
+  screen reader does could tell the difference.
+- **Fix, by grade:** an id on the input and `for` on the label, plus a unit test
+  asserting the association for every step — so the next checklist cannot
+  regress it silently.
+- **Standing instruction (7):** when a new user-facing surface ships, it joins
+  the axe sweep in the same change. Four surfaces had accumulated outside it,
+  and the one with the defect was the one written most recently.

@@ -37,3 +37,51 @@ test('the popup has no detectable accessibility violations', async ({ context, e
 
   expect(results.violations).toEqual([])
 })
+
+test('the interstitial has no detectable accessibility violations', async ({
+  context,
+  extensionId,
+}) => {
+  // The page shown instead of someone's page. If any surface has to be
+  // reachable by keyboard and screen reader, it is the one that replaced what
+  // they were trying to look at.
+  const page = await context.newPage()
+  await page.goto(`chrome-extension://${extensionId}/interstitial.html`)
+  await expect(page.locator('[data-role=interstitial]')).toHaveCount(1)
+
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+    .analyze()
+
+  expect(results.violations).toEqual([])
+})
+
+test('the recovery checklist has no detectable accessibility violations', async ({
+  context,
+  extensionId,
+}) => {
+  const page = await context.newPage()
+  await page.goto(`chrome-extension://${extensionId}/options.html#recovery=pasted-command`)
+  await expect(page.locator('[data-role=recovery]')).toHaveCount(1)
+
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+    .analyze()
+
+  expect(results.violations).toEqual([])
+})
+
+test('the first-run screen has no detectable accessibility violations', async ({
+  context,
+  extensionId,
+}) => {
+  const page = await context.newPage()
+  await page.goto(`chrome-extension://${extensionId}/first-run.html`)
+  await expect(page.locator('[data-role=first-run]')).toHaveCount(1)
+
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+    .analyze()
+
+  expect(results.violations).toEqual([])
+})

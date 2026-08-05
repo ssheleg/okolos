@@ -60,10 +60,14 @@ export function renderRecovery(
     const control = doc.createElement('input')
     control.type = 'checkbox'
     control.checked = done
+    control.id = `okolos-step-${step.id}`
     control.setAttribute('data-role', 'done')
     control.addEventListener('change', () => handlers.onToggle(step.id, control.checked))
 
+    // Explicitly associated, not merely adjacent: a checkbox whose label is a
+    // sibling is an unlabelled checkbox to everything but a sighted mouse user.
     const label = doc.createElement('label')
+    label.htmlFor = control.id
     label.textContent = step.title
 
     item.append(control, label, text(doc, 'why', step.why))

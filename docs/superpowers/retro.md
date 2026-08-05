@@ -45,6 +45,23 @@ happens before adding.
   not sit red in the default suite while also not being claimed as covered.
 - **Catches it next time:** the fixture's own precondition.
 
+### 2026-08-04 — measuring the background needed three attempts, two of which looked like product bugs
+
+- **Symptom:** the memory ceiling could not be read. `context.newCDPSession(worker)`
+  throws — Playwright attaches to a Page or Frame, never a service worker. Inside
+  the worker there is nothing to ask: extension service workers expose neither
+  `performance.memory` nor `measureUserAgentSpecificMemory()`. Then the spec
+  timed out waiting for a banner that was on screen.
+- **Surfaced at:** the REQ-33 work.
+- **Owned by:** the test, all three times.
+- **Root cause:** the last one is worth naming — `locator.waitFor()` waits for
+  *visibility*, and the banner host has no box of its own because everything
+  inside its shadow root is positioned fixed. `toHaveCount()` asserts presence.
+- **Fix, by grade:** mechanical — the heap is read through the DevTools port
+  (`Runtime.getHeapUsage`), and presence assertions replaced visibility waits.
+- **Note that expires in two runs:** when a surface renders only inside a shadow
+  root, assert presence rather than visibility.
+
 ## Run stamps
 
 - **2026-08-04** — P0–P5 brief; stages 0–10 (stage 8 blocked on a human step).

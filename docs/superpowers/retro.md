@@ -168,3 +168,19 @@ happens before adding.
   (the product refuses to say "clean" about a page it cannot see) so nobody
   reads more into it later.
 - **Catches it next time:** `apps/extension/src/popup/state.test.ts:63`.
+
+### 2026-08-05 — a requirement whose last mile is a licence, not code
+
+- **Symptom:** REQ-37 asks for a bench under 250 ms and a measured corpus
+  quality. Both need weights, and every candidate classifier ships under
+  acceptable-use terms a public AGPL repository cannot restate for its users.
+- **Surfaced at:** stage 5, while wiring the session.
+- **Owned by:** the brief — human step 4 has named this since intake.
+- **Fix, by grade:** the runtime is a documented seam (`createOnnxRuntime`
+  returns null) and every layer above degrades honestly: the host reports
+  `no-runtime`, stage 3 never fires, no surface claims a page was checked by a
+  model that is absent. REQ-37 is recorded PARTIAL with the two missing numbers
+  named, rather than closed on the half that was buildable.
+- **Catches it next time:** `apps/extension/src/background/inference.test.ts`
+  asserts the `no-runtime` state explicitly, so the absence is a tested
+  behaviour rather than an oversight.

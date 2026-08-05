@@ -15,7 +15,14 @@ export async function openDb(): Promise<OkolosDatabase> {
   if (handle) return handle
 
   handle = await openDB<OkolosDB>(DB_NAME, DB_VERSION, {
-    upgrade(db) {
+    upgrade(db, from) {
+      // Each version adds only what is missing. An upgrade that recreated the
+      // stores would erase a user's findings to add a column.
+      if (from < 2 && db.objectStoreNames.contains('findings')) {
+        addModelStore(db)
+        return
+      }
+
       const findings = db.createObjectStore('findings', { keyPath: 'id' })
       findings.createIndex('by-created', 'createdAt')
       findings.createIndex('by-subject', 'subject')
@@ -33,10 +40,17 @@ export async function openDb(): Promise<OkolosDatabase> {
 
       db.createObjectStore('settings', { keyPath: 'key' })
       db.createObjectStore('snapshots', { keyPath: 'extensionId' })
+      addModelStore(db)
     },
   })
 
   return handle
+}
+
+function addModelStore(db: IDBPDatabase<OkolosDB>): void {
+  if (db.objectStoreNames.contains('models')) return
+  const models = db.createObjectStore('models', { keyPath: 'key' })
+  models.createIndex('by-id', 'id')
 }
 
 export function closeDb(): void {

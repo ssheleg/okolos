@@ -14,3 +14,4 @@ export {
   type SnapshotRecord,
   type StoreName,
 } from './schema.js'
+export { createModelCache, type ModelCacheDeps } from './model-cache.js'

@@ -1,6 +1,7 @@
-import { classifyUndecided, detectHidden, type InferenceHost } from '@okolos/core-injection'
+import { classifyUndecided, detectHidden } from '@okolos/core-injection'
 import { detectPlatform } from '@okolos/platform'
-import { openDb, pruneExpired } from '@okolos/storage'
+import { createOnnxRuntime, MODEL } from '@okolos/model'
+import { createModelCache, openDb, pruneExpired } from '@okolos/storage'
 import type {
   Envelope,
   GateDecision,
@@ -9,6 +10,8 @@ import type {
   RpcType,
   Verdict,
 } from '@okolos/contracts'
+
+import { createInferenceHost } from './inference.js'
 
 /**
  * The background context holds no state between wake-ups.
@@ -35,21 +38,46 @@ platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>) => {
 })
 
 /**
- * The classifier host. No model ships yet, so it reports itself unavailable and
- * stage 3 skips entirely — which is the same code path a device without WebGPU
- * will take, exercised on every run rather than only in a test.
+ * The classifier host.
  *
- * The ONNX session lands with REQ-36; nothing above it changes when it does.
+ * It prepares itself once per wake-up and reports honestly why it is
+ * unavailable when it is: no place to run a model, no weights the user agreed
+ * to fetch, or no runtime bundled. Today the last of those is the real answer —
+ * the weights carry a licence question that is the operator's to settle — so
+ * stage 3 never fires and nothing above it claims otherwise.
  */
-const inference: InferenceHost = {
-  available: () => false,
-  score: () => Promise.reject(new Error('no model installed')),
-}
+const inference = createInferenceHost({
+  ensureHost: () => platform.inference.ensureHost(),
+  weights: async () => {
+    try {
+      const db = await openDb()
+      const cache = createModelCache({ db, now: () => new Date().toISOString() })
+      return await cache.read(MODEL.id, MODEL.version)
+    } catch {
+      return null
+    }
+  },
+  runtime: createOnnxRuntime,
+  remoteScore: async (text) => {
+    const response = await platform.runtime.send('inference/score', { text })
+    return response?.score ?? null
+  },
+  log: (message) => console.warn(message),
+})
+
+/**
+ * Prepared per wake-up, not per page. Chrome tears the worker down after about
+ * thirty seconds of quiet, so this runs again on the next message — which is
+ * also what makes a model installed mid-session take effect without a restart.
+ */
+const prepared = inference.prepare().catch(() => 'no-host' as const)
+
 
 async function handleCandidates(page: PageCandidates): Promise<{ verdicts: Verdict[] }> {
   const now = new Date().toISOString()
   const ctx = { now, newId: () => crypto.randomUUID() }
   const verdicts = detectHidden(page, ctx)
+  await prepared
 
   // Stage 3 sees only what the rules left undecided.
   const decidedLocators = verdicts.flatMap((v) => v.evidence.map((e) => e.locator ?? ''))

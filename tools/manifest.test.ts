@@ -18,13 +18,20 @@ function manifest(browser: 'chrome' | 'firefox'): Record<string, unknown> {
   >
 }
 
-/** Everything the skeleton needs, and nothing that anticipates a later module. */
+/**
+ * Everything the product needs today, and nothing that anticipates a later
+ * module. `offscreen` is Chrome-only and arrives with the classifier host: a
+ * service worker has no DOM, so there is nowhere else a model could run.
+ */
 const ALLOWED_PERMISSIONS = ['storage', 'alarms', 'activeTab']
+const CHROME_ONLY_PERMISSIONS = ['offscreen']
 
 describe('what the extension asks for', () => {
   for (const browser of ['chrome', 'firefox'] as const) {
     it(`${browser}: requests only the permissions the skeleton needs`, () => {
-      expect(manifest(browser).permissions).toEqual(ALLOWED_PERMISSIONS)
+      const expected =
+        browser === 'chrome' ? [...ALLOWED_PERMISSIONS, ...CHROME_ONLY_PERMISSIONS] : ALLOWED_PERMISSIONS
+      expect(manifest(browser).permissions).toEqual(expected)
     })
 
     it(`${browser}: asks for no host permissions yet`, () => {

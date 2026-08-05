@@ -95,6 +95,26 @@ export function createPlatform(kind: Platform['kind'], api: WebExtensionApi): Pl
       },
     },
 
+    inference: {
+      async ensureHost(): Promise<'offscreen' | 'background' | 'none'> {
+        // Firefox has no offscreen API and does not need one: its background
+        // context is a page with a DOM.
+        if (kind === 'firefox') return 'background'
+        if (!api.offscreen) return 'none'
+
+        if (!(await api.offscreen.hasDocument())) {
+          await api.offscreen.createDocument({
+            url: api.runtime.getURL('offscreen.html'),
+            // WORKERS is the closest honest reason on Chrome's fixed list: the
+            // document exists to host a WASM/WebGPU worker, nothing else.
+            reasons: ['WORKERS'],
+            justification: 'Runs the local hidden-instruction classifier.',
+          })
+        }
+        return 'offscreen'
+      },
+    },
+
     tabs: {
       async activeUrl(): Promise<string | null> {
         const [tab] = await api.tabs.query({ active: true, currentWindow: true })

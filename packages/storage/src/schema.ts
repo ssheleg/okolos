@@ -2,7 +2,7 @@ import type { DBSchema } from 'idb'
 import type { AuditEntry, Verdict } from '@okolos/contracts'
 
 export const DB_NAME = 'okolos'
-export const DB_VERSION = 1
+export const DB_VERSION = 2
 
 /**
  * Retention windows in days. They are short on purpose: a security tool that
@@ -23,6 +23,7 @@ export const STORES = [
   'exceptions',
   'settings',
   'snapshots',
+  'models',
 ] as const
 
 export type StoreName = (typeof STORES)[number]
@@ -56,6 +57,22 @@ export interface SettingRecord {
   value: string | number | boolean | null
 }
 
+/**
+ * Classifier weights, kept whole rather than re-fetched.
+ *
+ * They live beside everything else so a wipe takes them too: a user who erases
+ * their data would not expect a few dozen megabytes of downloaded model to
+ * survive it.
+ */
+export interface ModelRecord {
+  /** `<id>@<version>` — a version bump is a different row, never an overwrite. */
+  key: string
+  id: string
+  version: string
+  bytes: ArrayBuffer
+  storedAt: string
+}
+
 export interface SnapshotRecord {
   extensionId: string
   takenAt: string
@@ -70,5 +87,6 @@ export interface OkolosDB extends DBSchema {
   outbound_log: { key: string; value: AuditEntry; indexes: { 'by-created': string; 'by-purpose': string } }
   exceptions: { key: [string, string]; value: ExceptionRecord; indexes: { 'by-created': string } }
   settings: { key: string; value: SettingRecord }
+  models: { key: string; value: ModelRecord; indexes: { 'by-id': string } }
   snapshots: { key: string; value: SnapshotRecord }
 }

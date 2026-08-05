@@ -4,8 +4,14 @@ import type { Envelope } from '@okolos/contracts'
 import { createPlatform, toSafeUrl } from './adapter.js'
 import type { WebExtensionApi } from './types.js'
 
-/** Each section may be stubbed on its own; the rest keeps working. */
-type ApiOverrides = { [K in keyof WebExtensionApi]?: Partial<WebExtensionApi[K]> }
+/**
+ * Each section may be stubbed on its own; the rest keeps working. `offscreen`
+ * is the exception: it has no base to merge into, so a test that wants one
+ * supplies the whole thing.
+ */
+type ApiOverrides = {
+  [K in Exclude<keyof WebExtensionApi, 'offscreen'>]?: Partial<WebExtensionApi[K]>
+} & { offscreen?: WebExtensionApi['offscreen'] }
 
 function fakeApi(overrides: ApiOverrides = {}): WebExtensionApi {
   const store: Record<string, unknown> = {}
@@ -38,9 +44,11 @@ function fakeApi(overrides: ApiOverrides = {}): WebExtensionApi {
   // Merged one level deep on purpose. With a flat spread, adding a capability
   // to Platform forced every test that stubs one runtime method to restate all
   // of them — churn that hides what each test actually cares about.
+  const { offscreen, ...sections } = overrides
   return {
     ...base,
-    ...overrides,
+    ...sections,
+    ...(offscreen ? { offscreen } : {}),
     runtime: { ...base.runtime, ...overrides.runtime },
     tabs: { ...base.tabs, ...overrides.tabs },
     storage: { ...base.storage, ...overrides.storage },
@@ -145,5 +153,44 @@ describe('install-time wiring goes through the adapter too', () => {
   it('resolves a packaged file to an extension url', () => {
     const platform = createPlatform('chrome', fakeApi())
     expect(platform.runtime.getUrl('first-run.html')).toBe('chrome-extension://test/first-run.html')
+  })
+})
+
+describe('where a model may run', () => {
+  it('uses an offscreen document in Chrome, because a worker has no DOM', async () => {
+    const created: unknown[] = []
+    const platform = createPlatform('chrome', fakeApi({
+      offscreen: {
+        hasDocument: async () => false,
+        createDocument: async (info) => {
+          created.push(info)
+        },
+      },
+    }))
+
+    await expect(platform.inference.ensureHost()).resolves.toBe('offscreen')
+    expect(created).toHaveLength(1)
+  })
+
+  it('does not create a second offscreen document when one is already there', async () => {
+    const createDocument = vi.fn(async () => undefined)
+    const platform = createPlatform('chrome', fakeApi({
+      offscreen: { hasDocument: async () => true, createDocument },
+    }))
+
+    await expect(platform.inference.ensureHost()).resolves.toBe('offscreen')
+    expect(createDocument).not.toHaveBeenCalled()
+  })
+
+  it('runs on the background page in Firefox, which has one', async () => {
+    const platform = createPlatform('firefox', fakeApi())
+    await expect(platform.inference.ensureHost()).resolves.toBe('background')
+  })
+
+  it('says plainly when there is nowhere to run a model at all', async () => {
+    // Distinct from "the model has not been fetched": one is a device fact, the
+    // other is a state the user can change.
+    const platform = createPlatform('chrome', fakeApi())
+    await expect(platform.inference.ensureHost()).resolves.toBe('none')
   })
 })

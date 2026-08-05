@@ -34,8 +34,21 @@ jobs:
       - name: typecheck
         run: pnpm typecheck
 
-      - name: unit tests
+      - name: build both browser targets
+        run: pnpm build
+
+      # Includes the bundle gates in tools/gates: they read what actually
+      # ships rather than what the source says, and they fail — never skip —
+      # when the build is broken.
+      - name: unit tests and bundle gates
         run: pnpm test
+
+      - name: upload builds
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-builds
+          path: apps/extension/dist
+          retention-days: 14
 
       # REQ-31 — the UX chain must not drift
       - name: ux lint

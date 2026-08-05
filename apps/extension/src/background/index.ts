@@ -13,6 +13,8 @@ import type {
 } from '@okolos/contracts'
 
 import { handleDownload } from './downloads.js'
+import { CAVALIER, hibp, lookupLeaks } from './leaks.js'
+import { checkSubmittedPassword } from './password.js'
 import { createInferenceHost } from './inference.js'
 
 /**
@@ -36,6 +38,10 @@ platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>) => {
       return blockContext() as Promise<RpcMap[T]['res']>
     case 'block/allow':
       return allowBlocked(message.payload as { url: string }) as Promise<RpcMap[T]['res']>
+    case 'password/check':
+      return handlePasswordCheck(message.payload as { sha1: string }) as Promise<RpcMap[T]['res']>
+    case 'leaks/check':
+      return handleLeakCheck(message.payload as { address: string }) as Promise<RpcMap[T]['res']>
     case 'site/facts':
       return siteFacts(message.payload as { host: string }) as Promise<RpcMap[T]['res']>
     case 'trap/warned':
@@ -274,6 +280,57 @@ async function allowBlocked(payload: { url: string }): Promise<{ url: string } |
  * history permission would give this extension every page the user has ever
  * opened, to answer a question that only needs one date per domain.
  */
+/** Everything that may leave the device goes through this, and is logged first. */
+async function auditDeps() {
+  const db = await openDb()
+  return {
+    writeAudit: async (entry: Parameters<typeof db.put>[1]) => {
+      await db.put('outbound_log', entry as never)
+    },
+    now: () => new Date().toISOString(),
+    newId: () => crypto.randomUUID(),
+  }
+}
+
+async function handlePasswordCheck(payload: { sha1: string }): Promise<{
+  compromised: boolean
+  count: number | null
+  offline: boolean
+  explain: string
+}> {
+  const verdict = await checkSubmittedPassword(payload.sha1, await auditDeps())
+  return {
+    compromised: verdict.compromised,
+    count: verdict.count,
+    offline: verdict.offline,
+    explain: verdict.explain,
+  }
+}
+
+async function handleLeakCheck(payload: { address: string }) {
+  const key = await readSetting('hibp:apiKey')
+  const inventory = await lookupLeaks(
+    payload.address,
+    [hibp(typeof key === 'string' && key ? key : null), CAVALIER],
+    await auditDeps(),
+  )
+  return {
+    leaks: inventory.leaks.map((leak) => ({ ...leak, classes: [...leak.classes] })),
+    sources: inventory.sources.map((source) => ({ ...source })),
+    complete: inventory.complete,
+    coverage: inventory.coverage,
+  }
+}
+
+async function readSetting(key: string): Promise<unknown> {
+  try {
+    const db = await openDb()
+    return (await db.get('settings', key))?.value ?? null
+  } catch {
+    return null
+  }
+}
+
 async function siteFacts(payload: { host: string }): Promise<{
   trusted: boolean
   firstSeen: string | null

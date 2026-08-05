@@ -38,6 +38,21 @@ export interface RpcMap {
     req: { action: string; headline: string; reasons: string; skipped: string }
     res: { ok: true }
   }
+  /** SHA-1 of a submitted password. The password itself never crosses this line. */
+  'password/check': {
+    req: { sha1: string }
+    res: { compromised: boolean; count: number | null; offline: boolean; explain: string }
+  }
+  /** User-initiated: nothing is looked up in the background. */
+  'leaks/check': {
+    req: { address: string }
+    res: {
+      leaks: Array<{ name: string; occurredAt: string | null; source: string; classes: string[] }>
+      sources: Array<{ name: string; answered: boolean; why?: string }>
+      complete: boolean
+      coverage: string
+    }
+  }
   'site/facts': { req: { host: string }; res: { trusted: boolean; firstSeen: string | null } }
   'trap/warned': { req: { kind: string; signals: string }; res: { ok: true } }
   'recovery/open': { req: { kind: string }; res: { ok: true } }

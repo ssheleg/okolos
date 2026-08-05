@@ -1,7 +1,10 @@
 import { buildChecklist, type StepProgress } from '@okolos/core-recovery'
 import { diffSince } from '@okolos/core-queue'
+import { detectPlatform } from '@okolos/platform'
 import {
   renderDataControls,
+  renderLeaks,
+  type LeaksState,
   renderJournal,
   renderRecovery,
   renderSelfAudit,
@@ -19,7 +22,69 @@ import { mapJournal } from '../popup/state.js'
  * can act on rather than a sentence in a README.
  */
 
+const platform = detectPlatform()
 const root = document.getElementById('root')
+
+/**
+ * The leak check is user-initiated, always. Nothing is looked up in the
+ * background: the address the user types is theirs, and sending it anywhere is
+ * a decision they make each time by pressing the button.
+ */
+let leaks: LeaksState = { kind: 'idle' }
+let address = ''
+
+function leaksSection(): HTMLElement {
+  const container = document.createElement('div')
+
+  const field = document.createElement('input')
+  field.type = 'email'
+  field.setAttribute('data-role', 'address')
+  field.placeholder = 'you@example.com'
+  field.value = address
+  field.addEventListener('input', () => {
+    address = field.value
+  })
+
+  container.append(
+    field,
+    renderLeaks(document, leaks, {
+      onCheck: () => {
+        void (async () => {
+          if (!address.includes('@')) return
+          leaks = { kind: 'checking' }
+          await paintCurrent()
+          try {
+            const result = await platform.runtime.send('leaks/check', { address })
+            leaks = result
+              ? { kind: 'ready', inventory: { ...result, leaks: result.leaks } }
+              : { kind: 'error', message: 'the check returned nothing' }
+          } catch (cause) {
+            leaks = { kind: 'error', message: String(cause) }
+          }
+          await paintCurrent()
+        })()
+      },
+      onResolve: (name) => {
+        void (async () => {
+          const db = await openDb()
+          const now = new Date().toISOString()
+          await db.put('journal', {
+            id: `leak-resolved:${name}:${now}`,
+            createdAt: now,
+            kind: 'action',
+            detail: { explain: `You marked the ${name} breach as dealt with.`, reason: 'user-allowed' },
+          })
+          await reload()
+        })()
+      },
+    }),
+  )
+  return container
+}
+
+async function paintCurrent(): Promise<void> {
+  await paint(await load())
+}
 
 async function load(): Promise<PanelState> {
   try {
@@ -132,6 +197,7 @@ async function paint(state: PanelState): Promise<void> {
     }),
     await journalSection(),
     await recoverySection(),
+    leaksSection(),
     renderDataControls(document, {
       onExport: download,
       onWipe: async () => {

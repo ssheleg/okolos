@@ -24,7 +24,7 @@ are specified once in [screens.md](screens.md).
 | SCN-012 | Download stopped by feed or hash | web-guard | P-01 | ST-009, FLW-08 | implemented | 2026-08-05 unit |
 | SCN-013 | Download partially checked — hash unavailable | web-guard | P-01 | ST-009, FLW-08 | implemented | 2026-08-05 unit |
 | SCN-014 | Submitted password is compromised | credentials | P-01 | ST-011, FLW-10 | implemented | 2026-08-05 unit |
-| SCN-015 | Leak inventory with one source unavailable | credentials | P-01 | ST-012, FLW-11 | implemented | 2026-08-05 unit |
+| SCN-015 | Leak inventory with one source unavailable | credentials | P-01 | ST-012, FLW-11 | implemented | 2026-08-05 PASS |
 | SCN-016 | Repair a leak and mark it resolved | credentials | P-01 | ST-015, ST-012, FLW-11 | implemented | 2026-08-05 unit |
 | SCN-017 | Extension gained permissions — disable it | extensions | P-01 | ST-013, ST-014, FLW-12 | draft | — |
 | SCN-018 | Extension changed publisher, package unavailable | extensions | P-01 | ST-013, FLW-12 | draft | — |

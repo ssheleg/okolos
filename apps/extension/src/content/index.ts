@@ -357,6 +357,64 @@ if (isTopFrame) {
   })
 }
 
+/**
+ * The password check runs on submit, on the digest, never on the password.
+ *
+ * SHA-1 is computed here in the page's own context; what crosses into the
+ * extension is forty hex characters, and what leaves the device is the first
+ * five of them. The check is deliberately after submission: warning someone
+ * before they have finished typing interrupts a login they were going to
+ * complete anyway.
+ */
+if (isTopFrame) {
+  document.addEventListener(
+    'submit',
+    (event) => {
+      const form = event.target
+      if (!(form instanceof HTMLFormElement)) return
+      const field = form.querySelector<HTMLInputElement>('input[type=password]')
+      const value = field?.value
+      if (!value) return
+
+      void (async () => {
+        try {
+          const digest = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(value))
+          const sha1 = [...new Uint8Array(digest)]
+            .map((byte) => byte.toString(16).padStart(2, '0'))
+            .join('')
+            .toUpperCase()
+
+          const verdict = await platform.runtime.send('password/check', { sha1 })
+          if (!verdict?.compromised) return
+
+          mountBanner(
+            document,
+            {
+              variant: 'password',
+              severity: 'major',
+              headline: 'This password has appeared in a breach',
+              detail: verdict.explain,
+              sourceLine: verdict.offline
+                ? 'Found by: a list built into this extension — nothing was sent'
+                : 'Found by: a range query that sent five characters of the fingerprint',
+            },
+            {
+              onPrimary: () => undefined,
+              onInspect: () => undefined,
+              onDispute: () => undefined,
+              onDismiss: () => undefined,
+            },
+          )
+        } catch {
+          // A failed check is not a clean password, and it is not a broken
+          // login either: the submission has already gone through.
+        }
+      })()
+    },
+    true,
+  )
+}
+
 void safely(scan)
 new MutationObserver(rescanSoon).observe(document.documentElement, {
   childList: true,

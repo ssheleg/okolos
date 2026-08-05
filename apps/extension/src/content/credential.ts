@@ -84,7 +84,7 @@ export function watchCredentialFields(deps: CredentialDeps): CredentialWatcher {
       },
       {
         onPrimary: deps.leave,
-        onInspect: deps.leave,
+        onRetry: deps.leave,
         onDispute: () => {
           void deps.trust(host)
           dismiss()

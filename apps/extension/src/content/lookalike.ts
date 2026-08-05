@@ -93,7 +93,7 @@ function show(deps: LookalikeDeps, verdict: LookalikeVerdict): LookalikeWarning 
     },
     {
       onPrimary: openComparison,
-      onInspect: openComparison,
+      onRetry: openComparison,
       onDispute: () => {
         void deps.trust(verdict.visited)
         close()

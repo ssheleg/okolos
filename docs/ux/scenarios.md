@@ -263,7 +263,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** success, error
 - **Errors & recovery:** feeds unavailable or stale -> system says the checks were limited; the verdict never claims more than the checks that actually ran
 - **Status:** implemented
-- **Coverage:** packages/core-download/src/judge.ts:60, apps/extension/src/background/downloads.ts:26 (unit only — driving a real download through an extension in Playwright is not stable enough to gate on)
+- **Coverage:** packages/core-download/src/judge.ts:60, apps/extension/src/background/downloads.ts:26, apps/extension/src/content/download.ts:36 (unit only — driving a real download through an extension in Playwright is not stable enough to gate on; until 2026-08-05 the banner did not exist at all and the verdict was journalled in silence)
 
 ### SCN-013: Download partially checked — hash unavailable
 - **Persona:** P-01

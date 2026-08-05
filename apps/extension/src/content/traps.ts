@@ -110,7 +110,7 @@ export function watchForTraps(deps: TrapDeps): TrapWatcher {
         },
         {
           onPrimary: deps.leave,
-          onInspect: () => deps.recover('clickfix'),
+          onRetry: () => deps.recover('clickfix'),
           onDispute: dismiss,
           onDismiss: dismiss,
         },
@@ -140,7 +140,7 @@ export function watchForTraps(deps: TrapDeps): TrapWatcher {
         },
         {
           onPrimary: deps.leave,
-          onInspect: () => deps.recover('techsupport'),
+          onRetry: () => deps.recover('techsupport'),
           onDispute: dismiss,
           onDismiss: dismiss,
         },

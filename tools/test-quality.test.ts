@@ -25,16 +25,20 @@ import { describe, expect, it } from 'vitest'
 const root = process.cwd()
 const specs = readdirSync(path.join(root, 'e2e')).filter((name) => name.endsWith('.spec.ts'))
 
-/** Every unit test in the repository, found rather than listed. */
-function unitTests(dir: string, found: string[] = []): string[] {
+/** Files under a directory, found rather than listed. */
+function walk(dir: string, keep: (name: string) => boolean, found: string[] = []): string[] {
   for (const entry of readdirSync(path.join(root, dir), { withFileTypes: true })) {
     if (entry.name === 'node_modules' || entry.name === 'dist') continue
     const next = path.join(dir, entry.name)
-    if (entry.isDirectory()) unitTests(next, found)
-    else if (entry.name.endsWith('.test.ts')) found.push(next)
+    if (entry.isDirectory()) walk(next, keep, found)
+    else if (keep(entry.name)) found.push(next)
   }
   return found
 }
+
+const unitTests = (dir: string): string[] => walk(dir, (name) => name.endsWith('.test.ts'))
+const productCode = (dir: string): string[] =>
+  walk(dir, (name) => name.endsWith('.ts') && !name.endsWith('.test.ts'))
 
 const units = [...unitTests('packages'), ...unitTests('apps'), ...unitTests('tools')]
 
@@ -77,6 +81,12 @@ describe('no unit test hides its assertions behind a branch', () => {
           offenders.push(`${index + 1}: ${line}`)
           return
         }
+        // `if (x) return` — the same fault, and it slipped through the rule
+        // above until it was written into this very file.
+        if (/^if\s*\(.*\)\s*return\s*;?$/.test(line)) {
+          offenders.push(`${index + 1}: ${line}`)
+          return
+        }
         // `if (x) {` opening a block whose first statement is an assertion.
         // A narrowing helper that throws is the fix; this is the pattern it
         // replaces.
@@ -91,5 +101,63 @@ describe('no unit test hides its assertions behind a branch', () => {
         'an assertion inside a branch does not run when the branch is not taken, and the test passes anyway',
       ).toEqual([])
     })
+  }
+})
+
+describe('every message type is both served and sent', () => {
+  const rpc = readFileSync(path.join(root, 'packages/contracts/src/rpc.ts'), 'utf8')
+  const types = [...rpc.matchAll(/^\s*'([a-z/-]+)':\s*\{/gm)].map((m) => m[1] as string)
+
+  const product = [...productCode('apps'), ...productCode('packages')]
+    .map((file) => readFileSync(path.join(root, file), 'utf8'))
+    .join('\n')
+
+  const sources = [
+    'apps/extension/src/background/index.ts',
+    'apps/extension/src/offscreen/index.ts',
+    'apps/extension/src/content/index.ts',
+  ]
+    .map((file) => readFileSync(path.join(root, file), 'utf8'))
+    .join('\n')
+
+  /**
+   * Types whose only sender is a test, named here rather than excused by a
+   * loosened rule. `rules/refresh` exists so an end-to-end run can tell the
+   * worker to rebuild its blocking rules after seeding a feed — the product
+   * itself calls `refreshBlockRules()` directly. A visible exception with a
+   * reason is a decision; a weakened assertion is an accident waiting.
+   */
+  const TEST_FACING = new Set(['rules/refresh'])
+
+  it('found the contract', () => {
+    expect(types.length).toBeGreaterThan(10)
+  })
+
+  it('every named exception is still a real endpoint', () => {
+    // Otherwise the exception list becomes the place dead types go to hide.
+    for (const type of TEST_FACING) {
+      expect(types, `${type} is excused but not in the contract`).toContain(type)
+      expect(sources, `${type} is excused but has no handler`).toContain(`'${type}'`)
+    }
+  })
+
+  for (const type of types) {
+    it(`${type} has a handler`, () => {
+      // Four types sat here with neither handler nor caller: a contract entry
+      // nobody serves is a promise the product does not keep.
+      expect(sources).toContain(`'${type}'`)
+    })
+
+    if (!TEST_FACING.has(type)) {
+      it(`${type} has a sender`, () => {
+        // `download/verdict` had a sender and no listener for a week, so a
+        // blocked download was journalled and the user was told nothing.
+        //
+        // The exception is applied here, where the test is or is not created,
+        // rather than as an early return inside it — a test that exists and
+        // returns is the shape this very file forbids.
+        expect(product).toMatch(new RegExp(`send\\(\\s*'${type.replace('/', '\\/')}'`))
+      })
+    }
   }
 })

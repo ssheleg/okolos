@@ -47,11 +47,22 @@ export interface BannerProps {
   readonly detail: string
   /** Where the verdict came from — every claim names its source. */
   readonly sourceLine: string
+  /**
+   * Overrides the variant's default primary label. The default is right until
+   * the surface knows better: offering "Discard the file" for a download the
+   * browser already cancelled describes an action nobody can take.
+   */
+  readonly primaryLabel?: string
 }
 
 export interface BannerHandlers {
   readonly onPrimary: () => void
-  readonly onInspect: () => void
+  /**
+   * The error state's "Try again". Named for what the button is, after a spell
+   * called `onInspect` — which read at every call site as if it opened
+   * something, and led one surface to hand it a journal it could never show.
+   */
+  readonly onRetry: () => void
   readonly onDispute: () => void
   readonly onDismiss: () => void
 }
@@ -86,7 +97,7 @@ export function mountBanner(
         const retry = doc.createElement('button')
         retry.setAttribute('data-role', 'retry')
         retry.textContent = 'Try again'
-        retry.addEventListener('click', handlers.onInspect)
+        retry.addEventListener('click', handlers.onRetry)
         root.querySelector('[data-role=panel]')?.append(slot, retry)
       }
       slot.textContent = message
@@ -130,7 +141,7 @@ function panel(doc: Document, props: BannerProps, handlers: BannerHandlers): HTM
   const actions = doc.createElement('div')
   actions.setAttribute('data-role', 'actions')
   actions.append(
-    button(doc, 'primary', PRIMARY_ACTION[props.variant], handlers.onPrimary, true),
+    button(doc, 'primary', props.primaryLabel ?? PRIMARY_ACTION[props.variant], handlers.onPrimary, true),
     button(doc, 'dispute', 'This is wrong', handlers.onDispute),
   )
   if (!blocking) {

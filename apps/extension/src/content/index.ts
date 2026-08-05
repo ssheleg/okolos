@@ -21,6 +21,7 @@ import { AgentGate } from './agent-gate.js'
 import { collect, DEFAULT_BUDGET } from './collect.js'
 import { warnIfLookalike } from './lookalike.js'
 import { watchCredentialFields } from './credential.js'
+import { showDownloadVerdict } from './download.js'
 import { watchForTraps } from './traps.js'
 import { Sanitiser } from './sanitize.js'
 
@@ -157,7 +158,7 @@ function show(verdict: Verdict, total: number, partialScan: boolean, neutralised
     },
     {
       onPrimary: () => openInspector(verdict),
-      onInspect: () => openInspector(verdict),
+      onRetry: () => openInspector(verdict),
       onDispute: resolveEverything,
       onDismiss: () => {
         closeInspector()
@@ -400,7 +401,7 @@ if (isTopFrame) {
             },
             {
               onPrimary: () => undefined,
-              onInspect: () => undefined,
+              onRetry: () => undefined,
               onDispute: () => undefined,
               onDismiss: () => undefined,
             },
@@ -413,6 +414,24 @@ if (isTopFrame) {
     },
     true,
   )
+}
+
+/**
+ * The worker judges a download and has nowhere to say so; this is where it is
+ * said. Top frame only — a banner about a file belongs on the page the person
+ * is looking at, not in whatever advertisement frame happens to be listening.
+ */
+if (isTopFrame) {
+  platform.runtime.onMessage((message) => {
+    if (message.type !== 'download/verdict') return undefined
+    showDownloadVerdict(message.payload as never, {
+      doc: document,
+      openJournal: () => {
+        void platform.runtime.send('recovery/open', { kind: 'journal' }).catch(() => undefined)
+      },
+    })
+    return Promise.resolve({ ok: true }) as never
+  })
 }
 
 void safely(scan)

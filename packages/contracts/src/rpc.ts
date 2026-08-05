@@ -23,12 +23,15 @@ export interface AuditEntry {
   readonly outcome: 'sent' | 'blocked-by-redactor' | 'failed'
 }
 
+/**
+ * Every message that crosses a context boundary.
+ *
+ * Each entry needs a handler and a caller: a type with neither is a promise the
+ * product does not keep, and four of them lived here for a week because the
+ * options page reads storage directly instead of asking. A gate now checks it.
+ */
 export interface RpcMap {
   'page/candidates': { req: PageCandidates; res: { verdicts: Verdict[] } }
-  'page/rescan': { req: { frameId: number }; res: { ok: true } }
-  'audit/list': { req: { since?: string; limit?: number }; res: { entries: AuditEntry[] } }
-  'data/export': { req: Record<string, never>; res: { json: string } }
-  'data/wipe': { req: { confirm: true }; res: { ok: true } }
   /** Domains the user has marked legitimate, and the way to add one. */
   /** Opens the recovery checklist for what just happened. */
   /** Records a page trap in the journal, so the diff can show it. */

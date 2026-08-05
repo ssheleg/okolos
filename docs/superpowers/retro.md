@@ -489,3 +489,38 @@ happens before adding.
   product to the analyser at all, so nothing could have caught it — which is the
   argument for sweeping exports against call sites rather than trusting the
   ledger.
+
+### 2026-08-05 — a verdict announced to nobody
+
+- **Symptom:** the background judged every download, cancelled the dangerous
+  ones, wrote the journal entry — and sent `download/verdict` to a message type
+  no context listened for. A blocked file was stopped in silence: the person who
+  started it saw nothing at all.
+- **Surfaced at:** sweeping the RPC contract for types with a handler and a
+  sender, one iteration after the same method found an analyser with no caller.
+- **Owned by:** the scenario's own coverage note, which said "unit only" and
+  meant it about the *judge* — while SCN-012's UI elements line described a
+  blocking banner nobody had built.
+- **Fix, by grade:** the banner exists, top frame only, and it says the file was
+  already cancelled rather than offering to discard something the browser
+  discarded. A clean download says nothing at all — announcing every one of them
+  is how a banner becomes wallpaper.
+- **Two smaller things it dragged out.** `BannerHandlers.onInspect` was wired to
+  the error state's "Try again" button, so every call site read as though it
+  opened something; it is `onRetry` now, and one surface had indeed handed it a
+  journal it could never show. And `BannerProps` gained a `primaryLabel`
+  override, because a variant's default label is right until the surface knows
+  better — "Discard the file" for a file the browser already discarded describes
+  an action nobody can take.
+- **Four dead contract entries:** `page/rescan`, `audit/list`, `data/export` and
+  `data/wipe` had neither handler nor caller; the options page reads storage
+  directly. Removed.
+- **Catches it next time:** `tools/test-quality.test.ts` requires every message
+  type to have both a handler and a sender. `rules/refresh` is a named exception
+  with its reason — its only sender is an end-to-end test — and a further
+  assertion keeps that list from becoming where dead types hide.
+- **And the rule caught me writing the thing it forbids:** the exception was
+  first implemented as `if (TEST_FACING.has(type)) return` inside the test. The
+  unit rule only looked for `if (x) expect(…)`, so it sailed through. It now
+  looks for bare early returns too, and the exception is applied where the test
+  is created rather than inside one that exists and gives up.

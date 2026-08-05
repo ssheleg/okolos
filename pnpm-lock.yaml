@@ -77,6 +77,9 @@ importers:
       '@okolos/core-injection':
         specifier: workspace:*
         version: link:../../packages/core-injection
+      '@okolos/core-lookalike':
+        specifier: workspace:*
+        version: link:../../packages/core-lookalike
       '@okolos/core-queue':
         specifier: workspace:*
         version: link:../../packages/core-queue
@@ -165,6 +168,9 @@ importers:
       '@okolos/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@okolos/core-lookalike':
+        specifier: workspace:*
+        version: link:../core-lookalike
       '@okolos/core-queue':
         specifier: workspace:*
         version: link:../core-queue

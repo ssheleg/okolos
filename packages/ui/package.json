@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@okolos/contracts": "workspace:*",
-    "@okolos/core-queue": "workspace:*"
+    "@okolos/core-queue": "workspace:*",
+    "@okolos/core-lookalike": "workspace:*"
   }
 }

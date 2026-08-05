@@ -12,6 +12,11 @@ export {
   type InspectorProps,
 } from './inspector/inspector.js'
 export {
+  renderComparison,
+  type ComparisonHandlers,
+  type ComparisonProps,
+} from './comparison/comparison.js'
+export {
   renderInterstitial,
   type InterstitialHandlers,
   type InterstitialProps,

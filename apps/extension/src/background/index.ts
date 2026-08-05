@@ -35,6 +35,10 @@ platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>) => {
       return blockContext() as Promise<RpcMap[T]['res']>
     case 'block/allow':
       return allowBlocked(message.payload as { url: string }) as Promise<RpcMap[T]['res']>
+    case 'trust/list':
+      return listTrusted() as Promise<RpcMap[T]['res']>
+    case 'trust/add':
+      return addTrusted(message.payload as { domain: string }) as Promise<RpcMap[T]['res']>
     case 'gate/decision':
       return handleGateDecision(message.payload as GateDecision) as Promise<RpcMap[T]['res']>
     default:
@@ -254,6 +258,34 @@ async function allowBlocked(payload: { url: string }): Promise<{ url: string } |
   }
 
   return { url: target }
+}
+
+async function listTrusted(): Promise<{ domains: string[] }> {
+  try {
+    const db = await openDb()
+    const rows = await db.getAll('exceptions')
+    return { domains: rows.filter((row) => row.scope === 'domain').map((row) => row.ref) }
+  } catch {
+    // An unreadable exception list means warning about sites the user already
+    // approved. Noisy, but never the other way round.
+    return { domains: [] }
+  }
+}
+
+async function addTrusted(payload: { domain: string }): Promise<{ ok: true }> {
+  try {
+    const db = await openDb()
+    await db.put('exceptions', {
+      scope: 'domain',
+      ref: payload.domain,
+      createdAt: new Date().toISOString(),
+      reason: 'marked legitimate by the user',
+    })
+    await refreshBlockRules()
+  } catch (cause) {
+    console.warn('okolos: could not record a trusted domain', cause)
+  }
+  return { ok: true }
 }
 
 platform.blocking.onBlocked((url) => {

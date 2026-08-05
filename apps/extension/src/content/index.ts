@@ -18,6 +18,7 @@ import type {
 
 import { AgentGate } from './agent-gate.js'
 import { collect, DEFAULT_BUDGET } from './collect.js'
+import { warnIfLookalike } from './lookalike.js'
 import { Sanitiser } from './sanitize.js'
 
 /**
@@ -203,7 +204,27 @@ function rescanSoon(): void {
     lastRescans = lastRescans.filter((t) => now - t < 1000)
     if (lastRescans.length >= MAX_RESCANS_PER_SECOND) return
     lastRescans.push(now)
-    void safely(scan)
+    /**
+ * The address check runs once, before anything else and only in the top frame:
+ * it is about the page the user believes they are on, and a subframe is not
+ * that page.
+ */
+if (isTopFrame) {
+  void warnIfLookalike({
+    doc: document,
+    hostname: () => location.hostname,
+    trusted: async () => (await platform.runtime.send('trust/list', {}))?.domains ?? [],
+    trust: async (host) => {
+      await platform.runtime.send('trust/add', { domain: host })
+    },
+    leave: () => history.back(),
+  }).catch(() => {
+    // An address that could not be checked is not an address declared safe;
+    // nothing is shown either way, and the page is left alone.
+  })
+}
+
+void safely(scan)
   }, RESCAN_DEBOUNCE_MS)
 }
 
@@ -277,6 +298,26 @@ function askTheUser(
 function closeGate(): void {
   gate?.destroy()
   gate = null
+}
+
+/**
+ * The address check runs once, before anything else and only in the top frame:
+ * it is about the page the user believes they are on, and a subframe is not
+ * that page.
+ */
+if (isTopFrame) {
+  void warnIfLookalike({
+    doc: document,
+    hostname: () => location.hostname,
+    trusted: async () => (await platform.runtime.send('trust/list', {}))?.domains ?? [],
+    trust: async (host) => {
+      await platform.runtime.send('trust/add', { domain: host })
+    },
+    leave: () => history.back(),
+  }).catch(() => {
+    // An address that could not be checked is not an address declared safe;
+    // nothing is shown either way, and the page is left alone.
+  })
 }
 
 void safely(scan)

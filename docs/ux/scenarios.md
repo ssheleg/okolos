@@ -15,7 +15,7 @@ are specified once in [screens.md](screens.md).
 | SCN-003 | Hidden instruction detected on a page | ai-shield | P-01 | ST-001, FLW-02 | implemented | 2026-08-04 PASS |
 | SCN-004 | Inspect what was hidden | ai-shield | P-01 | ST-002, FLW-02 | implemented | 2026-08-04 PASS |
 | SCN-005 | Neutralise and restore | ai-shield | P-01 | ST-003, FLW-02 | implemented | 2026-08-04 PASS |
-| SCN-006 | Lookalike domain warning | web-guard | P-01 | ST-006, FLW-05 | draft | — |
+| SCN-006 | Lookalike domain warning | web-guard | P-01 | ST-006, FLW-05 | implemented | 2026-08-05 PASS |
 | SCN-007 | Known-malicious page blocked | web-guard | P-02 | ST-005, ST-016, FLW-04 | implemented | 2026-08-05 PASS |
 | SCN-008 | ClickFix — page copies a command | web-guard | P-02 | ST-007, FLW-06 | draft | — |
 | SCN-009 | Browser-lock trap escape | web-guard | P-02 | ST-008, FLW-07 | draft | — |
@@ -171,9 +171,9 @@ See [foundation.md](foundation.md) → Personas.
 - **Alt paths:** user clicks "This is legitimate" -> the domain is trusted, the warning stops here on, and the entry is editable in settings
 - **UI elements:** banner (lookalike variant), comparison view, decoded punycode, "Leave", "This is legitimate", dismiss
 - **States covered:** success
-- **Errors & recovery:** the watchlist cannot be read -> comparison falls back to the popular-domains list and states the reduced basis
-- **Status:** draft
-- **Coverage:** none yet
+- **Errors & recovery:** the watchlist cannot be read -> comparison falls back to the popular-domains list that ships with the extension
+- **Status:** implemented
+- **Coverage:** packages/core-lookalike/src/check.ts:26, apps/extension/src/content/lookalike.ts:24, e2e/scn-006.spec.ts:13
 
 ### SCN-007: Known-malicious page blocked
 - **Persona:** P-02

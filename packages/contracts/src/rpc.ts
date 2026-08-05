@@ -29,6 +29,9 @@ export interface RpcMap {
   'audit/list': { req: { since?: string; limit?: number }; res: { entries: AuditEntry[] } }
   'data/export': { req: Record<string, never>; res: { json: string } }
   'data/wipe': { req: { confirm: true }; res: { ok: true } }
+  /** Domains the user has marked legitimate, and the way to add one. */
+  'trust/list': { req: Record<string, never>; res: { domains: string[] } }
+  'trust/add': { req: { domain: string }; res: { ok: true } }
   'gate/decision': { req: GateDecision; res: { ok: true } }
   /** Rebuilds blocking rules from the feed in force. */
   'rules/refresh': { req: Record<string, never>; res: { installed: number; dropped: number } }

@@ -13,7 +13,7 @@ self-audit panel.
 
 | ID | Screen | Used by | Figma | Status | Coverage |
 |----|--------|---------|-------|--------|----------|
-| SCR-01 | First-run check | FLW-01, FLW-14 | - | designed | none yet |
+| SCR-01 | First-run check | FLW-01, FLW-14 | - | built | packages/ui/src/first-run/screen.ts:45 |
 | SCR-02 | Popup | FLW-17 | - | designed | none yet |
 | SCR-03 | In-page warning banner | FLW-02, FLW-05, FLW-06, FLW-07, FLW-08, FLW-09, FLW-10 | - | built | packages/ui/src/banner/banner.ts:52 |
 | SCR-04 | Finding inspector | FLW-02, FLW-03 | - | built | packages/ui/src/inspector/inspector.ts:57 |
@@ -65,10 +65,10 @@ self-audit panel.
   | error | a check could not run | - | that row shows the reason and a retry; other checks continue |
   | success | findings exist | - | count by category, primary action into SCR-07 |
 - **Wireframe:** wireframes/SCR-01.md
-- **Coverage:** none yet
+- **Coverage:** packages/ui/src/first-run/screen.ts:45, apps/extension/src/first-run/index.ts:17
 - **Scenarios:** SCN-001, SCN-002
 - **Resources:** local corpus loader, extension inventory adapter, tab scanner
-- **Status:** designed
+- **Status:** built
 
 ### SCR-02: Popup
 - **Used by:** FLW-17 (entry), FLW-11 and FLW-13 (entry points)

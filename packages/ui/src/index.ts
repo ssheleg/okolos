@@ -11,4 +11,11 @@ export {
   type InspectorHandlers,
   type InspectorProps,
 } from './inspector/inspector.js'
+export {
+  renderFirstRun,
+  type CheckRow,
+  type CheckState,
+  type FirstRunHandlers,
+  type FirstRunProps,
+} from './first-run/screen.js'
 export { renderSelfAudit, type PanelHandlers, type PanelState } from './self-audit/panel.js'

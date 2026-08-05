@@ -51,6 +51,13 @@ async function handleCandidates(page: PageCandidates): Promise<{ verdicts: Verdi
   return { verdicts }
 }
 
+// Through the adapter, like everything else. Reaching for chrome.* directly
+// here is the same mistake that silently broke the content script in Firefox,
+// and it is easiest to make in exactly this kind of one-line wiring.
+platform.runtime.onInstalled(() => {
+  void platform.tabs.create(platform.runtime.getUrl('first-run.html'))
+})
+
 void platform.alarms.create(RETENTION_ALARM, 60 * 24)
 platform.alarms.onFired((name) => {
   if (name !== RETENTION_ALARM) return

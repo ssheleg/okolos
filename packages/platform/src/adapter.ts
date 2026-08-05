@@ -58,6 +58,20 @@ export function createPlatform(kind: Platform['kind'], api: WebExtensionApi): Pl
         const envelope: Envelope<T> = { v: 1, type, payload }
         return (await api.runtime.sendMessage(envelope)) as RpcMap[T]['res']
       },
+      onInstalled(handler: () => void): void {
+        api.runtime.onInstalled.addListener((details) => {
+          if (details.reason === 'install') handler()
+        })
+      },
+
+      getUrl(path: string): string {
+        return api.runtime.getURL(path)
+      },
+
+      async openOptionsPage(): Promise<void> {
+        await api.runtime.openOptionsPage?.()
+      },
+
       onMessage(handler: RpcHandler): void {
         api.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           // An unknown type or a future version is answered and survived. A
@@ -85,6 +99,10 @@ export function createPlatform(kind: Platform['kind'], api: WebExtensionApi): Pl
       async activeUrl(): Promise<string | null> {
         const [tab] = await api.tabs.query({ active: true, currentWindow: true })
         return toSafeUrl(tab?.url)
+      },
+
+      async create(url: string): Promise<void> {
+        await api.tabs.create({ url })
       },
     },
   }

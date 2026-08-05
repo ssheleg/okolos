@@ -35,11 +35,17 @@ export type RpcHandler = <T extends RpcType>(
 export interface Runtime {
   send<T extends RpcType>(type: T, payload: RpcMap[T]['req']): Promise<RpcMap[T]['res']>
   onMessage(handler: RpcHandler): void
+  /** Fires once, on a fresh install — not on updates or browser restarts. */
+  onInstalled(handler: () => void): void
+  /** Absolute URL of a file inside the extension package. */
+  getUrl(path: string): string
+  openOptionsPage(): Promise<void>
 }
 
 export interface Tabs {
   /** Origin and path only — the same rule the collector obeys. */
   activeUrl(): Promise<string | null>
+  create(url: string): Promise<void>
 }
 
 /** The subset of the WebExtension API both browsers actually agree on. */
@@ -56,6 +62,9 @@ export interface WebExtensionApi {
     onAlarm: { addListener(cb: (alarm: { name: string }) => void): void }
   }
   runtime: {
+    getURL(path: string): string
+    openOptionsPage?(): Promise<void> | void
+    onInstalled: { addListener(cb: (details: { reason: string }) => void): void }
     sendMessage(message: unknown): Promise<unknown>
     onMessage: {
       addListener(
@@ -65,5 +74,6 @@ export interface WebExtensionApi {
   }
   tabs: {
     query(info: { active: true; currentWindow: true }): Promise<Array<{ url?: string }>>
+    create(info: { url: string }): Promise<unknown> | void
   }
 }

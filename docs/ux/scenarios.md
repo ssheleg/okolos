@@ -10,7 +10,7 @@ are specified once in [screens.md](screens.md).
 
 | ID | Title | Feature | Persona | Traces | Status | Last audit |
 |----|-------|---------|---------|--------|--------|------------|
-| SCN-001 | First run — clean result | onboarding | P-01 | ST-018, FLW-01 | draft | — |
+| SCN-001 | First run — clean result | onboarding | P-01 | ST-018, FLW-01 | implemented | 2026-08-04 PARTIAL |
 | SCN-002 | First run — findings found | onboarding | P-01 | ST-018, ST-015, FLW-01 | draft | — |
 | SCN-003 | Hidden instruction detected on a page | ai-shield | P-01 | ST-001, FLW-02 | implemented | 2026-08-04 PASS |
 | SCN-004 | Inspect what was hidden | ai-shield | P-01 | ST-002, FLW-02 | implemented | 2026-08-04 PARTIAL |
@@ -58,8 +58,8 @@ See [foundation.md](foundation.md) → Personas.
 - **UI elements:** first-run screen, per-check progress rows, "what this sends" link, "See what to do first" (disabled when nothing found), "Skip for now"
 - **States covered:** loading, empty, success
 - **Errors & recovery:** a check cannot run (e.g. corpus still downloading) -> that row states the reason and offers retry; the other checks continue and the result explicitly says the run was partial
-- **Status:** draft
-- **Coverage:** none yet
+- **Status:** implemented
+- **Coverage:** packages/ui/src/first-run/screen.ts:45, apps/extension/src/first-run/index.ts:17 — PARTIAL: the tab and extension inventories this scenario describes need permissions this version deliberately does not request, so those rows render as `unavailable` with the reason. They become `ok` with REQ-23 (extensions) and the tabs permission that justifies it
 
 ### SCN-002: First run — findings found
 - **Persona:** P-01

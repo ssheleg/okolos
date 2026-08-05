@@ -75,6 +75,7 @@ for (const target of targets) {
         input: {
           options: path.join(app, 'src/options/index.html'),
           popup: path.join(app, 'src/popup/index.html'),
+          'first-run': path.join(app, 'src/first-run/index.html'),
         },
         output: { entryFileNames: '[name].js', chunkFileNames: 'chunks/[name].js' },
       },
@@ -83,7 +84,7 @@ for (const target of targets) {
 
   // Vite keeps the source folder structure for HTML; flatten it so the
   // manifest can name popup.html and options.html directly.
-  for (const page of ['options', 'popup']) {
+  for (const page of ['options', 'popup', 'first-run']) {
     await cp(path.join(outDir, 'src', page, 'index.html'), path.join(outDir, `${page}.html`))
   }
   await rm(path.join(outDir, 'src'), { recursive: true, force: true })

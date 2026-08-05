@@ -1,3 +1,4 @@
+import type { GateDecision } from './gate.js'
 import type { PageCandidates } from './snapshot.js'
 import type { Verdict } from './verdict.js'
 
@@ -28,6 +29,7 @@ export interface RpcMap {
   'audit/list': { req: { since?: string; limit?: number }; res: { entries: AuditEntry[] } }
   'data/export': { req: Record<string, never>; res: { json: string } }
   'data/wipe': { req: { confirm: true }; res: { ok: true } }
+  'gate/decision': { req: GateDecision; res: { ok: true } }
 }
 
 export type RpcType = keyof RpcMap

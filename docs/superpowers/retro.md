@@ -107,3 +107,34 @@ happens before adding.
 - **Fix, by grade:** mechanical — both specs assert `>= 0` before comparing.
   Standing instruction 3 generalises it.
 - **Catches it next time:** `e2e/budget.spec.ts`.
+
+### 2026-08-05 — a gate that swallowed the user's own clicks
+
+- **Symptom:** on a page with an unresolved finding, a real human click was
+  cancelled and then quietly waved through as "ungated" — the action never
+  happened, and nothing said so.
+- **Surfaced at:** stage 6, by the unit test "does not hold a submit the person
+  made themselves".
+- **Owned by:** stage 5 — the interceptor cancelled the event before asking
+  whether the gate applied at all.
+- **Root cause:** `preventDefault()` ran before `assessAction()`. The ordering
+  looked harmless because the assessment usually says "ask".
+- **Fix, by grade:** structural — decide first, cancel only when the assessment
+  is not already settled as ungated. A guard that eats real clicks is a broken
+  page, which is the failure mode most likely to get a security tool removed.
+- **Catches it next time:** `apps/extension/src/content/agent-gate.test.ts:88`
+  and `e2e/scn-010.spec.ts:94`.
+
+### 2026-08-05 — the replay guard, proven by a crash
+
+- **Symptom:** with the `#replaying` flag removed, the allowed action was
+  re-caught by the same listener, gated again, allowed again: the test run died
+  with a V8 out-of-memory rather than an assertion.
+- **Surfaced at:** stage 6, planted-defect check on REQ-11.
+- **Owned by:** stage 6 — worth recording because the failure was not a red
+  assertion but a dead process, which is easy to misread as flakiness.
+- **Root cause:** replaying an action dispatches the very event that is being
+  intercepted.
+- **Fix, by grade:** none needed — the guard was already there; the plant
+  confirmed it is load-bearing.
+- **Catches it next time:** "does not gate the action it was just told to allow".

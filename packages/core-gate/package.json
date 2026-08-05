@@ -1,0 +1,11 @@
+{
+  "name": "@okolos/core-gate",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "description": "Decides whether an action needs a human. Pure — no DOM, no clock.",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "build": "tsc -b" },
+  "dependencies": { "@okolos/contracts": "workspace:*" }
+}

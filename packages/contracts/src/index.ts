@@ -24,3 +24,12 @@ export { decideAction } from './policy.js'
 
 export type { AuditEntry, Envelope, Purpose, RpcError, RpcMap, RpcType } from './rpc.js'
 export { isEnvelope } from './rpc.js'
+export type {
+  ActionKind,
+  AgentAction,
+  GateChoice,
+  GateDecision,
+  GateOutcome,
+  GateReason,
+  UnresolvedFinding,
+} from './gate.js'

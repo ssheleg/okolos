@@ -19,7 +19,7 @@ are specified once in [screens.md](screens.md).
 | SCN-007 | Known-malicious page blocked | web-guard | P-02 | ST-005, ST-016, FLW-04 | draft | — |
 | SCN-008 | ClickFix — page copies a command | web-guard | P-02 | ST-007, FLW-06 | draft | — |
 | SCN-009 | Browser-lock trap escape | web-guard | P-02 | ST-008, FLW-07 | draft | — |
-| SCN-010 | Agent blocked from acting on a poisoned page | ai-shield | P-01 | ST-004, FLW-03 | draft | — |
+| SCN-010 | Agent blocked from acting on a poisoned page | ai-shield | P-01 | ST-004, FLW-03 | implemented | 2026-08-05 PASS |
 | SCN-011 | Credential-entry guard on a new domain | web-guard | P-02 | ST-010, FLW-09 | draft | — |
 | SCN-012 | Download stopped by feed or hash | web-guard | P-01 | ST-009, FLW-08 | draft | — |
 | SCN-013 | Download partially checked — hash unavailable | web-guard | P-01 | ST-009, FLW-08 | draft | — |
@@ -150,9 +150,10 @@ See [foundation.md](foundation.md) → Personas.
 - **Alt paths:** user clicks "Allow once" -> the action proceeds and is journalled with the finding attached
 - **UI elements:** gate modal, action description, finding line, "Block" (default), "Allow once", "Show the injection"
 - **States covered:** success, error
-- **Errors & recovery:** the action context cannot be identified -> system blocks and states what could not be determined; the gate timing out defaults to Block, never to Allow
-- **Status:** draft
-- **Coverage:** none yet
+- **Errors & recovery:** the action context cannot be identified -> system blocks and states what could not be determined; the gate timing out defaults to Block, never to Allow; the gate surface itself cannot be shown -> the action is blocked and journalled
+- **Known limit:** the hold is driven by DOM events the browser marks untrusted. A page calling `form.submit()` directly fires no event at all and cannot be seen from an isolated world; a scripted click or `requestSubmit()` — what agent tooling actually does — is caught.
+- **Status:** implemented
+- **Coverage:** packages/core-gate/src/decide.ts:48, apps/extension/src/content/agent-gate.ts:52, packages/ui/src/gate/gate.ts:38, e2e/scn-010.spec.ts:31
 
 ## web-guard
 

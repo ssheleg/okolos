@@ -1,8 +1,22 @@
 import { planSanitisation } from '@okolos/core-sanitizer'
 import { detectPlatform } from '@okolos/platform'
-import { mountBanner, mountInspector, type BannerHandle, type InspectorHandle } from '@okolos/ui'
-import type { Severity, Verdict } from '@okolos/contracts'
+import {
+  mountBanner,
+  mountGate,
+  mountInspector,
+  type BannerHandle,
+  type GateHandle,
+  type InspectorHandle,
+} from '@okolos/ui'
+import type {
+  AgentAction,
+  GateChoice,
+  Severity,
+  UnresolvedFinding,
+  Verdict,
+} from '@okolos/contracts'
 
+import { AgentGate } from './agent-gate.js'
 import { collect, DEFAULT_BUDGET } from './collect.js'
 import { Sanitiser } from './sanitize.js'
 
@@ -32,8 +46,28 @@ const isTopFrame = window.top === window
 
 const sanitiser = new Sanitiser(document)
 
+/**
+ * How long a held action waits for a person. Long enough to read the modal and
+ * look at the evidence; short enough that a page left open does not hold an
+ * action forever. Running out blocks — never allows.
+ */
+const GATE_TIMEOUT_MS = 30_000
+
+/**
+ * What the gate treats as "the page is still compromised".
+ *
+ * A finding stops gating when the user has said the page is fine: dismissing
+ * the banner or disputing the finding. Choosing to keep the text neutralised is
+ * agreement that the page is hostile, so the gate stays on — as does restoring
+ * the text, which puts the instruction back.
+ */
+let unresolved: UnresolvedFinding[] = []
+/** Kept so the gate can open the evidence for the finding it is asking about. */
+let lastVerdicts: Verdict[] = []
+
 let banner: BannerHandle | null = null
 let inspector: InspectorHandle | null = null
+let gate: GateHandle | null = null
 let lastRescans: number[] = []
 let pending: ReturnType<typeof setTimeout> | null = null
 
@@ -75,8 +109,20 @@ async function scan(): Promise<void> {
   // in the top document.
   const neutralised = sanitiser.apply(planSanitisation(verdicts))
 
+  // The gate arms in every frame too. An agent acting on an instruction it read
+  // in an iframe submits that iframe's form, and the top frame never sees it.
+  lastVerdicts = verdicts
+  unresolved = verdicts.map((verdict) => ({ id: verdict.id, summary: summarise(verdict) }))
+
   if (!isTopFrame) return
   show(worst(verdicts), verdicts.length, page.truncated, neutralised)
+}
+
+function summarise(verdict: Verdict): string {
+  const snippet = verdict.evidence.find((item) => item.snippet)?.snippet
+  return snippet
+    ? `Hidden text on this page addresses an assistant: "${snippet.slice(0, 120)}"`
+    : 'This page carries hidden text written for an AI assistant.'
 }
 
 function worst(verdicts: readonly Verdict[]): Verdict {
@@ -108,17 +154,20 @@ function show(verdict: Verdict, total: number, partialScan: boolean, neutralised
     {
       onPrimary: () => openInspector(verdict),
       onInspect: () => openInspector(verdict),
-      onDispute: () => {
-        banner?.destroy()
-        banner = null
-      },
+      onDispute: resolveEverything,
       onDismiss: () => {
         closeInspector()
-        banner?.destroy()
-        banner = null
+        resolveEverything()
       },
     },
   )
+}
+
+/** The user has said this page is fine. The gate stands down with the banner. */
+function resolveEverything(): void {
+  unresolved = []
+  banner?.destroy()
+  banner = null
 }
 
 function openInspector(verdict: Verdict): void {
@@ -134,8 +183,7 @@ function openInspector(verdict: Verdict): void {
       },
       onDispute: () => {
         closeInspector()
-        banner?.destroy()
-        banner = null
+        resolveEverything()
       },
       onClose: closeInspector,
     },
@@ -167,6 +215,68 @@ async function safely(work: () => Promise<void>): Promise<void> {
     // is trying to use.
     console.warn('okolos: scan failed', cause)
   }
+}
+
+/**
+ * The gate is installed once, on every frame, and costs nothing until a finding
+ * appears: with `unresolved` empty it returns on the first line of every click.
+ */
+new AgentGate({
+  doc: document,
+  unresolved: () => unresolved,
+  ask: askTheUser,
+  expiry: () =>
+    new Promise((resolve) =>
+      setTimeout(() => {
+        // Take the surface down with the deadline. A modal left standing after
+        // the action was already blocked is a page the user cannot use.
+        closeGate()
+        resolve()
+      }, GATE_TIMEOUT_MS),
+    ),
+  journal: (decision) => {
+    void platform.runtime.send('gate/decision', decision).catch(() => {
+      // The journal is best-effort; the decision has already been enforced.
+    })
+  },
+  newId: () => crypto.randomUUID(),
+}).install()
+
+function askTheUser(
+  action: AgentAction,
+  findings: readonly UnresolvedFinding[],
+): Promise<GateChoice> {
+  return new Promise((resolve) => {
+    gate = mountGate(
+      document,
+      {
+        action: action.description,
+        ...(action.target === undefined ? {} : { target: action.target }),
+        findings: findings.map((finding) => finding.summary),
+        timeoutSeconds: GATE_TIMEOUT_MS / 1000,
+      },
+      {
+        onBlock: () => {
+          closeGate()
+          resolve('block')
+        },
+        onAllowOnce: () => {
+          closeGate()
+          resolve('allow-once')
+        },
+        onShowInjection: () => {
+          // The gate stays up behind the evidence: looking is not deciding.
+          const verdict = lastVerdicts.find((item) => item.id === findings[0]?.id)
+          if (verdict) openInspector(verdict)
+        },
+      },
+    )
+  })
+}
+
+function closeGate(): void {
+  gate?.destroy()
+  gate = null
 }
 
 void safely(scan)

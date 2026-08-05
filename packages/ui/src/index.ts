@@ -11,6 +11,7 @@ export {
   type InspectorHandlers,
   type InspectorProps,
 } from './inspector/inspector.js'
+export { mountGate, type GateHandle, type GateHandlers, type GateProps } from './gate/gate.js'
 export {
   renderFirstRun,
   type CheckRow,

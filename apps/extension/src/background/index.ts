@@ -1,7 +1,14 @@
 import { classifyUndecided, detectHidden, type InferenceHost } from '@okolos/core-injection'
 import { detectPlatform } from '@okolos/platform'
 import { openDb, pruneExpired } from '@okolos/storage'
-import type { Envelope, PageCandidates, RpcMap, RpcType, Verdict } from '@okolos/contracts'
+import type {
+  Envelope,
+  GateDecision,
+  PageCandidates,
+  RpcMap,
+  RpcType,
+  Verdict,
+} from '@okolos/contracts'
 
 /**
  * The background context holds no state between wake-ups.
@@ -18,6 +25,8 @@ platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>) => {
   switch (message.type) {
     case 'page/candidates':
       return handleCandidates(message.payload as PageCandidates) as Promise<RpcMap[T]['res']>
+    case 'gate/decision':
+      return handleGateDecision(message.payload as GateDecision) as Promise<RpcMap[T]['res']>
     default:
       // Unknown types are answered by the adapter, not thrown here: a version
       // skew must not turn into a broken page.
@@ -66,6 +75,34 @@ async function handleCandidates(page: PageCandidates): Promise<{ verdicts: Verdi
   }
 
   return { verdicts }
+}
+
+/**
+ * A held action is journalled here rather than in the page, because the page is
+ * the thing under suspicion. Whether the user allowed it or blocked it, the
+ * record survives the tab that produced it.
+ */
+async function handleGateDecision(decision: GateDecision): Promise<{ ok: true }> {
+  try {
+    const db = await openDb()
+    await db.put('journal', {
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+      kind: 'action',
+      detail: {
+        actionId: decision.actionId,
+        outcome: decision.outcome,
+        reason: decision.reason,
+        findings: decision.findingIds.join(','),
+        explain: decision.explain,
+      },
+    })
+  } catch (cause) {
+    // The decision was already enforced in the page; losing the record is bad
+    // but not dangerous, and saying so beats pretending it was written.
+    console.warn('okolos: could not journal a gate decision', cause)
+  }
+  return { ok: true }
 }
 
 // Through the adapter, like everything else. Reaching for chrome.* directly

@@ -68,6 +68,9 @@ importers:
       '@okolos/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@okolos/core-gate':
+        specifier: workspace:*
+        version: link:../../packages/core-gate
       '@okolos/core-injection':
         specifier: workspace:*
         version: link:../../packages/core-injection
@@ -88,6 +91,12 @@ importers:
         version: link:../../packages/ui
 
   packages/contracts: {}
+
+  packages/core-gate:
+    dependencies:
+      '@okolos/contracts':
+        specifier: workspace:*
+        version: link:../contracts
 
   packages/core-injection:
     dependencies:

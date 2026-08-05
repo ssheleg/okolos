@@ -22,7 +22,7 @@
 | **M2** | Стенд производительности | REQ-09 | `bench`, CI-джоб | M0 |
 | **M3** | Детект инъекций | REQ-03, REQ-04, REQ-05 | `core-injection`, `corpora/injections` | M0 |
 | **M4** | Поверхности AI Shield | REQ-06, REQ-07 | `ui/banner`, `ui/inspector`, `ui/first-run` | M0, M1, M3 |
-| **M5** | Санитайзер и гейт агента | REQ-10, REQ-11 | `core-sanitizer`, `ui/agent-gate` | M3, M4 |
+| **M5** | Санитайзер и гейт агента | REQ-10, REQ-11 | `core-sanitizer`, `core-gate`, `ui/gate`, `content/agent-gate` | M3, M4 |
 | **M6** | Ежедневные поверхности | REQ-12 | `ui/popup`, `ui/journal`, `ui/queue` | M0, M1 |
 | **M7** | Фиды и подпись | REQ-13 | `feeds`, `crypto/ed25519` | M0, M1 |
 | **M8** | Guard ссылок и страниц | REQ-14, REQ-15, REQ-16, REQ-17, REQ-18 | `core-url`, `core-page`, `ui/interstitial` | M7, M4 |

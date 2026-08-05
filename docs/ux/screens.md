@@ -18,7 +18,7 @@ self-audit panel.
 | SCR-03 | In-page warning banner | FLW-02, FLW-05, FLW-06, FLW-07, FLW-08, FLW-09, FLW-10 | - | built | packages/ui/src/banner/banner.ts:52 |
 | SCR-04 | Finding inspector | FLW-02, FLW-03 | - | built | packages/ui/src/inspector/inspector.ts:57 |
 | SCR-05 | Block interstitial | FLW-04 | - | designed | none yet |
-| SCR-06 | Agent action gate | FLW-03 | - | designed | none yet |
+| SCR-06 | Agent action gate | FLW-03 | - | built | e2e/scn-010.spec.ts |
 | SCR-07 | Findings queue | FLW-01, FLW-17 | - | designed | none yet |
 | SCR-08 | Leaks and repair | FLW-10, FLW-11, FLW-16 | - | designed | none yet |
 | SCR-09 | Extensions watch | FLW-12 | - | designed | none yet |
@@ -144,12 +144,12 @@ self-audit panel.
   |-------|---------|-------------|----------|
   | success | sensitive action on a page with an unresolved finding | - | modal, blocking, default is Block |
   | error | the action context cannot be identified | - | blocks and says what could not be determined |
-- **Behavior notes:** timing out defaults to Block, never to Allow
+- **Behavior notes:** timing out defaults to Block, never to Allow; Block holds focus so a stray Enter blocks; Escape blocks; "Show the injection" leaves the gate standing behind the evidence
 - **Wireframe:** wireframes/SCR-06.md
-- **Coverage:** none yet
+- **Coverage:** packages/ui/src/gate/gate.ts:38, e2e/scn-010.spec.ts:31
 - **Scenarios:** SCN-010
 - **Resources:** action interceptor, finding store
-- **Status:** designed
+- **Status:** built
 
 ### SCR-07: Findings queue
 - **Used by:** FLW-01, FLW-17

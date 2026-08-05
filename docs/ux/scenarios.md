@@ -13,7 +13,7 @@ are specified once in [screens.md](screens.md).
 | SCN-001 | First run — clean result | onboarding | P-01 | ST-018, FLW-01 | implemented | 2026-08-04 PARTIAL |
 | SCN-002 | First run — findings found | onboarding | P-01 | ST-018, ST-015, FLW-01 | draft | — |
 | SCN-003 | Hidden instruction detected on a page | ai-shield | P-01 | ST-001, FLW-02 | implemented | 2026-08-04 PASS |
-| SCN-004 | Inspect what was hidden | ai-shield | P-01 | ST-002, FLW-02 | implemented | 2026-08-04 PARTIAL |
+| SCN-004 | Inspect what was hidden | ai-shield | P-01 | ST-002, FLW-02 | implemented | 2026-08-04 PASS |
 | SCN-005 | Neutralise and restore | ai-shield | P-01 | ST-003, FLW-02 | draft | — |
 | SCN-006 | Lookalike domain warning | web-guard | P-01 | ST-006, FLW-05 | draft | — |
 | SCN-007 | Known-malicious page blocked | web-guard | P-02 | ST-005, ST-016, FLW-04 | draft | — |
@@ -116,7 +116,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** loading, success, error
 - **Errors & recovery:** evidence cannot be loaded -> inline failure with retry; the banner and the neutralisation both remain in place
 - **Status:** implemented
-- **Coverage:** packages/ui/src/inspector/inspector.ts:57, apps/extension/src/content/index.ts:112, e2e/scn-004.spec.ts:19 — PARTIAL: the click path from banner to inspector cannot be driven end-to-end through a closed shadow root, so it rests on unit tests; see REQ-35
+- **Coverage:** packages/ui/src/inspector/inspector.ts:57, apps/extension/src/content/index.ts:112, e2e/scn-004-click.spec.ts:19 — the click path is exercised against a build whose only difference is an open shadow root (REQ-35); a bundle gate asserts production keeps it closed
 
 ### SCN-005: Neutralise and restore
 - **Persona:** P-01

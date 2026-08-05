@@ -121,6 +121,21 @@ describe('what the shipped extension is made of', () => {
     }
   })
 
+  it('ships surfaces the page cannot reach into', () => {
+    // REQ-35 added a build flag that opens the shadow root so end-to-end tests
+    // can click the controls a user clicks. The production build must never
+    // carry it: an open root would let a hostile page hide the warning about
+    // itself, which is the property the whole surface rests on.
+    for (const browser of ['chrome', 'firefox']) {
+      const content = readFileSync(
+        path.join(root, `apps/extension/dist/${browser}/content.js`),
+        'utf8',
+      )
+      expect(content, `${browser} build must use a closed shadow root`).toContain('"closed"')
+      expect(content, `${browser} build must not carry the test hook`).not.toContain('"open"')
+    }
+  })
+
   it('ships a manifest beside the code in both builds', () => {
     for (const browser of ['chrome', 'firefox']) {
       const manifest = JSON.parse(

@@ -24,14 +24,23 @@ const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const app = path.join(root, 'apps/extension')
 const targets = ['chrome', 'firefox']
 
+/**
+ * `--with-test-hooks` produces a parallel build in dist/<target>-e2e whose
+ * in-page surfaces use an open shadow root, so end-to-end tests can drive the
+ * controls a user clicks. The production build never carries it, and a bundle
+ * gate asserts that.
+ */
+const withTestHooks = process.argv.includes('--with-test-hooks')
+
 const shared = {
   configFile: false,
   logLevel: 'warn',
   resolve: { conditions: ['import', 'module', 'browser', 'default'] },
+  define: { __OKOLOS_TEST_HOOKS__: JSON.stringify(withTestHooks) },
 }
 
 for (const target of targets) {
-  const outDir = path.join(app, 'dist', target)
+  const outDir = path.join(app, 'dist', withTestHooks ? `${target}-e2e` : target)
   await rm(outDir, { recursive: true, force: true })
   await mkdir(outDir, { recursive: true })
 
@@ -92,5 +101,5 @@ for (const target of targets) {
   const manifest = await readFile(path.join(app, `manifest.${target}.json`), 'utf8')
   await writeFile(path.join(outDir, 'manifest.json'), manifest)
 
-  console.log(`built ${target} → apps/extension/dist/${target}`)
+  console.log(`built ${target}${withTestHooks ? ' (test hooks)' : ''} → ${path.relative(root, outDir)}`)
 }

@@ -1,3 +1,4 @@
+import { shadowMode } from '../shadow.js'
 import type { Confidence, Evidence } from '@okolos/contracts'
 
 /**
@@ -60,7 +61,7 @@ export function mountInspector(
 ): InspectorHandle {
   const host = doc.createElement('okolos-inspector')
   host.setAttribute('data-okolos', 'inspector')
-  const root = host.attachShadow({ mode: 'closed' })
+  const root = host.attachShadow({ mode: shadowMode() })
   root.append(styles(doc), panel(doc, props, handlers))
   doc.body.append(host)
 

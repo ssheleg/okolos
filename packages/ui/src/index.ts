@@ -19,3 +19,4 @@ export {
   type FirstRunProps,
 } from './first-run/screen.js'
 export { renderSelfAudit, type PanelHandlers, type PanelState } from './self-audit/panel.js'
+export { shadowMode } from './shadow.js'

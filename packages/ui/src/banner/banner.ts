@@ -1,3 +1,4 @@
+import { shadowMode } from '../shadow.js'
 import type { Severity, VerdictCategory } from '@okolos/contracts'
 
 /**
@@ -69,7 +70,7 @@ export function mountBanner(
 ): BannerHandle {
   const host = doc.createElement('okolos-banner')
   host.setAttribute('data-okolos', 'banner')
-  const root = host.attachShadow({ mode: 'closed' })
+  const root = host.attachShadow({ mode: shadowMode() })
   root.append(styles(doc), panel(doc, props, handlers))
   doc.body.append(host)
 

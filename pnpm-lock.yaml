@@ -42,6 +42,24 @@ importers:
         specifier: ^3.2.4
         version: 3.2.7(@types/node@22.20.1)(happy-dom@20.11.1)
 
+  apps/extension:
+    dependencies:
+      '@okolos/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@okolos/core-injection':
+        specifier: workspace:*
+        version: link:../../packages/core-injection
+      '@okolos/net':
+        specifier: workspace:*
+        version: link:../../packages/net
+      '@okolos/platform':
+        specifier: workspace:*
+        version: link:../../packages/platform
+      '@okolos/storage':
+        specifier: workspace:*
+        version: link:../../packages/storage
+
   packages/contracts: {}
 
   packages/core-injection:

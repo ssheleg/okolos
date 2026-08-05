@@ -1,0 +1,10 @@
+{
+  "name": "@okolos/core-credential",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "description": "Decides whether typing a password here deserves a pause. Pure.",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "build": "tsc -b" }
+}

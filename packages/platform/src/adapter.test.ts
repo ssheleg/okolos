@@ -9,7 +9,7 @@ import type { WebExtensionApi } from './types.js'
  * is the exception: it has no base to merge into, so a test that wants one
  * supplies the whole thing.
  */
-type OptionalSection = 'offscreen' | 'declarativeNetRequest' | 'webNavigation'
+type OptionalSection = 'offscreen' | 'declarativeNetRequest' | 'webNavigation' | 'downloads'
 type ApiOverrides = {
   [K in Exclude<keyof WebExtensionApi, OptionalSection>]?: Partial<WebExtensionApi[K]>
 } & { [K in OptionalSection]?: WebExtensionApi[K] }
@@ -45,13 +45,14 @@ function fakeApi(overrides: ApiOverrides = {}): WebExtensionApi {
   // Merged one level deep on purpose. With a flat spread, adding a capability
   // to Platform forced every test that stubs one runtime method to restate all
   // of them — churn that hides what each test actually cares about.
-  const { offscreen, declarativeNetRequest, webNavigation, ...sections } = overrides
+  const { offscreen, declarativeNetRequest, webNavigation, downloads, ...sections } = overrides
   return {
     ...base,
     ...sections,
     ...(offscreen ? { offscreen } : {}),
     ...(declarativeNetRequest ? { declarativeNetRequest } : {}),
     ...(webNavigation ? { webNavigation } : {}),
+    ...(downloads ? { downloads } : {}),
     runtime: { ...base.runtime, ...overrides.runtime },
     tabs: { ...base.tabs, ...overrides.tabs },
     storage: { ...base.storage, ...overrides.storage },
@@ -250,5 +251,28 @@ describe('blocking before the page renders', () => {
     platform.blocking.onBlocked((url) => seen.push(url))
     held.fire?.({ url: 'https://ads.test/frame', frameId: 3 })
     expect(seen).toEqual([])
+  })
+})
+
+describe('downloads', () => {
+  it('reports a bare filename, whatever path the browser hands over', () => {
+    // Chrome gives a full path; the user only ever sees the last part, and the
+    // extension checks are about the name, not the folder.
+    const held: { fire?: (item: { id: number; url: string; filename?: string }) => void } = {}
+    const platform = createPlatform('chrome', fakeApi({
+      downloads: {
+        onCreated: { addListener: (cb) => { held.fire = cb } },
+        cancel: async () => undefined,
+      },
+    }))
+
+    const seen: string[] = []
+    platform.downloads.onCreated((item) => seen.push(item.filename))
+    held.fire?.({ id: 1, url: 'https://x.test/a', filename: '/Users/me/Downloads/setup.exe' })
+    expect(seen).toEqual(['setup.exe'])
+  })
+
+  it('says when the browser has no downloads API rather than pretending', () => {
+    expect(createPlatform('chrome', fakeApi()).downloads.available()).toBe(false)
   })
 })

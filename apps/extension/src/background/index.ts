@@ -12,6 +12,7 @@ import type {
   Verdict,
 } from '@okolos/contracts'
 
+import { handleDownload } from './downloads.js'
 import { createInferenceHost } from './inference.js'
 
 /**
@@ -35,6 +36,8 @@ platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>) => {
       return blockContext() as Promise<RpcMap[T]['res']>
     case 'block/allow':
       return allowBlocked(message.payload as { url: string }) as Promise<RpcMap[T]['res']>
+    case 'site/facts':
+      return siteFacts(message.payload as { host: string }) as Promise<RpcMap[T]['res']>
     case 'trap/warned':
       return journalTrap(message.payload as { kind: string; signals: string }) as Promise<RpcMap[T]['res']>
     case 'recovery/open':
@@ -264,6 +267,35 @@ async function allowBlocked(payload: { url: string }): Promise<{ url: string } |
   return { url: target }
 }
 
+/**
+ * What this device knows about a host, and nothing more.
+ *
+ * The first visit is recorded here rather than read from browsing history: the
+ * history permission would give this extension every page the user has ever
+ * opened, to answer a question that only needs one date per domain.
+ */
+async function siteFacts(payload: { host: string }): Promise<{
+  trusted: boolean
+  firstSeen: string | null
+}> {
+  try {
+    const db = await openDb()
+    const trustedRow = await db.get('exceptions', ['domain', payload.host])
+    const seen = await db.get('settings', `seen:${payload.host}`)
+    const firstSeen = typeof seen?.value === 'string' ? seen.value : null
+
+    if (!firstSeen) {
+      await db.put('settings', { key: `seen:${payload.host}`, value: new Date().toISOString() })
+    }
+
+    return { trusted: Boolean(trustedRow), firstSeen }
+  } catch {
+    // Unknown is not the same as new: the guard is told nothing is known and
+    // says so, rather than being told the site is brand new.
+    return { trusted: false, firstSeen: null }
+  }
+}
+
 async function journalTrap(payload: { kind: string; signals: string }): Promise<{ ok: true }> {
   const wording: Record<string, string> = {
     clickfix: 'A page copied a command and asked you to run it outside the browser.',
@@ -332,6 +364,39 @@ platform.blocking.onBlocked((url) => {
 })
 
 void refreshBlockRules().catch(() => undefined)
+
+/**
+ * Downloads are judged as they are created — the only moment the bytes have not
+ * landed yet. Nothing here waits on the page: a direct link has no page.
+ */
+platform.downloads.onCreated((item) => {
+  void handleDownload(item, {
+    feed: currentFeed,
+    cancel: (id) => platform.downloads.cancel(id),
+    journal: async (entry) => {
+      const db = await openDb()
+      const now = new Date().toISOString()
+      await db.put('journal', {
+        id: `download:${item.id}:${now}`,
+        createdAt: now,
+        kind: entry.outcome === 'block' ? 'verdict' : 'action',
+        detail: { explain: entry.explain, outcome: entry.outcome },
+      })
+    },
+    announce: async (verdict) => {
+      // Best-effort: a download started from a page gets a banner there. One
+      // started from a bookmark has no page, and the journal is the record.
+      await platform.runtime
+        .send('download/verdict', {
+          action: verdict.action,
+          headline: verdict.headline,
+          reasons: verdict.reasons.join(' '),
+          skipped: verdict.skipped.map((entry) => `${entry.check}: ${entry.why}`).join('; '),
+        })
+        .catch(() => undefined)
+    },
+  })
+})
 
 void platform.alarms.create(RETENTION_ALARM, 60 * 24)
 platform.alarms.onFired((name) => {

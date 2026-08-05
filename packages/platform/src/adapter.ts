@@ -95,6 +95,25 @@ export function createPlatform(kind: Platform['kind'], api: WebExtensionApi): Pl
       },
     },
 
+    downloads: {
+      available: () => Boolean(api.downloads),
+
+      onCreated(handler): void {
+        api.downloads?.onCreated.addListener((item) => {
+          handler({
+            id: item.id,
+            url: item.url,
+            filename: (item.filename ?? '').split(/[\\/]/).pop() ?? '',
+            mime: item.mime ?? null,
+          })
+        })
+      },
+
+      async cancel(id: number): Promise<void> {
+        await api.downloads?.cancel(id)
+      },
+    },
+
     blocking: {
       async replaceRules(rules: readonly unknown[]): Promise<void> {
         const dnr = api.declarativeNetRequest

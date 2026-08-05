@@ -31,7 +31,8 @@
     "activeTab",
     "offscreen",
     "declarativeNetRequest",
-    "webNavigation"
+    "webNavigation",
+    "downloads"
   ],
   "icons": {},
   "minimum_chrome_version": "116",

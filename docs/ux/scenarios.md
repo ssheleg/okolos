@@ -20,9 +20,9 @@ are specified once in [screens.md](screens.md).
 | SCN-008 | ClickFix — page copies a command | web-guard | P-02 | ST-007, FLW-06 | implemented | 2026-08-05 PASS |
 | SCN-009 | Browser-lock trap escape | web-guard | P-02 | ST-008, FLW-07 | implemented | 2026-08-05 PASS |
 | SCN-010 | Agent blocked from acting on a poisoned page | ai-shield | P-01 | ST-004, FLW-03 | implemented | 2026-08-05 PASS |
-| SCN-011 | Credential-entry guard on a new domain | web-guard | P-02 | ST-010, FLW-09 | draft | — |
-| SCN-012 | Download stopped by feed or hash | web-guard | P-01 | ST-009, FLW-08 | draft | — |
-| SCN-013 | Download partially checked — hash unavailable | web-guard | P-01 | ST-009, FLW-08 | draft | — |
+| SCN-011 | Credential-entry guard on a new domain | web-guard | P-02 | ST-010, FLW-09 | implemented | 2026-08-05 PASS |
+| SCN-012 | Download stopped by feed or hash | web-guard | P-01 | ST-009, FLW-08 | implemented | 2026-08-05 unit |
+| SCN-013 | Download partially checked — hash unavailable | web-guard | P-01 | ST-009, FLW-08 | implemented | 2026-08-05 unit |
 | SCN-014 | Submitted password is compromised | credentials | P-01 | ST-011, FLW-10 | draft | — |
 | SCN-015 | Leak inventory with one source unavailable | credentials | P-01 | ST-012, FLW-11 | draft | — |
 | SCN-016 | Repair a leak and mark it resolved | credentials | P-01 | ST-015, ST-012, FLW-11 | draft | — |
@@ -243,9 +243,9 @@ See [foundation.md](foundation.md) → Personas.
 - **Alt paths:** user clicks "I trust this site" -> the domain is trusted and the warning is suppressed there on; user ignores it and types -> the warning stays visible but never blocks input
 - **UI elements:** inline banner (credential variant), "Why", domain facts, "Leave", "I trust this site"
 - **States covered:** success
-- **Errors & recovery:** domain age data unavailable -> the warning states which facts are missing rather than implying the domain is new
-- **Status:** draft
-- **Coverage:** none yet
+- **Errors & recovery:** domain age data unavailable -> the warning states which facts are missing rather than implying the domain is new. Registration age is never looked up at all: asking a server would send the address of every login page the user visits
+- **Status:** implemented
+- **Coverage:** packages/core-credential/src/guard.ts:39, apps/extension/src/content/credential.ts:29, e2e/scn-011.spec.ts:20
 
 ### SCN-012: Download stopped by feed or hash
 - **Persona:** P-01
@@ -261,9 +261,9 @@ See [foundation.md](foundation.md) → Personas.
 - **Alt paths:** user clicks "Keep anyway" -> the download proceeds and the exception is journalled
 - **UI elements:** blocking banner (download variant), matched-source line, "Discard file" (primary), "Keep anyway"
 - **States covered:** success, error
-- **Errors & recovery:** feeds unavailable or stale -> system says the checks were limited and proceeds to hash checking; the verdict never claims more than the checks that actually ran
-- **Status:** draft
-- **Coverage:** none yet
+- **Errors & recovery:** feeds unavailable or stale -> system says the checks were limited; the verdict never claims more than the checks that actually ran
+- **Status:** implemented
+- **Coverage:** packages/core-download/src/judge.ts:60, apps/extension/src/background/downloads.ts:26 (unit only — driving a real download through an extension in Playwright is not stable enough to gate on)
 
 ### SCN-013: Download partially checked — hash unavailable
 - **Persona:** P-01
@@ -279,9 +279,9 @@ See [foundation.md](foundation.md) → Personas.
 - **Alt paths:** file type is executable with a mismatched MIME or a double extension -> the banner escalates to a warning naming that specific reason
 - **UI elements:** informational banner (download variant), "checks that ran" list, "checks that did not run" list with reasons
 - **States covered:** success, error
-- **Errors & recovery:** all checks fail -> the banner says the file was not checked at all, and offers the manual hash-check instructions
-- **Status:** draft
-- **Coverage:** none yet
+- **Errors & recovery:** all checks fail -> the verdict says the file was not checked at all
+- **Status:** implemented
+- **Coverage:** packages/core-download/src/judge.ts:104, apps/extension/src/background/downloads.test.ts:60 (unit only, as SCN-012)
 
 ## credentials
 

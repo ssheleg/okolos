@@ -68,6 +68,12 @@ importers:
       '@okolos/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@okolos/core-credential':
+        specifier: workspace:*
+        version: link:../../packages/core-credential
+      '@okolos/core-download':
+        specifier: workspace:*
+        version: link:../../packages/core-download
       '@okolos/core-feeds':
         specifier: workspace:*
         version: link:../../packages/core-feeds
@@ -106,6 +112,10 @@ importers:
         version: link:../../packages/ui
 
   packages/contracts: {}
+
+  packages/core-credential: {}
+
+  packages/core-download: {}
 
   packages/core-feeds:
     dependencies:

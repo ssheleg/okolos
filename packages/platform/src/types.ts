@@ -17,6 +17,16 @@ export interface Platform {
   readonly tabs: Tabs
   readonly inference: Inference
   readonly blocking: Blocking
+  readonly downloads: Downloads
+}
+
+/** Downloads, where the only moment to intervene is before the bytes land. */
+export interface Downloads {
+  /** Fires as an item is created, before it is written. */
+  onCreated(handler: (item: { id: number; url: string; filename: string; mime: string | null }) => void): void
+  cancel(id: number): Promise<void>
+  /** True when this browser exposes the API at all. */
+  available(): boolean
 }
 
 /** Network-level blocking, which is the only kind that happens before render. */
@@ -110,6 +120,14 @@ export interface WebExtensionApi {
     onRuleMatchedDebug?: {
       addListener(cb: (info: { request: { url: string } }) => void): void
     }
+  }
+  downloads?: {
+    onCreated: {
+      addListener(
+        cb: (item: { id: number; url: string; filename?: string; mime?: string }) => void,
+      ): void
+    }
+    cancel(id: number): Promise<void>
   }
   webNavigation?: {
     onBeforeNavigate: {

@@ -1,3 +1,4 @@
+import { checkLookalike, DEFAULT_WATCHLIST } from '@okolos/core-lookalike'
 import { planSanitisation } from '@okolos/core-sanitizer'
 import { detectPlatform } from '@okolos/platform'
 import {
@@ -19,6 +20,7 @@ import type {
 import { AgentGate } from './agent-gate.js'
 import { collect, DEFAULT_BUDGET } from './collect.js'
 import { warnIfLookalike } from './lookalike.js'
+import { watchCredentialFields } from './credential.js'
 import { watchForTraps } from './traps.js'
 import { Sanitiser } from './sanitize.js'
 
@@ -252,6 +254,33 @@ if (isTopFrame) {
   })
 }
 
+/**
+ * The password pause, top frame only: a login form in a subframe is warned
+ * about by the frame it is in, and two banners for one field is one too many.
+ */
+if (isTopFrame) {
+  watchCredentialFields({
+    doc: document,
+    host: () => location.hostname,
+    now: () => new Date().toISOString(),
+    facts: async (host) => {
+      const known = await platform.runtime.send('site/facts', { host })
+      const trusted = (await platform.runtime.send('trust/list', {}))?.domains ?? []
+      return {
+        trusted: known?.trusted ?? trusted.includes(host),
+        firstSeen: known?.firstSeen ?? null,
+        secure: location.protocol === 'https:',
+        postsTo: null,
+        resembles: checkLookalike(host, [...DEFAULT_WATCHLIST, ...trusted])?.resembles ?? null,
+      }
+    },
+    trust: async (host) => {
+      await platform.runtime.send('trust/add', { domain: host })
+    },
+    leave: () => history.back(),
+  })
+}
+
 void safely(scan)
   }, RESCAN_DEBOUNCE_MS)
 }
@@ -372,6 +401,33 @@ if (isTopFrame) {
         // out is to close the tab.
       })
     },
+  })
+}
+
+/**
+ * The password pause, top frame only: a login form in a subframe is warned
+ * about by the frame it is in, and two banners for one field is one too many.
+ */
+if (isTopFrame) {
+  watchCredentialFields({
+    doc: document,
+    host: () => location.hostname,
+    now: () => new Date().toISOString(),
+    facts: async (host) => {
+      const known = await platform.runtime.send('site/facts', { host })
+      const trusted = (await platform.runtime.send('trust/list', {}))?.domains ?? []
+      return {
+        trusted: known?.trusted ?? trusted.includes(host),
+        firstSeen: known?.firstSeen ?? null,
+        secure: location.protocol === 'https:',
+        postsTo: null,
+        resembles: checkLookalike(host, [...DEFAULT_WATCHLIST, ...trusted])?.resembles ?? null,
+      }
+    },
+    trust: async (host) => {
+      await platform.runtime.send('trust/add', { domain: host })
+    },
+    leave: () => history.back(),
   })
 }
 

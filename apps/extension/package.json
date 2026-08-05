@@ -21,6 +21,8 @@
     "@okolos/model": "workspace:*",
     "@okolos/core-feeds": "workspace:*",
     "@okolos/core-lookalike": "workspace:*",
-    "@okolos/core-traps": "workspace:*"
+    "@okolos/core-traps": "workspace:*",
+    "@okolos/core-credential": "workspace:*",
+    "@okolos/core-download": "workspace:*"
   }
 }

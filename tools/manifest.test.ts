@@ -31,6 +31,8 @@ const ALLOWED_PERMISSIONS = [
   // means its scripts have already run.
   'declarativeNetRequest',
   'webNavigation',
+  // The only moment a dangerous file can be stopped is before it is written.
+  'downloads',
 ]
 const CHROME_ONLY_PERMISSIONS = ['offscreen']
 
@@ -39,8 +41,8 @@ describe('what the extension asks for', () => {
     it(`${browser}: requests only the permissions the skeleton needs`, () => {
       const expected =
         browser === 'chrome'
-          ? ['storage', 'alarms', 'activeTab', ...CHROME_ONLY_PERMISSIONS, 'declarativeNetRequest', 'webNavigation']
-          : ['storage', 'alarms', 'activeTab', 'declarativeNetRequest', 'webNavigation']
+          ? ['storage', 'alarms', 'activeTab', ...CHROME_ONLY_PERMISSIONS, 'declarativeNetRequest', 'webNavigation', 'downloads']
+          : ['storage', 'alarms', 'activeTab', 'declarativeNetRequest', 'webNavigation', 'downloads']
       expect(manifest(browser).permissions).toEqual(expected)
       expect(ALLOWED_PERMISSIONS.every((p) => expected.includes(p))).toBe(true)
     })

@@ -32,6 +32,13 @@ export interface RpcMap {
   /** Domains the user has marked legitimate, and the way to add one. */
   /** Opens the recovery checklist for what just happened. */
   /** Records a page trap in the journal, so the diff can show it. */
+  /** What this device knows about a host, for the credential guard. */
+  /** Announced to whatever page is listening; the journal is the real record. */
+  'download/verdict': {
+    req: { action: string; headline: string; reasons: string; skipped: string }
+    res: { ok: true }
+  }
+  'site/facts': { req: { host: string }; res: { trusted: boolean; firstSeen: string | null } }
   'trap/warned': { req: { kind: string; signals: string }; res: { ok: true } }
   'recovery/open': { req: { kind: string }; res: { ok: true } }
   'trust/list': { req: Record<string, never>; res: { domains: string[] } }

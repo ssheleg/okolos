@@ -5,6 +5,7 @@ export { createPlatform, toSafeUrl }
 export type {
   Alarms,
   Blocking,
+  Downloads,
   Inference,
   InferenceHostKind,
   KeyValueStore,

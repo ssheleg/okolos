@@ -19,14 +19,27 @@ let banner: BannerHandle | null = null
 let lastRescans: number[] = []
 let pending: ReturnType<typeof setTimeout> | null = null
 
+/**
+ * Performance marks are local to the page and never leave it. They exist so
+ * the budget can be measured where it actually matters — in a real browser on
+ * a real page — instead of being asserted against a synthetic DOM that has no
+ * layout engine behind it.
+ */
+const MARK_START = 'okolos:collect:start'
+const MARK_END = 'okolos:collect:end'
+export const MEASURE_COLLECT = 'okolos:collect'
+
 async function scan(): Promise<void> {
   const started = performance.now()
+  performance.mark(MARK_START)
   const page = collect(document, {
     url: location.href,
     frameId: 0,
     budget: DEFAULT_BUDGET,
     elapsed: () => performance.now() - started,
   })
+  performance.mark(MARK_END)
+  performance.measure(MEASURE_COLLECT, MARK_START, MARK_END)
 
   if (page.candidates.length === 0) return
 

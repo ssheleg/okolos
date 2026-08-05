@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "license": "AGPL-3.0-only",
-  "description": "Browser security for the age of AI agents \u2014 local-first, verifiable.",
+  "description": "Browser security for the age of AI agents — local-first, verifiable.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ssheleg/okolos.git"
@@ -26,9 +26,12 @@
     "gates": "pnpm lint && pnpm typecheck && pnpm test && pnpm ux:lint"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@eslint/js": "^9.39.0",
     "@playwright/test": "^1.57.0",
+    "@types/chrome": "^0.1.32",
     "@types/node": "^22.18.0",
+    "axe-core": "^4.12.1",
     "eslint": "^9.39.0",
     "fake-indexeddb": "^6.2.2",
     "fast-check": "^4.3.0",
@@ -36,8 +39,7 @@
     "prettier": "^3.6.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.0",
-    "vitest": "^3.2.4",
     "vite": "^7.3.6",
-    "@types/chrome": "^0.1.32"
+    "vitest": "^3.2.4"
   }
 }

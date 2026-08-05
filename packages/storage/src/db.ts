@@ -18,8 +18,9 @@ export async function openDb(): Promise<OkolosDatabase> {
     upgrade(db, from) {
       // Each version adds only what is missing. An upgrade that recreated the
       // stores would erase a user's findings to add a column.
-      if (from < 2 && db.objectStoreNames.contains('findings')) {
-        addModelStore(db)
+      if (from > 0 && db.objectStoreNames.contains('findings')) {
+        if (from < 2) addModelStore(db)
+        if (from < 3) addFeedStore(db)
         return
       }
 
@@ -41,6 +42,7 @@ export async function openDb(): Promise<OkolosDatabase> {
       db.createObjectStore('settings', { keyPath: 'key' })
       db.createObjectStore('snapshots', { keyPath: 'extensionId' })
       addModelStore(db)
+      addFeedStore(db)
     },
   })
 
@@ -51,6 +53,11 @@ function addModelStore(db: IDBPDatabase<OkolosDB>): void {
   if (db.objectStoreNames.contains('models')) return
   const models = db.createObjectStore('models', { keyPath: 'key' })
   models.createIndex('by-id', 'id')
+}
+
+function addFeedStore(db: IDBPDatabase<OkolosDB>): void {
+  if (db.objectStoreNames.contains('feeds')) return
+  db.createObjectStore('feeds', { keyPath: 'name' })
 }
 
 export function closeDb(): void {

@@ -4,6 +4,7 @@ import type { Platform, WebExtensionApi } from './types.js'
 export { createPlatform, toSafeUrl }
 export type {
   Alarms,
+  Blocking,
   Inference,
   InferenceHostKind,
   KeyValueStore,

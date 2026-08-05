@@ -30,6 +30,14 @@ export interface RpcMap {
   'data/export': { req: Record<string, never>; res: { json: string } }
   'data/wipe': { req: { confirm: true }; res: { ok: true } }
   'gate/decision': { req: GateDecision; res: { ok: true } }
+  /** Rebuilds blocking rules from the feed in force. */
+  'rules/refresh': { req: Record<string, never>; res: { installed: number; dropped: number } }
+  'block/context': {
+    req: Record<string, never>
+    res: { url: string; feed: string | null; entryDate: string | null; feedAgeDays: number | null } | null
+  }
+  /** Remembers the user's exception and returns where to go, or null if refused. */
+  'block/allow': { req: { url: string }; res: { url: string } | null }
   /** `score: null` means there is no model here — never that the text is fine. */
   'inference/score': { req: { text: string }; res: { score: number | null; backend: string | null } }
 }

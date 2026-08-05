@@ -1,5 +1,6 @@
 import { classifyUndecided, detectHidden } from '@okolos/core-injection'
 import { detectPlatform } from '@okolos/platform'
+import { buildRules, matchUrl, type FeedSnapshot } from '@okolos/core-feeds'
 import { createOnnxRuntime, MODEL } from '@okolos/model'
 import { createModelCache, openDb, pruneExpired } from '@okolos/storage'
 import type {
@@ -28,6 +29,12 @@ platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>) => {
   switch (message.type) {
     case 'page/candidates':
       return handleCandidates(message.payload as PageCandidates) as Promise<RpcMap[T]['res']>
+    case 'rules/refresh':
+      return refreshBlockRules() as Promise<RpcMap[T]['res']>
+    case 'block/context':
+      return blockContext() as Promise<RpcMap[T]['res']>
+    case 'block/allow':
+      return allowBlocked(message.payload as { url: string }) as Promise<RpcMap[T]['res']>
     case 'gate/decision':
       return handleGateDecision(message.payload as GateDecision) as Promise<RpcMap[T]['res']>
     default:
@@ -139,6 +146,129 @@ async function handleGateDecision(decision: GateDecision): Promise<{ ok: true }>
 platform.runtime.onInstalled(() => {
   void platform.tabs.create(platform.runtime.getUrl('first-run.html'))
 })
+
+/**
+ * Blocking happens in the network layer, not after the page has rendered — a
+ * page stopped after render has already run its scripts and started its timer.
+ * That means declarativeNetRequest rules, rebuilt whenever the feed or the
+ * user's exceptions change.
+ */
+const PHISHING_FEED = 'phishing'
+const INTERSTITIAL = '/interstitial.html'
+
+/** What the interstitial asks about. Lost on worker teardown, which is fine:
+ * the page asks again on load, and a missing answer is shown as unknown rather
+ * than guessed. */
+let lastBlock: { url: string; feed: string | null; entryDate: string | null } | null = null
+
+async function currentFeed(): Promise<FeedSnapshot | null> {
+  try {
+    const db = await openDb()
+    const row = await db.get('feeds', PHISHING_FEED)
+    return row
+      ? { name: row.name, version: row.version, updatedAt: row.updatedAt, entries: row.entries }
+      : null
+  } catch {
+    return null
+  }
+}
+
+export async function refreshBlockRules(): Promise<{ installed: number; dropped: number }> {
+  const feed = await currentFeed()
+  if (!feed) return { installed: 0, dropped: 0 }
+
+  const db = await openDb()
+  const exceptions = (await db.getAll('exceptions'))
+    .filter((row) => row.scope === 'domain')
+    .map((row) => row.ref)
+
+  const set = buildRules(feed, exceptions, INTERSTITIAL)
+  await platform.blocking.replaceRules(set.rules)
+
+  if (set.dropped > 0) {
+    // A silently enforced subset reads as full protection. It is not.
+    await db.put('journal', {
+      id: `feed:truncated:${new Date().toISOString()}`,
+      createdAt: new Date().toISOString(),
+      kind: 'error',
+      detail: {
+        explain: `${set.dropped} entries from ${feed.name} could not be enforced: the browser limits how many blocking rules an extension may install.`,
+        feed: feed.name,
+      },
+    })
+  }
+
+  return { installed: set.rules.length, dropped: set.dropped }
+}
+
+async function blockContext(): Promise<{
+  url: string
+  feed: string | null
+  entryDate: string | null
+  feedAgeDays: number | null
+} | null> {
+  if (!lastBlock) return null
+  const feed = await currentFeed()
+  const ageDays = feed
+    ? Math.floor((Date.now() - Date.parse(feed.updatedAt)) / 86_400_000)
+    : null
+  return {
+    url: lastBlock.url,
+    feed: lastBlock.feed,
+    entryDate: lastBlock.entryDate,
+    feedAgeDays: Number.isFinite(ageDays) ? ageDays : null,
+  }
+}
+
+async function allowBlocked(payload: { url: string }): Promise<{ url: string } | null> {
+  const target = payload.url
+  if (!target) return null
+
+  let host: string
+  try {
+    host = new URL(target).hostname
+  } catch {
+    return null
+  }
+
+  try {
+    const db = await openDb()
+    await db.put('exceptions', {
+      scope: 'domain',
+      ref: host,
+      createdAt: new Date().toISOString(),
+      reason: 'continued past a block',
+    })
+    await db.put('journal', {
+      id: `exception:${host}:${new Date().toISOString()}`,
+      createdAt: new Date().toISOString(),
+      kind: 'action',
+      detail: { explain: `You chose to keep visiting ${host} after it was blocked.`, reason: 'user-allowed' },
+    })
+    await refreshBlockRules()
+  } catch (cause) {
+    // Without a recorded exception the next visit is blocked again. Saying so
+    // beats sending the user back into a loop they cannot escape.
+    console.warn('okolos: could not record the exception', cause)
+    return null
+  }
+
+  return { url: target }
+}
+
+platform.blocking.onBlocked((url) => {
+  void (async () => {
+    const feed = await currentFeed()
+    const match = feed ? matchUrl(url, feed) : null
+    lastBlock = {
+      url,
+      feed: match?.feed ?? null,
+      entryDate: match?.updatedAt?.slice(0, 10) ?? null,
+    }
+  })()
+})
+
+void refreshBlockRules().catch(() => undefined)
 
 void platform.alarms.create(RETENTION_ALARM, 60 * 24)
 platform.alarms.onFired((name) => {

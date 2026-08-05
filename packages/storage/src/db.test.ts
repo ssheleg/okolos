@@ -116,3 +116,23 @@ describe('export and wipe', () => {
     expect(result.failed).toContain('journal')
   })
 })
+
+describe('upgrading an installed profile', () => {
+  it('adds the newer stores without recreating the older ones', async () => {
+    // An upgrade that dropped and recreated the stores would erase a user's
+    // findings to add a column. This asserts the data survives the jump.
+    const first = await openDb()
+    await first.put('findings', {
+      id: 'f1',
+      createdAt: '2026-08-01T00:00:00.000Z',
+      subject: 'page:https://example.test/a',
+      resolvedAt: null,
+    })
+    closeDb()
+
+    const upgraded = await openDb()
+    expect(await upgraded.get('findings', 'f1')).toMatchObject({ id: 'f1' })
+    expect([...upgraded.objectStoreNames]).toContain('models')
+    expect([...upgraded.objectStoreNames]).toContain('feeds')
+  })
+})

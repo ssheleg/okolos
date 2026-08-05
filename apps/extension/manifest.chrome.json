@@ -29,8 +29,24 @@
     "storage",
     "alarms",
     "activeTab",
-    "offscreen"
+    "offscreen",
+    "declarativeNetRequest",
+    "webNavigation"
   ],
   "icons": {},
-  "minimum_chrome_version": "116"
+  "minimum_chrome_version": "116",
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "interstitial.html"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
 }

@@ -95,6 +95,31 @@ export function createPlatform(kind: Platform['kind'], api: WebExtensionApi): Pl
       },
     },
 
+    blocking: {
+      async replaceRules(rules: readonly unknown[]): Promise<void> {
+        const dnr = api.declarativeNetRequest
+        if (!dnr) return
+
+        // Every rule replaced at once, never patched. A partial update leaves
+        // rules from a feed version nobody can name any more.
+        const existing = await dnr.getDynamicRules()
+        await dnr.updateDynamicRules({
+          removeRuleIds: existing.map((rule) => rule.id),
+          addRules: [...rules],
+        })
+      },
+
+      onBlocked(handler: (url: string) => void): void {
+        // The navigation that is about to be redirected is the only place the
+        // original URL is still visible: after the redirect the tab shows our
+        // own page and the target is gone.
+        api.webNavigation?.onBeforeNavigate.addListener((details) => {
+          if (details.frameId !== 0) return
+          handler(details.url)
+        })
+      },
+    },
+
     inference: {
       async ensureHost(): Promise<'offscreen' | 'background' | 'none'> {
         // Firefox has no offscreen API and does not need one: its background

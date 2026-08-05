@@ -68,6 +68,9 @@ importers:
       '@okolos/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@okolos/core-feeds':
+        specifier: workspace:*
+        version: link:../../packages/core-feeds
       '@okolos/core-gate':
         specifier: workspace:*
         version: link:../../packages/core-gate
@@ -98,6 +101,12 @@ importers:
 
   packages/contracts: {}
 
+  packages/core-feeds:
+    dependencies:
+      '@okolos/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+
   packages/core-gate:
     dependencies:
       '@okolos/contracts':
@@ -109,6 +118,8 @@ importers:
       '@okolos/contracts':
         specifier: workspace:*
         version: link:../contracts
+
+  packages/core-lookalike: {}
 
   packages/core-queue:
     dependencies:

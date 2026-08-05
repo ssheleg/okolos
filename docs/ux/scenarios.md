@@ -16,7 +16,7 @@ are specified once in [screens.md](screens.md).
 | SCN-004 | Inspect what was hidden | ai-shield | P-01 | ST-002, FLW-02 | implemented | 2026-08-04 PASS |
 | SCN-005 | Neutralise and restore | ai-shield | P-01 | ST-003, FLW-02 | implemented | 2026-08-04 PASS |
 | SCN-006 | Lookalike domain warning | web-guard | P-01 | ST-006, FLW-05 | draft | — |
-| SCN-007 | Known-malicious page blocked | web-guard | P-02 | ST-005, ST-016, FLW-04 | draft | — |
+| SCN-007 | Known-malicious page blocked | web-guard | P-02 | ST-005, ST-016, FLW-04 | implemented | 2026-08-05 PASS |
 | SCN-008 | ClickFix — page copies a command | web-guard | P-02 | ST-007, FLW-06 | draft | — |
 | SCN-009 | Browser-lock trap escape | web-guard | P-02 | ST-008, FLW-07 | draft | — |
 | SCN-010 | Agent blocked from acting on a poisoned page | ai-shield | P-01 | ST-004, FLW-03 | implemented | 2026-08-05 PASS |
@@ -190,8 +190,8 @@ See [foundation.md](foundation.md) → Personas.
 - **UI elements:** interstitial, verdict source line, "Go back" (primary), "Continue anyway", "I own this site", "Details"
 - **States covered:** success, error
 - **Errors & recovery:** feed metadata unavailable -> the block still applies, the interstitial says the source is unknown and how to check it; feeds stale beyond the freshness window -> the interstitial states the data age
-- **Status:** draft
-- **Coverage:** none yet
+- **Status:** implemented
+- **Coverage:** packages/core-feeds/src/rules.ts:39, packages/ui/src/interstitial/interstitial.ts:38, e2e/scn-007.spec.ts:39
 
 ### SCN-008: ClickFix — page copies a command
 - **Persona:** P-02

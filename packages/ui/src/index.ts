@@ -12,6 +12,11 @@ export {
   type InspectorProps,
 } from './inspector/inspector.js'
 export {
+  renderInterstitial,
+  type InterstitialHandlers,
+  type InterstitialProps,
+} from './interstitial/interstitial.js'
+export {
   renderJournal,
   type JournalHandlers,
   type JournalMeta,

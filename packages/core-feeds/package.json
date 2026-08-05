@@ -1,0 +1,11 @@
+{
+  "name": "@okolos/core-feeds",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "description": "Verifies and applies signed feed updates. Pure — no network, no clock, no crypto of its own.",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "build": "tsc -b" },
+  "dependencies": { "@okolos/contracts": "workspace:*" }
+}

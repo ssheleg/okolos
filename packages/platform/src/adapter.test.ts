@@ -9,9 +9,10 @@ import type { WebExtensionApi } from './types.js'
  * is the exception: it has no base to merge into, so a test that wants one
  * supplies the whole thing.
  */
+type OptionalSection = 'offscreen' | 'declarativeNetRequest' | 'webNavigation'
 type ApiOverrides = {
-  [K in Exclude<keyof WebExtensionApi, 'offscreen'>]?: Partial<WebExtensionApi[K]>
-} & { offscreen?: WebExtensionApi['offscreen'] }
+  [K in Exclude<keyof WebExtensionApi, OptionalSection>]?: Partial<WebExtensionApi[K]>
+} & { [K in OptionalSection]?: WebExtensionApi[K] }
 
 function fakeApi(overrides: ApiOverrides = {}): WebExtensionApi {
   const store: Record<string, unknown> = {}
@@ -44,11 +45,13 @@ function fakeApi(overrides: ApiOverrides = {}): WebExtensionApi {
   // Merged one level deep on purpose. With a flat spread, adding a capability
   // to Platform forced every test that stubs one runtime method to restate all
   // of them — churn that hides what each test actually cares about.
-  const { offscreen, ...sections } = overrides
+  const { offscreen, declarativeNetRequest, webNavigation, ...sections } = overrides
   return {
     ...base,
     ...sections,
     ...(offscreen ? { offscreen } : {}),
+    ...(declarativeNetRequest ? { declarativeNetRequest } : {}),
+    ...(webNavigation ? { webNavigation } : {}),
     runtime: { ...base.runtime, ...overrides.runtime },
     tabs: { ...base.tabs, ...overrides.tabs },
     storage: { ...base.storage, ...overrides.storage },
@@ -192,5 +195,60 @@ describe('where a model may run', () => {
     // other is a state the user can change.
     const platform = createPlatform('chrome', fakeApi())
     await expect(platform.inference.ensureHost()).resolves.toBe('none')
+  })
+})
+
+describe('blocking before the page renders', () => {
+  it('replaces every rule it owns rather than patching', async () => {
+    // A partial update leaves rules from a feed version nobody can name.
+    const updates: unknown[] = []
+    const platform = createPlatform('chrome', fakeApi({
+      declarativeNetRequest: {
+        getDynamicRules: async () => [{ id: 1 }, { id: 2 }],
+        updateDynamicRules: async (update) => {
+          updates.push(update)
+        },
+      },
+    }))
+
+    await platform.blocking.replaceRules([{ id: 9 }])
+    expect(updates[0]).toMatchObject({ removeRuleIds: [1, 2], addRules: [{ id: 9 }] })
+  })
+
+  it('does nothing, quietly, where the browser has no such API', async () => {
+    const platform = createPlatform('firefox', fakeApi())
+    await expect(platform.blocking.replaceRules([{ id: 1 }])).resolves.toBeUndefined()
+  })
+
+  it('reports the URL of a top-level navigation, which is the only place it survives', () => {
+    // Held in an object: assigned inside a callback, TypeScript narrows a bare
+    // `let` to never and the call below stops type-checking.
+    const held: { fire?: (details: { url: string; frameId: number }) => void } = {}
+    const platform = createPlatform('chrome', fakeApi({
+      webNavigation: {
+        onBeforeNavigate: {
+          addListener: (cb) => {
+            held.fire = cb
+          },
+        },
+      },
+    }))
+
+    const seen: string[] = []
+    platform.blocking.onBlocked((url) => seen.push(url))
+    held.fire?.({ url: 'https://bad.test/login', frameId: 0 })
+    expect(seen).toEqual(['https://bad.test/login'])
+  })
+
+  it('ignores subframe navigations, which are not the page being blocked', () => {
+    const held: { fire?: (details: { url: string; frameId: number }) => void } = {}
+    const platform = createPlatform('chrome', fakeApi({
+      webNavigation: { onBeforeNavigate: { addListener: (cb) => { held.fire = cb } } },
+    }))
+
+    const seen: string[] = []
+    platform.blocking.onBlocked((url) => seen.push(url))
+    held.fire?.({ url: 'https://ads.test/frame', frameId: 3 })
+    expect(seen).toEqual([])
   })
 })

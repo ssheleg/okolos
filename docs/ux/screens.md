@@ -17,7 +17,7 @@ self-audit panel.
 | SCR-02 | Popup | FLW-17 | - | designed | none yet |
 | SCR-03 | In-page warning banner | FLW-02, FLW-05, FLW-06, FLW-07, FLW-08, FLW-09, FLW-10 | - | built | packages/ui/src/banner/banner.ts:52 |
 | SCR-04 | Finding inspector | FLW-02, FLW-03 | - | built | packages/ui/src/inspector/inspector.ts:57 |
-| SCR-05 | Block interstitial | FLW-04 | - | designed | none yet |
+| SCR-05 | Block interstitial | FLW-04 | - | built | e2e/scn-007.spec.ts |
 | SCR-06 | Agent action gate | FLW-03 | - | built | e2e/scn-010.spec.ts |
 | SCR-07 | Findings queue | FLW-01, FLW-17 | - | built | e2e/scn-020.spec.ts |
 | SCR-08 | Leaks and repair | FLW-10, FLW-11, FLW-16 | - | designed | none yet |
@@ -130,7 +130,7 @@ self-audit panel.
   | success | feed match | - | full-page interstitial replacing the site |
   | error | feed metadata unavailable | - | still blocks, states the source is unknown and how to check |
 - **Wireframe:** wireframes/SCR-05.md
-- **Coverage:** none yet
+- **Coverage:** packages/ui/src/interstitial/interstitial.ts:38, e2e/scn-007.spec.ts:39
 - **Scenarios:** SCN-007
 - **Resources:** feed metadata store, exception store
 - **Status:** designed

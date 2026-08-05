@@ -2,7 +2,7 @@ import type { DBSchema } from 'idb'
 import type { AuditEntry, Verdict } from '@okolos/contracts'
 
 export const DB_NAME = 'okolos'
-export const DB_VERSION = 2
+export const DB_VERSION = 3
 
 /**
  * Retention windows in days. They are short on purpose: a security tool that
@@ -24,6 +24,7 @@ export const STORES = [
   'settings',
   'snapshots',
   'models',
+  'feeds',
 ] as const
 
 export type StoreName = (typeof STORES)[number]
@@ -73,6 +74,15 @@ export interface ModelRecord {
   storedAt: string
 }
 
+/** The last verified snapshot of a feed, one row per feed name. */
+export interface FeedRecord {
+  name: string
+  version: number
+  updatedAt: string
+  storedAt: string
+  entries: string[]
+}
+
 export interface SnapshotRecord {
   extensionId: string
   takenAt: string
@@ -88,5 +98,6 @@ export interface OkolosDB extends DBSchema {
   exceptions: { key: [string, string]; value: ExceptionRecord; indexes: { 'by-created': string } }
   settings: { key: string; value: SettingRecord }
   models: { key: string; value: ModelRecord; indexes: { 'by-id': string } }
+  feeds: { key: string; value: FeedRecord }
   snapshots: { key: string; value: SnapshotRecord }
 }

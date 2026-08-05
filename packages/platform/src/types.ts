@@ -16,6 +16,15 @@ export interface Platform {
   readonly runtime: Runtime
   readonly tabs: Tabs
   readonly inference: Inference
+  readonly blocking: Blocking
+}
+
+/** Network-level blocking, which is the only kind that happens before render. */
+export interface Blocking {
+  /** Replaces every rule this extension owns. Partial updates drift. */
+  replaceRules(rules: readonly unknown[]): Promise<void>
+  /** Fires with the URL that was redirected to our interstitial. */
+  onBlocked(handler: (url: string) => void): void
 }
 
 export interface KeyValueStore {
@@ -91,6 +100,24 @@ export interface WebExtensionApi {
   tabs: {
     query(info: { active: true; currentWindow: true }): Promise<Array<{ url?: string }>>
     create(info: { url: string }): Promise<unknown> | void
+  }
+  declarativeNetRequest?: {
+    getDynamicRules(): Promise<Array<{ id: number }>>
+    updateDynamicRules(update: {
+      removeRuleIds?: number[]
+      addRules?: unknown[]
+    }): Promise<void>
+    onRuleMatchedDebug?: {
+      addListener(cb: (info: { request: { url: string } }) => void): void
+    }
+  }
+  webNavigation?: {
+    onBeforeNavigate: {
+      addListener(
+        cb: (details: { url: string; frameId: number }) => void,
+        filter?: unknown,
+      ): void
+    }
   }
   /** Chrome only. Absent in Firefox, which runs the model on its background page. */
   offscreen?: {

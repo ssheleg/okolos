@@ -8,7 +8,9 @@ import {
   renderDataControls,
   renderExtensions,
   renderQueue,
+  renderTrusted,
   type ExtensionsState,
+  type TrustedDomain,
   renderLeaks,
   type LeaksState,
   renderJournal,
@@ -225,6 +227,44 @@ async function extensionsSection(): Promise<HTMLElement> {
   return container
 }
 
+/**
+ * SCR-12's trusted list. Trust is granted from a page in one click; this is the
+ * only place it can be taken back, and the comparison view promises in those
+ * words that it can be.
+ */
+async function trustedSection(): Promise<HTMLElement> {
+  const container = document.createElement('div')
+  let entries: TrustedDomain[] = []
+  try {
+    const result = await platform.runtime.send('trust/list', {})
+    entries = (result?.entries ?? []).map((entry) => ({
+      domain: entry.domain,
+      grantedAt: entry.grantedAt,
+      ...(entry.reason ? { reason: entry.reason } : {}),
+    }))
+  } catch (cause) {
+    const failed = document.createElement('p')
+    failed.setAttribute('data-role', 'trusted-error')
+    // Never an empty list in place of a failure: it would read as "you trust
+    // nothing", which is the reassuring answer and possibly the wrong one.
+    failed.textContent = `The trusted list could not be read: ${String(cause)}`
+    container.append(failed)
+    return container
+  }
+
+  container.append(
+    renderTrusted(document, entries, {
+      onRevoke: (domain: string) => {
+        void (async () => {
+          await platform.runtime.send('trust/revoke', { domain })
+          await reload()
+        })()
+      },
+    }),
+  )
+  return container
+}
+
 async function paintCurrent(): Promise<void> {
   await paint(await load())
 }
@@ -343,6 +383,7 @@ async function paint(state: PanelState): Promise<void> {
     leaksSection(),
     await queueSection(),
     await extensionsSection(),
+    await trustedSection(),
     renderDataControls(document, {
       onExport: download,
       onWipe: async () => {

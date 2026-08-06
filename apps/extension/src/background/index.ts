@@ -62,6 +62,8 @@ platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>) => {
       return openRecovery(message.payload as { kind: string }) as Promise<RpcMap[T]['res']>
     case 'trust/list':
       return listTrusted() as Promise<RpcMap[T]['res']>
+    case 'trust/revoke':
+      return revokeTrusted(message.payload as { domain: string }) as Promise<RpcMap[T]['res']>
     case 'trust/add':
       return addTrusted(message.payload as { domain: string }) as Promise<RpcMap[T]['res']>
     case 'gate/decision':
@@ -497,16 +499,50 @@ async function openRecovery(payload: { kind: string }): Promise<{ ok: true }> {
   return { ok: true }
 }
 
-async function listTrusted(): Promise<{ domains: string[] }> {
+async function listTrusted(): Promise<{
+  domains: string[]
+  entries: Array<{ domain: string; grantedAt: string; reason?: string }>
+}> {
   try {
     const db = await openDb()
-    const rows = await db.getAll('exceptions')
-    return { domains: rows.filter((row) => row.scope === 'domain').map((row) => row.ref) }
+    const rows = (await db.getAll('exceptions')).filter((row) => row.scope === 'domain')
+    return {
+      domains: rows.map((row) => row.ref),
+      entries: rows.map((row) => ({
+        domain: row.ref,
+        grantedAt: row.createdAt,
+        ...(row.reason ? { reason: row.reason } : {}),
+      })),
+    }
   } catch {
     // An unreadable exception list means warning about sites the user already
     // approved. Noisy, but never the other way round.
-    return { domains: [] }
+    return { domains: [], entries: [] }
   }
+}
+
+async function revokeTrusted(payload: { domain: string }): Promise<{ ok: true }> {
+  try {
+    const db = await openDb()
+    await db.delete('exceptions', ['domain', payload.domain])
+    // The blocking rules were built with this domain excused; rebuild them, or
+    // the site stays reachable and the revocation is cosmetic.
+    await refreshBlockRules()
+
+    const now = new Date().toISOString()
+    await db.put('journal', {
+      id: `trust-revoked:${payload.domain}:${now}`,
+      createdAt: now,
+      kind: 'action',
+      detail: {
+        explain: `You stopped trusting ${payload.domain}; the checks apply to it again.`,
+        reason: 'user-blocked',
+      },
+    })
+  } catch (cause) {
+    console.warn('okolos: could not revoke trust', cause)
+  }
+  return { ok: true }
 }
 
 async function addTrusted(payload: { domain: string }): Promise<{ ok: true }> {

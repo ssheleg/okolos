@@ -74,8 +74,22 @@ export interface RpcMap {
   'site/facts': { req: { host: string }; res: { trusted: boolean; firstSeen: string | null } }
   'trap/warned': { req: { kind: string; signals: string }; res: { ok: true } }
   'recovery/open': { req: { kind: string }; res: { ok: true } }
-  'trust/list': { req: Record<string, never>; res: { domains: string[] } }
+  /**
+   * `domains` is kept for callers that only need the names — the lookalike
+   * check asks on every navigation and has no use for the rest. `entries`
+   * carries when and why, which the settings list needs and the hot path
+   * would otherwise pay for.
+   */
+  'trust/list': {
+    req: Record<string, never>
+    res: {
+      domains: string[]
+      entries: Array<{ domain: string; grantedAt: string; reason?: string }>
+    }
+  }
   'trust/add': { req: { domain: string }; res: { ok: true } }
+  /** Takes trust back. The checks resume on the next navigation. */
+  'trust/revoke': { req: { domain: string }; res: { ok: true } }
   'gate/decision': { req: GateDecision; res: { ok: true } }
   /** Rebuilds blocking rules from the feed in force. */
   'rules/refresh': { req: Record<string, never>; res: { installed: number; dropped: number } }

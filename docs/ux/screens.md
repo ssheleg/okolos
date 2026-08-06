@@ -246,7 +246,7 @@ self-audit panel.
   | success | default | - | grouped settings |
   | error | export or wipe failed | - | inline failure with retry; state left unchanged |
 - **Wireframe:** wireframes/SCR-12.md
-- **Coverage:** packages/ui/src/settings/data-controls.ts:31 (data controls built; watchlist, trusted domains, quiet mode and proxy toggle land with their modules)
+- **Coverage:** packages/ui/src/settings/data-controls.ts:31, packages/ui/src/trusted/trusted.ts:33, e2e/scn-024.spec.ts:34 (data controls and the trusted list built; watchlist, quiet mode and the proxy toggle land with their modules)
 - **Scenarios:** SCN-023, SCN-024
 - **Resources:** settings store, exporter, wipe routine
 - **Status:** built

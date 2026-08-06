@@ -548,3 +548,30 @@ happens before adding.
   grouping by fresh-versus-historical and the actions "Change password" and
   "Check reuse"; SCR-12 promises a trusted-domain list. All three are real gaps
   between record and screen, recorded rather than quietly closed.
+
+### 2026-08-06 — a promise the interface made and the product could not keep
+
+- **Symptom:** the comparison view told the user, in those words, that marking
+  an address legitimate "can be undone in settings". There was no such list.
+  Trust was granted in one click from a page — "This is legitimate" on a
+  lookalike, "Continue anyway" on an interstitial — and could not be taken back
+  through the interface at all.
+- **Surfaced at:** the promised-vs-built sweep, as a missing control on SCR-12.
+  It reads as a small gap and is not: a security product that can only ever
+  lower its own guard reaches zero guard eventually, one annoyed click at a
+  time.
+- **Owned by:** whoever wrote the reassurance. A sentence that describes a
+  control is a commitment to build it; writing it first is fine, leaving it is
+  not.
+- **Fix, by grade:** `ui/trusted` lists every domain with when it was trusted
+  and why — the "why" is the user's own past action, which is usually the thing
+  they have forgotten. Revoking deletes the exception, rebuilds the blocking
+  rules (otherwise the site stays reachable and the revocation is cosmetic), and
+  journals the reversal.
+- **The assertion that matters:** the e2e checks storage after the click, not
+  the list. A revocation that only repaints is the same bug as no revocation,
+  and planting exactly that turns the test red.
+- **One contract note:** `trust/list` now returns both `domains` and `entries`.
+  The lookalike check asks on every navigation and needs only the names; the
+  settings list needs the dates. Making the hot path carry the settings payload
+  would have been the tidier type and the worse trade.

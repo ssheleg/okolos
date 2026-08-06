@@ -17,6 +17,11 @@ export {
   type ExtensionsHandlers,
   type ExtensionsState,
 } from './extensions/extensions.js'
+export {
+  renderTrusted,
+  type TrustedDomain,
+  type TrustedHandlers,
+} from './trusted/trusted.js'
 export { renderQueue, type QueueHandlers } from './queue/queue.js'
 export { renderLeaks, HIBP_ATTRIBUTION, type LeaksHandlers, type LeaksState } from './leaks/leaks.js'
 export { renderRecovery, type RecoveryHandlers } from './recovery/recovery.js'

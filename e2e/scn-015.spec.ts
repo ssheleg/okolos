@@ -47,3 +47,35 @@ test('the credit for the data is on the page that shows it', async ({ context, e
   await expect(attribution).toContainText('Have I Been Pwned')
   await expect(attribution).toContainText('CC BY 4.0')
 })
+
+test('a recent infection is separated from an old breach, and each carries its repair', async ({
+  context,
+  extensionId,
+}) => {
+  // The two piles need different responses: cookies survive a password change.
+  // A single date-sorted list makes the infection look like a newer breach.
+  // On the context, not the page: the lookup is made by the service worker, and
+  // `page.route` never sees it. The first version of this test intercepted
+  // nothing and passed anyway, on an assertion that did not depend on the body.
+  await context.route('https://cavalier.hudsonrock.com/**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ stealers: [{ date_compromised: new Date().toISOString() }] }),
+    }),
+  )
+  const page = await context.newPage()
+  await page.goto(`chrome-extension://${extensionId}/options.html`)
+
+  await page.locator('[data-role=address]').fill('someone@example.test')
+  await page.locator('[data-role=leaks] [data-role=check]').click()
+
+  const fresh = page.locator('[data-role=leak-group][data-urgency=fresh-infostealer]')
+  await expect(fresh).toHaveCount(1, { timeout: 10_000 })
+  await expect(fresh.locator('[data-role=group-why]')).toContainText('session cookies')
+
+  // Cavalier names no site, so the panel says so instead of guessing a login page.
+  await expect(fresh.locator('[data-role=no-domain]')).toContainText('nowhere to send you')
+  await expect(fresh.locator('[data-role=check-reuse]')).toHaveCount(1)
+  await expect(fresh.locator('[data-role=resolve]')).toHaveText('Mark resolved')
+})

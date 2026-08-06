@@ -15,7 +15,7 @@ function props(overrides: Partial<BannerProps> = {}): BannerProps {
 }
 
 function handlers(overrides: Partial<BannerHandlers> = {}): BannerHandlers {
-  return { onPrimary: vi.fn(), onInspect: vi.fn(), onDispute: vi.fn(), onDismiss: vi.fn(), ...overrides }
+  return { onPrimary: vi.fn(), onRetry: vi.fn(), onDispute: vi.fn(), onDismiss: vi.fn(), ...overrides }
 }
 
 beforeEach(() => {

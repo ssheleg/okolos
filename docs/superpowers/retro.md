@@ -575,3 +575,41 @@ happens before adding.
   The lookalike check asks on every navigation and needs only the names; the
   settings list needs the dates. Making the hot path carry the settings payload
   would have been the tidier type and the worse trade.
+
+### 2026-08-06 — no test file had ever been type-checked
+
+- **Symptom:** a test constructing the wrong shape — a required field missing, a
+  handler renamed away — compiled, ran and passed. Vitest transpiles without
+  checking types, and every package excludes `*.test.ts` from its build.
+- **Surfaced at:** writing SCR-08, when a test kept passing against a state type
+  that had just gained a required member.
+- **Owned by:** a correct decision with an unexamined cost. Tests are excluded
+  from the build for a real reason, stated in the tsconfig comment: a fixture
+  shipped into `dist/` puts deliberate examples of the very calls the bundle
+  gates forbid inside the artefact those gates read. Nobody noticed that
+  "excluded from the build" also meant "excluded from `tsc`".
+- **What it was hiding:** twenty-four errors. Two were mine from the previous
+  cycle — `adapter.test.ts` still sent `page/rescan`, an RPC deleted in the
+  contract sweep, and `banner.test.ts` still built `onInspect`, renamed to
+  `onRetry` in the same commit. Both renames left dead references and every gate
+  stayed green.
+- **Fix, by grade:** `tsconfig.tests.json` type-checks tests with `noEmit`, so
+  they are checked without being built, and `pnpm typecheck` runs both. The
+  wireframe generator got a `.d.mts` beside it — a test that treats its imports
+  as `any` cannot catch a rename either.
+- **Catches it next time:** removing a required field from a test's state turns
+  the gate red, which it did on the plant.
+
+### 2026-08-06 — an interception that never intercepted
+
+- **Symptom:** the leaks e2e routed `cavalier.hudsonrock.com` through
+  `page.route` and asserted the coverage line. It passed. The route never fired:
+  the lookup is made by the service worker, which `page.route` does not see.
+- **Surfaced at:** extending the same test to assert the grouped result, which
+  needs the response body and therefore could not pass on nothing.
+- **Root cause:** the assertion did not depend on what was intercepted, so the
+  interception failing changed nothing. A green that would have been green
+  anyway.
+- **Fix, by grade:** `context.route`, which covers the worker. The lesson
+  generalises past this file: when a test stubs something, at least one
+  assertion has to fail if the stub is not used.

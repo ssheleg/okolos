@@ -1,4 +1,4 @@
-import type { LeakInventory } from '@okolos/core-leaks'
+import { groupLeaks, type Leak, type LeakInventory } from '@okolos/core-leaks'
 
 /**
  * SCR-08 — what is known to have leaked, and what was not checked.
@@ -23,12 +23,16 @@ export const HIBP_ATTRIBUTION =
 export type LeaksState =
   | { readonly kind: 'idle' }
   | { readonly kind: 'checking' }
-  | { readonly kind: 'ready'; readonly inventory: LeakInventory }
+  | { readonly kind: 'ready'; readonly inventory: LeakInventory; readonly now: string }
   | { readonly kind: 'error'; readonly message: string }
 
 export interface LeaksHandlers {
   readonly onCheck: () => void
   readonly onResolve: (leakName: string) => void
+  /** Opens the service's own password-change page, where it publishes one. */
+  readonly onChangePassword: (leak: Leak) => void
+  /** Opens the reuse check, which is honest about what it can and cannot see. */
+  readonly onCheckReuse: (leak: Leak) => void
 }
 
 export function renderLeaks(doc: Document, state: LeaksState, handlers: LeaksHandlers): HTMLElement {
@@ -77,15 +81,20 @@ export function renderLeaks(doc: Document, state: LeaksState, handlers: LeaksHan
     text(doc, 'coverage', inventory.coverage),
   )
 
-  for (const leak of inventory.leaks) {
-    const row = doc.createElement('article')
-    row.setAttribute('data-role', 'leak')
-    row.append(
-      text(doc, 'name', `${leak.name}${leak.occurredAt ? ` (${leak.occurredAt})` : ''}`),
-      text(doc, 'classes', `Exposed: ${leak.classes.join(', ') || 'not stated by the source'}`),
-      button(doc, 'resolve', 'I have dealt with this', () => handlers.onResolve(leak.name)),
-    )
-    root.append(row)
+  // Grouped, not date-sorted: an infection and a 2016 breach need different
+  // responses, and one list makes the first look like a newer version of the
+  // second.
+  for (const group of groupLeaks(inventory.leaks, state.now)) {
+    const section = doc.createElement('section')
+    section.setAttribute('data-role', 'leak-group')
+    section.setAttribute('data-urgency', group.urgency)
+
+    const title = doc.createElement('h2')
+    title.textContent = `${group.title} (${group.leaks.length})`
+    section.append(title, text(doc, 'group-why', group.why))
+
+    for (const leak of group.leaks) section.append(leakRow(doc, leak, handlers))
+    root.append(section)
   }
 
   root.append(button(doc, 'check', 'Check again', handlers.onCheck), attribution(doc))
@@ -97,6 +106,39 @@ function attribution(doc: Document): HTMLElement {
   el.setAttribute('data-role', 'attribution')
   el.textContent = HIBP_ATTRIBUTION
   return el
+}
+
+function leakRow(doc: Document, leak: Leak, handlers: LeaksHandlers): HTMLElement {
+  const row = doc.createElement('article')
+  row.setAttribute('data-role', 'leak')
+  row.setAttribute('data-leak', leak.name)
+  row.append(
+    text(doc, 'name', `${leak.name}${leak.occurredAt ? ` (${leak.occurredAt})` : ''}`),
+    text(doc, 'classes', `Exposed: ${leak.classes.join(', ') || 'not stated by the source'}`),
+  )
+
+  const actions = doc.createElement('div')
+  actions.setAttribute('data-role', 'leak-actions')
+
+  if (leak.domain) {
+    actions.append(
+      button(doc, 'change-password', 'Change password', () => handlers.onChangePassword(leak), true),
+    )
+  } else {
+    // No domain from the source means no page to send anyone to. A button that
+    // guesses the address of a login page is worse than a sentence saying we
+    // do not have it.
+    row.append(
+      text(doc, 'no-domain', 'This source did not say which site it was, so there is nowhere to send you.'),
+    )
+  }
+
+  actions.append(
+    button(doc, 'check-reuse', 'Check reuse', () => handlers.onCheckReuse(leak)),
+    button(doc, 'resolve', 'Mark resolved', () => handlers.onResolve(leak.name)),
+  )
+  row.append(actions)
+  return row
 }
 
 function text(doc: Document, role: string, content: string): HTMLParagraphElement {

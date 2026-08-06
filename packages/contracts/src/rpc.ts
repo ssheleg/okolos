@@ -50,7 +50,13 @@ export interface RpcMap {
   'leaks/check': {
     req: { address: string }
     res: {
-      leaks: Array<{ name: string; occurredAt: string | null; source: string; classes: string[] }>
+      leaks: Array<{
+        name: string
+        occurredAt: string | null
+        source: string
+        classes: string[]
+        domain?: string
+      }>
       sources: Array<{ name: string; answered: boolean; why?: string }>
       complete: boolean
       coverage: string

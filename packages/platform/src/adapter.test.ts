@@ -130,10 +130,10 @@ describe('rpc survives what it does not understand', () => {
     const api = fakeApi({ runtime: { sendMessage } })
     const platform = createPlatform('firefox', api)
 
-    await platform.runtime.send('page/rescan', { frameId: 0 })
+    await platform.runtime.send('trust/add', { domain: 'example.test' })
 
-    const sent = sendMessage.mock.calls[0]?.[0] as Envelope<'page/rescan'>
-    expect(sent).toEqual({ v: 1, type: 'page/rescan', payload: { frameId: 0 } })
+    const sent = sendMessage.mock.calls[0]?.[0] as Envelope<'trust/add'>
+    expect(sent).toEqual({ v: 1, type: 'trust/add', payload: { domain: 'example.test' } })
   })
 })
 

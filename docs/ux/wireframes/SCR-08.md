@@ -9,8 +9,10 @@
 `[data-role=<name>]`, which is also how the tests reach them.
 
 - `leaks`
-- `leak`
+- `leak-group`
 - `attribution`
+- `leak`
+- `leak-actions`
 - `idle`
 - `check`
 - `status`
@@ -18,8 +20,12 @@
 - `error-note`
 - `total`
 - `coverage`
+- `group-why`
 - `name`
 - `classes`
+- `change-password`
+- `no-domain`
+- `check-reuse`
 - `resolve`
 
 **States**

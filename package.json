@@ -15,7 +15,7 @@
   },
   "scripts": {
     "build": "node tools/build.mjs",
-    "typecheck": "tsc -b",
+    "typecheck": "tsc -b && tsc -p tsconfig.tests.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "bench": "vitest bench --run",

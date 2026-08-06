@@ -181,7 +181,7 @@ self-audit panel.
   | error | a source failed | - | that row states unavailable + retry; other results stand |
   | success | results present | - | freshest first, historical collapsed |
 - **Wireframe:** wireframes/SCR-08.md
-- **Coverage:** packages/ui/src/leaks/leaks.ts:47, packages/core-leaks/src/merge.ts:39, e2e/scn-015.spec.ts:12
+- **Coverage:** packages/ui/src/leaks/leaks.ts:60, packages/core-leaks/src/group.ts:38, packages/core-leaks/src/merge.ts:39, e2e/scn-015.spec.ts:51
 - **Scenarios:** SCN-014, SCN-015, SCN-016
 - **Resources:** source adapters (HIBP, XposedOrNot, Hudson Rock), local hash store, reuse index
 - **Status:** built

@@ -1,0 +1,33 @@
+{
+  // Type-checks the tests without building them.
+  //
+  // Every package excludes `*.test.ts` from its build, and for a good reason:
+  // a test fixture shipped into `dist/` puts deliberate examples of the very
+  // calls the bundle gates forbid inside the artefact those gates read. The
+  // cost went unnoticed for the whole project — excluded from the build meant
+  // excluded from `tsc` altogether, so no test file was ever type-checked.
+  //
+  // Vitest transpiles without checking types, so the errors ran perfectly well.
+  // They are still errors: a test that constructs the wrong shape is testing a
+  // shape the product does not have.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "paths": {
+      "@okolos/*": ["./packages/*/src/index.ts"]
+    },
+    "baseUrl": "."
+  },
+  "include": [
+    "packages/*/src/**/*.test.ts",
+    "apps/*/src/**/*.test.ts",
+    "tools/**/*.test.ts",
+    "e2e/**/*.ts"
+  ]
+}

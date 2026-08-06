@@ -70,6 +70,7 @@ export function hibp(apiKey: string | null): LeakSource {
       if (response.status === 404) return []
       const body = (await response.json()) as Array<{
         Name?: string
+        Domain?: string
         BreachDate?: string
         DataClasses?: string[]
       }>
@@ -78,6 +79,9 @@ export function hibp(apiKey: string | null): LeakSource {
         occurredAt: entry.BreachDate ?? null,
         source: 'Have I Been Pwned',
         classes: entry.DataClasses ?? [],
+        // Carried through so the panel can offer a page rather than describe
+        // one. HIBP leaves it blank for breaches it cannot attribute.
+        ...(entry.Domain ? { domain: entry.Domain } : {}),
       }))
     },
   }

@@ -64,13 +64,28 @@ function leaksSection(): HTMLElement {
           try {
             const result = await platform.runtime.send('leaks/check', { address })
             leaks = result
-              ? { kind: 'ready', inventory: { ...result, leaks: result.leaks } }
+              ? {
+                  kind: 'ready',
+                  inventory: { ...result, leaks: result.leaks },
+                  now: new Date().toISOString(),
+                }
               : { kind: 'error', message: 'the check returned nothing' }
           } catch (cause) {
             leaks = { kind: 'error', message: String(cause) }
           }
           await paintCurrent()
         })()
+      },
+      onChangePassword: (leak) => {
+        // The well-known path is a published standard: a site that supports it
+        // redirects to its real change-password page, and one that does not
+        // lands the user on its own domain rather than on a guess of ours.
+        if (leak.domain) void platform.tabs.create(`https://${leak.domain}/.well-known/change-password`)
+      },
+      onCheckReuse: (leak) => {
+        void platform.tabs.create(
+          platform.runtime.getUrl(`options.html#reuse=${encodeURIComponent(leak.name)}`),
+        )
       },
       onResolve: (name) => {
         void (async () => {

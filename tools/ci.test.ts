@@ -18,6 +18,13 @@ const scripts = (JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'
   scripts: Record<string, string>
 }).scripts
 
+/** Fails with the script's name rather than on `undefined` three lines later. */
+function script(name: string): string {
+  const value = scripts[name]
+  if (value === undefined) throw new Error(`package.json has no "${name}" script`)
+  return value
+}
+
 describe('the workflow runs what the project has', () => {
   it('runs the unit suite, the UX linter and both browser suites', () => {
     expect(workflow).toContain('pnpm test')
@@ -44,7 +51,7 @@ describe('the local shortcut matches CI', () => {
   it('builds before running the gates that read the build', () => {
     // Without this `pnpm gates` runs the bundle scanners over whatever dist
     // happened to be lying around, which is the definition of a stale green.
-    expect(scripts.gates).toContain('pnpm build')
-    expect(scripts.gates.indexOf('pnpm build')).toBeLessThan(scripts.gates.indexOf('pnpm test'))
+    expect(script('gates')).toContain('pnpm build')
+    expect(script('gates').indexOf('pnpm build')).toBeLessThan(script('gates').indexOf('pnpm test'))
   })
 })

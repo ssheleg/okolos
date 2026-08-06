@@ -21,6 +21,11 @@ export interface Leak {
   readonly source: string
   /** What was exposed, in the source's own words. */
   readonly classes: readonly string[]
+  /**
+   * The breached service's domain, when the source gives one. It is what makes
+   * "Change password" able to go somewhere rather than describe somewhere.
+   */
+  readonly domain?: string
 }
 
 export type SourceStatus =

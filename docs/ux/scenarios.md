@@ -300,8 +300,8 @@ See [foundation.md](foundation.md) → Personas.
 - **UI elements:** banner (password variant), "how this was checked" line, "Change password" (primary), "Where else do I use it", "This is wrong"
 - **States covered:** success, error
 - **Errors & recovery:** network unavailable during the k-anonymity step -> system reports the local-only result and says the online check did not run; the journal records the prefix sent, or that nothing was sent
-- **Status:** draft
-- **Coverage:** none yet
+- **Status:** implemented
+- **Coverage:** apps/extension/src/background/password.ts:checkSubmittedPassword, packages/core-credential/src/guard.ts:guardCredentialEntry, packages/net/src/request.ts:sendRequest (unit only — a real password submission in Playwright would have to carry a real credential, so the k-anonymity path is exercised against a stubbed range endpoint instead)
 
 ### SCN-015: Leak inventory with one source unavailable
 - **Persona:** P-01
@@ -318,8 +318,8 @@ See [foundation.md](foundation.md) → Personas.
 - **UI elements:** monitored sources list, results grouped fresh/historical, per-entry data classes, coverage line, per-source retry
 - **States covered:** loading, empty, error, success
 - **Errors & recovery:** a source is unreachable or rate-limited -> that row states unavailable with a retry; results from other sources stand and the summary never implies full coverage
-- **Status:** draft
-- **Coverage:** none yet
+- **Status:** implemented
+- **Coverage:** packages/core-leaks/src/merge.ts:mergeLeaks, packages/core-leaks/src/group.ts:groupLeaks, packages/ui/src/leaks/leaks.ts:renderLeaks, e2e/scn-015.spec.ts
 
 ### SCN-016: Repair a leak and mark it resolved
 - **Persona:** P-01
@@ -336,8 +336,8 @@ See [foundation.md](foundation.md) → Personas.
 - **UI elements:** leak entry, data classes, next-step buttons, "Mark resolved", "Not now", archive
 - **States covered:** success, error
 - **Errors & recovery:** the site publishes no change-password endpoint -> system opens the site's login page and says the shortcut is unavailable for this site
-- **Status:** draft
-- **Coverage:** none yet
+- **Status:** implemented
+- **Coverage:** packages/core-leaks/src/merge.ts:mergeLeaks, packages/core-recovery/src/checklist.ts:buildChecklist, packages/ui/src/leaks/leaks.ts:renderLeaks (unit only — the repair step leaves the browser, so the e2e can watch the item clear but not the repair itself)
 
 ## extensions
 

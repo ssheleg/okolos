@@ -89,10 +89,10 @@ def figma_enabled(foundation: str) -> bool | None:
     return m.group(1).lower() == "enabled"
 
 
-def screen_blocks(text: str) -> dict[str, str]:
-    """Map SCR-id -> its section body (from its header to the next ### / ##)."""
+def screen_blocks(text: str, prefix: str = "SCR") -> dict[str, str]:
+    """Map an id -> its section body (from its header to the next ### / ##)."""
     out: dict[str, str] = {}
-    parts = re.split(r"^###\s+(SCR-\d+):", text, flags=re.MULTILINE)
+    parts = re.split(rf"^###\s+({prefix}-\d+):", text, flags=re.MULTILINE)
     # parts = [pre, id1, body1, id2, body2, ...]
     for i in range(1, len(parts), 2):
         sid = parts[i]
@@ -227,6 +227,33 @@ def main() -> int:
                             screens, re.MULTILINE)
             if row and status and row.group(1) != status:
                 err(f"screens.md: {sid} row says '{row.group(1)}' but its record says '{status}'")
+
+    # scenarios.md carries the same two-copies-of-the-truth shape screens.md
+    # does — an index table and a section per scenario — and had none of the
+    # same checks. Three scenarios sat marked 'implemented' in the row every
+    # reader scans while their own record still said 'draft' with no coverage,
+    # months after the code shipped. The row is not more or less authoritative
+    # than the record; they simply must not disagree.
+    scenarios_text = read(ux / "scenarios.md")
+    if scenarios_text:
+        for sid, body in screen_blocks(scenarios_text, "SCN").items():
+            st_m = re.search(r"\*\*Status:\*\*\s*(\S+)", body)
+            status = st_m.group(1).strip() if st_m else ""
+            if not status:
+                err(f"scenarios.md: {sid} record has no Status")
+                continue
+
+            row = re.search(rf"^\|\s*{sid}\s*\|[^|]*\|[^|]*\|[^|]*\|[^|]*\|\s*([\w-]+)\s*\|",
+                            scenarios_text, re.MULTILINE)
+            # A record with no row at all is already reported by the
+            # index/entry cross-check further up; only disagreement is new here.
+            if row is not None and row.group(1) != status:
+                err(f"scenarios.md: {sid} row says '{row.group(1)}' but its record says '{status}'")
+
+            cov_m = re.search(r"\*\*Coverage:\*\*\s*(.+)", body)
+            cov = cov_m.group(1).strip() if cov_m else ""
+            if status == "implemented" and (not cov or cov.lower().startswith("none")):
+                err(f"scenarios.md: {sid} is 'implemented' but names no coverage")
 
     check_links(ux)
 

@@ -99,7 +99,7 @@ self-audit panel.
   | error | detail view or action failed | - | inline failure text with retry; the warning itself never disappears on error |
 - **Behavior notes:** closed Shadow DOM; keyboard reachable; announced to screen readers; never covers a form field it warns about; low-confidence findings never block
 - **Wireframe:** wireframes/SCR-03.md
-- **Coverage:** packages/ui/src/banner/banner.ts:mountBanner (injection variant built; the other six land with their modules)
+- **Coverage:** packages/ui/src/banner/banner.ts:mountBanner, e2e/scn-003.spec.ts, e2e/a11y-overlays.spec.ts (injection variant built; the other six land with their modules)
 - **Scenarios:** SCN-003, SCN-006, SCN-008, SCN-009, SCN-011, SCN-012, SCN-013
 - **Resources:** shared banner component, variant copy table, i18n strings
 - **Status:** built
@@ -115,7 +115,7 @@ self-audit panel.
   | success | evidence available | - | text + technique + location + stage |
   | error | evidence lost (page mutated) | - | says the page changed, offers a re-scan |
 - **Wireframe:** wireframes/SCR-04.md
-- **Coverage:** packages/ui/src/inspector/inspector.ts:mountInspector (restore lands with the sanitizer, M5)
+- **Coverage:** packages/ui/src/inspector/inspector.ts:mountInspector, e2e/scn-004-click.spec.ts, e2e/a11y-overlays.spec.ts (restore lands with the sanitizer, M5)
 - **Scenarios:** SCN-004, SCN-005
 - **Resources:** evidence store, DOM locator renderer
 - **Status:** built
@@ -146,7 +146,7 @@ self-audit panel.
   | error | the action context cannot be identified | - | blocks and says what could not be determined |
 - **Behavior notes:** timing out defaults to Block, never to Allow; Block holds focus so a stray Enter blocks; Escape blocks; "Show the injection" leaves the gate standing behind the evidence
 - **Wireframe:** wireframes/SCR-06.md
-- **Coverage:** packages/ui/src/gate/gate.ts:mountGate, e2e/scn-010.spec.ts
+- **Coverage:** packages/ui/src/gate/gate.ts:mountGate, e2e/scn-010.spec.ts, e2e/a11y-overlays.spec.ts
 - **Scenarios:** SCN-010
 - **Resources:** action interceptor, finding store
 - **Status:** built

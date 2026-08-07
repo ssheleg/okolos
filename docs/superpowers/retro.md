@@ -27,6 +27,20 @@ happens before adding.
 6. **Say what was not covered, in the same breath as what was.** Every audit
    carries a Scope and limits section, and the carry-over count is printed
    beside the verdict.
+7. **A new user-facing surface joins the accessibility sweep in the same
+   change.** Four had accumulated outside it, and the one carrying an
+   unlabelled control was the newest.
+8. **A test comment that defers an assertion to a later release names the
+   release and the requirement**, so the ledger carries the obligation. A
+   promise living only in a comment is tracked by nothing — the HIBP
+   attribution waited three releases in one.
+9. **A number produced by a tool is a claim about the tool** until it has been
+   checked against the artefact. Report it as "the diagnostic says X", or
+   verify it — never as "X". Reported as fact, a diagnostic's 225 dangling
+   edges turned out to be zero.
+10. **Confirm a planted defect actually landed before trusting what it
+   proves.** Two wrong citation formats survived a plant that never applied,
+   and the green was read as the gate working.
 
 ### 2026-08-04 — a Firefox suite that would have passed with no extension loaded
 

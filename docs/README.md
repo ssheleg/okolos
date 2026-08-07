@@ -12,7 +12,7 @@
 | Фаза | research → вижен → UX-цепочка → task-pipeline 0–10 → **R1–R5 закрыты** |
 | Требования | 37: **35 DONE, 2 PARTIAL** — [приёмка](superpowers/audits/2026-08-05-acceptance.md) |
 | Сценарии | **26 из 26** реализованы — [scenarios.md](ux/scenarios.md) |
-| Тесты | 703 unit, 55 e2e (Chromium), 4 проверки в Firefox |
+| Тесты | `pnpm test` (unit + гейты), `pnpm test:e2e` (Chromium), `pnpm test:e2e:firefox` — счётчики намеренно не выписаны здесь: они устаревают следующим коммитом |
 | Код | 18 пакетов, 3 приложения — карта ниже |
 | Репозиторий | `ssheleg/okolos` (публичный, AGPL-3.0) |
 | Ждёт человека | 4 шага: токен Cloudflare, ключ подписи фидов, аккаунт Chrome Web Store, выбор весов классификатора |

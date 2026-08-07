@@ -249,3 +249,48 @@ describe('every citation names something that exists', () => {
     })
   }
 })
+
+describe('the standing instructions list is complete', () => {
+  /**
+   * Instructions 7, 8 and 9 were written into retro entries and never added to
+   * the list at the top. A reader following the list got six of nine — and the
+   * list is what stage 0 of every run reads.
+   */
+  const retro = readFileSync(path.join(root, 'docs/superpowers/retro.md'), 'utf8')
+  const listed = new Set(
+    [...retro.matchAll(/^(\d+)\.\s+\*\*/gm)].map((m) => Number(m[1])),
+  )
+  const referenced = new Set(
+    [...retro.matchAll(/[Ss]tanding instruction \(?(\d+)\)?/g)].map((m) => Number(m[1])),
+  )
+
+  it('has a list to check', () => {
+    expect(listed.size).toBeGreaterThan(5)
+  })
+
+  it('lists every instruction an entry refers to', () => {
+    for (const n of referenced) {
+      expect(listed.has(n), `an entry cites standing instruction ${n}, which the list omits`).toBe(
+        true,
+      )
+    }
+  })
+
+  it('is numbered without gaps', () => {
+    // A gap means one was deleted and the rest not renumbered, so a citation
+    // now points at the wrong rule.
+    const sorted = [...listed].sort((a, b) => a - b)
+    expect(sorted).toEqual(sorted.map((_, index) => index + 1))
+  })
+})
+
+describe('documents do not carry counts that are stale by the next commit', () => {
+  it('states how to measure the test totals rather than writing them down', () => {
+    // docs/README.md said 703 unit and 55 e2e when the suite was at 932 and 63.
+    // The structural counts — packages, requirements, scenarios — are gated
+    // above and stay; the volatile ones are a command now.
+    const readme = readFileSync(path.join(root, 'docs/README.md'), 'utf8')
+    expect(readme).not.toMatch(/\d{3,} unit/)
+    expect(readme).toContain('pnpm test')
+  })
+})

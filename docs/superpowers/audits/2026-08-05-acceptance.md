@@ -12,8 +12,8 @@ missing part is named rather than implied.
 | Requirements | 37 — 35 DONE, 2 PARTIAL (REQ-25, REQ-37) |
 | Scenarios | 26 of 26 implemented |
 | Screens | every screen with a scenario is built |
-| Unit tests | 663, in 56 files |
-| End-to-end (Chromium) | 49 specs |
+| Unit tests | `pnpm test` — the count is deliberately not written here; it was 663 the day this note was signed and stale within the week |
+| End-to-end (Chromium) | `pnpm test:e2e` — 49 specs on the day, and growing |
 | End-to-end (Firefox) | 4 checks, via geckodriver |
 | Packages | 17 (`core-*` are pure by lint rule and by bundle scan) |
 

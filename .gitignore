@@ -18,6 +18,7 @@ apps/extension/.output/
 web-ext-artifacts/
 
 # worker
+apps/proxy/wrangler.generated.toml
 .wrangler/
 
 # secrets — never commit

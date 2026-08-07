@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "license": "AGPL-3.0-only",
-  "description": "Browser security for the age of AI agents \u2014 local-first, verifiable.",
+  "description": "Browser security for the age of AI agents — local-first, verifiable.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ssheleg/okolos.git"
@@ -27,7 +27,8 @@
     "build:e2e": "node tools/build.mjs --with-test-hooks",
     "test:e2e:firefox": "pnpm build && node tools/firefox-e2e.mjs",
     "wireframes": "node tools/wireframes.mjs",
-    "graph:check": "node tools/graph-check.mjs"
+    "graph:check": "node tools/graph-check.mjs",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",

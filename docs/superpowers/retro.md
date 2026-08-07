@@ -798,3 +798,37 @@ happens before adding.
   and it did not help, because it lives in a document and the push lives in a
   shell. The honest note is that a rule read at stage 0 does not survive
   contact with a chained command; only a hook would.
+
+### 2026-08-07 — the instruction that needed a hook, and the deploy that needed running
+
+- **Symptom:** two of the three defects in the worker deploy were invisible to
+  reading. `d1 execute` silently used the committed template instead of the
+  rendered config and sent `set-at-deploy` as a database id; the worker URL is
+  printed by `deploy` and not by `deployments list`, so the first real run
+  reached its smoke step with nothing to test — after a deploy that had
+  succeeded. The third was a contract written from memory: `/status/domain`
+  answers `status: listed | not-listed | unknown`, not `listed: boolean`.
+- **Surfaced at:** the first execution. Every gate had been green.
+- **Owned by:** the belief that a script reviewed carefully enough does not
+  need to be run.
+- **What the smoke was worth before it was attacked:** pointed at
+  `example.com`, three of four checks failed and one passed — "an unknown path
+  is a 404" is true of every wrong host in the world. It reads the body now.
+  The strongest check turned out to be the unlisted-domain one, because
+  `unknown` is precisely what the worker answers when it cannot reach D1: a
+  deploy whose schema never landed fails there rather than passing on a 200.
+- **Prevention:** `--smoke-only`, so the checks can be attacked without a
+  deploy, and a runbook that records all three traps by name.
+
+- **The other half:** standing instruction 5 — read the gate output before
+  pushing — was broken earlier the same day, and the honest note then was that
+  a rule in a document cannot stop a chained shell command. `.githooks/pre-push`
+  now runs lint, typecheck, unit and the UX linter and refuses the push,
+  printing the failing output rather than a summary of it. Verified by planting
+  a defect in each of the four.
+- **The escape hatch is `OKOLOS_SKIP_GATES=1`, not `--no-verify`,** on purpose:
+  `--no-verify` skips the hook silently and leaves no record of what was not
+  checked. The override announces itself in two lines.
+- **Wiring, not remembering:** `core.hooksPath` is per-clone, so a `prepare`
+  script sets it on install and a test asserts both the hook and that script
+  exist. A hook nobody's clone runs is a document with a shebang.

@@ -1,0 +1,46 @@
+#!/bin/sh
+# Reading the gate output before pushing — as a mechanism rather than a rule.
+#
+# Standing instruction 5 says exactly this, and on 2026-08-07 a commit went out
+# red anyway: `pnpm test` exited 1, the command was chained past it, and the
+# exit code was read after the push. The instruction lives in a document; the
+# push lives in a shell. Only one of those can stop the other.
+#
+# Escape hatch: OKOLOS_SKIP_GATES=1 git push. Deliberately not --no-verify,
+# which skips this file silently and leaves no trace of what was not checked.
+
+set -e
+
+if [ -n "$OKOLOS_SKIP_GATES" ]; then
+    echo "pre-push: SKIPPED by OKOLOS_SKIP_GATES — lint, typecheck, unit and ux were not run."
+    echo "pre-push: whatever is being pushed has not been checked by this machine."
+    exit 0
+fi
+
+root=$(git rev-parse --show-toplevel)
+cd "$root"
+
+fail=0
+run() {
+    printf 'pre-push: %-12s' "$1"
+    if out=$(eval "$2" 2>&1); then
+        echo 'ok'
+    else
+        echo 'FAILED'
+        # The output, not a summary of it: a gate that says only "failed" sends
+        # the reader back to re-run it, which is the moment the hook gets skipped.
+        echo "$out" | tail -25 | sed 's/^/           /'
+        fail=1
+    fi
+}
+
+run lint      'pnpm -s lint'
+run typecheck 'pnpm -s typecheck'
+run unit      'pnpm -s test'
+run ux        'python3 docs/ux/lint.py'
+
+if [ "$fail" -ne 0 ]; then
+    echo
+    echo 'pre-push: refusing to push. Fix the above, or OKOLOS_SKIP_GATES=1 git push to override.'
+    exit 1
+fi

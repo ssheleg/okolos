@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -80,5 +80,41 @@ describe('the repository tracks no test-run artefacts', () => {
     const ignore = readFileSync(path.join(root, '.gitignore'), 'utf8')
     expect(ignore).toMatch(/^test-results\/$/m)
     expect(ignore).toMatch(/^playwright-report\/$/m)
+  })
+})
+
+describe('the pre-push hook exists and runs the gates', () => {
+  /**
+   * The one standing instruction that cannot be followed by reading it. A rule
+   * about checking gate output lives in a document; the push that ignores it
+   * lives in a shell, and on 2026-08-07 the shell won.
+   */
+  const hook = path.join(root, '.githooks/pre-push')
+
+  it('is present and executable', () => {
+    expect(existsSync(hook), '.githooks/pre-push is missing').toBe(true)
+    // A hook without the bit set is a hook git silently never runs — the exact
+    // failure mode this is meant to remove.
+    expect(statSync(hook).mode & 0o111).toBeGreaterThan(0)
+  })
+
+  it('runs every gate CI runs, so local green means the same thing', () => {
+    const body = readFileSync(hook, 'utf8')
+    for (const gate of ['lint', 'typecheck', 'test', 'docs/ux/lint.py']) {
+      expect(body, `the hook does not run ${gate}`).toContain(gate)
+    }
+  })
+
+  it('refuses rather than warns', () => {
+    expect(readFileSync(hook, 'utf8')).toMatch(/exit 1/)
+  })
+
+  it('is wired by installing, not by remembering', () => {
+    // core.hooksPath is per-clone. Without `prepare`, the hook is a file nobody
+    // on a fresh clone is running.
+    const pkg = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8')) as {
+      scripts: Record<string, string>
+    }
+    expect(pkg.scripts.prepare ?? '').toContain('core.hooksPath')
   })
 })

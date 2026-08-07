@@ -5,6 +5,10 @@ coverage/
 .turbo/
 *.tsbuildinfo
 
+# test-run artefacts — a failing run's trace is not project history
+test-results/
+playwright-report/
+
 # local pipeline artefacts
 .pipeline/logs/
 graphify-out/

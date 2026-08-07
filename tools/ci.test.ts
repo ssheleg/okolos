@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -53,5 +54,31 @@ describe('the local shortcut matches CI', () => {
     // happened to be lying around, which is the definition of a stale green.
     expect(script('gates')).toContain('pnpm build')
     expect(script('gates').indexOf('pnpm build')).toBeLessThan(script('gates').indexOf('pnpm test'))
+  })
+})
+
+describe('the repository tracks no test-run artefacts', () => {
+  /**
+   * Three Playwright failure artefacts — including a binary trace.zip of a
+   * red run — were committed with an unrelated feature and sat in history for
+   * days. They are not project state: they are the debris of one machine's
+   * one bad run, and the knowledge-graph build was reading the error context
+   * as if it were documentation.
+   */
+  const tracked = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' }).split('\n')
+
+  it('reads the index, so an empty list cannot pass as a clean tree', () => {
+    expect(tracked.length).toBeGreaterThan(50)
+  })
+
+  it('has no test-results or playwright-report file under version control', () => {
+    const debris = tracked.filter((f) => /^(test-results|playwright-report)\//.test(f))
+    expect(debris, `these are run artefacts, not source: ${debris.join(', ')}`).toEqual([])
+  })
+
+  it('ignores the directories they land in, so the next red run stays local', () => {
+    const ignore = readFileSync(path.join(root, '.gitignore'), 'utf8')
+    expect(ignore).toMatch(/^test-results\/$/m)
+    expect(ignore).toMatch(/^playwright-report\/$/m)
   })
 })

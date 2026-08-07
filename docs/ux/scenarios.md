@@ -301,7 +301,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** success, error
 - **Errors & recovery:** network unavailable during the k-anonymity step -> system reports the local-only result and says the online check did not run; the journal records the prefix sent, or that nothing was sent
 - **Status:** implemented
-- **Coverage:** apps/extension/src/background/password.ts:checkSubmittedPassword, packages/core-credential/src/guard.ts:guardCredentialEntry, packages/net/src/request.ts:sendRequest (unit only — a real password submission in Playwright would have to carry a real credential, so the k-anonymity path is exercised against a stubbed range endpoint instead)
+- **Coverage:** apps/extension/src/background/password.ts:checkSubmittedPassword, packages/core-credential/src/guard.ts:guardCredentialEntry, packages/net/src/request.ts:request (unit only — a real password submission in Playwright would have to carry a real credential, so the k-anonymity path is exercised against a stubbed range endpoint instead)
 
 ### SCN-015: Leak inventory with one source unavailable
 - **Persona:** P-01

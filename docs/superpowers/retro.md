@@ -746,3 +746,55 @@ happens before adding.
   pattern stopped at an underscore. A plant that does not apply is not evidence
   of a working gate, and checking that the plant landed is now part of planting
   one.
+
+### 2026-08-07 — an audit of everything, and what six sweeps found
+
+- **Symptom:** nothing was failing. The suite was green, the UX linter passed,
+  the requirement ledger read 35 DONE / 2 PARTIAL, and the graph checked clean.
+  The audit was run anyway, on the theory that a green nobody has attacked is a
+  green nobody has read.
+- **Surfaced at:** a deliberate sweep, not a failure.
+- **Owned by:** the gates, mostly — five of the six findings were things a gate
+  could have caught and did not.
+- **What it found, in the order it found it:**
+  1. 29 of 107 `file:line` citations across the UX records and the acceptance
+     note pointed at lines that had moved. Converted to symbol citations and
+     gated: a cited symbol must exist, and line numbers may not return.
+  2. `docs/README.md` claimed 703 unit tests and 55 e2e against an actual 932
+     and 63; the acceptance note claimed 663 in 56 files. Volatile counts are
+     now the command that reports them.
+  3. The standing-instruction list held six entries while retro entries cited
+     nine. Stage 0 of every run reads that list, so three rules learned the hard
+     way were being skipped by the mechanism meant to stop them recurring.
+  4. The licence gate proved this project publishes AGPL-3.0 and credits HIBP,
+     and said nothing about the licences of what it links against — the one
+     licence question still open (which classifier weights it may carry) had no
+     mechanism behind it at all. Now three rules, one of which turns red the
+     moment a weight file lands undecided.
+  5. Three Playwright failure artefacts, including a binary `trace.zip`, were
+     committed with an unrelated feature and were being read into the knowledge
+     graph as project documentation.
+  6. SCN-014, SCN-015 and SCN-016 sat marked `implemented` in the index table
+     while their own records still read `draft` / `Coverage: none yet`. The UX
+     linter already had exactly this check — for `screens.md`.
+- **What it did not find:** the exports-versus-callers sweep came back clean,
+  every gate that was attacked with a planted defect bit, and the requirement
+  ledger still holds. One flagged discrepancy — 17 packages versus 18 — was a
+  misread: the "17" lives in a retro entry *about* that error being fixed.
+- **Prevention:** each finding left a gate behind rather than a corrected
+  document. A fix without one is a fix that has to be found again.
+
+### 2026-08-07 — instruction 5, broken in the session that wrote instruction 10
+
+- **Symptom:** the scenarios commit went out with the suite red. `pnpm test`
+  had exited 1; the exit code was chained past and read only after the push.
+- **Surfaced at:** the next command, one line too late.
+- **Owned by:** me. The command was `pnpm test >/tmp/t.log; echo $?` followed
+  unconditionally by `git commit && git push`.
+- **Root cause:** the failure was mine too — a coverage line I had just written
+  cited `packages/net/src/request.ts:sendRequest`, and the export is `request`.
+  The citation gate built earlier in the same audit caught it correctly.
+- **Prevention:** none new. Standing instruction 5 already says exactly this,
+  and it did not help, because it lives in a document and the push lives in a
+  shell. The honest note is that a rule read at stage 0 does not survive
+  contact with a chained command; only a hook would.

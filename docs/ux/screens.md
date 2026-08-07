@@ -263,7 +263,7 @@ self-audit panel.
   | success | checklist active | - | one current step highlighted, rest visible |
 - **Behavior notes:** no time estimates, no reassurance copy, no scare copy; progress survives a browser restart
 - **Wireframe:** wireframes/SCR-13.md
-- **Coverage:** packages/ui/src/recovery/recovery.ts:17, packages/core-recovery/src/checklist.ts:120, e2e/scn-025.spec.ts:8
+- **Coverage:** packages/ui/src/recovery/recovery.ts:17, packages/core-recovery/src/checklist.ts:120, packages/core-recovery/src/portable.ts:35, e2e/scn-025.spec.ts:41
 - **Scenarios:** SCN-025
 - **Resources:** playbook definitions, incident store
 - **Status:** built

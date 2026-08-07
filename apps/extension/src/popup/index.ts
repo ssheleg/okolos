@@ -3,6 +3,7 @@ import { openDb } from '@okolos/storage'
 import { renderPopup, type PopupState } from '@okolos/ui'
 
 import { buildPopupState } from './state.js'
+import '../pages.css'
 
 /**
  * The popup: is this page fine, and is anything waiting for me.

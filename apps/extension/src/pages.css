@@ -1,0 +1,53 @@
+/*
+ * The extension's own pages had no stylesheet at all, so every control was
+ * whatever size the browser made it. That passed the accessibility sweep for a
+ * while by luck: the elements happened to sit far enough apart to satisfy WCAG
+ * 2.2's 24px target rule, until one new button landed beside an input and did
+ * not.
+ *
+ * This is deliberately close to nothing — the pages are plain HTML on purpose,
+ * and a design system for four internal screens would be its own liability.
+ * What it does fix is the class of fault rather than the button that exposed it.
+ */
+
+button,
+input,
+select {
+  min-height: 24px;
+  min-inline-size: 24px;
+  padding: 4px 10px;
+  font: inherit;
+}
+
+/* Space between adjacent controls counts towards the same rule. */
+button + button,
+button + input,
+input + button {
+  margin-inline-start: 8px;
+}
+
+[data-role='item-actions'],
+[data-role='leak-actions'],
+[data-role='change-actions'],
+[data-role='actions'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block: 8px;
+}
+
+/* The checklist's checkboxes are targets too, and they carry a label. */
+[data-role='step'] {
+  margin-block: 12px;
+}
+
+[data-role='step'] input[type='checkbox'] {
+  min-inline-size: 24px;
+  min-block-size: 24px;
+}
+
+[data-role='portable-text'] {
+  padding: 12px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}

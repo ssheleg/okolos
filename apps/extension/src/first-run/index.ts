@@ -1,6 +1,7 @@
 import { renderFirstRun, type CheckRow } from '@okolos/ui'
 import { detectPlatform } from '@okolos/platform'
 import { openDb } from '@okolos/storage'
+import '../pages.css'
 
 /**
  * What the first run can honestly check.

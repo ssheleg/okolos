@@ -21,6 +21,7 @@ import {
 import { exportAll, openDb, RETENTION_DAYS, wipeAll, type JournalRecord } from '@okolos/storage'
 
 import { mapJournal } from '../popup/state.js'
+import '../pages.css'
 
 /**
  * The options page is, first of all, the self-audit panel: the product's
@@ -372,6 +373,11 @@ async function recoverySection(): Promise<HTMLElement> {
           }
           await reload()
         })()
+      },
+      onCopy: (portableText: string) => {
+        // A real click, and the page shows exactly what went to the clipboard.
+        // The write can be refused; the text stays on screen either way.
+        void navigator.clipboard?.writeText(portableText).catch(() => undefined)
       },
       onArchive: () => {
         void (async () => {

@@ -1,4 +1,4 @@
-import type { Checklist } from '@okolos/core-recovery'
+import { toPortable, type Checklist } from '@okolos/core-recovery'
 
 /**
  * SCR-13 — the recovery checklist.
@@ -6,12 +6,15 @@ import type { Checklist } from '@okolos/core-recovery'
  * Ordered by damage, not by convenience, and every step carries its reason: a
  * list of instructions without reasons is followed once, badly, and abandoned
  * at the first inconvenient step. Steps that cannot be done in this browser say
- * so, because discovering that halfway through is where people stop.
+ * so, because discovering that halfway through is where people stop — and now
+ * they can be taken along, as text the user moves themselves.
  */
 
 export interface RecoveryHandlers {
   readonly onToggle: (stepId: string, done: boolean) => void
   readonly onArchive: () => void
+  /** Copies the remaining steps. Optional: the text is on screen either way. */
+  readonly onCopy?: (text: string) => void
 }
 
 export function renderRecovery(
@@ -81,9 +84,60 @@ export function renderRecovery(
 
   if (checklist.remaining === 0) {
     root.append(button(doc, 'archive', 'Archive this incident', handlers.onArchive))
+  } else {
+    root.append(portableBlock(doc, checklist, handlers))
   }
 
   return root
+}
+
+/**
+ * The steps you have to finish somewhere else, in a form you can take there.
+ *
+ * Not a sync feature. A recovery record says which incident happened to a
+ * particular person, and shipping it to a server so it can appear on their
+ * phone would trade this product's one real promise for something they can get
+ * by pasting text into a note.
+ *
+ * The text is rendered whether or not the copy button works — a clipboard
+ * permission the browser declines must not be the thing that strands someone
+ * mid-recovery. And the copy happens on a real click and shows exactly what it
+ * copied, which is the distinction this product's own ClickFix detector draws.
+ */
+function portableBlock(
+  doc: Document,
+  checklist: Checklist,
+  handlers: RecoveryHandlers,
+): HTMLElement {
+  const portable = toPortable(checklist)
+  const block = doc.createElement('section')
+  block.setAttribute('data-role', 'portable')
+
+  const heading = doc.createElement('h2')
+  heading.textContent = 'Continue on another device'
+  block.append(heading)
+
+  block.append(
+    text(
+      doc,
+      'portable-why',
+      portable.elsewhere.length === 0
+        ? 'Every remaining step can be done here, but you can still take the list with you.'
+        : `${portable.elsewhere.length} of the remaining steps cannot be done in this browser. Take the list with you — nothing is sent anywhere.`,
+    ),
+  )
+
+  const pre = doc.createElement('pre')
+  pre.setAttribute('data-role', 'portable-text')
+  pre.textContent = portable.text
+  block.append(pre)
+
+  if (handlers.onCopy) {
+    const copy = handlers.onCopy
+    block.append(button(doc, 'copy', 'Copy these steps', () => copy(portable.text)))
+  }
+
+  return block
 }
 
 function text(doc: Document, role: string, content: string): HTMLParagraphElement {

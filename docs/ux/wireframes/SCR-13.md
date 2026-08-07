@@ -12,11 +12,15 @@
 - `steps`
 - `step`
 - `done`
+- `portable`
+- `portable-text`
 - `generic`
 - `progress`
 - `why`
 - `elsewhere`
 - `archive`
+- `portable-why`
+- `copy`
 
 **States**
 

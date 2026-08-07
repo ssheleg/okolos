@@ -5,7 +5,7 @@ import { buildChecklist } from '@okolos/core-recovery'
 import { renderRecovery, type RecoveryHandlers } from './recovery.js'
 
 function handlers(overrides: Partial<RecoveryHandlers> = {}): RecoveryHandlers {
-  return { onToggle: vi.fn(), onArchive: vi.fn(), ...overrides }
+  return { onToggle: vi.fn(), onArchive: vi.fn(), onCopy: vi.fn(), ...overrides }
 }
 
 function render(kind: string, progress: Array<{ stepId: string; doneAt: string }> = [], h = handlers()) {
@@ -82,5 +82,53 @@ describe('reachable without a mouse', () => {
       expect(box?.id).toBeTruthy()
       expect(label?.getAttribute('for')).toBe(box?.id)
     }
+  })
+})
+
+describe('taking the rest with you', () => {
+  it('shows the remaining steps as text, whether or not the clipboard works', () => {
+    // A clipboard permission the browser declines must not be the thing that
+    // strands someone mid-recovery.
+    const el = render('pasted-command')
+    expect(role(el, 'portable-text')?.textContent).toContain('Disconnect this device')
+  })
+
+  it('says how many of them this browser cannot do', () => {
+    expect(role(render('pasted-command'), 'portable-why')?.textContent).toMatch(
+      /cannot be done in this browser/i,
+    )
+  })
+
+  it('says outright that nothing is sent anywhere', () => {
+    // The alternative design — syncing the incident to a server so it appears
+    // on the phone — is the one this product cannot make.
+    expect(role(render('pasted-command'), 'portable-why')?.textContent).toMatch(/nothing is sent/i)
+  })
+
+  it('copies exactly what it displays', () => {
+    const h = handlers()
+    const el = render('pasted-command', [], h)
+    role(el, 'copy')?.click()
+    expect(h.onCopy).toHaveBeenCalledWith(role(el, 'portable-text')?.textContent)
+  })
+
+  it('renders the text even with no copy handler at all', () => {
+    const el = renderRecovery(document, buildChecklist('pasted-command'), {
+      onToggle: vi.fn(),
+      onArchive: vi.fn(),
+    })
+    document.body.append(el)
+    expect(el.querySelector('[data-role=portable-text]')).not.toBeNull()
+    expect(el.querySelector('[data-role=copy]')).toBeNull()
+  })
+
+  it('offers nothing to carry once everything is done', () => {
+    const all = buildChecklist('entered-password').steps.map((step) => ({
+      stepId: step.id,
+      doneAt: 'now',
+    }))
+    const el = render('entered-password', all)
+    expect(role(el, 'portable')).toBeNull()
+    expect(role(el, 'archive')).not.toBeNull()
   })
 })

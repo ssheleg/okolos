@@ -1,5 +1,6 @@
 import { detectPlatform } from '@okolos/platform'
 import { renderInterstitial } from '@okolos/ui'
+import '../pages.css'
 
 /**
  * The page shown in place of a blocked one.

@@ -613,3 +613,40 @@ happens before adding.
 - **Fix, by grade:** `context.route`, which covers the worker. The lesson
   generalises past this file: when a test stubs something, at least one
   assertion has to fail if the stub is not used.
+
+### 2026-08-06 — the feature the product could not honestly build
+
+- **The ask:** SCR-13 promised "continue on another device", and five of the
+  nine steps in the worst checklist are not browser work — change your email
+  password from a different machine, disconnect this one, phone the bank on the
+  number printed on your card.
+- **The obvious build:** sync. Put the incident and its progress behind an
+  account, or a short-lived link, and let it appear on the phone.
+- **Why not:** a recovery record says which incident happened to a particular
+  person. Shipping it anywhere would trade this product's one real promise for a
+  convenience the user can get by pasting text into a note. The scenario, read
+  carefully, never asked for sync either: its alt path says the system "shows
+  what to do there and preserves progress", and progress already survived.
+- **Built instead:** the remaining steps as text, marked with which cannot be
+  done here, each carrying its reason. The transport is the user's own — the
+  clipboard, an email to themselves, paper.
+- **One detail worth keeping:** the text renders whether or not the copy button
+  works. A clipboard permission the browser declines must not be the thing that
+  strands someone mid-recovery.
+- **And an irony handled rather than ignored:** this product warns about pages
+  that write to the clipboard. Its own write happens on a real click and shows
+  exactly what it copied — which is precisely the distinction its ClickFix
+  detector draws.
+
+### 2026-08-06 — the pages had no stylesheet, and the sweep had been lucky
+
+- **Symptom:** adding one button turned the recovery screen's axe run red on
+  WCAG 2.2 target size — controls under 24px, too close together.
+- **Root cause:** the extension's own pages ship no CSS at all. Every control
+  was whatever size the browser made it, and the sweep had passed because the
+  elements happened to sit far enough apart.
+- **Fix, by grade:** a small shared stylesheet with a minimum target size and
+  spacing, imported by all four pages. Deliberately close to nothing — the pages
+  are plain HTML on purpose and a design system for four internal screens would
+  be its own liability — but it fixes the class rather than the button that
+  exposed it. Removing the rule turns the sweep red again.

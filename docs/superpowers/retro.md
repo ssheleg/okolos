@@ -706,3 +706,29 @@ happens before adding.
 - **Standing instruction (9):** a number produced by a tool is a claim about the
   tool until it has been checked against the artefact. Report it as "the
   diagnostic says X" or verify it — never as "X".
+
+### 2026-08-06 — a hundred and seven citations, twenty-nine of them rotted
+
+- **Symptom:** the audit checked, for the first time, whether the `file:line`
+  references in scenarios.md, screens.md and the acceptance note resolve.
+  Twenty-nine of a hundred and seven pointed at a blank line, a closing brace,
+  or the middle of a comment. Every one had been correct when written.
+- **Root cause:** a line number is a coordinate into a moving target. The UX
+  linter validates markdown links and never looked at these — the same blind
+  spot that let fourteen wireframe paths point at a directory that did not
+  exist.
+- **Fix, by grade:** citations name a symbol now, or the file alone where the
+  file is the evidence. A symbol survives the code moving and fails loudly when
+  it is renamed away.
+- **The fix was wrong twice before it was right, and both wrongs looked fine.**
+  The first conversion took the nearest declaration above the stale line and
+  produced `group.ts:SESSION_MATERIAL` — a private regex cited as the evidence
+  for a scenario. It passed the new gate, because the symbol does exist in the
+  file. The second took each file's first export and produced type names. Only
+  the third — the file's principal exported *action* — says what the scenario
+  is actually covered by.
+- **What made the first two survive:** I ran the plants, saw them not fire, and
+  nearly concluded the gate was fine. They had not applied at all — my grep
+  pattern stopped at an underscore. A plant that does not apply is not evidence
+  of a working gate, and checking that the plant landed is now part of planting
+  one.

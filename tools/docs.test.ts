@@ -182,3 +182,70 @@ describe('a screen record names the controls its renderer draws', () => {
     })
   }
 })
+
+describe('every citation names something that exists', () => {
+  /**
+   * Coverage lines used to cite `file:line`. Twenty-nine of a hundred and seven
+   * had rotted — pointing at a blank line, a closing brace, the middle of a
+   * comment — because a line number is a coordinate into a moving target and
+   * nothing checked them.
+   *
+   * They cite a symbol now, or the file alone where the whole file is the
+   * evidence. A symbol survives the code moving; when it is renamed away, this
+   * fails, which is the point.
+   */
+  const docs = [
+    'docs/ux/scenarios.md',
+    'docs/ux/screens.md',
+    'docs/superpowers/audits/2026-08-05-acceptance.md',
+  ]
+
+  const citation = /\b((?:packages|apps|tools|e2e|docs)\/[\w./-]+\.(?:ts|mjs|py|md))(?::([A-Za-z_$][\w$]*))?/g
+
+  /**
+   * Only lines that claim evidence. A path can appear in prose for other
+   * reasons — the design-system block names a `tokens.ts` it calls "planned",
+   * and a plan is allowed to describe a file that does not exist yet.
+   */
+  const claims = (doc: string): string[] =>
+    readFileSync(path.join(root, doc), 'utf8')
+      .split('\n')
+      .filter((line) => /\*\*Coverage:\*\*|^\| `/.test(line))
+      .filter((line) => !/\bplanned\b/.test(line))
+
+  it('finds citations to check', () => {
+    // An empty sweep would make every assertion below vacuous.
+    const found = docs.flatMap((doc) => claims(doc).flatMap((line) => [...line.matchAll(citation)]))
+    expect(found.length).toBeGreaterThan(50)
+  })
+
+  for (const doc of docs) {
+    it(`${doc} cites only files that exist`, () => {
+      for (const line of claims(doc)) {
+        for (const [, file] of line.matchAll(citation)) {
+          expect(existsSync(path.join(root, file as string)), `${doc} cites ${file}`).toBe(true)
+        }
+      }
+    })
+
+    it(`${doc} cites only symbols its files define`, () => {
+      for (const line of claims(doc)) {
+        for (const [, file, symbol] of line.matchAll(citation)) {
+          if (!symbol) continue
+          const source = readFileSync(path.join(root, file as string), 'utf8')
+          expect(
+            new RegExp(`\\b${symbol}\\b`).test(source),
+            `${doc} cites ${file}:${symbol}, which that file does not define`,
+          ).toBe(true)
+        }
+      }
+    })
+
+    it(`${doc} has no line-number citations left`, () => {
+      // A line number is a coordinate into a moving target; it rots silently.
+      const text = readFileSync(path.join(root, doc), 'utf8')
+      const numeric = [...text.matchAll(/\b(?:packages|apps|tools|e2e|docs)\/[\w./-]+\.(?:ts|mjs|py|md):(\d+)/g)]
+      expect(numeric.map((m) => m[0])).toEqual([])
+    })
+  }
+})

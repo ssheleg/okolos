@@ -59,7 +59,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** loading, empty, success
 - **Errors & recovery:** a check cannot run (e.g. corpus still downloading) -> that row states the reason and offers retry; the other checks continue and the result explicitly says the run was partial
 - **Status:** implemented
-- **Coverage:** packages/ui/src/first-run/screen.ts:45, apps/extension/src/first-run/index.ts:17 — PARTIAL: the tab and extension inventories this scenario describes need permissions this version deliberately does not request, so those rows render as `unavailable` with the reason. They become `ok` with REQ-23 (extensions) and the tabs permission that justifies it
+- **Coverage:** packages/ui/src/first-run/screen.ts:renderFirstRun, apps/extension/src/first-run/index.ts — PARTIAL: the tab and extension inventories this scenario describes need permissions this version deliberately does not request, so those rows render as `unavailable` with the reason. They become `ok` with REQ-23 (extensions) and the tabs permission that justifies it
 
 ### SCN-002: First run — findings found
 - **Persona:** P-01
@@ -77,7 +77,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** loading, error, success
 - **Errors & recovery:** queue store unreadable -> the queue states the storage problem rather than showing an empty list
 - **Status:** implemented
-- **Coverage:** packages/ui/src/queue/queue.ts:15, apps/extension/src/first-run/index.ts:71, e2e/scn-002.spec.ts:45
+- **Coverage:** packages/ui/src/queue/queue.ts:renderQueue, apps/extension/src/first-run/index.ts, e2e/scn-002.spec.ts
 
 ## ai-shield
 
@@ -98,7 +98,7 @@ See [foundation.md](foundation.md) → Personas.
 - **Errors & recovery:** the classifier stage fails or times out -> the verdict falls back to the deterministic stages, the banner states that detection was partial; a detector exception disables that detector for the session and is journalled, and the page is never broken
 - **Telemetry:** none — no analytics events are emitted by this product
 - **Status:** implemented
-- **Coverage:** apps/extension/src/content/collect.ts:56, packages/core-injection/src/stage1.ts:38, packages/ui/src/banner/banner.ts:52, e2e/scn-003.spec.ts:32
+- **Coverage:** apps/extension/src/content/collect.ts:collect, packages/core-injection/src/stage1.ts:detectHidden, packages/ui/src/banner/banner.ts:mountBanner, e2e/scn-003.spec.ts
 
 ### SCN-004: Inspect what was hidden
 - **Persona:** P-01
@@ -116,7 +116,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** loading, success, error
 - **Errors & recovery:** evidence cannot be loaded -> inline failure with retry; the banner and the neutralisation both remain in place
 - **Status:** implemented
-- **Coverage:** packages/ui/src/inspector/inspector.ts:57, apps/extension/src/content/index.ts:112, e2e/scn-004-click.spec.ts:19 — the click path is exercised against a build whose only difference is an open shadow root (REQ-35); a bundle gate asserts production keeps it closed
+- **Coverage:** packages/ui/src/inspector/inspector.ts:mountInspector, apps/extension/src/content/index.ts:MEASURE_COLLECT, e2e/scn-004-click.spec.ts — the click path is exercised against a build whose only difference is an open shadow root (REQ-35); a bundle gate asserts production keeps it closed
 
 ### SCN-005: Neutralise and restore
 - **Persona:** P-01
@@ -134,7 +134,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** success, error
 - **Errors & recovery:** removal fails on a protected node -> system reports which nodes could not be neutralised and keeps warning; restore always returns the DOM to its pre-change state
 - **Status:** implemented
-- **Coverage:** packages/core-sanitizer/src/plan.ts:25, apps/extension/src/content/sanitize.ts:28, e2e/scn-005.spec.ts:20
+- **Coverage:** packages/core-sanitizer/src/plan.ts:planSanitisation, apps/extension/src/content/sanitize.ts:Sanitiser, e2e/scn-005.spec.ts
 
 ### SCN-010: Agent blocked from acting on a poisoned page
 - **Persona:** P-01
@@ -153,7 +153,7 @@ See [foundation.md](foundation.md) → Personas.
 - **Errors & recovery:** the action context cannot be identified -> system blocks and states what could not be determined; the gate timing out defaults to Block, never to Allow; the gate surface itself cannot be shown -> the action is blocked and journalled
 - **Known limit:** the hold is driven by DOM events the browser marks untrusted. A page calling `form.submit()` directly fires no event at all and cannot be seen from an isolated world; a scripted click or `requestSubmit()` — what agent tooling actually does — is caught.
 - **Status:** implemented
-- **Coverage:** packages/core-gate/src/decide.ts:48, apps/extension/src/content/agent-gate.ts:52, packages/ui/src/gate/gate.ts:38, e2e/scn-010.spec.ts:31
+- **Coverage:** packages/core-gate/src/decide.ts:assessAction, apps/extension/src/content/agent-gate.ts:AgentGate, packages/ui/src/gate/gate.ts:mountGate, e2e/scn-010.spec.ts
 
 ## web-guard
 
@@ -173,7 +173,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** success
 - **Errors & recovery:** the watchlist cannot be read -> comparison falls back to the popular-domains list that ships with the extension
 - **Status:** implemented
-- **Coverage:** packages/core-lookalike/src/check.ts:26, apps/extension/src/content/lookalike.ts:24, e2e/scn-006.spec.ts:13
+- **Coverage:** packages/core-lookalike/src/check.ts:checkLookalike, apps/extension/src/content/lookalike.ts:warnIfLookalike, e2e/scn-006.spec.ts
 
 ### SCN-007: Known-malicious page blocked
 - **Persona:** P-02
@@ -191,7 +191,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** success, error
 - **Errors & recovery:** feed metadata unavailable -> the block still applies, the interstitial says the source is unknown and how to check it; feeds stale beyond the freshness window -> the interstitial states the data age
 - **Status:** implemented
-- **Coverage:** packages/core-feeds/src/rules.ts:39, packages/ui/src/interstitial/interstitial.ts:38, e2e/scn-007.spec.ts:39
+- **Coverage:** packages/core-feeds/src/rules.ts:buildRules, packages/ui/src/interstitial/interstitial.ts:renderInterstitial, e2e/scn-007.spec.ts
 
 ### SCN-008: ClickFix — page copies a command
 - **Persona:** P-02
@@ -209,7 +209,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** success
 - **Errors & recovery:** clipboard content cannot be read -> the warning still appears based on the write event and the page pattern, and says the content could not be displayed
 - **Status:** implemented
-- **Coverage:** packages/core-traps/src/clickfix.ts:44, apps/extension/src/content/traps.ts:41, e2e/scn-008.spec.ts:37
+- **Coverage:** packages/core-traps/src/clickfix.ts:detectClickFix, apps/extension/src/content/traps.ts:watchForTraps, e2e/scn-008.spec.ts
 
 ### SCN-009: Browser-lock trap escape
 - **Persona:** P-02
@@ -227,7 +227,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** success, error
 - **Errors & recovery:** dialogs cannot be fully suppressed in this context -> system says so and directs the user to close the tab
 - **Status:** implemented
-- **Coverage:** packages/core-traps/src/techsupport.ts:40, apps/extension/src/content/traps.ts:83, e2e/scn-008.spec.ts:69
+- **Coverage:** packages/core-traps/src/techsupport.ts:detectTechSupport, apps/extension/src/content/traps.ts:watchForTraps, e2e/scn-008.spec.ts
 
 ### SCN-011: Credential-entry guard on a new domain
 - **Persona:** P-02
@@ -245,7 +245,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** success
 - **Errors & recovery:** domain age data unavailable -> the warning states which facts are missing rather than implying the domain is new. Registration age is never looked up at all: asking a server would send the address of every login page the user visits
 - **Status:** implemented
-- **Coverage:** packages/core-credential/src/guard.ts:39, apps/extension/src/content/credential.ts:29, e2e/scn-011.spec.ts:20
+- **Coverage:** packages/core-credential/src/guard.ts:guardCredentialEntry, apps/extension/src/content/credential.ts:watchCredentialFields, e2e/scn-011.spec.ts
 
 ### SCN-012: Download stopped by feed or hash
 - **Persona:** P-01
@@ -263,7 +263,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** success, error
 - **Errors & recovery:** feeds unavailable or stale -> system says the checks were limited; the verdict never claims more than the checks that actually ran
 - **Status:** implemented
-- **Coverage:** packages/core-download/src/judge.ts:60, apps/extension/src/background/downloads.ts:26, apps/extension/src/content/download.ts:36 (unit only — driving a real download through an extension in Playwright is not stable enough to gate on; until 2026-08-05 the banner did not exist at all and the verdict was journalled in silence)
+- **Coverage:** packages/core-download/src/judge.ts:judgeDownload, apps/extension/src/background/downloads.ts:handleDownload, apps/extension/src/content/download.ts:showDownloadVerdict (unit only — driving a real download through an extension in Playwright is not stable enough to gate on; until 2026-08-05 the banner did not exist at all and the verdict was journalled in silence)
 
 ### SCN-013: Download partially checked — hash unavailable
 - **Persona:** P-01
@@ -281,7 +281,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** success, error
 - **Errors & recovery:** all checks fail -> the verdict says the file was not checked at all
 - **Status:** implemented
-- **Coverage:** packages/core-download/src/judge.ts:104, apps/extension/src/background/downloads.test.ts:60 (unit only, as SCN-012)
+- **Coverage:** packages/core-download/src/judge.ts:judgeDownload, apps/extension/src/background/downloads.test.ts (unit only, as SCN-012)
 
 ## credentials
 
@@ -357,7 +357,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** loading, success, error
 - **Errors & recovery:** the extension cannot be disabled (policy-installed) -> system says why and offers the manual steps
 - **Status:** implemented
-- **Coverage:** packages/core-extensions/src/diff.ts:37, packages/ui/src/extensions/extensions.ts:44, e2e/scn-017.spec.ts:12
+- **Coverage:** packages/core-extensions/src/diff.ts:diffInventory, packages/ui/src/extensions/extensions.ts:renderExtensions, e2e/scn-017.spec.ts
 
 ### SCN-018: Extension changed publisher, package unavailable
 - **Persona:** P-01
@@ -375,7 +375,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** error, success
 - **Errors & recovery:** store metadata itself is unreachable -> system states that the publisher could not be verified and keeps the previous baseline rather than assuming a change
 - **Status:** implemented
-- **Coverage:** packages/core-extensions/src/analyse.ts:38, packages/ui/src/extensions/extensions.ts:117, e2e/scn-017.spec.ts:50
+- **Coverage:** packages/core-extensions/src/analyse.ts:analysePackage, packages/ui/src/extensions/extensions.ts:renderExtensions, e2e/scn-017.spec.ts
 
 ## privacy
 
@@ -395,7 +395,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** loading, empty, error, success
 - **Errors & recovery:** the journal is unreadable -> system states the storage problem and offers repair; it never renders an empty log on error, because an empty log is a claim
 - **Status:** implemented
-- **Coverage:** packages/ui/src/self-audit/panel.ts:26, apps/extension/src/options/index.ts:12, e2e/scn-019.spec.ts:9
+- **Coverage:** packages/ui/src/self-audit/panel.ts:renderSelfAudit, apps/extension/src/options/index.ts, e2e/scn-019.spec.ts
 
 ### SCN-023: Wipe all local data
 - **Persona:** P-01
@@ -413,7 +413,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** success, error
 - **Errors & recovery:** deletion partially fails -> system names what could not be deleted and offers retry; it never reports success on a partial wipe
 - **Status:** implemented
-- **Coverage:** packages/ui/src/settings/data-controls.ts:31, apps/extension/src/options/index.ts:26 — PARTIAL: covered by unit tests including the partial-failure path; no end-to-end run yet, since asserting a real wipe needs a profile seeded with data first
+- **Coverage:** packages/ui/src/settings/data-controls.ts:renderDataControls, apps/extension/src/options/index.ts — PARTIAL: covered by unit tests including the partial-failure path; no end-to-end run yet, since asserting a real wipe needs a profile seeded with data first
 
 ### SCN-024: Export all local data
 - **Persona:** P-01
@@ -430,7 +430,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** success, error
 - **Errors & recovery:** export fails -> inline failure with retry; no partial file is left behind
 - **Status:** implemented
-- **Coverage:** packages/ui/src/settings/data-controls.ts:31, apps/extension/src/options/index.ts:32 — PARTIAL: unit-tested; the download itself is not yet asserted end-to-end
+- **Coverage:** packages/ui/src/settings/data-controls.ts:renderDataControls, apps/extension/src/options/index.ts — PARTIAL: unit-tested; the download itself is not yet asserted end-to-end
 
 ## daily-use
 
@@ -450,7 +450,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** loading, empty, error, success
 - **Errors & recovery:** local storage unreadable -> the popup states the failure and offers repair; it never shows a clean verdict it could not compute; the active page cannot be identified -> the verdict is `unknown`, never `clean`
 - **Status:** implemented
-- **Coverage:** apps/extension/src/popup/state.ts:84, packages/ui/src/popup/popup.ts:39, e2e/scn-020.spec.ts:65
+- **Coverage:** apps/extension/src/popup/state.ts:toQueueItems, packages/ui/src/popup/popup.ts:renderPopup, e2e/scn-020.spec.ts
 
 ### SCN-021: What changed since last time
 - **Persona:** P-01
@@ -468,7 +468,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** empty, success
 - **Errors & recovery:** journal partially unreadable -> system shows what it can and states that the view is incomplete
 - **Status:** implemented
-- **Coverage:** packages/core-queue/src/diff.ts:45, packages/ui/src/journal/journal.ts:32, e2e/scn-020.spec.ts:106
+- **Coverage:** packages/core-queue/src/diff.ts:diffSince, packages/ui/src/journal/journal.ts:renderJournal, e2e/scn-020.spec.ts
 
 ### SCN-022: Queue never exceeds three actions
 - **Persona:** P-01
@@ -486,7 +486,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** empty, success
 - **Errors & recovery:** the ranking data is incomplete -> items are ordered by severity alone and the UI states the reduced ranking
 - **Status:** implemented
-- **Coverage:** packages/core-queue/src/rank.ts:41, packages/ui/src/popup/popup.ts:92, e2e/scn-020.spec.ts:77
+- **Coverage:** packages/core-queue/src/rank.ts:buildQueue, packages/ui/src/popup/popup.ts:renderPopup, e2e/scn-020.spec.ts
 
 ## recovery
 
@@ -506,7 +506,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** loading, empty, success
 - **Errors & recovery:** playbook data missing -> system shows the broadest safe checklist and says that is what it is showing
 - **Status:** implemented
-- **Coverage:** packages/core-recovery/src/checklist.ts:120, packages/ui/src/recovery/recovery.ts:17, e2e/scn-025.spec.ts:8
+- **Coverage:** packages/core-recovery/src/checklist.ts:buildChecklist, packages/ui/src/recovery/recovery.ts:renderRecovery, e2e/scn-025.spec.ts
 
 ## site-owner
 
@@ -526,4 +526,4 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** loading, empty, error, success
 - **Errors & recovery:** the status service is unavailable -> system says so plainly; it never implies the domain is clean when it could not check
 - **Status:** implemented
-- **Coverage:** apps/proxy/src/router.ts:60, apps/status-page/src/render.ts:38 (unit only — the page is not deployed, see human step 1)
+- **Coverage:** apps/proxy/src/router.ts:handle, apps/status-page/src/render.ts:renderStatus (unit only — the page is not deployed, see human step 1)

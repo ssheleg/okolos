@@ -13,18 +13,18 @@ self-audit panel.
 
 | ID | Screen | Used by | Figma | Status | Coverage |
 |----|--------|---------|-------|--------|----------|
-| SCR-01 | First-run check | FLW-01, FLW-14 | - | built | packages/ui/src/first-run/screen.ts:45 |
+| SCR-01 | First-run check | FLW-01, FLW-14 | - | built | packages/ui/src/first-run/screen.ts:renderFirstRun |
 | SCR-02 | Popup | FLW-17, FLW-11, FLW-13 | - | built | e2e/scn-020.spec.ts |
-| SCR-03 | In-page warning banner | FLW-02, FLW-05, FLW-06, FLW-07, FLW-08, FLW-09, FLW-10 | - | built | packages/ui/src/banner/banner.ts:52 |
-| SCR-04 | Finding inspector | FLW-02, FLW-03 | - | built | packages/ui/src/inspector/inspector.ts:57 |
+| SCR-03 | In-page warning banner | FLW-02, FLW-05, FLW-06, FLW-07, FLW-08, FLW-09, FLW-10 | - | built | packages/ui/src/banner/banner.ts:mountBanner |
+| SCR-04 | Finding inspector | FLW-02, FLW-03 | - | built | packages/ui/src/inspector/inspector.ts:mountInspector |
 | SCR-05 | Block interstitial | FLW-04 | - | built | e2e/scn-007.spec.ts |
 | SCR-06 | Agent action gate | FLW-03 | - | built | e2e/scn-010.spec.ts |
 | SCR-07 | Findings queue | FLW-01, FLW-17 | - | built | e2e/scn-020.spec.ts, e2e/scn-002.spec.ts |
 | SCR-08 | Leaks and repair | FLW-10, FLW-11, FLW-16 | - | built | e2e/scn-015.spec.ts |
 | SCR-09 | Extensions watch | FLW-12 | - | built | e2e/scn-017.spec.ts |
-| SCR-10 | Self-audit | FLW-13, FLW-17 | - | built | packages/ui/src/self-audit/panel.ts:26 |
+| SCR-10 | Self-audit | FLW-13, FLW-17 | - | built | packages/ui/src/self-audit/panel.ts:renderSelfAudit |
 | SCR-11 | Journal and weekly diff | FLW-17 | - | built | e2e/scn-020.spec.ts |
-| SCR-12 | Settings | FLW-05, FLW-14 | - | built | packages/ui/src/settings/data-controls.ts:31 |
+| SCR-12 | Settings | FLW-05, FLW-14 | - | built | packages/ui/src/settings/data-controls.ts:renderDataControls |
 | SCR-13 | Recovery checklist | FLW-06, FLW-07, FLW-16 | - | built | e2e/scn-025.spec.ts |
 | SCR-14 | Public domain status | FLW-04, FLW-15 | - | built | apps/status-page/src/render.test.ts |
 
@@ -65,7 +65,7 @@ self-audit panel.
   | error | a check could not run | - | that row shows the reason and a retry; other checks continue |
   | success | findings exist | - | count by category, primary action into SCR-07 |
 - **Wireframe:** wireframes/SCR-01.md
-- **Coverage:** packages/ui/src/first-run/screen.ts:45, apps/extension/src/first-run/index.ts:17
+- **Coverage:** packages/ui/src/first-run/screen.ts:renderFirstRun, apps/extension/src/first-run/index.ts
 - **Scenarios:** SCN-001, SCN-002
 - **Resources:** local corpus loader, extension inventory adapter, tab scanner
 - **Status:** built
@@ -82,7 +82,7 @@ self-audit panel.
   | error | local storage unreadable | - | states the failure and offers repair; never silently blank |
   | success | verdict and/or queue present | - | verdict line + up to 3 actions |
 - **Wireframe:** wireframes/SCR-02.md
-- **Coverage:** packages/ui/src/popup/popup.ts:39, apps/extension/src/popup/index.ts:44, e2e/scn-020.spec.ts:65
+- **Coverage:** packages/ui/src/popup/popup.ts:renderPopup, apps/extension/src/popup/index.ts, e2e/scn-020.spec.ts
 - **Scenarios:** SCN-020, SCN-021
 - **Resources:** verdict store, queue selector
 - **Status:** built
@@ -99,7 +99,7 @@ self-audit panel.
   | error | detail view or action failed | - | inline failure text with retry; the warning itself never disappears on error |
 - **Behavior notes:** closed Shadow DOM; keyboard reachable; announced to screen readers; never covers a form field it warns about; low-confidence findings never block
 - **Wireframe:** wireframes/SCR-03.md
-- **Coverage:** packages/ui/src/banner/banner.ts:52 (injection variant built; the other six land with their modules)
+- **Coverage:** packages/ui/src/banner/banner.ts:mountBanner (injection variant built; the other six land with their modules)
 - **Scenarios:** SCN-003, SCN-006, SCN-008, SCN-009, SCN-011, SCN-012, SCN-013
 - **Resources:** shared banner component, variant copy table, i18n strings
 - **Status:** built
@@ -115,7 +115,7 @@ self-audit panel.
   | success | evidence available | - | text + technique + location + stage |
   | error | evidence lost (page mutated) | - | says the page changed, offers a re-scan |
 - **Wireframe:** wireframes/SCR-04.md
-- **Coverage:** packages/ui/src/inspector/inspector.ts:57 (restore lands with the sanitizer, M5)
+- **Coverage:** packages/ui/src/inspector/inspector.ts:mountInspector (restore lands with the sanitizer, M5)
 - **Scenarios:** SCN-004, SCN-005
 - **Resources:** evidence store, DOM locator renderer
 - **Status:** built
@@ -130,7 +130,7 @@ self-audit panel.
   | success | feed match | - | full-page interstitial replacing the site |
   | error | feed metadata unavailable | - | still blocks, states the source is unknown and how to check |
 - **Wireframe:** wireframes/SCR-05.md
-- **Coverage:** packages/ui/src/interstitial/interstitial.ts:38, e2e/scn-007.spec.ts:39
+- **Coverage:** packages/ui/src/interstitial/interstitial.ts:renderInterstitial, e2e/scn-007.spec.ts
 - **Scenarios:** SCN-007
 - **Resources:** feed metadata store, exception store
 - **Status:** built
@@ -146,7 +146,7 @@ self-audit panel.
   | error | the action context cannot be identified | - | blocks and says what could not be determined |
 - **Behavior notes:** timing out defaults to Block, never to Allow; Block holds focus so a stray Enter blocks; Escape blocks; "Show the injection" leaves the gate standing behind the evidence
 - **Wireframe:** wireframes/SCR-06.md
-- **Coverage:** packages/ui/src/gate/gate.ts:38, e2e/scn-010.spec.ts:31
+- **Coverage:** packages/ui/src/gate/gate.ts:mountGate, e2e/scn-010.spec.ts
 - **Scenarios:** SCN-010
 - **Resources:** action interceptor, finding store
 - **Status:** built
@@ -164,7 +164,7 @@ self-audit panel.
   | success | items exist | - | max 3 shown; the rest behind "show all" |
 - **Behavior notes:** the queue never exceeds three visible items — this is the anti-pattern this product exists to avoid (203 alerts, nothing done)
 - **Wireframe:** wireframes/SCR-07.md
-- **Coverage:** packages/core-queue/src/rank.ts:52, packages/ui/src/queue/queue.ts:30, e2e/scn-020.spec.ts:160
+- **Coverage:** packages/core-queue/src/rank.ts:buildQueue, packages/ui/src/queue/queue.ts:renderQueue, e2e/scn-020.spec.ts
 - **Scenarios:** SCN-002, SCN-022
 - **Resources:** priority scorer, action registry
 - **Status:** built
@@ -181,7 +181,7 @@ self-audit panel.
   | error | a source failed | - | that row states unavailable + retry; other results stand |
   | success | results present | - | freshest first, historical collapsed |
 - **Wireframe:** wireframes/SCR-08.md
-- **Coverage:** packages/ui/src/leaks/leaks.ts:60, packages/core-leaks/src/group.ts:38, packages/core-leaks/src/merge.ts:39, e2e/scn-015.spec.ts:51
+- **Coverage:** packages/ui/src/leaks/leaks.ts:renderLeaks, packages/core-leaks/src/group.ts:groupLeaks, packages/core-leaks/src/merge.ts:mergeLeaks, e2e/scn-015.spec.ts
 - **Scenarios:** SCN-014, SCN-015, SCN-016
 - **Resources:** source adapters (HIBP, XposedOrNot, Hudson Rock), local hash store, reuse index
 - **Status:** built
@@ -198,7 +198,7 @@ self-audit panel.
   | error | package could not be fetched | - | permission delta still shown; analysis marked unavailable |
   | success | inventory with deltas | - | deltas first, then the rest by risk |
 - **Wireframe:** wireframes/SCR-09.md
-- **Coverage:** packages/ui/src/extensions/extensions.ts:44, packages/core-extensions/src/diff.ts:37, e2e/scn-017.spec.ts:12
+- **Coverage:** packages/ui/src/extensions/extensions.ts:renderExtensions, packages/core-extensions/src/diff.ts:diffInventory, e2e/scn-017.spec.ts
 - **Scenarios:** SCN-017, SCN-018
 - **Resources:** management adapter, snapshot store, CRX static analyser
 - **Status:** built
@@ -216,7 +216,7 @@ self-audit panel.
   | success | entries exist | - | newest first, grouped by purpose |
 - **Behavior notes:** this log is written by the single network choke point before each request; if a request could bypass it, the guarantee is void — enforced by lint and test, not by convention
 - **Wireframe:** wireframes/SCR-10.md
-- **Coverage:** packages/ui/src/self-audit/panel.ts:26, apps/extension/src/options/index.ts:12
+- **Coverage:** packages/ui/src/self-audit/panel.ts:renderSelfAudit, apps/extension/src/options/index.ts
 - **Scenarios:** SCN-019
 - **Resources:** net layer journal, exporter
 - **Status:** built
@@ -231,7 +231,7 @@ self-audit panel.
   | empty | nothing changed | - | "Nothing changed since <time>" |
   | success | changes exist | - | grouped diff, newest first |
 - **Wireframe:** wireframes/SCR-11.md
-- **Coverage:** packages/core-queue/src/diff.ts:45, packages/ui/src/journal/journal.ts:32, e2e/scn-020.spec.ts:106
+- **Coverage:** packages/core-queue/src/diff.ts:diffSince, packages/ui/src/journal/journal.ts:renderJournal, e2e/scn-020.spec.ts
 - **Scenarios:** SCN-021
 - **Resources:** event journal, diff selector
 - **Status:** built
@@ -246,7 +246,7 @@ self-audit panel.
   | success | default | - | grouped settings |
   | error | export or wipe failed | - | inline failure with retry; state left unchanged |
 - **Wireframe:** wireframes/SCR-12.md
-- **Coverage:** packages/ui/src/settings/data-controls.ts:31, packages/ui/src/trusted/trusted.ts:33, e2e/scn-024.spec.ts:34 (data controls and the trusted list built; watchlist, quiet mode and the proxy toggle land with their modules)
+- **Coverage:** packages/ui/src/settings/data-controls.ts:renderDataControls, packages/ui/src/trusted/trusted.ts:renderTrusted, e2e/scn-024.spec.ts (data controls and the trusted list built; watchlist, quiet mode and the proxy toggle land with their modules)
 - **Scenarios:** SCN-023, SCN-024
 - **Resources:** settings store, exporter, wipe routine
 - **Status:** built
@@ -263,7 +263,7 @@ self-audit panel.
   | success | checklist active | - | one current step highlighted, rest visible |
 - **Behavior notes:** no time estimates, no reassurance copy, no scare copy; progress survives a browser restart
 - **Wireframe:** wireframes/SCR-13.md
-- **Coverage:** packages/ui/src/recovery/recovery.ts:17, packages/core-recovery/src/checklist.ts:120, packages/core-recovery/src/portable.ts:35, e2e/scn-025.spec.ts:41
+- **Coverage:** packages/ui/src/recovery/recovery.ts:renderRecovery, packages/core-recovery/src/checklist.ts:buildChecklist, packages/core-recovery/src/portable.ts:toPortable, e2e/scn-025.spec.ts
 - **Scenarios:** SCN-025
 - **Resources:** playbook definitions, incident store
 - **Status:** built
@@ -281,7 +281,7 @@ self-audit panel.
   | success | verdict found | - | verdict, source, date, appeal path |
 - **Behavior notes:** a public web page, not an extension surface; no account, no tracking, no analytics
 - **Wireframe:** wireframes/SCR-14.md
-- **Coverage:** apps/status-page/src/render.ts:38, apps/proxy/src/router.ts:60, apps/status-page/src/render.test.ts:29
+- **Coverage:** apps/status-page/src/render.ts:renderStatus, apps/proxy/src/router.ts:handle, apps/status-page/src/render.test.ts
 - **Scenarios:** SCN-026
 - **Resources:** worker status endpoint, feed metadata
 - **Status:** built

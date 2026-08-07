@@ -90,3 +90,33 @@ describe('reading what a source returned', () => {
     expect(inventory.leaks).toEqual([])
   })
 })
+
+describe('a source that never answers', () => {
+  it('is reported as unreachable rather than holding the check open', async () => {
+    // Without a deadline the panel sits on "Asking the sources…" forever, which
+    // is indistinguishable — to the person waiting — from a broken product.
+    const hangs: LeakSource = {
+      name: 'Silent Source',
+      unavailable: null,
+      lookup: () => new Promise(() => {}),
+    }
+    const { deps: d } = deps(async () => new Response('[]'))
+    const inventory = await lookupLeaks('a@b.test', [hangs], d, 20)
+
+    expect(inventory.sources[0]).toMatchObject({ answered: false })
+    expect(inventory.sources[0]?.why).toMatch(/did not answer/i)
+  })
+
+  it('does not take the sources that did answer with it', async () => {
+    const hangs: LeakSource = {
+      name: 'Silent Source',
+      unavailable: null,
+      lookup: () => new Promise(() => {}),
+    }
+    const { deps: d } = deps(async () => new Response(JSON.stringify({ stealers: [] })))
+    const inventory = await lookupLeaks('a@b.test', [hangs, CAVALIER], d, 20)
+
+    expect(inventory.sources.map((source) => source.answered)).toEqual([false, true])
+    expect(inventory.coverage).toContain('Hudson Rock Cavalier')
+  })
+})

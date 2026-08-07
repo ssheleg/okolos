@@ -13,7 +13,17 @@ import { request, type RequestDeps } from '@okolos/net'
  * What leaves the device is the address the user typed into the box, to the
  * sources they can see named, when they press the button. Nothing is looked up
  * in the background.
+ *
+ * Every source gets a deadline. Without one a source that accepts the
+ * connection and then says nothing holds the whole check open forever, and the
+ * panel sits on "Asking the sources…" with no way out — the failure that is
+ * indistinguishable, to the person waiting, from the product being broken. A
+ * source that misses its deadline is reported the same way as one that refused:
+ * named, with the reason.
  */
+
+/** Long enough for a slow API, short enough that a hung one is not forever. */
+export const SOURCE_TIMEOUT_MS = 10_000
 
 export interface LeakSource {
   readonly name: string
@@ -87,10 +97,27 @@ export function hibp(apiKey: string | null): LeakSource {
   }
 }
 
+async function withDeadline<T>(work: Promise<T>, ms: number, message: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      work,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(message)), ms)
+      }),
+    ])
+  } finally {
+    // The losing timer is cleared either way: a pending one keeps the worker
+    // awake for no reason, and Chrome tears it down for being idle anyway.
+    if (timer) clearTimeout(timer)
+  }
+}
+
 export async function lookupLeaks(
   address: string,
   sources: readonly LeakSource[],
   deps: RequestDeps,
+  timeoutMs = SOURCE_TIMEOUT_MS,
 ): Promise<LeakInventory> {
   const statuses: SourceStatus[] = []
 
@@ -100,7 +127,12 @@ export async function lookupLeaks(
       continue
     }
     try {
-      statuses.push({ name: source.name, answered: true, leaks: await source.lookup(address, deps) })
+      const leaks = await withDeadline(
+        source.lookup(address, deps),
+        timeoutMs,
+        `${source.name} did not answer within ${Math.round(timeoutMs / 1000)} seconds`,
+      )
+      statuses.push({ name: source.name, answered: true, leaks })
     } catch (cause) {
       // One source failing must not take the others with it, and must not be
       // mistaken for that source having nothing to report.

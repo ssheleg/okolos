@@ -104,3 +104,41 @@ test('a recent infection is separated from an old breach, and each carries its r
   await expect(fresh.locator('[data-role=check-reuse]')).toHaveCount(1)
   await expect(fresh.locator('[data-role=resolve]')).toHaveText('Mark resolved')
 })
+
+test('the address field survives a repaint instead of being rebuilt', async ({
+  context,
+  extensionId,
+}) => {
+  // The regression behind three days of flake. This page repaints wholesale,
+  // and each repaint awaits several database reads, so it takes real time
+  // while the page is live. Rebuilding the input threw away whatever was typed
+  // during that window — value, caret, focus, and any IME composition — and
+  // the check clicked afterwards read an empty address and returned in
+  // silence.
+  //
+  // Asserted on node identity rather than on the value, because a rebuilt
+  // field that happens to be repopulated from the right variable would pass a
+  // value check while still dropping focus and the caret.
+  const page = await context.newPage()
+  await page.goto(`chrome-extension://${extensionId}/options.html`)
+
+  const field = page.locator('[data-role=address]')
+  await expect(field).toHaveCount(1)
+  await page.evaluate(() => {
+    document.querySelector('[data-role=address]')?.setAttribute('data-identity', 'original')
+  })
+
+  await field.fill('someone@example.test')
+
+  // The journal's history toggle calls the same full reload the leak check
+  // does — loading paint, database reads, second paint — with no network in
+  // it, so this asserts the swap without waiting on a source. A check would
+  // have worked too, but its "checking" state lasts a single frame against a
+  // stubbed source and its result depends on the network path this test is not
+  // about.
+  await page.locator('[data-role=journal] [data-role=history]').click()
+  await expect(page.locator('[data-role=journal] [data-role=history]')).toBeVisible()
+
+  await expect(page.locator('[data-role=address][data-identity=original]')).toHaveCount(1)
+  await expect(field).toHaveValue('someone@example.test')
+})

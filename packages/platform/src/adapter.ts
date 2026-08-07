@@ -25,6 +25,32 @@ export function toSafeUrl(raw: string | undefined): string | null {
  * to this product (worker vs page, offscreen vs direct inference) live in the
  * extension composition, not in these calls.
  */
+/**
+ * How long any single RPC may take before it is called a failure.
+ *
+ * Deliberately generous: the slowest legitimate call is a leak check, whose
+ * sources each get ten seconds of their own. A deadline shorter than the work
+ * would turn a slow answer into a wrong one.
+ */
+export const RPC_TIMEOUT_MS = 30_000
+
+/** Rejects with `message` if `work` has not settled in time. */
+async function withDeadline<T>(work: Promise<T>, ms: number, message: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      work,
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => reject(new Error(message)), ms)
+      }),
+    ])
+  } finally {
+    // Without this the page is held awake by a pending timer for every call
+    // that answered normally, which on a busy surface is most of them.
+    if (timer !== undefined) clearTimeout(timer)
+  }
+}
+
 export function createPlatform(kind: Platform['kind'], api: WebExtensionApi): Platform {
   // Resolved lazily and cached: `getSelf` is async, and every caller of
   // `selfId` is on a path that must not await for it.
@@ -63,7 +89,18 @@ export function createPlatform(kind: Platform['kind'], api: WebExtensionApi): Pl
     runtime: {
       async send<T extends RpcType>(type: T, payload: RpcMap[T]['req']): Promise<RpcMap[T]['res']> {
         const envelope: Envelope<T> = { v: 1, type, payload }
-        return (await api.runtime.sendMessage(envelope)) as RpcMap[T]['res']
+        // A message to a service worker that is starting, evicted or already
+        // gone can be dropped without ever settling this promise, and every
+        // caller above treats an unsettled call as work still in progress —
+        // which is a spinner with no end and no way out. The same reasoning
+        // gave leak sources a deadline; the message itself needs one too.
+        return (await withDeadline(
+          api.runtime.sendMessage(envelope),
+          RPC_TIMEOUT_MS,
+          `the background service did not answer "${type}" within ${Math.round(
+            RPC_TIMEOUT_MS / 1000,
+          )} seconds`,
+        )) as RpcMap[T]['res']
       },
       onInstalled(handler: () => void): void {
         api.runtime.onInstalled.addListener((details) => {

@@ -42,20 +42,45 @@ const root = document.getElementById('root')
 let leaks: LeaksState = { kind: 'idle' }
 let address = ''
 
-function leaksSection(): HTMLElement {
-  const container = document.createElement('div')
-
+/**
+ * The address field is built once and moved between repaints, never rebuilt.
+ *
+ * This page repaints wholesale — `root.replaceChildren` — and the sections
+ * above it each await a database read, so a repaint takes real time while the
+ * page is live. Rebuilding the input meant that anything typed during that
+ * window was thrown away with the old node: the value, the caret, the focus,
+ * and any composition an IME had in progress. Appending an element that is
+ * already in the document moves it, so the live node and everything attached
+ * to it survive the swap.
+ *
+ * It is also the difference between a working leak check and a button that
+ * does nothing, which is how this was found: a check clicked while the page
+ * was still settling read an empty address and returned in silence.
+ */
+const addressField = (() => {
   const field = document.createElement('input')
   field.type = 'email'
   field.setAttribute('data-role', 'address')
   field.placeholder = 'you@example.com'
-  field.value = address
   field.addEventListener('input', () => {
     address = field.value
   })
+  return field
+})()
+
+function leaksSection(): HTMLElement {
+  const container = document.createElement('div')
+
+  // A placeholder, not the field itself. Moving the live input into a tree
+  // that has not been swapped in yet takes it out of the document for as long
+  // as the remaining sections take to load — a window in which the field is
+  // simply not on the page. It is put back in `renderPanel`, synchronously
+  // after the swap.
+  const slot = document.createElement('span')
+  slot.setAttribute('data-role', 'address-slot')
 
   container.append(
-    field,
+    slot,
     renderLeaks(document, leaks, {
       onCheck: () => {
         void (async () => {
@@ -392,9 +417,51 @@ async function recoverySection(): Promise<HTMLElement> {
   return container
 }
 
-async function paint(state: PanelState): Promise<void> {
+/**
+ * Repaints run one at a time, and a burst collapses to the last state.
+ *
+ * Each repaint awaits several database reads before it swaps the tree in, so
+ * two started close together interleave: both build their sections, and
+ * whichever finishes second wins the DOM. That alone loses whatever the first
+ * one was about to show. With a long-lived node like the address field it is
+ * worse — appending it to the second builder's container moves it out of the
+ * first's, and if the first is the one that reaches `replaceChildren`, the
+ * field is swapped in inside a container that no longer holds it and vanishes
+ * from the page entirely.
+ *
+ * Serialising is the fix rather than a lock on the field, because the same
+ * interleaving loses queue rows, journal entries and every other section for
+ * exactly the same reason; the field is only where it was noticed.
+ */
+let painting: Promise<void> = Promise.resolve()
+let pendingState: PanelState | null = null
+
+function paint(state: PanelState): Promise<void> {
+  pendingState = state
+  const run = async (): Promise<void> => {
+    const next = pendingState
+    pendingState = null
+    // Superseded while queued: a later call already carries the newer state,
+    // and painting an older one on the way past would be a visible flicker
+    // backwards.
+    if (next !== null) await renderPanel(next)
+  }
+  // Both arms, not `.then(run)`. A chain built on the fulfilled arm alone
+  // stops running the moment one paint rejects — a single failed database
+  // read would leave the page frozen on whatever it last drew, for the rest
+  // of the session, with no error and no way back.
+  painting = painting.then(run, run)
+  return painting
+}
+
+async function renderPanel(state: PanelState): Promise<void> {
   if (!root) return
-  root.replaceChildren(
+
+  // Built first, swapped in second. Each of these awaits a database read, so
+  // the tree below takes real time to assemble while the page is still live
+  // and the user is still typing — and every section is constructed from
+  // whatever the state was when its turn came.
+  const sections = [
     renderSelfAudit(document, state, {
       onExport: () => void download(),
       onRepair: () => void reload(),
@@ -413,7 +480,12 @@ async function paint(state: PanelState): Promise<void> {
       },
       onWiped: () => void reload(),
     }),
-  )
+  ]
+
+  root.replaceChildren(...sections)
+  // Synchronously, with no await between: the field is out of the document for
+  // one statement rather than for the length of a database read.
+  root.querySelector('[data-role=address-slot]')?.replaceWith(addressField)
 }
 
 async function download(): Promise<void> {

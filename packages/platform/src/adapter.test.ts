@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Envelope } from '@okolos/contracts'
 
-import { createPlatform, toSafeUrl } from './adapter.js'
+import { createPlatform, RPC_TIMEOUT_MS, toSafeUrl } from './adapter.js'
 import type { WebExtensionApi } from './types.js'
 
 /**
@@ -311,5 +311,53 @@ describe('the other extensions', () => {
 
   it('says plainly when the browser will not tell it', () => {
     expect(createPlatform('chrome', fakeApi()).extensions.available()).toBe(false)
+  })
+})
+
+describe('a message that is never answered', () => {
+  /**
+   * An MV3 service worker can be starting, evicted, or already gone when a
+   * message arrives, and the call is then dropped without settling. Every
+   * caller treats an unsettled call as work in progress, so the surface shows
+   * a spinner forever — the leak panel did exactly that, roughly one run in
+   * six, and it was read as a test flake for three days.
+   */
+  it('becomes a stated failure rather than a promise that never settles', async () => {
+    vi.useFakeTimers()
+    try {
+      const platform = createPlatform(
+        'chrome',
+        fakeApi({ runtime: { sendMessage: () => new Promise(() => {}) } }),
+      )
+
+      const call = platform.runtime.send('leaks/check', { address: 'someone@example.test' })
+      const settled = vi.fn()
+      void call.then(settled, settled)
+
+      await vi.advanceTimersByTimeAsync(RPC_TIMEOUT_MS - 1)
+      expect(settled, 'gave up before the deadline').not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(2)
+      await expect(call).rejects.toThrow(/did not answer "leaks\/check"/)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('does not hold a timer open for a call that answered', async () => {
+    // One stray timer per call keeps the page awake and, in a service worker,
+    // postpones the very eviction the deadline exists to survive.
+    vi.useFakeTimers()
+    try {
+      const platform = createPlatform(
+        'chrome',
+        fakeApi({ runtime: { sendMessage: async () => ({ ok: true }) } }),
+      )
+
+      await platform.runtime.send('leaks/check', { address: 'someone@example.test' })
+      expect(vi.getTimerCount()).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

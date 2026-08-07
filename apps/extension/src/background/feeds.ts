@@ -11,7 +11,7 @@ import type { OkolosDatabase } from '@okolos/storage'
  */
 
 /** Ed25519 public key of the feed publisher, raw bytes, base64. */
-export const FEED_PUBLIC_KEY = 'REPLACE_AT_RELEASE_WITH_THE_PUBLISHERS_ED25519_KEY'
+export const FEED_PUBLIC_KEY = 'JHUePa03XAoSeQcJjNljgDESMhBI/ZG03zoOfm/vapM='
 
 export function createVerifier(publicKeyBase64: string): Verifier {
   let imported: Promise<CryptoKey> | null = null

@@ -25,6 +25,7 @@ web-ext-artifacts/
 .env.*
 !.env.example
 *.pem
+*.key
 keys/
 
 # editors / OS

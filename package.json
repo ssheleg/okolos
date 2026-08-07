@@ -26,7 +26,8 @@
     "gates": "pnpm lint && pnpm typecheck && pnpm build && pnpm test && pnpm ux:lint",
     "build:e2e": "node tools/build.mjs --with-test-hooks",
     "test:e2e:firefox": "pnpm build && node tools/firefox-e2e.mjs",
-    "wireframes": "node tools/wireframes.mjs"
+    "wireframes": "node tools/wireframes.mjs",
+    "graph:check": "node tools/graph-check.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",

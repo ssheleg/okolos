@@ -678,3 +678,31 @@ happens before adding.
   version read the screen list from a JSON sidecar under `graphify-out/` — a
   directory absent on a fresh clone, so the gate would have failed for everyone
   but me. It reads the generator directly now.
+
+### 2026-08-06 — I reported a defect that was not there
+
+- **What I said:** after rebuilding the knowledge graph, graphify's diagnostic
+  printed 225 dangling-endpoint edges, and I reported it as a finding —
+  "5.7% of edges point nowhere" — filed it as a task, and repeated it to the
+  user. I also said `build_merge` "promises to save and does not".
+- **What was true:** the saved graph has 2289 nodes, 3824 edges and **zero**
+  dangling endpoints. `build_merge` saved correctly; the file on disk went from
+  505 nodes to 2289. Both claims were wrong.
+- **Root cause:** the diagnostic reads the raw *extraction*, and on a two-layer
+  build that is the wrong scope. The semantic pass legitimately emits edges
+  pointing at nodes the AST pass supplies; measured on the semantic layer alone
+  they look dangling and are not. Re-measured from the cache: 115 such edges,
+  every one resolving against the merged graph, none lost.
+- **The mistake underneath:** I read a number off a tool and passed it on
+  without checking the artefact it was supposedly about. That is precisely the
+  fault this project spent a day hunting in its own gates — an estimate reported
+  as a measurement — and the sweep that found it was pointed outward, at the
+  code, rather than at what I was saying.
+- **Fix, by grade:** `pnpm graph:check` reads `graph.json` — the thing that is
+  actually used — and fails on an edge to a node that does not exist. Not a
+  repository gate: `graphify-out/` is gitignored and absent on a fresh clone, so
+  a test asserting on it would fail for everyone but me. It is a command to run
+  after rebuilding.
+- **Standing instruction (9):** a number produced by a tool is a claim about the
+  tool until it has been checked against the artefact. Report it as "the
+  diagnostic says X" or verify it — never as "X".

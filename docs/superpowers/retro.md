@@ -650,3 +650,31 @@ happens before adding.
   are plain HTML on purpose and a design system for four internal screens would
   be its own liability — but it fixes the class rather than the button that
   exposed it. Removing the rule turns the sweep red again.
+
+### 2026-08-06 — the noise that hid the signal, now gated
+
+- **What it was:** the promised-vs-built sweep, run by hand, kept returning
+  twelve rows. Six were real gaps — two unwritten buttons, an unreachable
+  analyser, a control that could not be revoked. Six were wording: the record
+  said "Wipe all data" and the button said "Delete all data".
+- **Why the wording mattered anyway:** a twelve-line report where half the lines
+  are harmless is a report nobody finishes reading. The noise was not a
+  cosmetic problem, it was camouflage.
+- **Fix, by grade:** `tools/docs.test.ts` compares every quoted label in a
+  screen record's Elements line against the strings its renderer draws,
+  normalised for case and punctuation, allowing the renderer to extend the
+  record ("Show all" matches "Show all (12 more)"). Renaming a button without
+  touching its record turns it red.
+- **The rule that makes it possible:** a quoted string in an Elements line means
+  "this screen has a control with this label". A description or a reference to
+  another screen's control goes unquoted. Three records were rewritten to obey
+  it rather than weakening the check to accommodate them.
+- **The gate found three more the hand sweep had missed**, one of which was a
+  false premise of my own: labels do not all live in the renderer. The leaks
+  panel composes its group headings in `core-leaks`. The check now follows a
+  renderer's workspace imports one level, which is the truth rather than a
+  concession.
+- **And it very nearly shipped depending on a gitignored file.** The first
+  version read the screen list from a JSON sidecar under `graphify-out/` — a
+  directory absent on a fresh clone, so the gate would have failed for everyone
+  but me. It reads the generator directly now.

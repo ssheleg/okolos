@@ -2,6 +2,8 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
+import { SCREENS } from './wireframes.mjs'
+
 /**
  * The navigation layer, held to the same standard as the code.
  *
@@ -114,4 +116,69 @@ describe('the coverage matrix claims only what shipped', () => {
   it('says outright that an unmarked row is not a capability', () => {
     expect(matrix).toMatch(/строка без отметки — намерение/i)
   })
+})
+
+describe('a screen record names the controls its renderer draws', () => {
+  /**
+   * A quoted string in a record's Elements line means "this screen has a
+   * control with this label". Anything else — a description, a reference to a
+   * control on another screen — goes unquoted, because that is the only rule
+   * this check can rely on.
+   *
+   * Comparison is normalised for case and punctuation, and a renderer label may
+   * extend the record's: "Show all" matches "Show all (12 more)". What it will
+   * not do is match a different control.
+   *
+   * Six records and renderers disagreed when this was written. All six were
+   * harmless in themselves — "Wipe all data" against a button reading "Delete
+   * all data" — and that is the point: they were noise, and the same twelve-line
+   * report had been hiding two unwritten buttons and an unreachable module.
+   */
+  const screens = readFileSync(path.join(root, 'docs/ux/screens.md'), 'utf8')
+  // From the generator itself, not a sidecar it writes: a JSON file under
+  // graphify-out is absent on a fresh clone and stale everywhere else.
+  const sources: Record<string, { source: string }> = SCREENS
+
+  const normalise = (value: string): string => value.toLowerCase().replace(/[^a-z0-9]/g, '')
+
+  it('knows about every screen', () => {
+    expect(Object.keys(sources).length).toBe(14)
+  })
+
+  for (const [id, meta] of Object.entries(sources)) {
+    it(`${id} draws every control it names`, () => {
+      const block = screens.split(`### ${id}:`)[1]?.split('\n### SCR-')[0] ?? ''
+      const elements = /- \*\*Elements:\*\*\s*(.+)/.exec(block)?.[1] ?? ''
+      expect(elements, `${id} has no Elements line`).not.toBe('')
+
+      // A renderer may compose its copy from a module it imports — the leaks
+      // panel takes its group headings from `core-leaks`. Following the
+      // workspace imports one level keeps the check honest without pretending
+      // every string lives in one file.
+      const renderer = readFileSync(path.join(root, meta.source), 'utf8')
+      const imported = [...renderer.matchAll(/from '(@okolos\/[a-z-]+)'/g)]
+        .map((m) => `packages/${(m[1] as string).replace('@okolos/', '')}/src`)
+        .flatMap((dir) => {
+          try {
+            return readdirSync(path.join(root, dir))
+              .filter((name) => name.endsWith('.ts') && !name.endsWith('.test.ts'))
+              .map((name) => readFileSync(path.join(root, dir, name), 'utf8'))
+          } catch {
+            return []
+          }
+        })
+
+      const literals = [renderer, ...imported]
+        .flatMap((text) => [...text.matchAll(/'([^'\n]{2,60})'/g)])
+        .map((m) => normalise(m[1] as string))
+
+      for (const [, label] of elements.matchAll(/"([^"]{2,40})"/g)) {
+        const wanted = normalise(label as string)
+        expect(
+          literals.some((literal) => literal === wanted || literal.startsWith(wanted)),
+          `${id} names a control "${label}" that ${meta.source} does not draw`,
+        ).toBe(true)
+      }
+    })
+  }
 })

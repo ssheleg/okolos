@@ -73,7 +73,7 @@ self-audit panel.
 ### SCR-02: Popup
 - **Used by:** FLW-17 (entry), FLW-11 and FLW-13 (entry points)
 - **Purpose:** the 3-second answer — is this page fine, and is there anything new
-- **Elements:** current page verdict with reason; "what changed" count; up to 3 queued actions; footer links to Self-audit, Journal, Settings; **primary action: the top queued item**
+- **Elements:** current page verdict with reason; a what-changed count that opens the diff; up to 3 queued actions; footer links to Self-audit, Journal, Settings; **primary action: the top queued item**
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|
@@ -172,7 +172,7 @@ self-audit panel.
 ### SCR-08: Leaks and repair
 - **Used by:** FLW-10 (reuse list), FLW-11, FLW-16
 - **Purpose:** what of mine is exposed, and the repair for each
-- **Elements:** monitored sources (email, phone) with add/remove; results split into "fresh — infostealer" and "historical breaches"; per-entry data classes, date, source; **primary action per entry: "Change password"**; "Check reuse"; "Mark resolved"; archive; manual password check field; the list of sources actually checked and when
+- **Elements:** monitored sources (email, phone) with add/remove; results split into "Recent — a machine was infected" and "Older breaches"; per-entry data classes, date, source; **primary action per entry: "Change password"**; "Check reuse"; "Mark resolved"; archive; manual password check field; the list of sources actually checked and when
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|
@@ -189,7 +189,7 @@ self-audit panel.
 ### SCR-09: Extensions watch
 - **Used by:** FLW-12
 - **Purpose:** the inventory plus what changed in it — the delta is the product, not the list
-- **Elements:** installed extensions with risk level and last change; deltas highlighted at the top (permissions added, publisher changed, silent update); per-item detail with static findings (obfuscation, `eval`, remote code, endpoints); **primary action: "Disable"**; "Trust this change"; "Inspect package"
+- **Elements:** installed extensions with risk level and last change; deltas highlighted at the top (permissions added, publisher changed, silent update); per-item detail with static findings (obfuscation, `eval`, remote code, endpoints); **primary action: "Disable"**; "This change is fine"; "Inspect a package"
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|
@@ -224,7 +224,7 @@ self-audit panel.
 ### SCR-11: Journal and weekly diff
 - **Used by:** FLW-17
 - **Purpose:** what changed since last time — not an ever-growing red list
-- **Elements:** default view "since your last check"; grouped by type; each entry with verdict, action taken, and whether it was automatic; toggle to full history; retention statement
+- **Elements:** a default view scoped to what changed since the last check; grouped by type; each entry with verdict, action taken, and whether it was automatic; toggle to full history; retention statement
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|
@@ -239,7 +239,7 @@ self-audit panel.
 ### SCR-12: Settings
 - **Used by:** FLW-05 (watchlist edit), FLW-14
 - **Purpose:** the few switches that change behaviour, plus data ownership
-- **Elements:** brand watchlist (add/edit/remove); trusted domains list (populated by "this is legitimate" decisions, editable); quiet mode toggle; proxy on/off with a plain explanation of what each option reveals and to whom; retention period; **primary action: "Export all data"**; "Wipe all data" (destructive, confirms with a list of what is deleted)
+- **Elements:** brand watchlist (add/edit/remove); trusted domains list (populated by the this-is-legitimate decisions taken on other screens, editable); quiet mode toggle; proxy on/off with a plain explanation of what each option reveals and to whom; retention period; **primary action: "Export all data"**; "Delete all data" (destructive, confirms with a list of what is deleted)
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|

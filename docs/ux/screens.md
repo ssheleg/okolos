@@ -193,7 +193,7 @@ self-audit panel.
 ### SCR-09: Extensions watch
 - **Used by:** FLW-12
 - **Purpose:** the inventory plus what changed in it — the delta is the product, not the list
-- **Elements:** installed extensions with risk level and last change; deltas highlighted at the top (permissions added, publisher changed, silent update); per-item detail with static findings (obfuscation, `eval`, remote code, endpoints); **primary action: "Disable"**; "This change is fine"; "Inspect a package"
+- **Elements:** installed extensions with risk level and last change; deltas highlighted at the top (permissions added, publisher changed, silent update); per-item detail with static findings (obfuscation, `eval`, remote code, endpoints, **powers over the browser** — `chrome.debugger`, a native host, traffic rewriting — and bulk reads of history, bookmarks or identity); **primary action: "Disable"**; "This change is fine"; "Inspect a package"
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|

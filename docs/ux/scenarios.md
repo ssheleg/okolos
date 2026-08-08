@@ -381,6 +381,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** error, success
 - **Errors & recovery:** store metadata itself is unreachable -> system states that the publisher could not be verified and keeps the previous baseline rather than assuming a change
 - **Status:** implemented
+- **What the analyser reads, and what it did not:** until 2026-08-08 it read remote code, `eval`, hex escapes, endpoints and cookie or token access. It did not read the powers an extension can hold — `chrome.debugger`, which drives the browser through the devtools protocol; `chrome.runtime.connectNative`, which runs code outside the browser; traffic rewriting through `declarativeNetRequest` or `chrome.proxy` — nor bulk reads of history, bookmarks and identity, nor `atob`/`fromCharCode`, nor a `wss:` socket, which meant an exfiltration channel was the one endpoint the endpoints list could not contain. All of it is a fact about the text and none of it is a verdict; the report says so
 - **Coverage:** packages/core-extensions/src/analyse.ts:analysePackage, packages/ui/src/extensions/extensions.ts:renderExtensions, e2e/scn-017.spec.ts
 
 ## privacy

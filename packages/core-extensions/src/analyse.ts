@@ -14,7 +14,14 @@
  */
 
 export interface PackageFinding {
-  readonly kind: 'remote-code' | 'dynamic-eval' | 'obfuscation' | 'endpoint' | 'credential-access'
+  readonly kind:
+    | 'remote-code'
+    | 'dynamic-eval'
+    | 'obfuscation'
+    | 'endpoint'
+    | 'credential-access'
+    /** A power over the browser itself: driving it, leaving it, rewriting its traffic. */
+    | 'browser-control'
   /** Verbatim excerpt, short enough to read. */
   readonly evidence: string
   readonly where: string
@@ -32,8 +39,34 @@ const REMOTE_CODE =
   /(importScripts\s*\(|document\.createElement\(['"`]script['"`]\)|new\s+Function\s*\(|chrome\.scripting\.executeScript\s*\(\s*\{[^}]*files)/g
 const EVAL = /(^|[^.\w])eval\s*\(/g
 const HEX_STRINGS = /\\x[0-9a-f]{2}/gi
-const ENDPOINT = /https?:\/\/[a-z0-9.-]+(?::\d+)?(?:\/[^\s"'`]*)?/gi
-const CREDENTIALS = /(document\.cookie|localStorage\.getItem\s*\(\s*['"`][^'"`]*(token|auth|session)|chrome\.cookies\.getAll)/gi
+
+/**
+ * Where data can leave. `wss:` belongs here as much as `https:` — a socket was
+ * invisible to this report until 2026-08-08, which made an exfiltration channel
+ * the one kind of endpoint the endpoints list did not contain.
+ */
+const ENDPOINT = /(?:https?|wss?):\/\/[a-z0-9.-]+(?::\d+)?(?:\/[^\s"'`]*)?/gi
+
+const CREDENTIALS =
+  /(document\.cookie|localStorage\.getItem\s*\(\s*['"`][^'"`]*(token|auth|session)|chrome\.cookies\.getAll|chrome\.identity\.getAuthToken|chrome\.history\.\w+|chrome\.bookmarks\.\w+|chrome\.topSites\.\w+)/gi
+
+/**
+ * Powers, not behaviours.
+ *
+ * `chrome.debugger` heads the list because an extension holding it drives the
+ * browser through the devtools protocol — the same automation the action gate
+ * stopped accepting as a person. `connectNative` runs code outside the browser
+ * altogether. The rest rewrite traffic, which the page it happens to cannot
+ * see.
+ *
+ * Like everything here these are facts about the text, not verdicts: an
+ * extension can hold any of them for good reasons, and the report says so.
+ */
+const BROWSER_CONTROL =
+  /(chrome\.debugger\.\w+|chrome\.runtime\.connectNative|chrome\.declarativeNetRequest\.\w*[Rr]ules|chrome\.proxy\.\w+|chrome\.webRequest\.onBeforeRequest)/gi
+
+/** Decoders that keep a string out of a search. Hex escapes were counted; these were not. */
+const DECODERS = /(\batob\s*\(|String\.fromCharCode\s*\(|\bunescape\s*\()/gi
 
 export function analysePackage(source: string, where = 'the package'): PackageReport {
   const findings: PackageFinding[] = []
@@ -44,6 +77,8 @@ export function analysePackage(source: string, where = 'the package'): PackageRe
   for (const match of source.matchAll(REMOTE_CODE)) add('remote-code', match[0])
   for (const match of source.matchAll(EVAL)) add('dynamic-eval', match[0].trim())
   for (const match of source.matchAll(CREDENTIALS)) add('credential-access', match[0])
+  for (const match of source.matchAll(BROWSER_CONTROL)) add('browser-control', match[0])
+  for (const match of source.matchAll(DECODERS)) add('obfuscation', match[0].trim())
 
   const endpoints = [...new Set([...source.matchAll(ENDPOINT)].map((match) => origin(match[0])))]
     .filter((entry): entry is string => entry !== null)

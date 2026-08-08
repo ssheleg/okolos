@@ -277,5 +277,94 @@
   },
   "feedNamePhishing": {
     "message": "Список Okolos: фишинг"
+  },
+  "popupChecking": {
+    "message": "Страница проверяется…"
+  },
+  "popupRepair": {
+    "message": "Починить хранилище"
+  },
+  "popupSelfAudit": {
+    "message": "Что отправлено"
+  },
+  "popupJournal": {
+    "message": "Журнал"
+  },
+  "popupSettings": {
+    "message": "Настройки"
+  },
+  "queueEmpty": {
+    "message": "Сейчас от вас ничего не нужно."
+  },
+  "queueOpen": {
+    "message": "Открыть"
+  },
+  "queueDone": {
+    "message": "Готово"
+  },
+  "queueDefer": {
+    "message": "Не сейчас"
+  },
+  "trustedTitle": {
+    "message": "Сайты, которые вы отметили настоящими"
+  },
+  "trustedRevoke": {
+    "message": "Перестать доверять"
+  },
+  "comparisonTitle": {
+    "message": "Этот адрес — не тот, за который его можно принять"
+  },
+  "comparisonAria": {
+    "message": "Сравнение этого адреса с тем, на который он похож"
+  },
+  "comparisonVisited": {
+    "message": "Вы на"
+  },
+  "comparisonDecoded": {
+    "message": "Читается как"
+  },
+  "comparisonResembles": {
+    "message": "Похож на"
+  },
+  "comparisonLeave": {
+    "message": "Уйти"
+  },
+  "comparisonTrust": {
+    "message": "Это настоящий сайт"
+  },
+  "comparisonClose": {
+    "message": "Закрыть"
+  },
+  "comparisonTrustNote": {
+    "message": "Отметка снимет предупреждение для этого адреса; отменить её можно в настройках."
+  },
+  "comparisonReasonMixedScript": {
+    "message": "Это имя написано буквами из нескольких алфавитов."
+  },
+  "comparisonReasonHomograph": {
+    "message": "Некоторые символы здесь только выглядят как буквы, за которые себя выдают."
+  },
+  "comparisonReasonTypo": {
+    "message": "Это имя отличается от похожего на одну опечатку."
+  },
+  "comparisonReasonTldSwap": {
+    "message": "Имя то же, но окончание после последней точки другое."
+  },
+  "trustedEmpty": {
+    "message": "Вы ещё не отмечали ни один сайт настоящим. Когда отметите, он появится здесь, и отметку можно будет снять."
+  },
+  "trustedNote": {
+    "message": "Эти адреса больше не вызывают предупреждения. Снятие отметки возвращает проверки сразу."
+  },
+  "trustedGrantedOn": {
+    "message": "Отмечен $DATE$",
+    "placeholders": {
+      "date": {
+        "content": "$1"
+      }
+    }
+  },
+  "comparisonReasonBrandSubdomain": {
+    "message": "Знакомое имя здесь есть, но это не тот сайт: его поставили перед другим адресом."
   }
 }

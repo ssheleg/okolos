@@ -15,6 +15,8 @@
  * user's own past action and it is often the thing they have forgotten.
  */
 
+import { t } from '@okolos/i18n'
+
 export interface TrustedDomain {
   readonly domain: string
   readonly grantedAt: string
@@ -35,7 +37,7 @@ export function renderTrusted(
   root.setAttribute('data-role', 'trusted')
 
   const heading = doc.createElement('h1')
-  heading.textContent = 'Sites you marked legitimate'
+  heading.textContent = t('trustedTitle')
   root.append(heading)
 
   if (domains.length === 0) {
@@ -43,7 +45,7 @@ export function renderTrusted(
       text(
         doc,
         'trusted-empty',
-        'You have not marked any site as legitimate. When you do, it will be listed here and you can take it back.',
+        t('trustedEmpty'),
       ),
     )
     return root
@@ -53,7 +55,7 @@ export function renderTrusted(
     text(
       doc,
       'trusted-note',
-      'These addresses no longer raise a warning. Taking one back restores the checks immediately.',
+      t('trustedNote'),
     ),
   )
 
@@ -69,9 +71,9 @@ export function renderTrusted(
         'granted',
         entry.reason
           ? `${shortDate(entry.grantedAt)} — ${entry.reason}`
-          : `Trusted on ${shortDate(entry.grantedAt)}`,
+          : t('trustedGrantedOn', shortDate(entry.grantedAt)),
       ),
-      button(doc, 'revoke', 'Stop trusting', () => handlers.onRevoke(entry.domain)),
+      button(doc, 'revoke', t('trustedRevoke'), () => handlers.onRevoke(entry.domain)),
     )
     root.append(row)
   }

@@ -277,5 +277,94 @@
   },
   "feedNamePhishing": {
     "message": "Okolos phishing list"
+  },
+  "popupChecking": {
+    "message": "Checking this page…"
+  },
+  "popupRepair": {
+    "message": "Repair storage"
+  },
+  "popupSelfAudit": {
+    "message": "What was sent"
+  },
+  "popupJournal": {
+    "message": "Journal"
+  },
+  "popupSettings": {
+    "message": "Settings"
+  },
+  "queueEmpty": {
+    "message": "Nothing needs you right now."
+  },
+  "queueOpen": {
+    "message": "Open"
+  },
+  "queueDone": {
+    "message": "Done"
+  },
+  "queueDefer": {
+    "message": "Not now"
+  },
+  "trustedTitle": {
+    "message": "Sites you marked legitimate"
+  },
+  "trustedRevoke": {
+    "message": "Stop trusting"
+  },
+  "comparisonTitle": {
+    "message": "This address is not the one you may think"
+  },
+  "comparisonAria": {
+    "message": "Compare this address with the one it resembles"
+  },
+  "comparisonVisited": {
+    "message": "You are on"
+  },
+  "comparisonDecoded": {
+    "message": "Which reads as"
+  },
+  "comparisonResembles": {
+    "message": "It resembles"
+  },
+  "comparisonLeave": {
+    "message": "Leave"
+  },
+  "comparisonTrust": {
+    "message": "This is legitimate"
+  },
+  "comparisonClose": {
+    "message": "Close"
+  },
+  "comparisonTrustNote": {
+    "message": "Marking it legitimate stops the warning for this address and can be undone in settings."
+  },
+  "comparisonReasonMixedScript": {
+    "message": "This name is written with letters from more than one alphabet."
+  },
+  "comparisonReasonHomograph": {
+    "message": "Some characters here only look like the letters they stand for."
+  },
+  "comparisonReasonTypo": {
+    "message": "This name is one typing mistake away from the one it resembles."
+  },
+  "comparisonReasonTldSwap": {
+    "message": "The name is the same, but the ending after the last dot is different."
+  },
+  "trustedEmpty": {
+    "message": "You have not marked any site as legitimate. When you do, it will be listed here and you can take it back."
+  },
+  "trustedNote": {
+    "message": "These addresses no longer raise a warning. Taking one back restores the checks immediately."
+  },
+  "trustedGrantedOn": {
+    "message": "Trusted on $DATE$",
+    "placeholders": {
+      "date": {
+        "content": "$1"
+      }
+    }
+  },
+  "comparisonReasonBrandSubdomain": {
+    "message": "The familiar name is here, but it is not the site you are on — it has been put in front of a different address."
   }
 }

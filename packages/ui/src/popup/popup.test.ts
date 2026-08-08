@@ -4,6 +4,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderPopup, type PopupHandlers, type PopupState } from './popup.js'
 import type { QueueItem } from '@okolos/core-queue'
 
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fromCatalogue, useResolver, type Catalogue } from '@okolos/i18n'
+
+/** The shipped Russian catalogue: `default_locale` is `ru`, and a fake would let a missing key pass. */
+const CATALOGUE = JSON.parse(
+  readFileSync(
+    path.resolve(import.meta.dirname, '../../../../apps/extension/_locales/ru/messages.json'),
+    'utf8',
+  ),
+) as Catalogue
+
+useResolver(fromCatalogue(CATALOGUE))
+
 function handlers(overrides: Partial<PopupHandlers> = {}): PopupHandlers {
   return {
     onAct: vi.fn(),
@@ -60,7 +74,7 @@ describe('the three-second answer', () => {
   it('does not claim a page is clean while it is still checking', () => {
     // A premature "clean" is the one thing this popup must never say.
     const el = render({ kind: 'loading' })
-    expect(role(el, 'status')?.textContent).toMatch(/checking this page/i)
+    expect(role(el, 'status')?.textContent).toMatch(/страница проверяется/i)
     expect(role(el, 'verdict')).toBeNull()
   })
 
@@ -136,7 +150,7 @@ describe('the queue', () => {
 
   it('says nothing needs the user when the queue is empty', () => {
     const el = render(READY)
-    expect(role(el, 'queue-empty')?.textContent).toMatch(/nothing needs you/i)
+    expect(role(el, 'queue-empty')?.textContent).toMatch(/от вас ничего не нужно/i)
   })
 })
 
@@ -152,7 +166,7 @@ describe('when local data cannot be read', () => {
   it('never shows a clean verdict it could not compute', () => {
     const el = render({ kind: 'error', message: 'the database is locked' })
     expect(role(el, 'verdict')).toBeNull()
-    expect(el.textContent).not.toMatch(/nothing needs you/i)
+    expect(el.textContent).not.toMatch(/от вас ничего не нужно/i)
   })
 })
 

@@ -1,3 +1,5 @@
+import { t } from '@okolos/i18n'
+
 import type { Queue } from '@okolos/core-queue'
 
 import { renderQueue } from '../queue/queue.js'
@@ -49,7 +51,7 @@ export function renderPopup(
   root.setAttribute('data-state', state.kind)
 
   if (state.kind === 'loading') {
-    root.append(text(doc, 'status', 'Checking this page…'))
+    root.append(text(doc, 'status', t('popupChecking')))
     return root
   }
 
@@ -61,7 +63,7 @@ export function renderPopup(
         'error-note',
         'This is a storage problem. It is not a statement that this page is fine.',
       ),
-      button(doc, 'repair', 'Repair storage', handlers.onRepair),
+      button(doc, 'repair', t('popupRepair'), handlers.onRepair),
     )
     root.append(footer(doc, handlers))
     return root
@@ -103,9 +105,9 @@ function footer(doc: Document, handlers: PopupHandlers): HTMLElement {
   const el = doc.createElement('nav')
   el.setAttribute('data-role', 'footer')
   el.append(
-    button(doc, 'self-audit', 'What was sent', () => handlers.onOpen('self-audit')),
-    button(doc, 'journal', 'Journal', () => handlers.onOpen('journal')),
-    button(doc, 'settings', 'Settings', () => handlers.onOpen('settings')),
+    button(doc, 'self-audit', t('popupSelfAudit'), () => handlers.onOpen('self-audit')),
+    button(doc, 'journal', t('popupJournal'), () => handlers.onOpen('journal')),
+    button(doc, 'settings', t('popupSettings'), () => handlers.onOpen('settings')),
   )
   return el
 }

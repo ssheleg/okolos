@@ -7,6 +7,8 @@
  * once is what makes them notice the next one without us.
  */
 
+import { t } from '@okolos/i18n'
+
 export interface ComparisonProps {
   /** The host as the address bar holds it, punycode and all. */
   readonly visited: string
@@ -22,13 +24,18 @@ export interface ComparisonHandlers {
   readonly onClose: () => void
 }
 
-const EXPLANATION: Record<ComparisonProps['kind'], string> = {
-  'mixed-script': 'This name is written with letters from more than one alphabet.',
-  homograph: 'Some characters here only look like the letters they stand for.',
-  typo: 'This name is one typing mistake away from the one it resembles.',
-  'tld-swap': 'The name is the same, but the ending after the last dot is different.',
-  'brand-subdomain':
-    'The familiar name is here, but it is not the site you are on — it has been put in front of a different address.',
+/**
+ * The reason, as a catalogue key.
+ *
+ * Which kind of resemblance gets which explanation is a product decision and
+ * stays here; the sentence is a translation and lives in `_locales`.
+ */
+const EXPLANATION_KEY: Record<ComparisonProps['kind'], string> = {
+  'mixed-script': 'comparisonReasonMixedScript',
+  homograph: 'comparisonReasonHomograph',
+  typo: 'comparisonReasonTypo',
+  'tld-swap': 'comparisonReasonTldSwap',
+  'brand-subdomain': 'comparisonReasonBrandSubdomain',
 }
 
 export function renderComparison(
@@ -39,25 +46,25 @@ export function renderComparison(
   const root = doc.createElement('section')
   root.setAttribute('data-role', 'comparison')
   root.setAttribute('role', 'dialog')
-  root.setAttribute('aria-label', 'Compare this address with the one it resembles')
+  root.setAttribute('aria-label', t('comparisonAria'))
 
   const title = doc.createElement('h2')
-  title.textContent = 'This address is not the one you may think'
+  title.textContent = t('comparisonTitle')
   root.append(title)
 
   root.append(
-    row(doc, 'visited', 'You are on', props.visited),
-    ...(props.decoded === props.visited ? [] : [row(doc, 'decoded', 'Which reads as', props.decoded)]),
-    row(doc, 'resembles', 'It resembles', props.resembles),
-    text(doc, 'why', EXPLANATION[props.kind]),
+    row(doc, 'visited', t('comparisonVisited'), props.visited),
+    ...(props.decoded === props.visited ? [] : [row(doc, 'decoded', t('comparisonDecoded'), props.decoded)]),
+    row(doc, 'resembles', t('comparisonResembles'), props.resembles),
+    text(doc, 'why', t(EXPLANATION_KEY[props.kind])),
   )
 
   const actions = doc.createElement('div')
   actions.setAttribute('data-role', 'actions')
   actions.append(
-    button(doc, 'leave', 'Leave', handlers.onLeave, true),
-    button(doc, 'trust', 'This is legitimate', handlers.onTrust),
-    button(doc, 'close', 'Close', handlers.onClose),
+    button(doc, 'leave', t('comparisonLeave'), handlers.onLeave, true),
+    button(doc, 'trust', t('comparisonTrust'), handlers.onTrust),
+    button(doc, 'close', t('comparisonClose'), handlers.onClose),
   )
   root.append(actions)
 
@@ -65,7 +72,7 @@ export function renderComparison(
     text(
       doc,
       'trust-note',
-      'Marking it legitimate stops the warning for this address and can be undone in settings.',
+      t('comparisonTrustNote'),
     ),
   )
 

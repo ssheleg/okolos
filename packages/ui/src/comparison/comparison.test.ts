@@ -3,6 +3,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { renderComparison, type ComparisonHandlers, type ComparisonProps } from './comparison.js'
 
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fromCatalogue, useResolver, type Catalogue } from '@okolos/i18n'
+
+/** The shipped Russian catalogue: `default_locale` is `ru`, and a fake would let a missing key pass. */
+const CATALOGUE = JSON.parse(
+  readFileSync(
+    path.resolve(import.meta.dirname, '../../../../apps/extension/_locales/ru/messages.json'),
+    'utf8',
+  ),
+) as Catalogue
+
+useResolver(fromCatalogue(CATALOGUE))
+
 const PROPS: ComparisonProps = {
   visited: 'xn--pypal-4ve.com',
   decoded: 'pаypal.com',
@@ -43,8 +57,8 @@ describe('showing the difference rather than asserting it', () => {
   })
 
   it('says in one sentence what kind of trick this is', () => {
-    expect(role(render(PROPS), 'why')?.textContent).toMatch(/more than one alphabet/i)
-    expect(role(render({ ...PROPS, kind: 'tld-swap' }), 'why')?.textContent).toMatch(/ending/i)
+    expect(role(render(PROPS), 'why')?.textContent).toMatch(/из нескольких алфавитов/i)
+    expect(role(render({ ...PROPS, kind: 'tld-swap' }), 'why')?.textContent).toMatch(/окончание после последней точки/i)
   })
 
   it('shows the address verbatim, not tidied up', () => {
@@ -63,7 +77,7 @@ describe('what the user can do', () => {
     const el = render(PROPS, h)
     role(el, 'trust')?.click()
     expect(h.onTrust).toHaveBeenCalledTimes(1)
-    expect(role(el, 'trust-note')?.textContent).toMatch(/settings/i)
+    expect(role(el, 'trust-note')?.textContent).toMatch(/в настройках/i)
   })
 
   it('is a dialog to assistive technology', () => {

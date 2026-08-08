@@ -1,3 +1,5 @@
+import { t } from '@okolos/i18n'
+
 import type { Queue, QueueItem } from '@okolos/core-queue'
 
 /**
@@ -29,7 +31,7 @@ export function renderQueue(doc: Document, queue: Queue, handlers: QueueHandlers
   list.setAttribute('data-role', 'queue')
 
   if (queue.shown.length === 0) {
-    list.append(text(doc, 'queue-empty', 'Nothing needs you right now.'))
+    list.append(text(doc, 'queue-empty', t('queueEmpty')))
     return list
   }
 
@@ -62,9 +64,9 @@ function row(doc: Document, item: QueueItem, handlers: QueueHandlers): HTMLEleme
   const actions = doc.createElement('div')
   actions.setAttribute('data-role', 'item-actions')
   actions.append(
-    button(doc, 'act', item.actionLabel ?? 'Open', () => handlers.onAct(item.id)),
-    button(doc, 'resolve', 'Done', () => handlers.onResolve(item.id)),
-    button(doc, 'defer', 'Not now', () => handlers.onDefer(item.id)),
+    button(doc, 'act', item.actionLabel ?? t('queueOpen'), () => handlers.onAct(item.id)),
+    button(doc, 'resolve', t('queueDone'), () => handlers.onResolve(item.id)),
+    button(doc, 'defer', t('queueDefer'), () => handlers.onDefer(item.id)),
   )
 
   el.append(text(doc, 'summary', item.summary), actions)

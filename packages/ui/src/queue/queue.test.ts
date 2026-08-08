@@ -4,6 +4,20 @@ import type { Queue, QueueItem } from '@okolos/core-queue'
 
 import { renderQueue, type QueueHandlers } from './queue.js'
 
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fromCatalogue, useResolver, type Catalogue } from '@okolos/i18n'
+
+/** The shipped Russian catalogue: `default_locale` is `ru`, and a fake would let a missing key pass. */
+const CATALOGUE = JSON.parse(
+  readFileSync(
+    path.resolve(import.meta.dirname, '../../../../apps/extension/_locales/ru/messages.json'),
+    'utf8',
+  ),
+) as Catalogue
+
+useResolver(fromCatalogue(CATALOGUE))
+
 function handlers(overrides: Partial<QueueHandlers> = {}): QueueHandlers {
   return {
     onAct: vi.fn(),
@@ -46,7 +60,7 @@ describe('what the queue shows', () => {
 
   it('says nothing needs the user when there is nothing', () => {
     const el = render({ shown: [], hidden: 0, rankedBy: 'full' })
-    expect(role(el, 'queue-empty')?.textContent).toMatch(/nothing needs you/i)
+    expect(role(el, 'queue-empty')?.textContent).toMatch(/от вас ничего не нужно/i)
   })
 
   it('counts what it holds back rather than hiding it', () => {
@@ -86,6 +100,6 @@ describe('the two verbs that let the list end', () => {
     const labels = [...el.querySelectorAll('[data-role=item-actions] button')].map(
       (button) => button.textContent,
     )
-    expect(labels).toEqual(['Neutralise it', 'Done', 'Not now'])
+    expect(labels).toEqual(['Neutralise it', 'Готово', 'Не сейчас'])
   })
 })

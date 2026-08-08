@@ -3,6 +3,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { renderTrusted, type TrustedDomain, type TrustedHandlers } from './trusted.js'
 
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fromCatalogue, useResolver, type Catalogue } from '@okolos/i18n'
+
+/** The shipped Russian catalogue: `default_locale` is `ru`, and a fake would let a missing key pass. */
+const CATALOGUE = JSON.parse(
+  readFileSync(
+    path.resolve(import.meta.dirname, '../../../../apps/extension/_locales/ru/messages.json'),
+    'utf8',
+  ),
+) as Catalogue
+
+useResolver(fromCatalogue(CATALOGUE))
+
 function handlers(overrides: Partial<TrustedHandlers> = {}): TrustedHandlers {
   return { onRevoke: vi.fn(), ...overrides }
 }
@@ -47,11 +61,11 @@ describe('taking trust back', () => {
 
   it('shows the date alone when there is no reason recorded', () => {
     const el = render([{ domain: 'bank.test', grantedAt: '2026-01-02T00:00:00.000Z' }])
-    expect(role(el, 'granted')?.textContent).toBe('Trusted on 2026-01-02')
+    expect(role(el, 'granted')?.textContent).toBe('Отмечен 2026-01-02')
   })
 
   it('says taking one back takes effect at once', () => {
-    expect(role(render([ENTRY]), 'trusted-note')?.textContent).toMatch(/immediately/i)
+    expect(role(render([ENTRY]), 'trusted-note')?.textContent).toMatch(/сразу/i)
   })
 
   it('lists every entry, not just the first', () => {
@@ -64,7 +78,7 @@ describe('when nothing is trusted', () => {
   it('says so, and says what would put something here', () => {
     // An empty area would read as a broken screen rather than an empty list.
     const el = render([])
-    expect(role(el, 'trusted-empty')?.textContent).toMatch(/have not marked any site/i)
+    expect(role(el, 'trusted-empty')?.textContent).toMatch(/ещё не отмечали ни один сайт/i)
     expect(el.querySelectorAll('[data-role=trusted-row]')).toHaveLength(0)
   })
 })

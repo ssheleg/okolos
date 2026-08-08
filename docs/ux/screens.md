@@ -160,7 +160,7 @@ self-audit panel.
 ### SCR-07: Findings queue
 - **Used by:** FLW-01, FLW-17
 - **Purpose:** turn everything found into at most three next actions
-- **Elements:** up to 3 prioritised items, each with what happened, why it matters, and one executable action; "show all" (collapsed by default); per-item "resolve" and "not now"
+- **Elements:** up to 3 prioritised items, each with what happened, why it matters, and one executable action; "show all" (collapsed by default); per-item "Готово" and "Не сейчас"
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|

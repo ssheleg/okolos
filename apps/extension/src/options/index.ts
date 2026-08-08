@@ -21,6 +21,7 @@ import {
 import { exportAll, openDb, RETENTION_DAYS, wipeAll, type JournalRecord } from '@okolos/storage'
 
 import { mapJournal } from '../popup/state.js'
+import { answered } from './answered.js'
 import '../pages.css'
 
 /**
@@ -292,8 +293,10 @@ async function trustedSection(): Promise<HTMLElement> {
   const container = document.createElement('div')
   let entries: TrustedDomain[] = []
   try {
-    const result = await platform.runtime.send('trust/list', {})
-    entries = (result?.entries ?? []).map((entry) => ({
+    // Not `?? []`: silence is not an empty list, and the comment three lines
+    // below has always said so.
+    const result = answered(await platform.runtime.send('trust/list', {}), 'the trusted list')
+    entries = result.entries.map((entry) => ({
       domain: entry.domain,
       grantedAt: entry.grantedAt,
       ...(entry.reason ? { reason: entry.reason } : {}),

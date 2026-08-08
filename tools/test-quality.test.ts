@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -197,5 +197,68 @@ describe('retention is not left to an alarm that may never fire', () => {
   it('records when it swept, or the next start cannot tell', () => {
     expect(background).toContain('LAST_SWEEP_KEY')
     expect(background).toContain('dueForSweep')
+  })
+})
+
+describe('silence is not an empty list', () => {
+  /**
+   * `send()` resolves to the handler's answer, and a handler that never ran
+   * resolves to nothing. `?? []` on that turns "the background did not answer"
+   * into "there is nothing here" — the reassuring answer, and possibly the
+   * wrong one.
+   *
+   * The trusted-domains panel did exactly that, three lines above a comment
+   * forbidding it. The surfaces go through `answered()` now, which is unit
+   * tested; this stops the shortcut coming back, because no unit test reaches
+   * the wiring where it lives.
+   *
+   * Content-script code is deliberately outside this rule and is listed with
+   * its reason: there, an unanswered lookup falls to the cautious side.
+   */
+  const SURFACES = [
+    'apps/extension/src/options/index.ts',
+    'apps/extension/src/popup/index.ts',
+    'apps/extension/src/first-run/index.ts',
+    'apps/extension/src/interstitial/index.ts',
+  ]
+
+  it('reads surfaces that exist, so an empty sweep cannot pass', () => {
+    const present = SURFACES.filter((file) => existsSync(path.join(root, file)))
+    expect(present.length).toBeGreaterThan(2)
+  })
+
+  it('no surface defaults an unanswered RPC to an empty list', () => {
+    /**
+     * Two shapes, and the second is the one the first version of this rule
+     * missed. Inline — `(await send(...))?.x ?? []` — is a single line and easy
+     * to spot. Assigned first and defaulted later is not, and that is exactly
+     * how the trusted-domains panel was written, so the variable is followed.
+     */
+    const offenders: string[] = []
+    for (const file of SURFACES) {
+      const full = path.join(root, file)
+      if (!existsSync(full)) continue
+      const body = readFileSync(full, 'utf8')
+
+      if (/\(\s*(?:await\s+)?[\w.]*send\([^)]*\)\s*\)?\??\.?\w*\s*\?\?\s*[[{]/.test(body)) {
+        offenders.push(`${file} (inline)`)
+      }
+
+      for (const match of body.matchAll(
+        /(?:const|let)\s+(\w+)\s*=\s*(?:await\s+)?[\w.]*send\(/g,
+      )) {
+        const name = match[1] as string
+        const defaulted = new RegExp(`\\b${name}\\s*\\??\\.[\\w.]+\\s*\\?\\?\\s*[[{]`)
+        if (defaulted.test(body.slice(match.index))) offenders.push(`${file} (${name})`)
+      }
+    }
+    expect(
+      [...new Set(offenders)],
+      'these turn "the background did not answer" into "there is nothing here" — use answered()',
+    ).toEqual([])
+  })
+
+  it('the helper that makes the distinction is tested where it lives', () => {
+    expect(existsSync(path.join(root, 'apps/extension/src/options/answered.test.ts'))).toBe(true)
   })
 })

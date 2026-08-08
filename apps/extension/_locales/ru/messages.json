@@ -716,5 +716,48 @@
   },
   "journalDefaultDisabled": {
     "message": "Детектор был выключен"
+  },
+  "logRulesTruncated": {
+    "message": "Записей из списка $FEED$, которые не удалось применить: $COUNT$. Браузер ограничивает число блокирующих правил у расширения.",
+    "placeholders": {
+      "feed": {
+        "content": "$1"
+      },
+      "count": {
+        "content": "$2"
+      }
+    }
+  },
+  "logKeptVisiting": {
+    "message": "Вы решили продолжить на $HOST$ после блокировки.",
+    "placeholders": {
+      "host": {
+        "content": "$1"
+      }
+    }
+  },
+  "logExtensionDisabled": {
+    "message": "Вы отключили расширение $ID$.",
+    "placeholders": {
+      "id": {
+        "content": "$1"
+      }
+    }
+  },
+  "logExtensionAccepted": {
+    "message": "Вы приняли изменение в расширении $ID$.",
+    "placeholders": {
+      "id": {
+        "content": "$1"
+      }
+    }
+  },
+  "logTrustRevoked": {
+    "message": "Вы перестали доверять $DOMAIN$; проверки снова применяются к нему.",
+    "placeholders": {
+      "domain": {
+        "content": "$1"
+      }
+    }
   }
 }

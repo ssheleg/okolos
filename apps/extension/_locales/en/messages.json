@@ -716,5 +716,48 @@
   },
   "journalDefaultDisabled": {
     "message": "A detector was turned off"
+  },
+  "logRulesTruncated": {
+    "message": "$COUNT$ entries from $FEED$ could not be enforced: the browser limits how many blocking rules an extension may install.",
+    "placeholders": {
+      "feed": {
+        "content": "$1"
+      },
+      "count": {
+        "content": "$2"
+      }
+    }
+  },
+  "logKeptVisiting": {
+    "message": "You chose to keep visiting $HOST$ after it was blocked.",
+    "placeholders": {
+      "host": {
+        "content": "$1"
+      }
+    }
+  },
+  "logExtensionDisabled": {
+    "message": "You disabled the extension $ID$.",
+    "placeholders": {
+      "id": {
+        "content": "$1"
+      }
+    }
+  },
+  "logExtensionAccepted": {
+    "message": "You accepted the change to extension $ID$.",
+    "placeholders": {
+      "id": {
+        "content": "$1"
+      }
+    }
+  },
+  "logTrustRevoked": {
+    "message": "You stopped trusting $DOMAIN$; the checks apply to it again.",
+    "placeholders": {
+      "domain": {
+        "content": "$1"
+      }
+    }
   }
 }

@@ -240,7 +240,8 @@ export async function refreshBlockRules(): Promise<{ installed: number; dropped:
       createdAt: new Date().toISOString(),
       kind: 'error',
       detail: {
-        explain: `${set.dropped} entries from ${displayFeedNameEn(feed.name) ?? feed.name} could not be enforced: the browser limits how many blocking rules an extension may install.`,
+        explainKey: 'logRulesTruncated',
+        explainArgs: [displayFeedNameEn(feed.name) ?? feed.name, String(set.dropped)],
         feed: feed.name,
       },
     })
@@ -291,7 +292,7 @@ async function allowBlocked(payload: { url: string }): Promise<{ url: string } |
       id: `exception:${host}:${new Date().toISOString()}`,
       createdAt: new Date().toISOString(),
       kind: 'action',
-      detail: { explain: `You chose to keep visiting ${host} after it was blocked.`, reason: 'user-allowed' },
+      detail: { explainKey: 'logKeptVisiting', explainArgs: [host], reason: 'user-allowed' },
     })
     await refreshBlockRules()
   } catch (cause) {
@@ -469,7 +470,7 @@ async function disableExtension(payload: { id: string }): Promise<{ ok: boolean;
       id: `extension-disabled:${payload.id}:${now}`,
       createdAt: now,
       kind: 'action',
-      detail: { explain: `You disabled the extension ${payload.id}.`, reason: 'user-blocked' },
+      detail: { explainKey: 'logExtensionDisabled', explainArgs: [payload.id], reason: 'user-blocked' },
     })
   } catch {
     // The extension is off either way; the record is the lesser of the two.
@@ -491,7 +492,7 @@ async function trustExtensionChange(payload: { id: string }): Promise<{ ok: true
       id: `extension-trusted:${payload.id}:${now}`,
       createdAt: now,
       kind: 'action',
-      detail: { explain: `You accepted the change to extension ${payload.id}.`, reason: 'user-allowed' },
+      detail: { explainKey: 'logExtensionAccepted', explainArgs: [payload.id], reason: 'user-allowed' },
     })
   } catch (cause) {
     console.warn('okolos: could not record the accepted change', cause)
@@ -611,7 +612,8 @@ async function revokeTrusted(payload: { domain: string }): Promise<{ ok: true }>
       createdAt: now,
       kind: 'action',
       detail: {
-        explain: `You stopped trusting ${payload.domain}; the checks apply to it again.`,
+        explainKey: 'logTrustRevoked',
+        explainArgs: [payload.domain],
         reason: 'user-blocked',
       },
     })

@@ -43,7 +43,14 @@ export interface JournalRecord {
   id: string
   createdAt: string
   kind: 'verdict' | 'action' | 'error' | 'detector-disabled'
-  detail?: Readonly<Record<string, string | number | boolean>>
+  /**
+   * `readonly string[]` is here for `explainArgs`.
+   *
+   * A journal entry stores what happened, not a sentence about it: a key and
+   * its substitutions, resolved when the entry is read so the reader's language
+   * decides rather than the language in force when the event occurred.
+   */
+  detail?: Readonly<Record<string, string | number | boolean | readonly string[]>>
 }
 
 export interface ExceptionRecord {

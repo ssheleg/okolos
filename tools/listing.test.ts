@@ -102,10 +102,19 @@ describe('the screenshots are of this product', () => {
     }
   })
 
-  it('is honest in the listing about what they are not yet', () => {
-    // They are screenshots of unstyled HTML: the product has no visual layer,
-    // its own screen record says the style pack was never chosen, and a listing
-    // that showed these as finished would be the misleading part.
-    expect(listing).toMatch(/визуальн/i)
+  it('says they come from the built product rather than from a drawing', () => {
+    /**
+     * This assertion used to demand the listing admit the screenshots were not
+     * submittable — the product had no visual layer and images of an unreadable
+     * screen would have been the misleading part. That was fixed, so the
+     * assertion would now pass on any sentence containing the word; it guards
+     * what is worth guarding instead.
+     *
+     * A listing image showing a screen the extension does not draw is the same
+     * defect as a document claiming a capability nobody built, and it is the
+     * version a reviewer sees first.
+     */
+    expect(listing).toMatch(/pnpm screenshots/)
+    expect(listing).toMatch(/настоящие\s+\n?экраны продукта, а не макеты/)
   })
 })

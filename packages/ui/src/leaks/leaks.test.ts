@@ -199,3 +199,50 @@ describe('a press that cannot be honoured', () => {
     expect(role(el, 'check')).not.toBeNull()
   })
 })
+
+describe('where the address field goes', () => {
+  /**
+   * The panel does not build the field — the options page owns it, because it
+   * has to survive a repaint that rebuilds everything around it. What the panel
+   * owes is the place.
+   *
+   * Ordering it from a stylesheet was tried and measured: from outside the
+   * panel a rule can only put the field before the whole thing or after it, and
+   * after puts the input below the button that reads it.
+   */
+  it('names a place for it under the description', () => {
+    const el = render({ kind: 'idle' })
+    expect(el.querySelector('[data-role=address-slot]'), 'no slot for the field').not.toBeNull()
+  })
+
+  it('puts that place before the button that reads it', () => {
+    const el = render({ kind: 'idle' })
+    const roles = [...el.querySelectorAll('[data-role]')].map((n) => n.getAttribute('data-role'))
+    expect(roles.indexOf('address-slot')).toBeGreaterThan(roles.indexOf('idle'))
+    expect(roles.indexOf('address-slot')).toBeLessThan(roles.indexOf('check'))
+  })
+
+  it('offers that place in every state, or the field vanishes', () => {
+    /**
+     * The first version emitted the slot only when idle. The page re-attaches
+     * the field by replacing the slot after each paint, so any state without
+     * one is a state where the field is simply gone — including the state right
+     * after a check finishes, which is when someone wants to try a second
+     * address.
+     */
+    const states = [
+      { kind: 'idle' } as const,
+      { kind: 'checking' } as const,
+      { kind: 'error', message: 'the source did not answer' } as const,
+      {
+        kind: 'ready' as const,
+        inventory: mergeLeaks([{ name: 'HIBP', answered: true, leaks: [] }]),
+        now: NOW,
+      },
+    ]
+    for (const state of states) {
+      const el = render(state)
+      expect(el.querySelector('[data-role=address-slot]'), state.kind).not.toBeNull()
+    }
+  })
+})

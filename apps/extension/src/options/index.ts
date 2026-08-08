@@ -77,16 +77,12 @@ function leaksSection(): HTMLElement {
   // first screenshot of the styled build showed.
   container.setAttribute('data-role', 'leaks-section')
 
-  // A placeholder, not the field itself. Moving the live input into a tree
-  // that has not been swapped in yet takes it out of the document for as long
-  // as the remaining sections take to load — a window in which the field is
-  // simply not on the page. It is put back in `renderPanel`, synchronously
-  // after the swap.
-  const slot = document.createElement('span')
-  slot.setAttribute('data-role', 'address-slot')
-
+  // The slot now lives inside the panel, where the field belongs: under the
+  // description and above the button that reads it. The panel names the place;
+  // this page fills it in `renderPanel`, synchronously after the swap, because
+  // moving the live input into a tree that has not been swapped in yet takes it
+  // out of the document for as long as the remaining sections take to load.
   container.append(
-    slot,
     renderLeaks(document, leaks, {
       onCheck: () => {
         void (async () => {

@@ -60,6 +60,19 @@ export function renderLeaks(doc: Document, state: LeaksState, handlers: LeaksHan
       // reads as a broken product — and hid a real defect for three days
       // because the page looked exactly as it had before the click.
       ...(state.needs ? [text(doc, 'needs', state.needs)] : []),
+      // Where the address field goes.
+      //
+      // The field itself is not built here: it is a long-lived node the options
+      // page moves between repaints rather than rebuilds, because rebuilding it
+      // threw away whatever was being typed. The panel names the place; the
+      // page puts the node in it, synchronously, in the same statement as the
+      // swap.
+      //
+      // Naming the place matters because the alternative was ordering it from a
+      // stylesheet, and from outside the panel a rule can only put the field
+      // before the whole thing or after it — after being below the button that
+      // reads it.
+      addressSlot(doc),
       button(doc, 'check', 'Check now', handlers.onCheck, true),
       attribution(doc),
     )
@@ -67,7 +80,7 @@ export function renderLeaks(doc: Document, state: LeaksState, handlers: LeaksHan
   }
 
   if (state.kind === 'checking') {
-    root.append(text(doc, 'status', 'Asking the sources…'), attribution(doc))
+    root.append(text(doc, 'status', 'Asking the sources…'), addressSlot(doc), attribution(doc))
     return root
   }
 
@@ -75,6 +88,7 @@ export function renderLeaks(doc: Document, state: LeaksState, handlers: LeaksHan
     root.append(
       text(doc, 'error', `The check could not be completed: ${state.message}`),
       text(doc, 'error-note', 'This is not a statement that nothing has leaked.'),
+      addressSlot(doc),
       button(doc, 'check', 'Try again', handlers.onCheck),
       attribution(doc),
     )
@@ -92,6 +106,7 @@ export function renderLeaks(doc: Document, state: LeaksState, handlers: LeaksHan
     ),
     // Always, and next to the number rather than beneath the fold.
     text(doc, 'coverage', inventory.coverage),
+    addressSlot(doc),
   )
 
   // Grouped, not date-sorted: an infection and a 2016 breach need different
@@ -155,6 +170,20 @@ function leakRow(doc: Document, leak: Leak, handlers: LeaksHandlers): HTMLElemen
   actions.append(button(doc, 'resolve', 'Mark resolved', () => handlers.onResolve(leak.name)))
   row.append(actions)
   return row
+}
+
+/**
+ * The place the options page puts its live address field.
+ *
+ * Emitted in **every** state, not only the idle one. The page re-attaches the
+ * field by replacing this slot after each paint; a state that omits it is a
+ * state where the field simply vanishes — including the one right after a check
+ * finishes, which is exactly when someone wants to try a second address.
+ */
+function addressSlot(doc: Document): HTMLElement {
+  const slot = doc.createElement('span')
+  slot.setAttribute('data-role', 'address-slot')
+  return slot
 }
 
 function text(doc: Document, role: string, content: string): HTMLParagraphElement {

@@ -13,6 +13,7 @@
 - `attribution`
 - `leak`
 - `leak-actions`
+- `address-slot`
 - `idle`
 - `needs`
 - `check`

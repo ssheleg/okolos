@@ -22,6 +22,8 @@ import { describe, expect, it } from 'vitest'
 const root = process.cwd()
 
 const EXEMPT: Record<string, string> = {
+  'tools/tokens.mjs':
+    'a generator, not a rule: its only claim is that the committed CSS equals what it makes from packages/ui/src/tokens.ts, and that is asserted in tokens.test.ts beside the tokens themselves, along with the rule that no page writes a value of its own.',
   'tools/package.mjs':
     'a release command, not a rule: it builds, refuses, and writes an archive. Its refusals are exercised by planting defects into a real build, which a sibling unit test cannot do without reimplementing the build; CI runs it on every push as `pnpm package:check`.',
   'tools/privacy-page.mjs':

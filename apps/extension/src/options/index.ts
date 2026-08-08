@@ -72,6 +72,10 @@ const addressField = (() => {
 
 function leaksSection(): HTMLElement {
   const container = document.createElement('div')
+  // Named so the stylesheet can treat the field and the panel as one block.
+  // Without it the address input floats between two cards, which is what the
+  // first screenshot of the styled build showed.
+  container.setAttribute('data-role', 'leaks-section')
 
   // A placeholder, not the field itself. Moving the live input into a tree
   // that has not been swapped in yet takes it out of the document for as long

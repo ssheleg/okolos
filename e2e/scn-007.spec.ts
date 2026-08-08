@@ -36,6 +36,33 @@ async function seedFeed(page: import('@playwright/test').Page): Promise<void> {
   })
 }
 
+/**
+ * Waits until the blocking rules are actually installed.
+ *
+ * `rules/refresh` resolving means the background handled the message, not that
+ * `declarativeNetRequest` has finished installing what it built. Navigating on
+ * the strength of the message is a race, and under a full-suite load it is one
+ * this file lost: the same three tests pass alone and one fails in the run.
+ *
+ * Asking the API what it holds is the readiness this test actually needs.
+ */
+async function rulesInstalled(seeder: import('@playwright/test').Page): Promise<void> {
+  await seeder.evaluate(async () => {
+    await chrome.runtime.sendMessage({ v: 1, type: 'rules/refresh', payload: {} })
+  })
+  const deadline = Date.now() + 10_000
+  let installed = 0
+  while (installed === 0) {
+    installed = await seeder.evaluate(
+      async () => (await chrome.declarativeNetRequest.getDynamicRules()).length,
+    )
+    if (installed === 0 && Date.now() > deadline) {
+      throw new Error('the blocking rules never appeared')
+    }
+    if (installed === 0) await seeder.waitForTimeout(100)
+  }
+}
+
 test('the flagged page never renders, and the block names its source', async ({
   context,
   extensionId,
@@ -47,9 +74,7 @@ test('the flagged page never renders, and the block names its source', async ({
   await seedFeed(seeder)
 
   // The worker rebuilds its rules from the feed on demand.
-  await seeder.evaluate(async () => {
-    await chrome.runtime.sendMessage({ v: 1, type: 'rules/refresh', payload: {} })
-  })
+  await rulesInstalled(seeder)
 
   const page = await context.newPage()
   await page.goto('https://fixture.test/login')
@@ -69,9 +94,7 @@ test('continuing is remembered, so the user is not asked twice', async ({
   const seeder = await context.newPage()
   await seeder.goto(`chrome-extension://${extensionId}/options.html`)
   await seedFeed(seeder)
-  await seeder.evaluate(async () => {
-    await chrome.runtime.sendMessage({ v: 1, type: 'rules/refresh', payload: {} })
-  })
+  await rulesInstalled(seeder)
 
   const page = await context.newPage()
   await page.goto('https://fixture.test/login')
@@ -101,9 +124,7 @@ test('"I own this site" opens the public status page for the domain that was blo
   const seeder = await context.newPage()
   await seeder.goto(`chrome-extension://${extensionId}/options.html`)
   await seedFeed(seeder)
-  await seeder.evaluate(async () => {
-    await chrome.runtime.sendMessage({ v: 1, type: 'rules/refresh', payload: {} })
-  })
+  await rulesInstalled(seeder)
 
   const page = await context.newPage()
   await page.goto('https://fixture.test/login')

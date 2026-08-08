@@ -1,53 +1,294 @@
 /*
- * The extension's own pages had no stylesheet at all, so every control was
- * whatever size the browser made it. That passed the accessibility sweep for a
- * while by luck: the elements happened to sit far enough apart to satisfy WCAG
- * 2.2's 24px target rule, until one new button landed beside an input and did
- * not.
+ * The extension's own pages: options, popup, first run, interstitial.
  *
- * This is deliberately close to nothing — the pages are plain HTML on purpose,
- * and a design system for four internal screens would be its own liability.
- * What it does fix is the class of fault rather than the button that exposed it.
+ * This file was 500 bytes and said the pages were "plain HTML on purpose, and a
+ * design system for four internal screens would be its own liability". There
+ * are fourteen screens, and plain turned out not to mean plain: three spans in
+ * a row with nothing between them render as "Local storagedoneready". The first
+ * screen a person ever sees was unreadable.
+ *
+ * What replaces that reasoning, and what did not:
+ *
+ *   - Still no framework, no component library, no build step of its own. The
+ *     rules below are element and `data-role` selectors over the markup the
+ *     renderers already emit; not one renderer changed to accommodate this.
+ *   - Every value comes from `tokens.generated.css`, which is generated from
+ *     `packages/ui/src/tokens.ts`. A colour written here by hand would be the
+ *     second place a colour lives.
+ *   - Severity is never carried by colour alone: the screens already pair it
+ *     with a word, and the colour below is the third signal.
+ *   - Motion is absent rather than reduced. There is nothing here to respect
+ *     `prefers-reduced-motion` about, which is the strongest form of respecting
+ *     it.
  */
 
-button,
+@import './tokens.generated.css';
+
+/* ---------------------------------------------------------------- the page */
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  padding: var(--ok-space-5);
+  background: var(--ok-colour-surface-sunken);
+  color: var(--ok-colour-text);
+  font-family: var(--ok-type-font-family);
+  font-size: var(--ok-type-size-base);
+  line-height: var(--ok-type-line-base);
+}
+
+/* The popup is a panel, not a page: it opens at whatever width it asks for. */
+body:has([data-role='popup']) {
+  inline-size: var(--ok-size-popup);
+  padding: var(--ok-space-3);
+}
+
+#root {
+  max-inline-size: var(--ok-size-page-max);
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ok-space-5);
+}
+
+/* ------------------------------------------------------------------ blocks */
+
+/*
+ * Every top-level surface a renderer emits becomes a card. Selecting on the
+ * roles rather than on a class keeps this file out of the renderers, which is
+ * what lets fourteen screens gain a visual layer in one change.
+ */
+[data-role='self-audit'],
+[data-role='leaks-section'],
+[data-role='journal'],
+[data-role='queue-section'],
+[data-role='queue'],
+[data-role='extensions'],
+[data-role='trusted'],
+[data-role='data-controls'],
+[data-role='recovery'],
+[data-role='first-run'],
+[data-role='popup'],
+[data-role='interstitial'],
+[data-role='comparison'] {
+  display: block;
+  padding: var(--ok-space-4);
+  background: var(--ok-colour-surface);
+  border: var(--ok-shape-hairline) solid var(--ok-colour-border);
+  border-radius: var(--ok-shape-radius-lg);
+}
+
+/* --------------------------------------------------------------- type */
+
+h1 {
+  margin: 0 0 var(--ok-space-2);
+  font-size: var(--ok-type-size-xl);
+  line-height: var(--ok-type-line-tight);
+  font-weight: var(--ok-type-weight-strong);
+}
+
+h2 {
+  margin: var(--ok-space-4) 0 var(--ok-space-2);
+  font-size: var(--ok-type-size-lg);
+  line-height: var(--ok-type-line-tight);
+  font-weight: var(--ok-type-weight-strong);
+}
+
+p {
+  margin: 0 0 var(--ok-space-2);
+}
+
+ul,
+ol {
+  margin: 0 0 var(--ok-space-2);
+  padding-inline-start: var(--ok-space-5);
+}
+
+li {
+  margin-block: var(--ok-space-1);
+}
+
+a {
+  color: var(--ok-colour-focus);
+}
+
+code,
+[data-role='portable-text'],
+[data-role='snippet'] {
+  font-family: var(--ok-type-font-mono);
+  font-size: var(--ok-type-size-sm);
+}
+
+/* ---------------------------------------------------------------- controls */
+
+button {
+  min-block-size: var(--ok-shape-target-min);
+  min-inline-size: var(--ok-shape-target-min);
+  padding: var(--ok-space-1) var(--ok-space-3);
+  border: var(--ok-shape-hairline) solid var(--ok-colour-border-strong);
+  border-radius: var(--ok-shape-radius);
+  background: var(--ok-colour-surface);
+  color: var(--ok-colour-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--ok-colour-text-muted);
+}
+
+/* One primary per screen, and the renderers already mark which. */
+button[data-primary='true'] {
+  background: var(--ok-colour-accent);
+  border-color: var(--ok-colour-accent);
+  color: var(--ok-colour-accent-text);
+}
+
+/*
+ * A disabled primary loses the accent as well as the emphasis. Keeping the dark
+ * fill and muting only the label puts grey text on near-black — caught by
+ * looking at the first screenshot this stylesheet produced.
+ */
+button:disabled,
+button[data-primary='true']:disabled {
+  background: var(--ok-colour-surface-sunken);
+  border-color: var(--ok-colour-border);
+  color: var(--ok-colour-text-muted);
+  cursor: default;
+}
+
 input,
-select {
-  min-height: 24px;
-  min-inline-size: 24px;
-  padding: 4px 10px;
+select,
+textarea {
+  min-block-size: var(--ok-shape-target-min);
+  padding: var(--ok-space-1) var(--ok-space-2);
+  border: var(--ok-shape-hairline) solid var(--ok-colour-border-strong);
+  border-radius: var(--ok-shape-radius);
+  background: var(--ok-colour-surface);
+  color: var(--ok-colour-text);
   font: inherit;
 }
 
-/* Space between adjacent controls counts towards the same rule. */
-button + button,
-button + input,
-input + button {
-  margin-inline-start: 8px;
+/*
+ * A visible focus ring on everything focusable. The overlays were swept for
+ * accessibility and these pages were not; a keyboard user on the options page
+ * had nothing to follow.
+ */
+:focus-visible {
+  outline: var(--ok-shape-focus-width) solid var(--ok-colour-focus);
+  outline-offset: var(--ok-shape-focus-offset);
 }
 
-[data-role='item-actions'],
-[data-role='leak-actions'],
-[data-role='change-actions'],
+/* The address field is part of the leaks block, not a control floating above it. */
+[data-role='address'] {
+  inline-size: min(100%, 320px);
+  margin-block-end: var(--ok-space-3);
+}
+
 [data-role='actions'] {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-block: 8px;
+  gap: var(--ok-space-2);
+  margin-block: var(--ok-space-3);
 }
 
-/* The checklist's checkboxes are targets too, and they carry a label. */
-[data-role='step'] {
-  margin-block: 12px;
+/* -------------------------------------------------------------- the defect */
+
+/*
+ * The reason this file was rewritten. A check row is three spans — label,
+ * state, note — and without a rule they render flush: "Local storagedoneready".
+ */
+[data-role='check'] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ok-space-2);
+  margin-block: var(--ok-space-2);
+}
+
+[data-role='check-label'] {
+  font-weight: var(--ok-type-weight-strong);
+}
+
+[data-role='check-state'] {
+  padding: 0 var(--ok-space-2);
+  border: var(--ok-shape-hairline) solid var(--ok-colour-border);
+  border-radius: var(--ok-shape-radius);
+  color: var(--ok-colour-text-muted);
+  font-size: var(--ok-type-size-sm);
+}
+
+[data-role='check-note'],
+[data-role='hint'],
+[data-role='note'],
+[data-role='continue-note'],
+[data-role='coverage'],
+[data-role='sources'] {
+  color: var(--ok-colour-text-muted);
+  font-size: var(--ok-type-size-sm);
+}
+
+/* ------------------------------------------------------------- the journal */
+
+/*
+ * The outbound log is a list of records, and each record is five facts. Same
+ * shape as the check row, same reason.
+ */
+[data-role='entry'],
+[data-role='item'],
+[data-role='leak'],
+[data-role='step'],
+[data-role='change'] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ok-space-1);
+  padding: var(--ok-space-2) 0;
+  border-block-start: var(--ok-shape-hairline) solid var(--ok-colour-border);
 }
 
 [data-role='step'] input[type='checkbox'] {
-  min-inline-size: 24px;
-  min-block-size: 24px;
+  min-inline-size: var(--ok-shape-target-min);
+  min-block-size: var(--ok-shape-target-min);
 }
 
 [data-role='portable-text'] {
-  padding: 12px;
+  padding: var(--ok-space-3);
+  background: var(--ok-colour-surface-sunken);
+  border-radius: var(--ok-shape-radius);
   overflow-x: auto;
   white-space: pre-wrap;
+}
+
+/* ------------------------------------------------------------- severity */
+
+/*
+ * Third signal only. Each of these sits beside a word that already says the
+ * same thing, which is what the cross-screen rule requires and what makes the
+ * screens work for a reader who cannot see the difference.
+ */
+[data-severity='info'] {
+  border-inline-start: var(--ok-shape-severity-bar) solid var(--ok-colour-severity-info);
+  padding-inline-start: var(--ok-space-3);
+}
+
+[data-severity='minor'],
+[data-severity='major'] {
+  border-inline-start: var(--ok-shape-severity-bar) solid var(--ok-colour-severity-warn);
+  padding-inline-start: var(--ok-space-3);
+}
+
+[data-severity='critical'] {
+  border-inline-start: var(--ok-shape-severity-bar) solid var(--ok-colour-severity-block);
+  padding-inline-start: var(--ok-space-3);
+}
+
+/* --------------------------------------------------------------- states */
+
+[data-role='error'],
+[data-role='queue-error'],
+[data-role='not-saved'] {
+  color: var(--ok-colour-severity-block);
 }

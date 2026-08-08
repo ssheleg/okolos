@@ -30,14 +30,20 @@ self-audit panel.
 
 ## Design system
 
-- **Style pack:** not chosen yet — to be picked with the `sheleg-design`
-  companion skill before any frame or code (`workbench` is the expected fit:
-  dense product UI, calm defaults, no decorative motion). Locked here once
-  chosen.
-- **Figma library:** none — Figma disabled until UI implementation
-- **Tokens in code:** planned `packages/ui/src/tokens.ts`
-- **Component source:** planned `packages/ui/src/components/`
-- **Assets:** planned `packages/ui/assets/`
+- **Style pack:** dense product UI, calm defaults, **no motion at all** — there
+  is nothing here for `prefers-reduced-motion` to reduce, which is the strongest
+  form of respecting it. Chosen 2026-08-08, after the line above said "not
+  chosen yet" through fourteen screens and the first-run screen shipped
+  unreadable: three spans with no rule between them render as
+  "Local storage**done**ready".
+- **Figma library:** none — the layer is CSS over the markup the renderers
+  already emit, and not one renderer changed to receive it
+- **Tokens in code:** `packages/ui/src/tokens.ts` → generated into
+  `apps/extension/src/tokens.generated.css` by `tools/tokens.mjs`. A test
+  asserts the generated file matches, that both colour schemes carry the same
+  roles, and that **no stylesheet writes a colour or a length of its own**
+- **Component source:** none — `data-role` selectors over existing markup
+- **Assets:** `apps/extension/icons`, drawn by `tools/icons.mjs`
 
 **Cross-screen rules (apply to every screen below):**
 

@@ -26,7 +26,22 @@ const locales = readdirSync(localesDir)
 const read = (locale: string): Catalogue =>
   JSON.parse(readFileSync(path.join(localesDir, locale, 'messages.json'), 'utf8')) as Catalogue
 
-/** Every key any source file asks the resolver for, plus the manifest's own. */
+/**
+ * Every key any source file asks the resolver for, plus the manifest's own.
+ *
+ * Two shapes count, and the second was added when the first stopped being
+ * enough. A surface may call `t('gateBlock')` directly; it may also hold a map
+ * from a domain value to a key — `SEVERITY_KEY[props.severity]` — and pass the
+ * result. The second is not a workaround, it is the only way to keep the
+ * mapping (which severity gets which label) in code while the wording stays in
+ * `_locales`; reading only direct calls declared eleven live keys dead.
+ *
+ * The map form is recognised by a convention the code follows and this gate
+ * enforces: it must be a `const NAME_KEY: Record<...>`. A first attempt counted
+ * every identifier-shaped literal in any file importing `@okolos/i18n`, which
+ * swept up `'panel'` and `'primary'` and then demanded messages for them — a
+ * check that widens until it fails is not stricter, it is broken.
+ */
 function keysAsked(): Set<string> {
   const keys = new Set<string>()
   const walk = (dir: string): void => {
@@ -37,6 +52,11 @@ function keysAsked(): Set<string> {
       } else if (name.endsWith('.ts') && !name.endsWith('.test.ts')) {
         const text = readFileSync(p, 'utf8')
         for (const m of text.matchAll(/\bt\(\s*'([a-zA-Z0-9_.]+)'/g)) keys.add(m[1] as string)
+        for (const block of text.matchAll(/const \w+_KEY: Record<[^>]*> = \{([\s\S]*?)\n\}/g)) {
+          for (const m of (block[1] as string).matchAll(/:\s*'([a-zA-Z0-9_.]+)'/g)) {
+            keys.add(m[1] as string)
+          }
+        }
       }
     }
   }

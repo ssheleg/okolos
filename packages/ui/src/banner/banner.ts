@@ -1,3 +1,5 @@
+import { t } from '@okolos/i18n'
+
 import { shadowMode } from '../shadow.js'
 import { OVERLAY_TOKENS } from '../overlay-tokens.js'
 import type { Severity, VerdictCategory } from '@okolos/contracts'
@@ -23,21 +25,30 @@ export type BannerVariant = Extract<
 /** Variants that interrupt: the user is mid-way into a trap and one click from harm. */
 const BLOCKING: ReadonlySet<BannerVariant> = new Set<BannerVariant>(['clickfix', 'techsupport'])
 
-const SEVERITY_LABEL: Record<Severity, string> = {
-  critical: 'Critical',
-  major: 'Serious',
-  minor: 'Minor',
-  info: 'For information',
+/**
+ * Severity in words, and the words come from the catalogue.
+ *
+ * The map is over keys rather than sentences because the mapping — which
+ * severity gets which label — is a product decision that belongs in code,
+ * while the wording is a translation that belongs in `_locales`. Collapsing
+ * the two would put Russian copy in a TypeScript file, which is where it
+ * stops being translatable.
+ */
+const SEVERITY_KEY: Record<Severity, string> = {
+  critical: 'bannerSeverityCritical',
+  major: 'bannerSeverityMajor',
+  minor: 'bannerSeverityMinor',
+  info: 'bannerSeverityInfo',
 }
 
-const PRIMARY_ACTION: Record<BannerVariant, string> = {
-  injection: 'Show me',
-  lookalike: 'Show the comparison',
-  clickfix: 'Leave this page',
-  techsupport: 'Close this page',
-  download: 'Discard the file',
-  credential: 'Leave this page',
-  password: 'Change password',
+const PRIMARY_ACTION_KEY: Record<BannerVariant, string> = {
+  injection: 'bannerActionInjection',
+  lookalike: 'bannerActionLookalike',
+  clickfix: 'bannerActionClickfix',
+  techsupport: 'bannerActionTechsupport',
+  download: 'bannerActionDownload',
+  credential: 'bannerActionCredential',
+  password: 'bannerActionPassword',
 }
 
 export interface BannerProps {
@@ -97,7 +108,7 @@ export function mountBanner(
         slot.setAttribute('role', 'status')
         const retry = doc.createElement('button')
         retry.setAttribute('data-role', 'retry')
-        retry.textContent = 'Try again'
+        retry.textContent = t('bannerRetry')
         retry.addEventListener('click', handlers.onRetry)
         root.querySelector('[data-role=panel]')?.append(slot, retry)
       }
@@ -125,7 +136,7 @@ function panel(doc: Document, props: BannerProps, handlers: BannerHandlers): HTM
   // here and never meaning.
   const severity = doc.createElement('span')
   severity.setAttribute('data-role', 'severity')
-  severity.textContent = SEVERITY_LABEL[props.severity]
+  severity.textContent = t(SEVERITY_KEY[props.severity])
 
   const headline = doc.createElement('h2')
   headline.setAttribute('data-role', 'headline')
@@ -142,11 +153,17 @@ function panel(doc: Document, props: BannerProps, handlers: BannerHandlers): HTM
   const actions = doc.createElement('div')
   actions.setAttribute('data-role', 'actions')
   actions.append(
-    button(doc, 'primary', props.primaryLabel ?? PRIMARY_ACTION[props.variant], handlers.onPrimary, true),
-    button(doc, 'dispute', 'This is wrong', handlers.onDispute),
+    button(
+      doc,
+      'primary',
+      props.primaryLabel ?? t(PRIMARY_ACTION_KEY[props.variant]),
+      handlers.onPrimary,
+      true,
+    ),
+    button(doc, 'dispute', t('actionDispute'), handlers.onDispute),
   )
   if (!blocking) {
-    actions.append(button(doc, 'dismiss', 'Dismiss', handlers.onDismiss))
+    actions.append(button(doc, 'dismiss', t('bannerDismiss'), handlers.onDismiss))
   }
 
   panelEl.addEventListener('keydown', (event) => {

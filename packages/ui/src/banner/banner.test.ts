@@ -3,6 +3,27 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { mountBanner, type BannerHandlers, type BannerProps } from './banner.js'
 
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fromCatalogue, useResolver, type Catalogue } from '@okolos/i18n'
+
+/**
+ * The shipped Russian catalogue, because `default_locale` is `ru`.
+ *
+ * A fake would let a missing key pass here and reach a real page as
+ * `[bannerDismiss]`. Installing the real one makes every assertion below check
+ * two things: that the surface says the right thing, and that the catalogue
+ * has a message for the key it asked for.
+ */
+const CATALOGUE = JSON.parse(
+  readFileSync(
+    path.resolve(import.meta.dirname, '../../../../apps/extension/_locales/ru/messages.json'),
+    'utf8',
+  ),
+) as Catalogue
+
+useResolver(fromCatalogue(CATALOGUE))
+
 function props(overrides: Partial<BannerProps> = {}): BannerProps {
   return {
     variant: 'injection',
@@ -55,7 +76,7 @@ describe('what it says', () => {
   it('carries severity as text, never as colour alone', () => {
     const handle = mountBanner(document, props({ severity: 'critical' }), handlers())
     const label = shadowOf(handle).querySelector('[data-role=severity]')
-    expect(label?.textContent?.trim()).toBe('Critical')
+    expect(label?.textContent?.trim()).toBe('Критично')
   })
 
   it('announces itself to assistive technology', () => {

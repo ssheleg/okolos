@@ -22,13 +22,20 @@
  * question; it is the half that produced all three defects above.
  */
 
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
+import {
+  entryPoints,
+  pageEntriesFromBuild,
+  reachableFrom,
+  tsEntriesFromBuild,
+  workerEntryFromWrangler,
+} from './imports.mjs'
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const app = path.join(root, 'apps/extension')
 const rel = (p: string) => path.relative(root, p)
 
 /**
@@ -41,94 +48,6 @@ const EXEMPT: ReadonlyArray<{ readonly file: string; readonly why: string }> = [
 // ---------------------------------------------------------------------------
 // Entry points, and the evidence that each one ships.
 // ---------------------------------------------------------------------------
-
-function buildScript(): string {
-  return readFileSync(path.join(root, 'tools/build.mjs'), 'utf8')
-}
-
-/** Rollup inputs named in build.mjs — `path.join(app, 'src/…/index.ts')`. */
-function tsEntriesFromBuild(): string[] {
-  const found = [...buildScript().matchAll(/path\.join\(app,\s*'([^']+\.ts)'\)/g)]
-  return found.map((m) => path.join(app, m[1] ?? ''))
-}
-
-/** HTML pages named in build.mjs, and the module each one loads. */
-function pageEntriesFromBuild(): string[] {
-  const pages = [...buildScript().matchAll(/path\.join\(app,\s*'([^']+\.html)'\)/g)]
-  const out: string[] = []
-  for (const [, p] of pages) {
-    const html = path.join(app, p ?? '')
-    if (!existsSync(html)) continue
-    const markup = readFileSync(html, 'utf8')
-    for (const [, src] of markup.matchAll(/<script[^>]*\bsrc=["']([^"']+)["']/g)) {
-      if (src === undefined) continue
-      const resolved = resolve(src.startsWith('.') ? src : `./${src.replace(/^\//, '')}`, html)
-      if (resolved) out.push(resolved)
-    }
-  }
-  return out
-}
-
-/** The worker entry, as wrangler will load it. */
-function workerEntryFromWrangler(): string[] {
-  const toml = readFileSync(path.join(root, 'apps/proxy/wrangler.toml'), 'utf8')
-  const main = /^\s*main\s*=\s*"([^"]+)"/m.exec(toml)
-  return main?.[1] !== undefined ? [path.join(root, 'apps/proxy', main[1])] : []
-}
-
-function entryPoints(): string[] {
-  return [...tsEntriesFromBuild(), ...pageEntriesFromBuild(), ...workerEntryFromWrangler()]
-}
-
-// ---------------------------------------------------------------------------
-// Import graph.
-// ---------------------------------------------------------------------------
-
-/**
- * Resolve one specifier. Two forms matter here: workspace packages
- * (`@okolos/x` → `packages/x/src/index.ts`, matching each package's `exports`)
- * and relative paths written with the `.js` extension TypeScript's NodeNext
- * resolution requires — those name a `.ts` file on disk.
- */
-function resolve(spec: string, from: string): string | null {
-  if (spec.startsWith('@okolos/')) {
-    const index = path.join(root, 'packages', spec.slice('@okolos/'.length), 'src/index.ts')
-    return existsSync(index) ? index : null
-  }
-  if (!spec.startsWith('.')) return null // npm or platform dependency
-
-  const raw = path.resolve(path.dirname(from), spec)
-  const base = raw.endsWith('.js') ? raw.slice(0, -3) : raw
-  for (const candidate of [`${base}.ts`, `${base}.tsx`, raw, path.join(base, 'index.ts')]) {
-    if (existsSync(candidate) && statSync(candidate).isFile()) return candidate
-  }
-  return null
-}
-
-/** Every specifier a file imports, static and dynamic, values and types. */
-function specifiers(file: string): string[] {
-  const src = readFileSync(file, 'utf8')
-  const out: string[] = []
-  for (const [, s] of src.matchAll(/from\s*['"]([^'"]+)['"]/g)) if (s !== undefined) out.push(s)
-  for (const [, s] of src.matchAll(/import\(\s*['"]([^'"]+)['"]\s*\)/g)) if (s !== undefined) out.push(s)
-  for (const [, s] of src.matchAll(/(?:^|\n)\s*import\s*['"]([^'"]+)['"]/g)) if (s !== undefined) out.push(s)
-  return out
-}
-
-function reachableFrom(entries: readonly string[]): Set<string> {
-  const seen = new Set<string>()
-  const stack = [...entries]
-  while (stack.length > 0) {
-    const file = stack.pop()
-    if (file === undefined || seen.has(file) || !existsSync(file)) continue
-    seen.add(file)
-    for (const spec of specifiers(file)) {
-      const target = resolve(spec, file)
-      if (target !== null && !seen.has(target)) stack.push(target)
-    }
-  }
-  return seen
-}
 
 function sourceFiles(): string[] {
   const out: string[] = []

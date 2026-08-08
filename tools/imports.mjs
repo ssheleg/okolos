@@ -1,0 +1,120 @@
+/**
+ * How imports resolve in this repository, in one place.
+ *
+ * Two gates need to walk the same graph and must agree about what "reachable"
+ * means: `reachable.test.ts` asks whether anything ships a file at all, and
+ * `entry-resolver.test.ts` asks which entry points reach a localised surface.
+ * Two copies of a resolver drift, and the drift is invisible — the second copy
+ * simply stops following an import shape the first one learned about, and its
+ * gate goes quiet without ever failing.
+ *
+ * The entry list is deliberately derived from `tools/build.mjs`, the HTML pages
+ * that build loads, and `wrangler.toml`. An entry nobody ships is not an entry;
+ * otherwise the easiest way to defeat a reachability gate is to declare the
+ * orphan an entry point.
+ */
+
+import { existsSync, readFileSync, statSync } from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+export const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+const app = path.join(root, 'apps/extension')
+
+const buildScript = () => readFileSync(path.join(root, 'tools/build.mjs'), 'utf8')
+
+/**
+ * Resolve one specifier. Two forms matter: workspace packages
+ * (`@okolos/x` → `packages/x/src/index.ts`) and relative paths written with the
+ * `.js` extension TypeScript's NodeNext resolution requires, which name a `.ts`
+ * file on disk.
+ *
+ * @param {string} spec
+ * @param {string} from
+ * @returns {string | null}
+ */
+export function resolve(spec, from) {
+  if (spec.startsWith('@okolos/')) {
+    const index = path.join(root, 'packages', spec.slice('@okolos/'.length), 'src/index.ts')
+    return existsSync(index) ? index : null
+  }
+  if (!spec.startsWith('.')) return null // npm or platform dependency
+
+  const raw = path.resolve(path.dirname(from), spec)
+  const base = raw.endsWith('.js') ? raw.slice(0, -3) : raw
+  for (const candidate of [`${base}.ts`, `${base}.tsx`, raw, path.join(base, 'index.ts')]) {
+    if (existsSync(candidate) && statSync(candidate).isFile()) return candidate
+  }
+  return null
+}
+
+/**
+ * Every specifier a file imports — static and dynamic, values and types.
+ *
+ * @param {string} file
+ * @returns {string[]}
+ */
+export function specifiers(file) {
+  const src = readFileSync(file, 'utf8')
+  const out = []
+  for (const [, s] of src.matchAll(/from\s*['"]([^'"]+)['"]/g)) if (s !== undefined) out.push(s)
+  for (const [, s] of src.matchAll(/import\(\s*['"]([^'"]+)['"]\s*\)/g)) if (s !== undefined) out.push(s)
+  for (const [, s] of src.matchAll(/(?:^|\n)\s*import\s*['"]([^'"]+)['"]/g)) if (s !== undefined) out.push(s)
+  return out
+}
+
+/**
+ * Every file reachable from these entries, the entries included.
+ *
+ * @param {readonly string[]} entries
+ * @returns {Set<string>}
+ */
+export function reachableFrom(entries) {
+  const seen = new Set()
+  const stack = [...entries]
+  while (stack.length > 0) {
+    const file = stack.pop()
+    if (file === undefined || seen.has(file) || !existsSync(file)) continue
+    seen.add(file)
+    for (const spec of specifiers(file)) {
+      const target = resolve(spec, file)
+      if (target !== null && !seen.has(target)) stack.push(target)
+    }
+  }
+  return seen
+}
+
+/** Rollup inputs named in build.mjs — `path.join(app, 'src/…/index.ts')`. */
+export function tsEntriesFromBuild() {
+  return [...buildScript().matchAll(/path\.join\(app,\s*'([^']+\.ts)'\)/g)].map((m) =>
+    path.join(app, m[1] ?? ''),
+  )
+}
+
+/** HTML pages named in build.mjs, and the module each one loads. */
+export function pageEntriesFromBuild() {
+  const out = []
+  for (const [, p] of buildScript().matchAll(/path\.join\(app,\s*'([^']+\.html)'\)/g)) {
+    const html = path.join(app, p ?? '')
+    if (!existsSync(html)) continue
+    const markup = readFileSync(html, 'utf8')
+    for (const [, src] of markup.matchAll(/<script[^>]*\bsrc=["']([^"']+)["']/g)) {
+      if (src === undefined) continue
+      const resolved = resolve(src.startsWith('.') ? src : `./${src.replace(/^\//, '')}`, html)
+      if (resolved) out.push(resolved)
+    }
+  }
+  return out
+}
+
+/** The worker entry, as wrangler will load it. */
+export function workerEntryFromWrangler() {
+  const toml = readFileSync(path.join(root, 'apps/proxy/wrangler.toml'), 'utf8')
+  const main = /^\s*main\s*=\s*"([^"]+)"/m.exec(toml)
+  return main?.[1] !== undefined ? [path.join(root, 'apps/proxy', main[1])] : []
+}
+
+/** Every entry point the build actually ships. */
+export function entryPoints() {
+  return [...tsEntriesFromBuild(), ...pageEntriesFromBuild(), ...workerEntryFromWrangler()]
+}

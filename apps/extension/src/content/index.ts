@@ -1,5 +1,6 @@
 import { checkLookalike, DEFAULT_WATCHLIST } from '@okolos/core-lookalike'
 import { planSanitisation } from '@okolos/core-sanitizer'
+import { useResolver } from '@okolos/i18n'
 import { detectPlatform } from '@okolos/platform'
 import {
   mountBanner,
@@ -38,6 +39,20 @@ const SEVERITY_ORDER: Record<Severity, number> = { critical: 3, major: 2, minor:
 
 
 const platform = detectPlatform()
+
+/**
+ * Before anything mounts.
+ *
+ * The three in-page surfaces ask the catalogue for every word they show. This
+ * line is the whole reason they get words rather than `[bannerActionInjection]`
+ * — and it was missing for one commit, which the browser caught and no unit
+ * test could: the unit tests install a resolver themselves, so the surfaces
+ * spoke Russian in the suite and identifiers on a real page.
+ *
+ * `tools/entry-resolver.test.ts` now fails the build when an entry point that
+ * reaches `t()` does not install one.
+ */
+useResolver((key, substitutions) => platform.message(key, substitutions))
 
 /**
  * Only the top frame shows a warning.

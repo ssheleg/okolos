@@ -1,3 +1,4 @@
+import { useResolver } from '@okolos/i18n'
 import { detectPlatform } from '@okolos/platform'
 import { openDb } from '@okolos/storage'
 import { renderPopup, type PopupState } from '@okolos/ui'
@@ -16,6 +17,17 @@ import '../pages.css'
 const LAST_CHECK_KEY = 'popup:lastCheck'
 
 const platform = detectPlatform()
+
+/**
+ * Before anything paints.
+ *
+ * This page's own strings are still literals — the catalogue reaches it through
+ * `@okolos/ui`, whose overlays are localised. Installing the resolver here is
+ * one line and makes the invariant true now rather than at the moment someone
+ * translates this screen and cannot see why it renders `[key]`.
+ */
+useResolver((key, substitutions) => platform.message(key, substitutions))
+
 const root = document.getElementById('root')
 
 let expanded = false

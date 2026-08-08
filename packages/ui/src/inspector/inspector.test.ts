@@ -4,6 +4,27 @@ import type { Evidence } from '@okolos/contracts'
 
 import { mountInspector, type InspectorHandlers } from './inspector.js'
 
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fromCatalogue, useResolver, type Catalogue } from '@okolos/i18n'
+
+/**
+ * The shipped Russian catalogue, because `default_locale` is `ru`.
+ *
+ * A fake would let a missing key pass here and reach a real page as
+ * `[bannerDismiss]`. Installing the real one makes every assertion below check
+ * two things: that the surface says the right thing, and that the catalogue
+ * has a message for the key it asked for.
+ */
+const CATALOGUE = JSON.parse(
+  readFileSync(
+    path.resolve(import.meta.dirname, '../../../../apps/extension/_locales/ru/messages.json'),
+    'utf8',
+  ),
+) as Catalogue
+
+useResolver(fromCatalogue(CATALOGUE))
+
 function evidence(overrides: Partial<Evidence> = {}): Evidence {
   return {
     kind: 'hidden-text',
@@ -50,11 +71,11 @@ describe('the evidence is the point', () => {
     // is being asked to judge the finding, and 'color-on-color' asks them to
     // learn our vocabulary first.
     expect(root.querySelector('[data-role=technique]')?.textContent).toContain(
-      'same colour as its background',
+      'того же цвета, что и фон',
     )
     expect(root.querySelector('[data-role=locator]')?.textContent).toContain('html > body > div')
-    expect(root.querySelector('[data-role=stage]')?.textContent).toMatch(/rules/i)
-    expect(root.querySelector('[data-role=stage]')?.textContent).toMatch(/high/i)
+    expect(root.querySelector('[data-role=stage]')?.textContent).toMatch(/правила/i)
+    expect(root.querySelector('[data-role=stage]')?.textContent).toMatch(/высокая/i)
   })
 
   it('falls back to the raw name for a technique it has no wording for', () => {
@@ -68,7 +89,7 @@ describe('the evidence is the point', () => {
   it('translates the signal names into something a person can weigh', () => {
     const handle = mountInspector(document, { evidence: [evidence()], confidence: 'high' }, handlers())
     expect(handle.root.querySelector('[data-role=why]')?.textContent).toContain(
-      'cancels earlier instructions',
+      'отменяет предыдущие инструкции',
     )
   })
 
@@ -76,7 +97,7 @@ describe('the evidence is the point', () => {
     const partial = evidence({ detail: { ...evidence().detail, partialScan: true } })
     const handle = mountInspector(document, { evidence: [partial], confidence: 'high' }, handlers())
     expect(handle.root.querySelector('[data-role=partial]')?.textContent).toContain(
-      'too large to check in full',
+      'слишком велика, чтобы проверить её целиком',
     )
   })
 
@@ -126,7 +147,7 @@ describe('when the evidence is gone', () => {
   it('says the page changed instead of showing an empty panel', () => {
     const handle = mountInspector(document, { evidence: [], confidence: 'high' }, handlers())
     expect(handle.root.querySelector('[data-role=empty]')?.textContent).toContain(
-      'page changed since this was found',
+      'Страница изменилась после находки',
     )
     expect(handle.root.querySelector('[data-role=rescan]')).not.toBeNull()
   })

@@ -4,6 +4,7 @@ import { renderInterstitial } from '@okolos/ui'
 import '../pages.css'
 
 import { appealLinkFor } from './appeal-link.js'
+import { settleContext, type BlockContext } from './context.js'
 
 /**
  * The page shown in place of a blocked one.
@@ -21,10 +22,22 @@ const platform = detectPlatform()
 useResolver((key, substitutions) => platform.message(key, substitutions))
 const root = document.getElementById('root')
 
-async function paint(): Promise<void> {
-  if (!root) return
+/**
+ * Set by the first thing the user does.
+ *
+ * The retry below repaints, and a repaint under someone's hand is worse than a
+ * vague source line — the same reasoning that put the leaks address field in a
+ * long-lived node rather than one the repaint rebuilds.
+ */
+let acted = false
+for (const event of ['pointerdown', 'keydown'] as const) {
+  document.addEventListener(event, () => {
+    acted = true
+  })
+}
 
-  const context = await platform.runtime.send('block/context', {}).catch(() => null)
+function paint(context: BlockContext | null): void {
+  if (!root) return
 
   root.replaceChildren(
     renderInterstitial(
@@ -60,4 +73,9 @@ async function paint(): Promise<void> {
   )
 }
 
-void paint()
+void settleContext(
+  () => platform.runtime.send('block/context', {}).catch(() => null),
+  paint,
+  (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  { abandoned: () => acted },
+)

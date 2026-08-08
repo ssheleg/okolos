@@ -3,6 +3,27 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { mountGate, type GateHandlers, type GateProps } from './gate.js'
 
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fromCatalogue, useResolver, type Catalogue } from '@okolos/i18n'
+
+/**
+ * The shipped Russian catalogue, because `default_locale` is `ru`.
+ *
+ * A fake would let a missing key pass here and reach a real page as
+ * `[bannerDismiss]`. Installing the real one makes every assertion below check
+ * two things: that the surface says the right thing, and that the catalogue
+ * has a message for the key it asked for.
+ */
+const CATALOGUE = JSON.parse(
+  readFileSync(
+    path.resolve(import.meta.dirname, '../../../../apps/extension/_locales/ru/messages.json'),
+    'utf8',
+  ),
+) as Catalogue
+
+useResolver(fromCatalogue(CATALOGUE))
+
 const PROPS: GateProps = {
   action: 'Submit the payment form',
   target: 'https://shop.test/checkout',
@@ -157,6 +178,6 @@ describe('when the page gives us less to work with', () => {
 
   it('says so plainly when the finding text is missing', () => {
     const { root } = mountGate(document, { ...PROPS, findings: [] }, handlers())
-    expect(query(root, 'finding')?.textContent).toMatch(/could not be described/i)
+    expect(query(root, 'finding')?.textContent).toMatch(/не удалось описать/i)
   })
 })

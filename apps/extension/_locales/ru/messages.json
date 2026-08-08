@@ -52,5 +52,227 @@
   },
   "blockContinueNote": {
     "message": "Продолжение запомнит этот сайт, чтобы больше не спрашивать, и запишет решение в журнал."
+  },
+  "actionDispute": {
+    "message": "Это неверно"
+  },
+  "bannerSeverityCritical": {
+    "message": "Критично"
+  },
+  "bannerSeverityMajor": {
+    "message": "Серьёзно"
+  },
+  "bannerSeverityMinor": {
+    "message": "Незначительно"
+  },
+  "bannerSeverityInfo": {
+    "message": "К сведению"
+  },
+  "bannerActionInjection": {
+    "message": "Показать"
+  },
+  "bannerActionLookalike": {
+    "message": "Показать сравнение"
+  },
+  "bannerActionClickfix": {
+    "message": "Уйти со страницы"
+  },
+  "bannerActionTechsupport": {
+    "message": "Закрыть страницу"
+  },
+  "bannerActionDownload": {
+    "message": "Удалить файл"
+  },
+  "bannerActionCredential": {
+    "message": "Уйти со страницы"
+  },
+  "bannerActionPassword": {
+    "message": "Сменить пароль"
+  },
+  "bannerRetry": {
+    "message": "Попробовать снова"
+  },
+  "bannerDismiss": {
+    "message": "Скрыть"
+  },
+  "inspectorTitle": {
+    "message": "Что было скрыто на этой странице"
+  },
+  "inspectorEmpty": {
+    "message": "Страница изменилась после находки, и доказательства больше нет."
+  },
+  "inspectorRescan": {
+    "message": "Проверить снова"
+  },
+  "inspectorPartial": {
+    "message": "Страница слишком велика, чтобы проверить её целиком, — найденного может быть больше перечисленного."
+  },
+  "inspectorKeep": {
+    "message": "Оставить обезвреженным"
+  },
+  "inspectorRestore": {
+    "message": "Вернуть страницу"
+  },
+  "inspectorNoText": {
+    "message": "(текст не сохранён)"
+  },
+  "inspectorWhy": {
+    "message": "Почему помечено: $SIGNALS$.",
+    "placeholders": {
+      "signals": {
+        "content": "$1"
+      }
+    }
+  },
+  "inspectorTechnique": {
+    "message": "Как было скрыто: $TECHNIQUES$.",
+    "placeholders": {
+      "techniques": {
+        "content": "$1"
+      }
+    }
+  },
+  "inspectorTechniqueUnknown": {
+    "message": "не указано"
+  },
+  "inspectorLocator": {
+    "message": "Где: $WHERE$",
+    "placeholders": {
+      "where": {
+        "content": "$1"
+      }
+    }
+  },
+  "inspectorLocatorUnknown": {
+    "message": "неизвестно"
+  },
+  "inspectorStage": {
+    "message": "Решено: $STAGE$, уверенность $CONFIDENCE$",
+    "placeholders": {
+      "stage": {
+        "content": "$1"
+      },
+      "confidence": {
+        "content": "$2"
+      }
+    }
+  },
+  "signalOverride": {
+    "message": "отменяет предыдущие инструкции"
+  },
+  "signalRoleAssignment": {
+    "message": "назначает ассистенту новую роль"
+  },
+  "signalVocative": {
+    "message": "обращается к ассистенту напрямую"
+  },
+  "signalSecrecy": {
+    "message": "просит ассистента скрыть это от вас"
+  },
+  "signalConditionalIdentity": {
+    "message": "говорит только с машиной («если ты ИИ…»)"
+  },
+  "signalToolInvocation": {
+    "message": "тянется к инструментам ассистента"
+  },
+  "signalSystemPrompt": {
+    "message": "выдаёт себя за системный слой"
+  },
+  "signalSensitiveTarget": {
+    "message": "просит доступы или коды"
+  },
+  "signalCharAnomaly": {
+    "message": "использует символы, невидимые читателю, но не модели"
+  },
+  "techniqueColorOnColor": {
+    "message": "того же цвета, что и фон"
+  },
+  "techniqueDisplayNone": {
+    "message": "убран из вёрстки"
+  },
+  "techniqueVisibilityHidden": {
+    "message": "сделан невидимым"
+  },
+  "techniqueOpacityZero": {
+    "message": "полностью прозрачен"
+  },
+  "techniqueFontSizeZero": {
+    "message": "сжат до нулевого размера"
+  },
+  "techniqueClip": {
+    "message": "обрезан до ничего"
+  },
+  "techniqueOffscreen": {
+    "message": "вынесен за экран"
+  },
+  "techniqueAriaHidden": {
+    "message": "скрыт от вспомогательных технологий"
+  },
+  "techniqueNonRendered": {
+    "message": "в части страницы, которая никогда не отображается"
+  },
+  "stageDiff": {
+    "message": "сравнение"
+  },
+  "stageRules": {
+    "message": "правила"
+  },
+  "stageModel": {
+    "message": "модель"
+  },
+  "stageFeed": {
+    "message": "список"
+  },
+  "stageInventory": {
+    "message": "опись"
+  },
+  "stageCorpus": {
+    "message": "корпус"
+  },
+  "confidenceCertain": {
+    "message": "точная"
+  },
+  "confidenceHigh": {
+    "message": "высокая"
+  },
+  "confidenceMedium": {
+    "message": "средняя"
+  },
+  "confidenceLow": {
+    "message": "низкая"
+  },
+  "gateAriaLabel": {
+    "message": "Действие удержано до вашего решения"
+  },
+  "gateTitle": {
+    "message": "Что-то попыталось действовать на этой странице"
+  },
+  "gateAction": {
+    "message": "Попытка: $ACTION$",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "gateTarget": {
+    "message": "Где: $TARGET$",
+    "placeholders": {
+      "target": {
+        "content": "$1"
+      }
+    }
+  },
+  "gateFindingUnknown": {
+    "message": "На этой странице есть неразобранная находка, которую не удалось описать."
+  },
+  "gateBlock": {
+    "message": "Заблокировать"
+  },
+  "gateAllowOnce": {
+    "message": "Разрешить один раз"
+  },
+  "gateShow": {
+    "message": "Показать инструкцию"
   }
 }

@@ -1,3 +1,5 @@
+import { t } from '@okolos/i18n'
+
 import { OVERLAY_TOKENS } from '../overlay-tokens.js'
 import { shadowMode } from '../shadow.js'
 import type { Confidence, Evidence } from '@okolos/contracts'
@@ -12,29 +14,59 @@ import type { Confidence, Evidence } from '@okolos/contracts'
  * shown verbatim rather than summarised.
  */
 
-/** Signal names as they appear in evidence detail, in words a person can weigh. */
-const SIGNAL_WORDING: Record<string, string> = {
-  override: 'cancels earlier instructions',
-  'role-assignment': 'tells the assistant who it now is',
-  vocative: 'addresses an assistant directly',
-  secrecy: 'asks the assistant to keep this from you',
-  'conditional-identity': 'speaks only to a machine ("if you are an AI…")',
-  'tool-invocation': "reaches for the assistant's tools",
-  'system-prompt': 'impersonates the system layer',
-  'sensitive-target': 'asks for credentials or codes',
-  'char-anomaly': 'uses characters invisible to a reader but not to a model',
+/**
+ * Signal and technique names, as keys rather than sentences.
+ *
+ * A signal id is a contract between the detectors and this panel; the sentence
+ * a person reads is a translation. Keeping ids here and words in `_locales`
+ * means adding a language never touches this file, and an id with no wording
+ * still falls back to the id — visible, which is the point.
+ */
+const SIGNAL_KEY: Record<string, string> = {
+  override: 'signalOverride',
+  'role-assignment': 'signalRoleAssignment',
+  vocative: 'signalVocative',
+  secrecy: 'signalSecrecy',
+  'conditional-identity': 'signalConditionalIdentity',
+  'tool-invocation': 'signalToolInvocation',
+  'system-prompt': 'signalSystemPrompt',
+  'sensitive-target': 'signalSensitiveTarget',
+  'char-anomaly': 'signalCharAnomaly',
 }
 
-const TECHNIQUE_WORDING: Record<string, string> = {
-  'color-on-color': 'same colour as its background',
-  'display-none': 'removed from the layout',
-  'visibility-hidden': 'made invisible',
-  'opacity-zero': 'fully transparent',
-  'font-size-zero': 'shrunk to no size',
-  clip: 'clipped to nothing',
-  offscreen: 'moved off the screen',
-  'aria-hidden': 'hidden from assistive technology',
-  'non-rendered': 'in a part of the page that never renders',
+const TECHNIQUE_KEY: Record<string, string> = {
+  'color-on-color': 'techniqueColorOnColor',
+  'display-none': 'techniqueDisplayNone',
+  'visibility-hidden': 'techniqueVisibilityHidden',
+  'opacity-zero': 'techniqueOpacityZero',
+  'font-size-zero': 'techniqueFontSizeZero',
+  clip: 'techniqueClip',
+  offscreen: 'techniqueOffscreen',
+  'aria-hidden': 'techniqueAriaHidden',
+  'non-rendered': 'techniqueNonRendered',
+}
+
+/**
+ * Which stage decided, and how sure it was.
+ *
+ * These were rendered raw — "Decided by: rules (high confidence)" — in a
+ * product whose default locale is Russian. An enum value on screen is an
+ * identifier shown instead of a name, which the brand pack forbids by name.
+ */
+const STAGE_KEY: Record<string, string> = {
+  diff: 'stageDiff',
+  rules: 'stageRules',
+  model: 'stageModel',
+  feed: 'stageFeed',
+  inventory: 'stageInventory',
+  corpus: 'stageCorpus',
+}
+
+const CONFIDENCE_KEY: Record<Confidence, string> = {
+  certain: 'confidenceCertain',
+  high: 'confidenceHigh',
+  medium: 'confidenceMedium',
+  low: 'confidenceLow',
 }
 
 export interface InspectorProps {
@@ -89,19 +121,19 @@ function panel(doc: Document, props: InspectorProps, handlers: InspectorHandlers
   const el = doc.createElement('section')
   el.setAttribute('data-role', 'panel')
   el.setAttribute('role', 'dialog')
-  el.setAttribute('aria-label', 'What was hidden on this page')
+  el.setAttribute('aria-label', t('inspectorTitle'))
   el.tabIndex = -1
 
   const title = doc.createElement('h2')
-  title.textContent = 'What was hidden on this page'
+  title.textContent = t('inspectorTitle')
   el.append(title)
 
   if (props.evidence.length === 0) {
     // The page mutated out from under the finding. Saying so beats an empty
     // panel, which would read as "there was nothing after all".
     el.append(
-      text(doc, 'empty', 'The page changed since this was found, so the evidence is gone.'),
-      button(doc, 'rescan', 'Scan again', handlers.onClose),
+      text(doc, 'empty', t('inspectorEmpty')),
+      button(doc, 'rescan', t('inspectorRescan'), handlers.onClose),
     )
     return el
   }
@@ -112,11 +144,7 @@ function panel(doc: Document, props: InspectorProps, handlers: InspectorHandlers
 
   if (props.evidence.some((e) => e.detail.partialScan === true)) {
     el.append(
-      text(
-        doc,
-        'partial',
-        'This page was too large to check in full, so there may be more than what is listed here.',
-      ),
+      text(doc, 'partial', t('inspectorPartial')),
     )
   }
 
@@ -132,9 +160,9 @@ function panel(doc: Document, props: InspectorProps, handlers: InspectorHandlers
   const actions = doc.createElement('div')
   actions.setAttribute('data-role', 'actions')
   actions.append(
-    button(doc, 'keep', 'Keep it neutralised', handlers.onKeep, true),
-    button(doc, 'restore', 'Restore the page', handlers.onRestore),
-    button(doc, 'dispute', 'This is wrong', handlers.onDispute),
+    button(doc, 'keep', t('inspectorKeep'), handlers.onKeep, true),
+    button(doc, 'restore', t('inspectorRestore'), handlers.onRestore),
+    button(doc, 'dispute', t('actionDispute'), handlers.onDispute),
   )
   el.append(actions)
 
@@ -154,23 +182,31 @@ function evidenceBlock(doc: Document, item: Evidence, confidence: Confidence): H
   const snippet = doc.createElement('pre')
   snippet.setAttribute('data-role', 'snippet')
   // Verbatim, not summarised: a paraphrase of an injection is not evidence.
-  snippet.textContent = item.snippet ?? '(no text captured)'
+  snippet.textContent = item.snippet ?? t('inspectorNoText')
 
   const signals = String(item.detail.signals ?? '')
     .split(',')
     .filter(Boolean)
-    .map((s) => SIGNAL_WORDING[s] ?? s)
+    .map((signal) => (SIGNAL_KEY[signal] ? t(SIGNAL_KEY[signal] as string) : signal))
   const concealment = String(item.detail.concealment ?? '')
     .split(',')
     .filter(Boolean)
-    .map((c) => TECHNIQUE_WORDING[c] ?? c)
+    .map((how) => (TECHNIQUE_KEY[how] ? t(TECHNIQUE_KEY[how] as string) : how))
 
   block.append(
     snippet,
-    text(doc, 'why', signals.length > 0 ? `Why it was flagged: ${signals.join('; ')}.` : ''),
-    text(doc, 'technique', `How it was hidden: ${concealment.join('; ') || 'not stated'}.`),
-    text(doc, 'locator', `Where: ${item.locator ?? 'unknown'}`),
-    text(doc, 'stage', `Decided by: ${item.stage} (${confidence} confidence)`),
+    text(doc, 'why', signals.length > 0 ? t('inspectorWhy', signals.join('; ')) : ''),
+    text(
+      doc,
+      'technique',
+      t('inspectorTechnique', concealment.join('; ') || t('inspectorTechniqueUnknown')),
+    ),
+    text(doc, 'locator', t('inspectorLocator', item.locator ?? t('inspectorLocatorUnknown'))),
+    text(
+      doc,
+      'stage',
+      t('inspectorStage', t(STAGE_KEY[item.stage] ?? item.stage), t(CONFIDENCE_KEY[confidence])),
+    ),
   )
   return block
 }

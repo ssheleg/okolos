@@ -97,7 +97,7 @@ self-audit panel.
 - **Status note:** built for the injection variant only
 - **Used by:** FLW-02, FLW-05, FLW-06, FLW-07, FLW-08, FLW-09, FLW-10
 - **Purpose:** speak at the moment of the decision, inside the page, without stealing the page
-- **Elements:** severity icon + label; one-sentence plain-language reason; **one primary action per variant**; secondary "Show me" → SCR-04 where applicable; "This is wrong"; dismiss. Variants: `injection`, `lookalike`, `clickfix` (blocking), `techsupport`, `download`, `credential`, `password`
+- **Elements:** severity icon + label; one-sentence plain-language reason; **one primary action per variant**; secondary "Показать" → SCR-04 where applicable; "Это неверно"; dismiss. Variants: `injection`, `lookalike`, `clickfix` (blocking), `techsupport`, `download`, `credential`, `password`
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|
@@ -113,7 +113,7 @@ self-audit panel.
 ### SCR-04: Finding inspector
 - **Used by:** FLW-02 (inspect), FLW-03 (from the gate)
 - **Purpose:** show the evidence so the user can judge the verdict instead of trusting it
-- **Elements:** the concealed text verbatim; concealment technique; DOM location; which stage fired and its confidence; neutralised/restored toggle; "This is wrong"; **primary action: "Keep it neutralised"**; `[data-role=restore-note]` — what a restore could not put back, shown above the buttons when it could not finish
+- **Elements:** the concealed text verbatim; concealment technique; DOM location; which stage fired and its confidence; neutralised/restored toggle; "Это неверно"; **primary action: "Оставить обезвреженным"**; `[data-role=restore-note]` — what a restore could not put back, shown above the buttons when it could not finish
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|
@@ -129,7 +129,7 @@ self-audit panel.
 ### SCR-05: Block interstitial
 - **Used by:** FLW-04
 - **Purpose:** replace a known-malicious page and make the override honest
-- **Elements:** what was blocked; the verdict's source (feed name, entry date); **primary action: "Назад"**; secondary "Всё равно продолжить" (deliberate, states that the exception is remembered and journalled); "Это мой сайт" → SCR-14, **with the blocked domain already in the link** so the owner does not retype what they were just shown; only the host travels, never the blocked URL's path or query
+- **Elements:** what was blocked; the verdict's source (feed name, entry date), which fills in on a retry if the background was not ready; **primary action: "Назад"**; secondary "Всё равно продолжить" (deliberate, states that the exception is remembered and journalled); "Это мой сайт" → SCR-14, **with the blocked domain already in the link** so the owner does not retype what they were just shown; only the host travels, never the blocked URL's path or query
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|
@@ -144,7 +144,7 @@ self-audit panel.
 ### SCR-06: Agent action gate
 - **Used by:** FLW-03
 - **Purpose:** put a human decision between a poisoned page and a sensitive action
-- **Elements:** the action being attempted; the unresolved finding in one line; **primary action: "Block"**; secondary "Allow once"; "Show the injection" → SCR-04; timeout notice
+- **Elements:** the action being attempted; the unresolved finding in one line; **primary action: "Заблокировать"**; secondary "Разрешить один раз"; "Показать инструкцию" → SCR-04; timeout notice
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|

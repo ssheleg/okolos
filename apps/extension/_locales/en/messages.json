@@ -52,5 +52,227 @@
   },
   "blockContinueNote": {
     "message": "Continuing remembers this site so you are not asked again, and records the decision in your journal."
+  },
+  "actionDispute": {
+    "message": "This is wrong"
+  },
+  "bannerSeverityCritical": {
+    "message": "Critical"
+  },
+  "bannerSeverityMajor": {
+    "message": "Serious"
+  },
+  "bannerSeverityMinor": {
+    "message": "Minor"
+  },
+  "bannerSeverityInfo": {
+    "message": "For information"
+  },
+  "bannerActionInjection": {
+    "message": "Show me"
+  },
+  "bannerActionLookalike": {
+    "message": "Show the comparison"
+  },
+  "bannerActionClickfix": {
+    "message": "Leave this page"
+  },
+  "bannerActionTechsupport": {
+    "message": "Close this page"
+  },
+  "bannerActionDownload": {
+    "message": "Discard the file"
+  },
+  "bannerActionCredential": {
+    "message": "Leave this page"
+  },
+  "bannerActionPassword": {
+    "message": "Change password"
+  },
+  "bannerRetry": {
+    "message": "Try again"
+  },
+  "bannerDismiss": {
+    "message": "Dismiss"
+  },
+  "inspectorTitle": {
+    "message": "What was hidden on this page"
+  },
+  "inspectorEmpty": {
+    "message": "The page changed since this was found, so the evidence is gone."
+  },
+  "inspectorRescan": {
+    "message": "Scan again"
+  },
+  "inspectorPartial": {
+    "message": "This page was too large to check in full, so there may be more than what is listed here."
+  },
+  "inspectorKeep": {
+    "message": "Keep it neutralised"
+  },
+  "inspectorRestore": {
+    "message": "Restore the page"
+  },
+  "inspectorNoText": {
+    "message": "(no text captured)"
+  },
+  "inspectorWhy": {
+    "message": "Why it was flagged: $SIGNALS$.",
+    "placeholders": {
+      "signals": {
+        "content": "$1"
+      }
+    }
+  },
+  "inspectorTechnique": {
+    "message": "How it was hidden: $TECHNIQUES$.",
+    "placeholders": {
+      "techniques": {
+        "content": "$1"
+      }
+    }
+  },
+  "inspectorTechniqueUnknown": {
+    "message": "not stated"
+  },
+  "inspectorLocator": {
+    "message": "Where: $WHERE$",
+    "placeholders": {
+      "where": {
+        "content": "$1"
+      }
+    }
+  },
+  "inspectorLocatorUnknown": {
+    "message": "unknown"
+  },
+  "inspectorStage": {
+    "message": "Decided by: $STAGE$, $CONFIDENCE$ confidence",
+    "placeholders": {
+      "stage": {
+        "content": "$1"
+      },
+      "confidence": {
+        "content": "$2"
+      }
+    }
+  },
+  "signalOverride": {
+    "message": "cancels earlier instructions"
+  },
+  "signalRoleAssignment": {
+    "message": "tells the assistant who it now is"
+  },
+  "signalVocative": {
+    "message": "addresses an assistant directly"
+  },
+  "signalSecrecy": {
+    "message": "asks the assistant to keep this from you"
+  },
+  "signalConditionalIdentity": {
+    "message": "speaks only to a machine (\"if you are an AI…\")"
+  },
+  "signalToolInvocation": {
+    "message": "reaches for the assistant's tools"
+  },
+  "signalSystemPrompt": {
+    "message": "impersonates the system layer"
+  },
+  "signalSensitiveTarget": {
+    "message": "asks for credentials or codes"
+  },
+  "signalCharAnomaly": {
+    "message": "uses characters invisible to a reader but not to a model"
+  },
+  "techniqueColorOnColor": {
+    "message": "same colour as its background"
+  },
+  "techniqueDisplayNone": {
+    "message": "removed from the layout"
+  },
+  "techniqueVisibilityHidden": {
+    "message": "made invisible"
+  },
+  "techniqueOpacityZero": {
+    "message": "fully transparent"
+  },
+  "techniqueFontSizeZero": {
+    "message": "shrunk to no size"
+  },
+  "techniqueClip": {
+    "message": "clipped to nothing"
+  },
+  "techniqueOffscreen": {
+    "message": "moved off the screen"
+  },
+  "techniqueAriaHidden": {
+    "message": "hidden from assistive technology"
+  },
+  "techniqueNonRendered": {
+    "message": "in a part of the page that never renders"
+  },
+  "stageDiff": {
+    "message": "a comparison"
+  },
+  "stageRules": {
+    "message": "rules"
+  },
+  "stageModel": {
+    "message": "a model"
+  },
+  "stageFeed": {
+    "message": "a list"
+  },
+  "stageInventory": {
+    "message": "the inventory"
+  },
+  "stageCorpus": {
+    "message": "the corpus"
+  },
+  "confidenceCertain": {
+    "message": "certain"
+  },
+  "confidenceHigh": {
+    "message": "high"
+  },
+  "confidenceMedium": {
+    "message": "medium"
+  },
+  "confidenceLow": {
+    "message": "low"
+  },
+  "gateAriaLabel": {
+    "message": "An action was held for your decision"
+  },
+  "gateTitle": {
+    "message": "Something tried to act on this page"
+  },
+  "gateAction": {
+    "message": "Attempted: $ACTION$",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "gateTarget": {
+    "message": "Where: $TARGET$",
+    "placeholders": {
+      "target": {
+        "content": "$1"
+      }
+    }
+  },
+  "gateFindingUnknown": {
+    "message": "This page has an unresolved finding that could not be described."
+  },
+  "gateBlock": {
+    "message": "Block"
+  },
+  "gateAllowOnce": {
+    "message": "Allow once"
+  },
+  "gateShow": {
+    "message": "Show the injection"
   }
 }

@@ -1,3 +1,5 @@
+import { t } from '@okolos/i18n'
+
 import { OVERLAY_TOKENS } from '../overlay-tokens.js'
 import { shadowMode } from '../shadow.js'
 
@@ -66,20 +68,20 @@ function dialog(doc: Document, props: GateProps, handlers: GateHandlers): HTMLEl
   el.setAttribute('data-role', 'dialog')
   el.setAttribute('role', 'dialog')
   el.setAttribute('aria-modal', 'true')
-  el.setAttribute('aria-label', 'An action was held for your decision')
+  el.setAttribute('aria-label', t('gateAriaLabel'))
   el.tabIndex = -1
 
   const title = doc.createElement('h2')
-  title.textContent = 'Something tried to act on this page'
+  title.textContent = t('gateTitle')
   el.append(title)
 
-  el.append(text(doc, 'action', `Attempted: ${props.action}`))
-  if (props.target) el.append(text(doc, 'target', `Where: ${props.target}`))
+  el.append(text(doc, 'action', t('gateAction', props.action)))
+  if (props.target) el.append(text(doc, 'target', t('gateTarget', props.target)))
 
   if (props.findings.length === 0) {
     // Holding an action and then failing to say why is the worst of both: the
     // user is interrupted and none the wiser.
-    el.append(text(doc, 'finding', 'This page has an unresolved finding that could not be described.'))
+    el.append(text(doc, 'finding', t('gateFindingUnknown')))
   } else {
     for (const finding of props.findings) el.append(text(doc, 'finding', finding))
   }
@@ -104,9 +106,9 @@ function dialog(doc: Document, props: GateProps, handlers: GateHandlers): HTMLEl
   const actions = doc.createElement('div')
   actions.setAttribute('data-role', 'actions')
   actions.append(
-    button(doc, 'block', 'Block', once(handlers.onBlock), true),
-    button(doc, 'allow', 'Allow once', once(handlers.onAllowOnce)),
-    button(doc, 'show', 'Show the injection', handlers.onShowInjection),
+    button(doc, 'block', t('gateBlock'), once(handlers.onBlock), true),
+    button(doc, 'allow', t('gateAllowOnce'), once(handlers.onAllowOnce)),
+    button(doc, 'show', t('gateShow'), handlers.onShowInjection),
   )
   el.append(actions)
 

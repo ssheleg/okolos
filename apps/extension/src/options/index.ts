@@ -1,6 +1,7 @@
 import { analysePackage, type InventoryChange, type PackageReport } from '@okolos/core-extensions'
 import { buildChecklist, type StepProgress } from '@okolos/core-recovery'
 import { diffSince } from '@okolos/core-queue'
+import { useResolver } from '@okolos/i18n'
 import { detectPlatform } from '@okolos/platform'
 import { buildQueue } from '@okolos/core-queue'
 import { toQueueItems } from '../popup/state.js'
@@ -34,6 +35,17 @@ import '../pages.css'
  */
 
 const platform = detectPlatform()
+
+/**
+ * Before anything paints.
+ *
+ * This page's own strings are still literals — the catalogue reaches it through
+ * `@okolos/ui`, whose overlays are localised. Installing the resolver here is
+ * one line and makes the invariant true now rather than at the moment someone
+ * translates this screen and cannot see why it renders `[key]`.
+ */
+useResolver((key, substitutions) => platform.message(key, substitutions))
+
 const root = document.getElementById('root')
 
 /**

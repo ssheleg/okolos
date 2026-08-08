@@ -302,3 +302,57 @@ describe('documents do not carry counts that are stale by the next commit', () =
     expect(readme).toContain('pnpm test')
   })
 })
+
+describe('the brand pack states facts, and a fact is checkable', () => {
+  /**
+   * `docs/brand/facts.md` is the source for store copy and interface strings, so
+   * a number that goes stale there goes stale on a listing page nobody rereads.
+   * Its own closing rule says every number is taken by running a command; this
+   * is that command.
+   */
+  const facts = readFileSync(path.join(root, 'docs/brand/facts.md'), 'utf8')
+
+  it('counts packages and apps as the tree actually has them', () => {
+    const packages = readdirSync(path.join(root, 'packages')).length
+    const apps = readdirSync(path.join(root, 'apps')).length
+    expect(facts).toContain(`| Пакетов | ${packages} |`)
+    expect(facts).toContain(`| Приложений | ${apps} |`)
+  })
+
+  it('counts e2e spec files rather than remembering them', () => {
+    const specs = readdirSync(path.join(root, 'e2e')).filter((f) => f.endsWith('.spec.ts')).length
+    expect(facts).toContain(`${specs} файлов`)
+  })
+
+  it('states the retention the code enforces', () => {
+    const schema = readFileSync(path.join(root, 'packages/storage/src/schema.ts'), 'utf8')
+    const days = /journal:\s*(\d+)/.exec(schema)?.[1]
+    expect(days, 'retention not found in the schema').toBeDefined()
+    expect(facts).toContain(`дольше ${days} дней`)
+  })
+
+  it('lists every network purpose the audited path can carry, and no others', () => {
+    // The claim "there are no others" is the whole point of the table.
+    const request = readFileSync(path.join(root, 'packages/net/src/request.ts'), 'utf8')
+    const purposes = new Set(
+      [...request.matchAll(/'(leak-lookup|file-hash|feed-update|model-update|domain-status)'/g)].map(
+        (m) => m[1] as string,
+      ),
+    )
+    expect(purposes.size, 'no purposes found — the extraction broke').toBeGreaterThanOrEqual(4)
+    for (const purpose of purposes) {
+      expect(facts, `purpose ${purpose} is not in the brand pack`).toContain(`\`${purpose}\``)
+    }
+  })
+
+  it('names the same permissions the manifest requests', () => {
+    const manifest = JSON.parse(
+      readFileSync(path.join(root, 'apps/extension/manifest.chrome.json'), 'utf8'),
+    ) as { permissions: string[] }
+    for (const permission of manifest.permissions) {
+      expect(facts, `permission ${permission} is not declared in the brand pack`).toContain(
+        `\`${permission}\``,
+      )
+    }
+  })
+})

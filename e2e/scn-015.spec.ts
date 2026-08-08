@@ -31,6 +31,60 @@ import { expect, test } from './fixtures.js'
  * assertion timeouts stay modest so a real failure still reports as one.
  */
 
+/**
+ * Reads the panel and turns a timeout into a diagnosis.
+ *
+ * This file has carried an intermittent failure that always looked the same —
+ * a fifteen-second wait for an element that never came — and said nothing
+ * about which of several causes produced it. The three are now
+ * distinguishable from the DOM alone, without logging, which matters because
+ * logging inside the product moves the race it is meant to observe:
+ *
+ * - `needs`   — the check was pressed with no usable address in the field;
+ * - `status`  — the check started and the answer never arrived;
+ * - `idle` with neither — the press never reached the handler at all.
+ */
+async function diagnose(page: import('@playwright/test').Page): Promise<string> {
+  const state = await page.evaluate(() => {
+    const panel = document.querySelector('[data-role=leaks]')
+    const has = (role: string) => panel?.querySelector(`[data-role=${role}]`) !== null
+    const fields = [...document.querySelectorAll('[data-role=address]')]
+    const field = fields[0]
+    return {
+      needs: has('needs'),
+      checking: has('status'),
+      idle: has('idle'),
+      ready: has('coverage'),
+      address: field instanceof HTMLInputElement ? field.value : '(no field)',
+      // More than one means the page module was evaluated twice, and the
+      // button the click reached belongs to a different copy than the field
+      // the fill bound to. Counted because it is the one remaining explanation
+      // for a stable node holding nothing after a fill that reported success.
+      fieldCount: fields.length,
+      panels: document.querySelectorAll('[data-role=leaks]').length,
+    }
+  })
+  const where = `field held "${state.address}", ${state.fieldCount} field(s), ${state.panels} panel(s)`
+  if (state.needs) return `the check was refused for want of an address (${where})`
+  if (state.checking) return `the check started and never answered (${where})`
+  if (state.ready) return 'the check finished but the expected group is absent — a product bug, not a race'
+  if (state.idle) return `the panel never left idle: the press did not reach the handler (${where})`
+  return `the leaks panel is not on the page at all (${where})`
+}
+
+/** Awaits an assertion and, if it times out, says what the page was doing. */
+async function expectWithDiagnosis(
+  page: import('@playwright/test').Page,
+  assertion: Promise<void>,
+): Promise<void> {
+  try {
+    await assertion
+  } catch (cause) {
+    const why = await diagnose(page)
+    throw new Error(`${String(cause).split('\n')[0]}\n\nDiagnosis: ${why}`)
+  }
+}
+
 /** The body the single Cavalier stub returns. A test that needs another sets it. */
 let cavalierBody = '{"stealers":[]}'
 test.beforeEach(async ({ context }) => {
@@ -72,7 +126,10 @@ test('a source that cannot run is named, and the total says it may be incomplete
   await page.locator('[data-role=leaks] [data-role=check]').click()
 
   const coverage = page.locator('[data-role=leaks] [data-role=coverage]')
-  await expect(coverage).toContainText('Have I Been Pwned', { timeout: 15_000 })
+  await expectWithDiagnosis(
+    page,
+    expect(coverage).toContainText('Have I Been Pwned', { timeout: 15_000 }),
+  )
   await expect(coverage).toContainText('may be incomplete')
 })
 
@@ -105,7 +162,7 @@ test('a recent infection is separated from an old breach, and each carries its r
   await page.locator('[data-role=leaks] [data-role=check]').click()
 
   const fresh = page.locator('[data-role=leak-group][data-urgency=fresh-infostealer]')
-  await expect(fresh).toHaveCount(1, { timeout: 15_000 })
+  await expectWithDiagnosis(page, expect(fresh).toHaveCount(1, { timeout: 15_000 }))
   await expect(fresh.locator('[data-role=group-why]')).toContainText('session cookies')
 
   // Cavalier names no site, so the panel says so instead of guessing a login page.
@@ -150,4 +207,37 @@ test('the address field survives a repaint instead of being rebuilt', async ({
 
   await expect(page.locator('[data-role=address][data-identity=original]')).toHaveCount(1)
   await expect(field).toHaveValue('someone@example.test')
+})
+
+test('pressing Check now with nothing typed says so, instead of nothing', async ({
+  context,
+  extensionId,
+}) => {
+  // Two things at once. It is the behaviour a user meets when they press the
+  // button too early — and it is the reason the flake in this file cost three
+  // days: a check that could not run left the page identical to how it
+  // started, so every failure looked like the starting state and said nothing
+  // about which of a dozen causes it was.
+  const page = await context.newPage()
+  await page.goto(`chrome-extension://${extensionId}/options.html`)
+
+  await page.locator('[data-role=leaks] [data-role=check]').click()
+
+  await expect(page.locator('[data-role=leaks] [data-role=needs]')).toContainText(
+    'Enter the email address',
+  )
+  // And the refusal is recoverable: the control is still there.
+  await expect(page.locator('[data-role=leaks] [data-role=check]')).toBeVisible()
+})
+
+test('an address that is not one is refused by name', async ({ context, extensionId }) => {
+  const page = await context.newPage()
+  await page.goto(`chrome-extension://${extensionId}/options.html`)
+
+  await page.locator('[data-role=address]').fill('not-an-address')
+  await page.locator('[data-role=leaks] [data-role=check]').click()
+
+  await expect(page.locator('[data-role=leaks] [data-role=needs]')).toContainText(
+    'does not look like an email address',
+  )
 })

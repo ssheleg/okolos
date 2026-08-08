@@ -178,6 +178,7 @@ self-audit panel.
   |-------|---------|-------------|----------|
   | loading | check running | - | per-source progress, partial results shown as they arrive |
   | empty | no sources monitored | - | prompt to add an email or phone, naming what is sent — the address itself, not a hash |
+  | refused | Check now pressed with no usable address | - | states why nothing was sent (`[data-role=needs]`) and keeps the control, so the press is never silent |
   | error | a source failed | - | that row states unavailable + retry; other results stand |
   | success | results present | - | freshest first, historical collapsed |
 - **Behavior notes:** the idle state names what is sent, and it is **the address itself** — Hudson Rock's Cavalier and HIBP's breached-account endpoint answer to nothing less, so a screen implying a hashed lookup would be a false privacy claim on the surface where the user decides. The password check is the k-anonymous one and is kept distinct in the copy. The network choke point permits the address only because the request declares `carries: 'address'`, and the self-audit journal records that it left.

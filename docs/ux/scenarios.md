@@ -314,7 +314,7 @@ See [foundation.md](foundation.md) → Personas.
   2. User sees results split into fresh infostealer hits and historical breaches -> system shows data classes, dates, and the source for each entry
   3. User reads the coverage line -> system names every source checked, every source that failed, and when each was last updated
 - **Expected result:** the user knows what is exposed and, equally, what was not checked
-- **Alt paths:** no sources configured -> the empty state prompts to add an email or phone and states exactly what will and will not be sent — **and what is sent is the address itself**: Hudson Rock's Cavalier and HIBP's breached-account endpoint answer to nothing less, so the leak check is not k-anonymous and the empty state may not imply that it is (the password check is a separate, k-anonymous one)
+- **Alt paths:** pressing Check now with an empty or malformed address -> the panel **states the refusal** and keeps the control, rather than redrawing identically; no sources configured -> the empty state prompts to add an email or phone and states exactly what will and will not be sent — **and what is sent is the address itself**: Hudson Rock's Cavalier and HIBP's breached-account endpoint answer to nothing less, so the leak check is not k-anonymous and the empty state may not imply that it is (the password check is a separate, k-anonymous one)
 - **UI elements:** monitored sources list, results grouped fresh/historical, per-entry data classes, coverage line, per-source retry
 - **States covered:** loading, empty, error, success
 - **Errors & recovery:** a source is unreachable or rate-limited -> that row states unavailable with a retry; results from other sources stand and the summary never implies full coverage

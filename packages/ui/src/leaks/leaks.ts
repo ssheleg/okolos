@@ -21,7 +21,8 @@ export const HIBP_ATTRIBUTION =
   'Breach data from Have I Been Pwned, used under CC BY 4.0.'
 
 export type LeaksState =
-  | { readonly kind: 'idle' }
+  /** `needs` carries a refusal to state, so pressing the button is never silent. */
+  | { readonly kind: 'idle'; readonly needs?: string }
   | { readonly kind: 'checking' }
   | { readonly kind: 'ready'; readonly inventory: LeakInventory; readonly now: string }
   | { readonly kind: 'error'; readonly message: string }
@@ -56,6 +57,11 @@ export function renderLeaks(doc: Document, state: LeaksState, handlers: LeaksHan
         'idle',
         'Nothing has been looked up yet. Checking sends your address to the sources named below — they answer to nothing less. Your passwords are never sent: that check uses a partial hash and is separate.',
       ),
+      // A button that does nothing is worse than one that refuses. Pressing
+      // "Check now" without a usable address used to return in silence, which
+      // reads as a broken product — and hid a real defect for three days
+      // because the page looked exactly as it had before the click.
+      ...(state.needs ? [text(doc, 'needs', state.needs)] : []),
       button(doc, 'check', 'Check now', handlers.onCheck, true),
       attribution(doc),
     )

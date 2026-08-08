@@ -14,6 +14,7 @@
 - `leak`
 - `leak-actions`
 - `idle`
+- `needs`
 - `check`
 - `status`
 - `error`

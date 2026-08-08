@@ -179,3 +179,24 @@ describe('the repair each entry offers', () => {
     expect(role(el, 'resolve')?.textContent).toBe('Mark resolved')
   })
 })
+
+describe('a press that cannot be honoured', () => {
+  it('says why, rather than looking like a broken button', () => {
+    // The idle state used to be the whole answer to a press with no address:
+    // the page redrew identically and nothing was said. A user cannot tell
+    // that from a button that does not work, and neither could a test — a real
+    // defect hid behind a fifteen-second timeout for three days because the
+    // failure looked exactly like the starting state.
+    const el = render({ kind: 'idle', needs: 'Enter the email address you want checked.' })
+    expect(role(el, 'needs')?.textContent).toMatch(/enter the email address/i)
+  })
+
+  it('says nothing extra when there is nothing to say', () => {
+    expect(role(render({ kind: 'idle' }), 'needs')).toBeNull()
+  })
+
+  it('keeps the check available so the refusal is recoverable', () => {
+    const el = render({ kind: 'idle', needs: 'Enter the email address you want checked.' })
+    expect(role(el, 'check')).not.toBeNull()
+  })
+})

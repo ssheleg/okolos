@@ -84,7 +84,22 @@ function leaksSection(): HTMLElement {
     renderLeaks(document, leaks, {
       onCheck: () => {
         void (async () => {
-          if (!address.includes('@')) return
+          // Silence was the old answer here, and it is the worst one: the
+          // page looks exactly as it did before the press, so the user cannot
+          // tell a refusal from a broken button — and neither could a test,
+          // which is how a real defect stayed hidden behind a 15-second
+          // timeout.
+          if (!address.includes('@')) {
+            leaks = {
+              kind: 'idle',
+              needs:
+                address.trim() === ''
+                  ? 'Enter the email address you want checked, then press Check now.'
+                  : 'That does not look like an email address, so nothing was sent.',
+            }
+            await paintCurrent()
+            return
+          }
           leaks = { kind: 'checking' }
           await paintCurrent()
           try {

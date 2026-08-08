@@ -440,3 +440,57 @@ describe('the privacy policy describes the code, not an intention', () => {
     expect(policy).toMatch(/адрес почты отправляется целиком/i)
   })
 })
+
+describe('the disclosure policy matches the limits the product records', () => {
+  /**
+   * A security product's disclosure policy has two ways to fail. It can promise
+   * a boundary the code does not hold — which turns a reporter's correct
+   * finding into an argument. Or it can declare a limit out of scope that the
+   * product never actually recorded, which is how a real defect gets waved off.
+   *
+   * Both are checked against the scenarios, because that is where the limits
+   * are written and where they are kept true.
+   */
+  const policy = readFileSync(path.join(root, 'SECURITY.md'), 'utf8')
+  const scenarios = readFileSync(path.join(root, 'docs/ux/scenarios.md'), 'utf8')
+
+  it('names a private channel and no public one', () => {
+    expect(policy).toMatch(/security\/advisories\/new/)
+    expect(policy, 'a policy that invites a public issue publishes the defect').toMatch(
+      /[Нн]е заводите публичный issue/,
+    )
+  })
+
+  it('states when a reporter hears back, not when a fix ships', () => {
+    // Naming a fix date before the cause is understood is either a lie or a
+    // rushed patch. Naming a response time is a promise that can be kept.
+    expect(policy).toMatch(/рабочих дн/)
+  })
+
+  it('declares out of scope only limits the scenarios actually record', () => {
+    // Every "not a vulnerability" must be traceable to a written decision.
+    for (const [claim, scenario] of [
+      ['fetch', 'SCN-010'],
+      ['navigator.webdriver', 'SCN-010'],
+      ['два языка', 'SCN-003'],
+    ] as const) {
+      expect(policy, `${claim} is excluded without citing where it was decided`).toContain(scenario)
+    }
+    // Inside the scenario's own block rather than within N characters of the
+    // words: the limit's text is long, and a distance is a guess about how long
+    // it will stay.
+    const block = scenarios.split('### SCN-010:')[1]?.split('\n### SCN-')[0] ?? ''
+    expect(block, 'SCN-010 is not in the scenarios at all').not.toBe('')
+    expect(block, 'SCN-010 no longer records the fetch limit the policy cites').toMatch(/fetch/)
+    expect(block, 'SCN-010 no longer records the automation limit').toMatch(/webdriver/i)
+  })
+
+  it('points at the privacy policy for what leaves, rather than restating it', () => {
+    // Two lists of destinations is two lists that disagree.
+    expect(policy).toContain('docs/privacy.md')
+  })
+
+  it('promises no bounty it has no money for', () => {
+    expect(policy).toMatch(/[Нн]аграды нет/)
+  })
+})

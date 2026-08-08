@@ -188,12 +188,12 @@ See [foundation.md](foundation.md) → Personas.
   2. User reads why -> system names the feed that produced the verdict and the entry's date
   3. User clicks "Go back" -> system returns to the previous page
 - **Expected result:** the malicious page never renders and the user understands on whose authority it was blocked
-- **Alt paths:** user clicks "Continue anyway" -> system states that an exception will be remembered and journalled, then loads the page; user clicks "I own this site" -> system opens the public domain status page
+- **Alt paths:** user clicks "Continue anyway" -> system states that an exception will be remembered and journalled, then loads the page; user clicks "I own this site" -> system opens the public domain status page with the blocked domain already filled in. **It opened `options.html#appeal` until 2026-08-08** — an extension page with no appeal section, at a hash that matched nothing. The record here was right the whole time; nothing tested the wiring, so only the destination drifted
 - **UI elements:** interstitial, verdict source line, "Go back" (primary), "Continue anyway", "I own this site", "Details"
 - **States covered:** success, error
 - **Errors & recovery:** feed metadata unavailable -> the block still applies, the interstitial says the source is unknown and how to check it; feeds stale beyond the freshness window -> the interstitial states the data age; **a listing on a parent domain no longer overrides an exception granted on a child** — `||shop.test^` reaches www.shop.test, so a user who chose to continue there and was stopped again next visit had been taught that trusting a site does nothing. The listing still stands for everyone else, and trusting a parent never excuses a listed subdomain
 - **Status:** implemented
-- **Coverage:** packages/core-feeds/src/rules.ts:buildRules, packages/ui/src/interstitial/interstitial.ts:renderInterstitial, e2e/scn-007.spec.ts
+- **Coverage:** packages/core-feeds/src/rules.ts:buildRules, packages/ui/src/interstitial/interstitial.ts:renderInterstitial, apps/extension/src/interstitial/appeal-link.ts:appealLinkFor, e2e/scn-007.spec.ts
 
 ### SCN-008: ClickFix — page copies a command
 - **Persona:** P-02

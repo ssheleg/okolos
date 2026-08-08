@@ -1,6 +1,8 @@
 import { request, type RequestDeps } from '@okolos/net'
 import type { SignedUpdate } from '@okolos/core-feeds'
 
+import { PROXY_ORIGIN } from '../config.js'
+
 /**
  * Fetching the blocking feed, and the reason this file had to exist.
  *
@@ -17,7 +19,7 @@ import type { SignedUpdate } from '@okolos/core-feeds'
  */
 
 /** Where the signed feed comes from. The worker serves it; the key verifies it. */
-export const FEED_URL = 'https://okolos-proxy.sergeysheleg4.workers.dev/feeds/phishing'
+export const FEED_URL = `${PROXY_ORIGIN}/feeds/phishing`
 
 export interface FeedSyncDeps {
   readonly audit: RequestDeps

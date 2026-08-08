@@ -85,3 +85,38 @@ test('continuing is remembered, so the user is not asked twice', async ({
   await second.goto('https://fixture.test/login')
   await expect(second.locator('#payload')).toHaveCount(1)
 })
+
+test('"I own this site" opens the public status page for the domain that was blocked', async ({
+  context,
+  extensionId,
+}) => {
+  /**
+   * The wiring, not the helper. `appealLinkFor` had unit tests from the moment
+   * it existed; the button next to it opened `options.html#appeal` — an
+   * extension page with no appeal section, at a hash that matched nothing.
+   * Only a click reaches the line that chooses the destination.
+   */
+  await serve(context, PAGE)
+
+  const seeder = await context.newPage()
+  await seeder.goto(`chrome-extension://${extensionId}/options.html`)
+  await seedFeed(seeder)
+  await seeder.evaluate(async () => {
+    await chrome.runtime.sendMessage({ v: 1, type: 'rules/refresh', payload: {} })
+  })
+
+  const page = await context.newPage()
+  await page.goto('https://fixture.test/login')
+  await expect(page.locator('[data-role=interstitial]')).toHaveCount(1)
+
+  const opened = context.waitForEvent('page')
+  await page.locator('[data-role=owner]').click()
+  const status = await opened
+
+  const url = new URL(status.url())
+  expect(url.pathname).toBe('/status')
+  expect(url.searchParams.get('domain')).toBe('fixture.test')
+  // The path of the blocked URL carried a route the service has no business with.
+  expect(status.url()).not.toContain('/login')
+  expect(status.url()).not.toContain('options.html')
+})

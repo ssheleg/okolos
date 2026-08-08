@@ -123,14 +123,14 @@ self-audit panel.
 ### SCR-05: Block interstitial
 - **Used by:** FLW-04
 - **Purpose:** replace a known-malicious page and make the override honest
-- **Elements:** what was blocked; the verdict's source (feed name, entry date); **primary action: "Go back"**; secondary "Continue anyway" (deliberate, states that the exception is remembered and journalled); "I own this site" → SCR-14
+- **Elements:** what was blocked; the verdict's source (feed name, entry date); **primary action: "Go back"**; secondary "Continue anyway" (deliberate, states that the exception is remembered and journalled); "I own this site" → SCR-14, **with the blocked domain already in the link** so the owner does not retype what they were just shown; only the host travels, never the blocked URL's path or query
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|
   | success | feed match | - | full-page interstitial replacing the site |
   | error | feed metadata unavailable | - | still blocks, states the source is unknown and how to check |
 - **Wireframe:** wireframes/SCR-05.md
-- **Coverage:** packages/ui/src/interstitial/interstitial.ts:renderInterstitial, e2e/scn-007.spec.ts
+- **Coverage:** packages/ui/src/interstitial/interstitial.ts:renderInterstitial, apps/extension/src/interstitial/appeal-link.ts:appealLinkFor, e2e/scn-007.spec.ts
 - **Scenarios:** SCN-007
 - **Resources:** feed metadata store, exception store
 - **Status:** built

@@ -2,6 +2,8 @@ import { detectPlatform } from '@okolos/platform'
 import { renderInterstitial } from '@okolos/ui'
 import '../pages.css'
 
+import { appealLinkFor } from './appeal-link.js'
+
 /**
  * The page shown in place of a blocked one.
  *
@@ -39,7 +41,14 @@ async function paint(): Promise<void> {
           })()
         },
         onOwner: () => {
-          void platform.tabs.create(platform.runtime.getUrl('options.html#appeal'))
+          // The public status page, with the domain already in it — the appeal
+          // is filed with the service, not with this copy of the extension,
+          // and the link still works from a phone or in someone else's hands.
+          //
+          // This is the one URL this page deliberately puts in the address bar:
+          // the domain is the owner's own, and they asked for it by clicking.
+          const link = appealLinkFor(context?.url)
+          if (link !== null) void platform.tabs.create(link)
         },
       },
     ),

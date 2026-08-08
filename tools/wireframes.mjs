@@ -33,7 +33,7 @@ export const SCREENS = {
   'SCR-11': { title: 'Journal and weekly diff', source: 'packages/ui/src/journal/journal.ts' },
   'SCR-12': { title: 'Settings — data controls', source: 'packages/ui/src/settings/data-controls.ts' },
   'SCR-13': { title: 'Recovery checklist', source: 'packages/ui/src/recovery/recovery.ts' },
-  'SCR-14': { title: 'Public domain status', source: 'apps/status-page/src/render.ts' },
+  'SCR-14': { title: 'Public domain status', source: 'apps/proxy/src/router.ts' },
 }
 
 /** Every `data-role` the renderer can emit, in the order the source names them. */
@@ -44,6 +44,8 @@ export function rolesOf(source) {
     /setAttribute\(\s*'data-role',\s*'([a-z0-9-]+)'/g,
     /\b(?:text|button|row|action)\(\s*doc,\s*'([a-z0-9-]+)'/g,
     /\b(?:text|button|row|action)\(\s*\n\s*doc,\s*\n\s*'([a-z0-9-]+)'/g,
+    // Server-rendered screens have no DOM calls; the roles are in the markup.
+    /data-role="([a-z0-9-]+)"/g,
   ]
   for (const pattern of patterns) {
     for (const match of text.matchAll(pattern)) {

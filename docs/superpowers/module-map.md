@@ -30,7 +30,7 @@
 | **M10** | Пароли и утечки | REQ-20, REQ-21 | `core-credential`, `core-leaks`, `background/password`, `background/leaks` | M1, M6 |
 | **M11** | Восстановление | REQ-22 | `core-recovery`, `ui/recovery` | M6 |
 | **M12** | Extension Guard | REQ-23, REQ-24 | `core-extensions`, `ui/extensions`, `background/extensions` | M0, M6 |
-| **M13** | Воркер и публичный статус | REQ-25, REQ-26 | `apps/proxy`, `apps/status-page` | M7 |
+| **M13** | Воркер и публичный статус | REQ-25, REQ-26 | `apps/proxy` (страница статуса — часть воркера, отдаётся разметкой) | M7 |
 | **M14** | Доступность и i18n | REQ-29 | `e2e/a11y.spec.ts` (5 поверхностей) | параллельно UI-модулям |
 
 ## Порядок и релизы

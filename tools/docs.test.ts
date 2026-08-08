@@ -168,8 +168,16 @@ describe('a screen record names the controls its renderer draws', () => {
           }
         })
 
+      // Two kinds of renderer live in this repo. A DOM renderer names its copy
+      // in string literals; a server-rendered screen writes it as markup inside
+      // a template literal, where the label is a text node between tags. Read
+      // only the first and a screen that ships as HTML looks like a screen that
+      // draws nothing.
       const literals = [renderer, ...imported]
-        .flatMap((text) => [...text.matchAll(/'([^'\n]{2,60})'/g)])
+        .flatMap((text) => [
+          ...text.matchAll(/'([^'\n]{2,60})'/g),
+          ...text.matchAll(/>([^<>{}`\n]{2,60})</g),
+        ])
         .map((m) => normalise(m[1] as string))
 
       for (const [, label] of elements.matchAll(/"([^"]{2,40})"/g)) {

@@ -523,12 +523,12 @@ See [foundation.md](foundation.md) → Personas.
 - **Preconditions:** none — no account, no extension installed
 - **Steps:**
   1. Owner enters their domain -> system returns the current verdict, the feed that produced it, and the entry date
-  2. Owner reads the source -> system links to the upstream feed's own appeal process when the verdict is not ours
-  3. Owner submits an appeal -> system records it and shows a reference id
+  2. Owner reads the source -> system links to the upstream feed's own appeal process when the verdict is not ours, and offers an appeal form only when the listing is one this service can lift
+  3. Owner submits an appeal -> system records it and shows a reference id, as a page — the form posts without script, so it works on the first load
 - **Expected result:** an affected owner learns why their site is flagged and has a route to dispute it within two minutes, without an account
 - **Alt paths:** the domain is not flagged -> system states that nothing is recorded for it
 - **UI elements:** domain field, "Check domain" (primary), verdict card with source and date, upstream appeal link, appeal form, reference id
 - **States covered:** loading, empty, error, success
 - **Errors & recovery:** the status service is unavailable -> system says so plainly; it never implies the domain is clean when it could not check; **the same appeal sent twice is reported as already on file, with its reference, not as a failure** — the reference is a hash of the domain and the message and is the primary key, so a refreshed page used to be told nothing was saved about an appeal that was; and a host that is not a public domain (`..`, a single label) is refused at the door rather than stored and answered about
 - **Status:** implemented
-- **Coverage:** apps/proxy/src/router.ts:handle, apps/status-page/src/render.ts:renderStatus (unit only — the page is not deployed, see human step 1)
+- **Coverage:** apps/proxy/src/router.ts:statusPage, apps/proxy/src/router.ts:appeal, apps/proxy/src/router.ts:appealPage, apps/proxy/src/router.test.ts — live at `/status`, verified against the deployed worker

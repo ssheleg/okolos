@@ -126,8 +126,6 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core-feeds
 
-  apps/status-page: {}
-
   packages/contracts: {}
 
   packages/core-credential: {}

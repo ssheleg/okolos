@@ -384,3 +384,106 @@ describe('serving the blocking feed', () => {
     expect(Number(/max-age=(\d+)/.exec(cache)?.[1]), 'an hour at most').toBeLessThanOrEqual(3600)
   })
 })
+
+describe('an owner who wants to appeal, using only a browser', () => {
+  /**
+   * SCN-026 step 3 was marked implemented on the strength of a renderer no page
+   * loaded. The endpoint existed; the only way to reach it was to hand-write a
+   * JSON POST. An owner with two minutes and no account had no route at all.
+   */
+  const form = (path: string, fields: Record<string, string>) =>
+    new Request(`https://proxy.test${path}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'text/html' },
+      body: new URLSearchParams(fields).toString(),
+    })
+
+  it('is offered a form when the listing is ours to lift', async () => {
+    const response = await handle(
+      get('/status?domain=mysite.test'),
+      env({ listing: { feed: 'okolos-phishing', entry_date: '2026-08-01' } }),
+    )
+    const html = await response.text()
+    expect(html).toContain('action="/appeal"')
+    expect(html).toContain('method="post"')
+    // The three fields the scenario names, and the domain carried without retyping.
+    expect(html).toMatch(/name="domain"[^>]*value="mysite\.test"/)
+    expect(html).toContain('name="contact"')
+    expect(html).toContain('name="message"')
+  })
+
+  it('is not offered a form we cannot honour', async () => {
+    // An appeal form for someone else's listing collects a plea nobody reads.
+    const response = await handle(
+      get('/status?domain=mysite.test'),
+      env({ listing: { feed: 'OpenPhish', entry_date: '2026-08-01' } }),
+    )
+    const html = await response.text()
+    expect(html).not.toContain('action="/appeal"')
+    expect(html).toContain('OpenPhish')
+  })
+
+  it('gets the reference back as a page, not as JSON', async () => {
+    const response = await handle(
+      form('/appeal', { domain: 'mysite.test', contact: 'me@mysite.test', message: 'cleaned' }),
+      env(),
+    )
+    expect(response.headers.get('content-type')).toMatch(/text\/html/)
+    const html = await response.text()
+    expect(html).toMatch(/OK-[0-9A-Z]+/)
+    expect(html).toContain('mysite.test')
+  })
+
+  it('is told a resent appeal is already on file, with its reference', async () => {
+    let hits = 0
+    const duplicating: Env = {
+      DB: {
+        prepare: () => ({
+          bind: () => ({
+            run: async () => {
+              hits += 1
+              throw new Error('UNIQUE constraint failed: appeals.reference')
+            },
+            first: async <T>() => null as T | null,
+            all: async <T>() => ({ results: [] as T[] }),
+          }),
+        }),
+      },
+    }
+    const response = await handle(form('/appeal', { domain: 'mysite.test', message: 'again' }), duplicating)
+    expect(hits).toBe(1)
+    expect(response.status).toBe(200)
+    const html = await response.text()
+    expect(html).toMatch(/already on file/i)
+    expect(html).toMatch(/OK-[0-9A-Z]+/)
+  })
+
+  it('is never shown a reference for an appeal that was not saved', async () => {
+    const response = await handle(form('/appeal', { domain: 'mysite.test' }), env({ fail: true }))
+    const html = await response.text()
+    expect(html).toMatch(/nothing was saved/i)
+    expect(html).not.toMatch(/OK-[0-9A-Z]+/)
+  })
+
+  it('refuses a domain carrying markup at the door, before anything echoes it', async () => {
+    // What protects this page is normalisation, not escaping: a value that is
+    // not a public hostname never becomes a domain, so it is never echoed. This
+    // test would pass with every escape removed — the one that exercises
+    // escaping is "escapes the feed name, which is data this service does not
+    // write", because the feed name is the one echoed string a visitor cannot
+    // set and normalisation does not filter.
+    const response = await handle(
+      form('/appeal', { domain: 'x.test"><script>alert(1)</script>', message: 'hi' }),
+      env(),
+    )
+    expect(response.status).toBe(400)
+    expect(await response.text()).not.toContain('<script>')
+  })
+
+  it('still answers API clients in JSON', async () => {
+    // The form is an addition, not a replacement — the JSON contract stands.
+    const response = await handle(post('/appeal', { domain: 'mysite.test', message: 'x' }), env())
+    expect(response.headers.get('content-type')).toMatch(/application\/json/)
+    await expect(response.json()).resolves.toMatchObject({ domain: 'mysite.test', alreadyFiled: false })
+  })
+})

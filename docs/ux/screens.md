@@ -26,7 +26,7 @@ self-audit panel.
 | SCR-11 | Journal and weekly diff | FLW-17 | - | built | e2e/scn-020.spec.ts |
 | SCR-12 | Settings | FLW-05, FLW-14 | - | built | packages/ui/src/settings/data-controls.ts:renderDataControls |
 | SCR-13 | Recovery checklist | FLW-06, FLW-07, FLW-16 | - | built | e2e/scn-025.spec.ts |
-| SCR-14 | Public domain status | FLW-04, FLW-15 | - | built | apps/status-page/src/render.test.ts |
+| SCR-14 | Public domain status | FLW-04, FLW-15 | - | built | apps/proxy/src/router.test.ts |
 
 ## Design system
 
@@ -277,13 +277,13 @@ self-audit panel.
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|
-  | loading | lookup running | - | inline progress |
+  | loading | lookup running | - | none of its own — the page is served whole, so the browser's own loading is the only progress there is |
   | empty | domain not in any list | - | "Nothing is recorded for this domain" |
   | error | service unavailable | - | states it plainly and offers retry; never implies "clean" |
   | success | verdict found | - | verdict, source, date, appeal path |
-- **Behavior notes:** a public web page, not an extension surface; no account, no tracking, no analytics
+- **Behavior notes:** a public web page, not an extension surface; no account, no tracking, no analytics. **Served whole, with no script:** the verdict and the appeal form are both in the markup, because the owner arrives from an interstitial on a site that is down and has no reason to run another page's JavaScript. The appeal form appears only for listings this service can lift — a form against a third-party feed collects a plea nobody reads
 - **Wireframe:** wireframes/SCR-14.md
-- **Coverage:** apps/proxy/src/router.ts:handle (serves the page whole, answer in the markup), apps/status-page/src/render.ts:renderStatus (the interactive renderer, kept for a future client), apps/proxy/src/router.test.ts
+- **Coverage:** apps/proxy/src/router.ts:statusPage (verdict and appeal form in the markup), apps/proxy/src/router.ts:appeal + appealPage (accepts the form, answers as a page), apps/proxy/src/router.test.ts
 - **Scenarios:** SCN-026
 - **Resources:** worker status endpoint, feed metadata
 - **Status:** built

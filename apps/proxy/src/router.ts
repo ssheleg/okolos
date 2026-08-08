@@ -150,12 +150,12 @@ ${canonical ? `<link rel="canonical" href="${escapeHtml(canonical)}">` : ''}
 </head>
 <body>
 <main>
-<h1>Domain status</h1>
+<h1 data-role="title">Domain status</h1>
 ${body}
-<form method="get" action="/status">
-<label for="domain">Check another domain</label>
-<input id="domain" name="domain" type="text" placeholder="example.com" value="${escapeHtml(domain ?? '')}">
-<button type="submit">Check</button>
+<form method="get" action="/status" data-role="lookup">
+<label for="domain">Domain to check</label>
+<input id="domain" name="domain" data-role="domain" type="text" placeholder="example.com" value="${escapeHtml(domain ?? '')}">
+<button type="submit" data-role="check">Check domain</button>
 </form>
 </main>
 </body>
@@ -166,7 +166,7 @@ ${body}
   if (!domain) {
     return shell(
       'Domain status — enter a domain',
-      '<p>Enter a domain to see whether it is listed, and by which feed.</p>',
+      '<p data-role="hint">Enter a domain to see whether it is listed, and by which feed.</p>',
     )
   }
 
@@ -182,7 +182,7 @@ ${body}
     // JSON endpoint holds, and for the same reason.
     return shell(
       `Domain status — ${domain}`,
-      `<p>The status of <strong>${escapeHtml(domain)}</strong> could not be looked up just now. That is not a statement that it is clean.</p>`,
+      `<p data-role="error">The status of <strong>${escapeHtml(domain)}</strong> could not be looked up just now. That is not a statement that it is clean.</p>`,
       canonical,
     )
   }
@@ -190,18 +190,44 @@ ${body}
   if (!row) {
     return shell(
       `${domain} is not listed`,
-      `<p><strong>${escapeHtml(domain)}</strong> is <strong>not listed</strong> by any feed this service carries.</p>`,
+      `<p data-role="verdict"><strong>${escapeHtml(domain)}</strong> is <strong>not listed</strong> by any feed this service carries.</p>`,
       canonical,
     )
   }
 
-  const appealTo = row.feed.startsWith('okolos') ? 'okolos' : row.feed
+  const ours = row.feed.startsWith('okolos')
   return shell(
     `${domain} is listed`,
-    `<p><strong>${escapeHtml(domain)}</strong> is <strong>listed</strong> by <strong>${escapeHtml(row.feed)}</strong>, recorded ${escapeHtml(row.entry_date)}.</p>
-<p>Appeals for this listing go to ${escapeHtml(appealTo)}.</p>`,
+    `<p data-role="verdict"><strong>${escapeHtml(domain)}</strong> is <strong>listed</strong> by <strong>${escapeHtml(row.feed)}</strong>, recorded ${escapeHtml(row.entry_date)}.</p>` +
+      (ours
+        ? appealForm(domain)
+        : `<p data-role="upstream">This listing is ${escapeHtml(row.feed)}'s, not ours. Their own appeal process is the one that will lift it; we follow their data.</p>`),
     canonical,
   )
+}
+
+/**
+ * The appeal, as a plain form.
+ *
+ * Only for listings we can actually lift: a form against someone else's feed
+ * collects a plea nobody reads, and costs the owner the day they should have
+ * spent writing to the party that can help.
+ *
+ * No script, because the owner reading this arrived from an interstitial on a
+ * site that is down and has no reason to trust another page's JavaScript — and
+ * because a form that needs JS is a form that fails silently when it does not
+ * load.
+ */
+function appealForm(domain: string): string {
+  return `<form method="post" action="/appeal" data-role="appeal">
+<h2>Appeal this listing</h2>
+<input type="hidden" name="domain" value="${escapeHtml(domain)}">
+<label for="contact">How we can reach you</label>
+<input id="contact" name="contact" data-role="contact" type="text" maxlength="200" placeholder="you@${escapeHtml(domain)}">
+<label for="message">What changed</label>
+<textarea id="message" name="message" data-role="message" maxlength="2000" rows="4"></textarea>
+<button type="submit" data-role="send-appeal">Send appeal</button>
+</form>`
 }
 
 async function domainStatus(domain: string | null, env: Env): Promise<Response> {
@@ -238,15 +264,33 @@ async function domainStatus(domain: string | null, env: Env): Promise<Response> 
 }
 
 async function appeal(request: Request, env: Env): Promise<Response> {
+  // A browser posting the form on /status and a client posting JSON are the
+  // same appeal; only the wrapping differs. The owner gets a page back, because
+  // a browser handed a JSON body renders it as text and the owner cannot tell
+  // whether anything was recorded.
+  const asForm = (request.headers.get('content-type') ?? '').includes(
+    'application/x-www-form-urlencoded',
+  )
+  const reply = asForm ? appealPage : json
+
   let body: { domain?: unknown; contact?: unknown; message?: unknown }
-  try {
-    body = (await request.json()) as typeof body
-  } catch {
-    return json({ error: 'a JSON body is required' }, 400)
+  if (asForm) {
+    const fields = new URLSearchParams(await request.text())
+    body = {
+      domain: fields.get('domain') ?? undefined,
+      contact: fields.get('contact') ?? undefined,
+      message: fields.get('message') ?? undefined,
+    }
+  } else {
+    try {
+      body = (await request.json()) as typeof body
+    } catch {
+      return json({ error: 'a JSON body is required' }, 400)
+    }
   }
 
   const domain = normaliseDomain(typeof body.domain === 'string' ? body.domain : null)
-  if (!domain) return json({ error: 'a domain is required' }, 400)
+  if (!domain) return reply({ error: 'a domain is required' }, 400)
 
   const message = typeof body.message === 'string' ? body.message.slice(0, 2000) : ''
   const contact = typeof body.contact === 'string' ? body.contact.slice(0, 200) : ''
@@ -263,11 +307,50 @@ async function appeal(request: Request, env: Env): Promise<Response> {
     // primary key — so the same appeal sent twice is a key conflict, not a
     // failure. An owner who refreshed the page or clicked again was being told
     // nothing was saved, about an appeal that was already on file.
-    if (isDuplicate(cause)) return json({ reference, domain, alreadyFiled: true })
-    return json({ error: 'the appeal could not be recorded — nothing was saved' }, 503)
+    if (isDuplicate(cause)) return reply({ reference, domain, alreadyFiled: true })
+    return reply({ error: 'the appeal could not be recorded — nothing was saved' }, 503)
   }
 
-  return json({ reference, domain, alreadyFiled: false })
+  return reply({ reference, domain, alreadyFiled: false })
+}
+
+/**
+ * The same outcome as the JSON body, rendered for the browser that submitted
+ * the form. A reference appears only when a row exists to answer for it — an
+ * owner quoting a reference for an appeal that was never saved is worse off
+ * than one who was told plainly it failed.
+ */
+function appealPage(
+  body: { reference?: string; domain?: string; alreadyFiled?: boolean; error?: string },
+  status = 200,
+): Response {
+  const { reference, domain, alreadyFiled, error } = body
+  const inner =
+    error !== undefined
+      ? `<p data-role="not-saved">${escapeHtml(error)}.</p><p>Nothing about this appeal is on file. Sending it again is safe.</p>`
+      : alreadyFiled === true
+        ? `<p data-role="already-filed">This appeal for <strong>${escapeHtml(domain ?? '')}</strong> was <strong>already on file</strong>. Its reference is <strong>${escapeHtml(reference ?? '')}</strong> — the same one, because it is the same appeal.</p>`
+        : `<p data-role="reference">The appeal for <strong>${escapeHtml(domain ?? '')}</strong> is recorded. Its reference is <strong>${escapeHtml(reference ?? '')}</strong>.</p>`
+
+  return new Response(
+    `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Appeal — ${escapeHtml(domain ?? 'domain status')}</title>
+<meta name="robots" content="noindex">
+</head>
+<body>
+<main>
+<h1 data-role="appeal-title">Appeal</h1>
+${inner}
+<p data-role="back"><a href="/status${domain !== undefined ? `?domain=${encodeURIComponent(domain)}` : ''}">Back to the domain status</a></p>
+</main>
+</body>
+</html>`,
+    { status, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } },
+  )
 }
 
 /** A primary-key conflict, under whichever wording the driver gives it. */

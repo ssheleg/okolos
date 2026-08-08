@@ -175,7 +175,22 @@ if (!driverUp) {
 
 let driver
 try {
-  const options = new Options().setBinary(BINARY).addArguments('-headless')
+  /*
+   * Firefox gives an extension a per-profile internal UUID, and `installAddon`
+   * returns the manifest id instead — so `moz-extension://<id>/` is not a URL
+   * that exists. Asking the extension for its own URL does not work either:
+   * `executeScript` runs in the page's world, where neither `browser` nor
+   * `chrome` is defined.
+   *
+   * Presetting the mapping is the way out. The profile pref below fixes the
+   * UUID before the add-on is installed, so the pages have a known address.
+   */
+  const EXT_ID = 'okolos@ssheleg.dev'
+  const EXT_UUID = '11111111-2222-3333-4444-555555555555'
+  const options = new Options()
+    .setBinary(BINARY)
+    .addArguments('-headless')
+    .setPreference('extensions.webextensions.uuids', JSON.stringify({ [EXT_ID]: EXT_UUID }))
   driver = await new Builder()
     .forBrowser('firefox')
     .usingServer('http://127.0.0.1:4444')
@@ -259,6 +274,87 @@ try {
   // too, and it can only do that if the machinery is running at all.
   const gateOnClean = await driver.findElements(By.css('okolos-gate'))
   check('and raises no gate there either', gateOnClean.length === 0)
+
+  /*
+   * What is left to check needs to see inside the shadow root, and the build
+   * installed above deliberately closes it — the check three assertions up
+   * asserts exactly that. So the same arrangement Chromium uses applies here:
+   * a second session on the test-hook build, where the root is open.
+   *
+   * Two separate sessions rather than two add-ons: the manifest id is the same
+   * in both builds, and Firefox will not hold two.
+   */
+  await driver.quit()
+  driver = await new Builder()
+    .forBrowser('firefox')
+    .usingServer('http://127.0.0.1:4444')
+    .setFirefoxOptions(
+      new Options()
+        .setBinary(BINARY)
+        .addArguments('-headless')
+        .setPreference('extensions.webextensions.uuids', JSON.stringify({ [EXT_ID]: EXT_UUID })),
+    )
+    .build()
+
+  const openBuild = path.join(root, 'apps/extension/dist/firefox-e2e')
+  const openId = existsSync(openBuild) ? await driver.installAddon(openBuild, true) : null
+  check(
+    'the test-hook build installs too',
+    Boolean(openId),
+    `${openBuild} is missing — run \`pnpm build:e2e\``,
+  )
+
+  if (openId) {
+    await driver.get(`${origin}/injected`)
+    await driver.wait(until.elementLocated(By.css('okolos-banner')), 15_000)
+
+    /*
+     * The overlay's stylesheet, in the engine that renders it.
+     *
+     * Until 2026-08-08 the three in-page surfaces carried their own hexes; they
+     * now take the same tokens as everything else, declared on `:host` because
+     * `all: initial` does not let a custom property in from outside. Whether
+     * that declaration survives *this* engine is the kind of thing a Chromium
+     * green says nothing about — and a computed value is the only honest
+     * question, because the rule can be present and still not apply.
+     */
+    const styled = await driver.executeScript(() => {
+      const host = document.querySelector('okolos-banner')
+      const panel = host?.shadowRoot?.querySelector('[data-role=panel]')
+      if (!panel) return null
+      const style = window.getComputedStyle(panel)
+      return {
+        position: style.position,
+        background: style.backgroundColor,
+        radius: style.borderRadius,
+      }
+    })
+    check(
+      'the overlay carries its tokens in this engine',
+      styled !== null &&
+        styled.position === 'fixed' &&
+        styled.radius !== '0px' &&
+        styled.background !== 'rgba(0, 0, 0, 0)',
+      `panel computed as ${JSON.stringify(styled)} — a token did not reach the shadow root`,
+    )
+  }
+
+  /*
+   * Known limit, recorded rather than left as a hole: the extension's own
+   * pages — options, popup, first run — are not checked in Firefox.
+   *
+   * geckodriver refuses to navigate to `moz-extension://` from the content
+   * context ("Navigation to ... is not allowed in this context"), and the page
+   * cannot be asked for its own URL either, because `executeScript` runs in the
+   * page's world where neither `browser` nor `chrome` is defined. Presetting
+   * `extensions.webextensions.uuids` fixes the address and does not lift the
+   * navigation rule.
+   *
+   * What that leaves untested in this engine: the message catalogue resolving
+   * through its `i18n`, and the pages' own stylesheet. Both are covered in
+   * Chromium; neither is covered here, and saying so is the point.
+   */
+
 } catch (cause) {
   check('firefox run completed', false, String(cause).split('\n')[0])
 } finally {

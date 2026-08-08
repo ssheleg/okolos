@@ -110,6 +110,7 @@ export default tseslint.config(
         fetch: 'readonly',
         setTimeout: 'readonly',
         document: 'readonly',
+        window: 'readonly',
         Buffer: 'readonly',
       },
     },

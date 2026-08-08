@@ -13,7 +13,7 @@ export interface ComparisonProps {
   /** What it renders as, once decoded. Equal to `visited` for plain ASCII. */
   readonly decoded: string
   readonly resembles: string
-  readonly kind: 'mixed-script' | 'homograph' | 'typo' | 'tld-swap'
+  readonly kind: 'mixed-script' | 'homograph' | 'typo' | 'tld-swap' | 'brand-subdomain'
 }
 
 export interface ComparisonHandlers {
@@ -27,6 +27,8 @@ const EXPLANATION: Record<ComparisonProps['kind'], string> = {
   homograph: 'Some characters here only look like the letters they stand for.',
   typo: 'This name is one typing mistake away from the one it resembles.',
   'tld-swap': 'The name is the same, but the ending after the last dot is different.',
+  'brand-subdomain':
+    'The familiar name is here, but it is not the site you are on — it has been put in front of a different address.',
 }
 
 export function renderComparison(

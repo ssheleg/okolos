@@ -140,3 +140,73 @@ describe('when there is nothing to compare against', () => {
     expect(checkLookalike('   ', WATCHLIST)).toBeNull()
   })
 })
+
+describe('the brand in front of somebody else’s domain', () => {
+  const WATCH = ['paypal.com', 'sberbank.ru']
+
+  it('flags a watched name used as a subdomain of another site', () => {
+    // The commonest phishing shape there is: the address bar begins with
+    // "paypal.com" and the site is evil.test. The registrable domain is not
+    // similar to anything watched, so every similarity check passed it.
+    const verdict = checkLookalike('paypal.com.evil.test', WATCH)
+    expect(verdict?.kind).toBe('brand-subdomain')
+    expect(verdict?.resembles).toBe('paypal.com')
+  })
+
+  it('flags it however deep it is buried', () => {
+    expect(checkLookalike('login.paypal.com.secure.evil.test', WATCH)?.kind).toBe('brand-subdomain')
+  })
+
+  it('flags the bare label too, not only the full name', () => {
+    // `paypal.evil.test` shows the brand just as plainly.
+    expect(checkLookalike('paypal.evil.test', WATCH)?.kind).toBe('brand-subdomain')
+  })
+
+  it('leaves the genuine site and its subdomains alone', () => {
+    expect(checkLookalike('paypal.com', WATCH)).toBeNull()
+    expect(checkLookalike('login.paypal.com', WATCH)).toBeNull()
+  })
+
+  it('does not fire on a label that merely contains the name', () => {
+    // `mypaypal.evil.test`, not `mypaypal.test`. The shorter host has as many
+    // labels as `paypal.com`, so it never reaches the brand check at all — the
+    // first version of this test passed because of that early return, and went
+    // on passing with the comparison loosened to a substring match. Three
+    // labels get it past the guard and onto the rule it is named for.
+    expect(checkLookalike('mypaypal.evil.test', WATCH)?.kind).not.toBe('brand-subdomain')
+    expect(checkLookalike('paypalish.evil.test', WATCH)?.kind).not.toBe('brand-subdomain')
+  })
+})
+
+describe('a hostname is not a URL', () => {
+  const WATCH = ['paypal.com']
+
+  it('does not call the genuine site with a port a lookalike of itself', () => {
+    // `paypal.com:443` was read as second-level `paypal` with TLD `com:443`,
+    // so the real site, visited on an explicit port, was reported as a
+    // tld-swap of itself. A false alarm on the genuine article is the worst
+    // kind this detector can raise.
+    expect(checkLookalike('paypal.com:443', WATCH)).toBeNull()
+  })
+
+  it('reads the host past credentials, and then says nothing about it', () => {
+    // `paypal.com@evil.test` resolves to evil.test: the part before the `@` is
+    // a username, and the address bar shows evil.test once the navigation has
+    // happened. So this detector is right to be silent — evil.test resembles
+    // nothing watched.
+    //
+    // The first version of this test asserted the opposite, on the reasoning
+    // that the brand is visible. It is, but in the *link*, before the click,
+    // and that is a different detector's question. Asserting it here would
+    // have made this one flag every site anyone linked to badly.
+    expect(checkLookalike('paypal.com@evil.test', WATCH)).toBeNull()
+    // And the brand really is gone from what is checked, rather than merely
+    // failing to match.
+    expect(checkLookalike('paypal.com@paypal.com.evil.test', WATCH)?.kind).toBe('brand-subdomain')
+  })
+
+  it('still refuses an empty or meaningless host', () => {
+    expect(checkLookalike('..', WATCH)).toBeNull()
+    expect(checkLookalike('   ', WATCH)).toBeNull()
+  })
+})

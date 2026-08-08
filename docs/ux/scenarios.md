@@ -168,6 +168,7 @@ See [foundation.md](foundation.md) → Personas.
   2. User clicks "Show comparison" -> system shows the visited domain and the expected one side by side, with the decoded form
   3. User clicks "Leave" -> system returns to the previous page
 - **Expected result:** the user sees both spellings before interacting with the page
+- **Techniques named:** mixed-script, homograph, typo, tld-swap, and **brand-subdomain** — the watched name standing as its own label in front of another site (`paypal.com.evil.test`), which is the commonest phishing shape and which every similarity test passed, because the registrable domain resembles nothing watched
 - **Alt paths:** user clicks "This is legitimate" -> the domain is trusted, the warning stops here on, and the entry is editable in settings
 - **UI elements:** banner (lookalike variant), comparison view, decoded punycode, "Leave", "This is legitimate", dismiss
 - **States covered:** success

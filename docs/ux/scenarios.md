@@ -96,6 +96,7 @@ See [foundation.md](foundation.md) → Personas.
 - **UI elements:** in-page banner (injection variant), "Show me", "This is wrong", dismiss
 - **States covered:** success
 - **Errors & recovery:** the classifier stage fails or times out -> the verdict falls back to the deterministic stages, the banner states that detection was partial; a detector exception disables that detector for the session and is journalled, and the page is never broken
+- **Known limit — the wording of the nine signals is matched in English and Russian, and no other language.** Hidden text in a third language reaches stage 1 as a candidate and leaves it without a signal, so no verdict is raised. Russian was added on 2026-08-08 after a sweep found all nine written in English alone: five Russian attack shapes produced zero signals between them, in the detector this product is named for and for the audience its watchlist and interface are written for. Two parts carry no language at all and were never affected: the invisible-character classes, and the DOM-versus-render difference that makes a candidate in the first place
 - **Telemetry:** none — no analytics events are emitted by this product
 - **Status:** implemented
 - **Coverage:** apps/extension/src/content/collect.ts:collect, packages/core-injection/src/stage1.ts:detectHidden, packages/ui/src/banner/banner.ts:mountBanner, e2e/scn-003.spec.ts

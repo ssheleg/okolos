@@ -128,3 +128,78 @@ describe('domain normalisation', () => {
     expect(normaliseDomain(null)).toBeNull()
   })
 })
+
+describe('a domain that is not one', () => {
+  it('refuses dots standing alone', () => {
+    // `..` normalised to "." and `../../etc/passwd` to ".." — both went into
+    // the database as domains and came back out as answers about a domain.
+    // Parameterised SQL means it is not an injection; it is nonsense stored
+    // and nonsense returned.
+    expect(normaliseDomain('..')).toBeNull()
+    expect(normaliseDomain('.')).toBeNull()
+    expect(normaliseDomain('../../etc/passwd')).toBeNull()
+  })
+
+  it('refuses a single label, which is never a public domain', () => {
+    // This service answers about sites on the public internet. `localhost` is
+    // not one, and an appeal filed for it is a row nobody can act on.
+    expect(normaliseDomain('localhost')).toBeNull()
+    expect(normaliseDomain('intranet')).toBeNull()
+  })
+
+  it('keeps the hosts it is actually for', () => {
+    expect(normaliseDomain('evil.test')).toBe('evil.test')
+    expect(normaliseDomain('EVIL.test.')).toBe('evil.test')
+    expect(normaliseDomain('https://evil.test/path')).toBe('evil.test')
+    expect(normaliseDomain('evil.test:8080')).toBe('evil.test')
+    expect(normaliseDomain('xn--80ak6aa92e.com')).toBe('xn--80ak6aa92e.com')
+  })
+
+  it('keeps an address literal, which a listing can legitimately be', () => {
+    expect(normaliseDomain('127.0.0.1')).toBe('127.0.0.1')
+    expect(normaliseDomain('[::1]')).toBe('[::1]')
+  })
+})
+
+describe('the same appeal, sent twice', () => {
+  it('says it is already on file rather than that nothing was saved', async () => {
+    /**
+     * The reference is a hash of the domain and the message, and it is the
+     * primary key. An owner who submits the same appeal again — a refreshed
+     * page, an impatient second click — hits a key conflict, and the handler
+     * reported "the appeal could not be recorded — nothing was saved".
+     *
+     * It was saved. The first time. Telling them otherwise sends them away
+     * believing nobody has their case.
+     */
+    const conflicting = {
+      DB: {
+        prepare: () => ({
+          bind: () => ({
+            run: async () => {
+              throw new Error('UNIQUE constraint failed: appeals.reference')
+            },
+            first: async () => null,
+            all: async () => ({ results: [] }),
+          }),
+        }),
+      },
+    } as unknown as Env
+
+    const response = await handle(
+      post('/appeal', { domain: 'evil.test', message: 'this is mine' }),
+      conflicting,
+    )
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as { reference: string; alreadyFiled?: boolean }
+    expect(body.alreadyFiled).toBe(true)
+    expect(body.reference).toMatch(/^OK-/)
+  })
+
+  it('still reports a real database failure as one', async () => {
+    // The distinction has to survive: a conflict means it is on file, and
+    // anything else means it is not.
+    const response = await handle(post('/appeal', { domain: 'evil.test' }), env({ fail: true }))
+    expect(response.status).toBe(503)
+  })
+})

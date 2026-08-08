@@ -108,11 +108,22 @@ async function appeal(request: Request, env: Env): Promise<Response> {
     )
       .bind(reference, domain, contact, message, new Date().toISOString())
       .run()
-  } catch {
+  } catch (cause) {
+    // The reference is a hash of the domain and the message, and it is the
+    // primary key — so the same appeal sent twice is a key conflict, not a
+    // failure. An owner who refreshed the page or clicked again was being told
+    // nothing was saved, about an appeal that was already on file.
+    if (isDuplicate(cause)) return json({ reference, domain, alreadyFiled: true })
     return json({ error: 'the appeal could not be recorded — nothing was saved' }, 503)
   }
 
-  return json({ reference, domain })
+  return json({ reference, domain, alreadyFiled: false })
+}
+
+/** A primary-key conflict, under whichever wording the driver gives it. */
+function isDuplicate(cause: unknown): boolean {
+  const message = String((cause as { message?: unknown } | null)?.message ?? cause)
+  return /unique constraint|primary key|constraint failed/i.test(message)
 }
 
 /** Deterministic and short: an owner can quote it, and it identifies nobody. */
@@ -128,12 +139,35 @@ export function normaliseDomain(raw: string | null): string | null {
   if (!raw) return null
   const trimmed = raw.trim().toLowerCase().replace(/\.$/, '')
   if (trimmed === '') return null
+  let hostname: string
   try {
     const url = new URL(trimmed.includes('://') ? trimmed : `https://${trimmed}`)
-    return url.hostname || null
+    hostname = url.hostname
   } catch {
     return null
   }
+  return isPublicHost(hostname) ? hostname : null
+}
+
+/**
+ * Whether this is a host the service can honestly answer about.
+ *
+ * `..` used to normalise to `.` and `../../etc/passwd` to `..`, and both were
+ * stored as domains and answered about as domains. Parameterised SQL means it
+ * was never an injection; it was nonsense in and nonsense out, and an appeal
+ * filed for `.` is a row nobody can act on.
+ *
+ * A single label is refused for the same reason: this service is about sites
+ * on the public internet, and `localhost` is not one. An address literal is
+ * kept — a listing can legitimately be one.
+ */
+function isPublicHost(hostname: string): boolean {
+  if (hostname === '') return false
+  if (hostname.startsWith('[') && hostname.endsWith(']')) return true
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(hostname)) return true
+  const labels = hostname.split('.')
+  if (labels.length < 2) return false
+  return labels.every((label) => /^[a-z0-9-]+$/.test(label))
 }
 
 function json(body: unknown, status = 200): Response {

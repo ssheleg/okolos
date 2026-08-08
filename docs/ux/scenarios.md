@@ -528,6 +528,6 @@ See [foundation.md](foundation.md) → Personas.
 - **Alt paths:** the domain is not flagged -> system states that nothing is recorded for it
 - **UI elements:** domain field, "Check domain" (primary), verdict card with source and date, upstream appeal link, appeal form, reference id
 - **States covered:** loading, empty, error, success
-- **Errors & recovery:** the status service is unavailable -> system says so plainly; it never implies the domain is clean when it could not check
+- **Errors & recovery:** the status service is unavailable -> system says so plainly; it never implies the domain is clean when it could not check; **the same appeal sent twice is reported as already on file, with its reference, not as a failure** — the reference is a hash of the domain and the message and is the primary key, so a refreshed page used to be told nothing was saved about an appeal that was; and a host that is not a public domain (`..`, a single label) is refused at the door rather than stored and answered about
 - **Status:** implemented
 - **Coverage:** apps/proxy/src/router.ts:handle, apps/status-page/src/render.ts:renderStatus (unit only — the page is not deployed, see human step 1)

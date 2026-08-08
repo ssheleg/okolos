@@ -57,9 +57,28 @@ const OVERRIDE =
 const ROLE_ASSIGNMENT =
   /\byou are (now )?(a|an|the)\b|\byou are the (assistant|ai|model|system)\b|(теперь\s+ты|ты\s+теперь|ты\s+[—-]\s*)\s*(полезн|систем|ассистент|помощник|ии|модель|бот)/i
 
-/** Address the model directly: "Assistant:", "LLM,", "System prompt:". */
-const VOCATIVE =
-  /\b(assistant|ai assistant|ai|llm|model|chatbot|system|gpt|chatgpt|claude|copilot|gemini)\b\s*[,:]|(ассистент|помощник|система|модель|нейросет[ьи]|ии)\s*[,:]/i
+/**
+ * Address the model directly: "Assistant:", "LLM,", "Ассистент:".
+ *
+ * The Cyrillic half needs its boundaries spelled out. `\b` in JavaScript is
+ * defined against `[A-Za-z0-9_]`, so it does nothing between Cyrillic letters —
+ * and the alternative `ии` therefore matched inside "по России," , "в серии," ,
+ * "этой информации," . A shop's own meta description was being flagged as an
+ * instruction addressed to a model, in the language this product is for. It
+ * went unseen because the corpus that certifies these rules had no Cyrillic in
+ * it at all.
+ *
+ * Case endings are listed rather than trimmed: "для ассистента:" and
+ * "ассистенту:" are the same address, and a rule that only reads the nominative
+ * reads a grammar book rather than a page.
+ */
+const CYRILLIC_ADDRESS =
+  '(?:ассистент|помощник|систем|модел|нейросет|нейронн[ыа][йя]\\s+сет|ии|искусственн[ыо][йм]\\s+интеллект)'
+const VOCATIVE = new RegExp(
+  '\\b(assistant|ai assistant|ai|llm|model|chatbot|system|gpt|chatgpt|claude|copilot|gemini)\\b\\s*[,:]' +
+    `|(?<![а-яё])${CYRILLIC_ADDRESS}(?:[ауеояьию]|ом|ами|ах)?(?![а-яё])\\s*[,:]`,
+  'i',
+)
 
 /** Ask it to keep something from the person it is working for. */
 const SECRECY =
@@ -78,7 +97,7 @@ const SYSTEM_PROMPT = /\bsystem prompt\b|\bsystem message\b|\b<\|?(system|im_sta
 
 /** What an attacker actually wants out of the session. */
 const SENSITIVE_TARGET =
-  /\b(one-time (code|password)|otp|2fa|password|passwords|credential|credentials|cookie|cookies|session token|api key|secret|inbox|private key|seed phrase)\b|(парол[ья]|код\s+из\s+смс|одноразов\w*\s+код|секрет|учётн\w*\s+данн|сид-фраз|seed-фраз|токен\s+сесси|ключ\s+api)/i
+  /\b(one-time (code|password)|otp|2fa|password|passwords|credential|credentials|cookie|cookies|session token|api key|secret|inbox|private key|seed phrase|payment|transfer|wire|invoice|funds|wallet)\b|(парол[ья]|код\s+из\s+смс|одноразов\w*\s+код|секрет|учётн\w*\s+данн|сид-фраз|seed-фраз|токен\s+сесси|ключ\s+api|деньг[иа]|перевод\s+средств|средств[ао]?\s+на\s+счёт|на\s+счёт|оплат[уы]|кошел[ьё])/i
 
 /**
  * An imperative opening a sentence, optionally after a short adverbial clause.
@@ -87,7 +106,7 @@ const SENSITIVE_TARGET =
  * таблетке" is a leaflet, "отправь пароль" is an instruction.
  */
 const IMPERATIVE =
-  /(^|[.!?]\s+)(?:[a-z][a-z ]{0,30},\s*)?(open|find|send|post|copy|fetch|visit|reply|output|reveal|forward|upload|email|summarise|summarize|rate|recommend|approve|rank|ignore|disregard|forget|use)\b|(^|[.!?]\s+)(?:[а-яё][а-яё ]{0,30},\s*)?(отправ[ьи]|перешл[иь]|отош[ли]|открой|найд[иь]|скопируй|загрузи|вывед[иь]|ответь|покажи|сообщи|используй|вызови|игнорируй|забудь|оцени|порекомендуй|одобри)/i
+  /(^|[.!?:;]\s+)(?:[a-z][a-z ]{0,30},\s*)?(open|find|send|post|copy|fetch|visit|reply|output|reveal|forward|upload|email|summarise|summarize|rate|recommend|approve|rank|ignore|disregard|forget|use)\b|(^|[.!?:;]\s+)(?:[а-яё][а-яё ]{0,30},\s*)?(отправ[ьи]|перешл[иь]|отош[ли]|открой|найд[иь]|скопируй|загрузи|вывед[иь]|ответь|покажи|сообщи|используй|вызови|игнорируй|забудь|оцени|порекомендуй|одобри|подтверд[иь]|выполн[иь]|перевед[иь]|введи|вставь|нажми|перейди|удали|измени|продолжи|напиши|заполни|подпиши|разреши)/i
 
 export interface SignalReport {
   readonly signals: readonly SignalName[]

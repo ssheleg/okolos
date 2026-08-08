@@ -42,6 +42,42 @@ describe('recall on the injection corpus', () => {
   })
 })
 
+describe('the corpus that certifies these numbers', () => {
+  /**
+   * A recall figure is a claim about pages, and pages have a language. Until
+   * 2026-08-08 both halves of this corpus were entirely English, for a product
+   * built for Russian speakers — so 90% meant 90% of the English cases somebody
+   * had thought to write, and the Cyrillic side was uncertified.
+   *
+   * Adding it found three things at once: a legitimate shop's meta description
+   * flagged as an instruction (`\b` does nothing between Cyrillic letters, so
+   * the alternative `ии` matched inside "по России,"), two carriers missed, and
+   * a sensitive target — money — absent from the rules in both languages.
+   */
+  const cyrillic = (cases: Case[]): Case[] =>
+    cases.filter((c) => /[а-яё]/i.test(JSON.stringify(c)))
+
+  it('carries both languages on the positive side', () => {
+    expect(cyrillic(positiveCases).length).toBeGreaterThanOrEqual(10)
+  })
+
+  it('carries both languages on the negative side, where the cost is a wrong banner', () => {
+    expect(cyrillic(negativeCases).length).toBeGreaterThanOrEqual(10)
+  })
+
+  it('holds its recall floor within each language, not only across the pile', () => {
+    // Averaging hides a language: 20 English cases at 100% and 10 Russian at
+    // 40% still reads as 80% overall.
+    for (const [label, cases] of [
+      ['Cyrillic', cyrillic(positiveCases)],
+      ['Latin', positiveCases.filter((c) => !/[а-яё]/i.test(JSON.stringify(c)))],
+    ] as const) {
+      const found = cases.filter((c) => detectHidden(page([c.candidate]), ctx).length > 0)
+      expect(found.length / cases.length, `recall on the ${label} cases`).toBeGreaterThanOrEqual(0.9)
+    }
+  })
+})
+
 describe('silence on legitimately hidden text', () => {
   // Every entry here is something real pages do on purpose. One false positive
   // is a red build: flagging a screen-reader label is how a security extension

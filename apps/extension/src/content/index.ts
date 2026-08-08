@@ -18,6 +18,7 @@ import type {
 } from '@okolos/contracts'
 
 import { AgentGate } from './agent-gate.js'
+import { createPacer } from './pace.js'
 import { collect, DEFAULT_BUDGET } from './collect.js'
 import { warnIfLookalike } from './lookalike.js'
 import { watchCredentialFields } from './credential.js'
@@ -34,8 +35,7 @@ import { Sanitiser } from './sanitize.js'
  */
 
 const SEVERITY_ORDER: Record<Severity, number> = { critical: 3, major: 2, minor: 1, info: 0 }
-const RESCAN_DEBOUNCE_MS = 250
-const MAX_RESCANS_PER_SECOND = 2
+
 
 const platform = detectPlatform()
 
@@ -73,8 +73,7 @@ let lastVerdicts: Verdict[] = []
 let banner: BannerHandle | null = null
 let inspector: InspectorHandle | null = null
 let gate: GateHandle | null = null
-let lastRescans: number[] = []
-let pending: ReturnType<typeof setTimeout> | null = null
+
 
 /**
  * Performance marks are local to the page and never leave it. They exist so
@@ -200,16 +199,23 @@ function closeInspector(): void {
   inspector = null
 }
 
+/**
+ * The pace at which a mutating page is re-read.
+ *
+ * The policy lives in `pace.ts` and is tested there. What it replaced held the
+ * same three numbers in module variables and *dropped* an over-budget scan,
+ * which meant a page that mutated hard and then went quiet was never examined
+ * in its final state.
+ */
+const pacer = createPacer({
+  now: () => Date.now(),
+  setTimer: (fn, ms) => setTimeout(fn, ms),
+  clearTimer: (handle) => clearTimeout(handle),
+  run: () => void safely(scan),
+})
+
 function rescanSoon(): void {
-  if (pending) return
-  pending = setTimeout(() => {
-    pending = null
-    const now = Date.now()
-    lastRescans = lastRescans.filter((t) => now - t < 1000)
-    if (lastRescans.length >= MAX_RESCANS_PER_SECOND) return
-    lastRescans.push(now)
-    void safely(scan)
-  }, RESCAN_DEBOUNCE_MS)
+  pacer.request()
 }
 
 async function safely(work: () => Promise<void>): Promise<void> {

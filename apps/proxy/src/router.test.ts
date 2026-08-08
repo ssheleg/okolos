@@ -491,3 +491,37 @@ describe('an owner who wants to appeal, using only a browser', () => {
     await expect(response.json()).resolves.toMatchObject({ domain: 'mysite.test', alreadyFiled: false })
   })
 })
+
+describe('the privacy policy, where someone can read it before installing', () => {
+  it('is served at a stable address, whole and without a script', async () => {
+    const response = await handle(get('/privacy'), env())
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toMatch(/text\/html/)
+    const html = await response.text()
+    expect(html).not.toContain('<script')
+    expect(html).toContain('Что Okolos отправляет')
+  })
+
+  it('names what actually leaves the device, so the page is not a summary of a summary', async () => {
+    const html = await (await handle(get('/privacy'), env())).text()
+    for (const purpose of ['password-range', 'leak-lookup', 'feed-update', 'domain-status']) {
+      expect(html, `${purpose} is not on the served page`).toContain(purpose)
+    }
+  })
+
+  it('carries exactly the markup the generator produces from the document', async () => {
+    // Two copies of a policy is two policies, and the one a reader sees is the
+    // one nobody edits.
+    const { readFileSync } = await import('node:fs')
+    const pathMod = await import('node:path')
+    const root = pathMod.resolve(import.meta.dirname, '../../..')
+    // @ts-expect-error — a plain .mjs tool, imported for its converter.
+    const { toHtml } = await import('../../../tools/privacy-page.mjs')
+    const expected = toHtml(readFileSync(pathMod.join(root, 'docs/privacy.md'), 'utf8')) as string
+    const html = await (await handle(get('/privacy'), env())).text()
+    expect(
+      html.includes(expected),
+      'the served page differs from docs/privacy.md — run `node tools/privacy-page.mjs`',
+    ).toBe(true)
+  })
+})

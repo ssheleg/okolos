@@ -32,6 +32,13 @@ const CATALOGUE = JSON.parse(
   readFileSync(path.join(root, 'apps/extension/_locales/ru/messages.json'), 'utf8'),
 ) as Record<string, { message: string }>
 
+/** The purposes the audited network path accepts, from the contract that defines them. */
+const PURPOSES: string[] = (() => {
+  const contract = readFileSync(path.join(root, 'packages/contracts/src/rpc.ts'), 'utf8')
+  const block = /export type Purpose =([\s\S]*?)\n\n/.exec(contract)?.[1] ?? ''
+  return [...block.matchAll(/'([a-z-]+)'/g)].map((m) => m[1] as string)
+})()
+
 const members = (dir: string): string[] =>
   readdirSync(path.join(root, dir), { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
@@ -348,14 +355,16 @@ describe('the brand pack states facts, and a fact is checkable', () => {
   })
 
   it('lists every network purpose the audited path can carry, and no others', () => {
-    // The claim "there are no others" is the whole point of the table.
-    const request = readFileSync(path.join(root, 'packages/net/src/request.ts'), 'utf8')
-    const purposes = new Set(
-      [...request.matchAll(/'(leak-lookup|file-hash|feed-update|model-update|domain-status)'/g)].map(
-        (m) => m[1] as string,
-      ),
-    )
-    expect(purposes.size, 'no purposes found — the extraction broke').toBeGreaterThanOrEqual(4)
+    /**
+     * Read from the contract, not from a list written here. The first version
+     * of this check named the five purposes it expected — and there were six.
+     * `password-range`, the one that carries part of a password hash, was
+     * absent from the brand pack and invisible to the gate meant to notice.
+     * An extraction that names what it looks for cannot see what it was not
+     * told about.
+     */
+    const purposes = PURPOSES
+    expect(purposes.length, 'no purposes found — the extraction broke').toBeGreaterThanOrEqual(5)
     for (const purpose of purposes) {
       expect(facts, `purpose ${purpose} is not in the brand pack`).toContain(`\`${purpose}\``)
     }
@@ -370,5 +379,64 @@ describe('the brand pack states facts, and a fact is checkable', () => {
         `\`${permission}\``,
       )
     }
+  })
+})
+
+describe('the privacy policy describes the code, not an intention', () => {
+  /**
+   * A policy is the one document a reader has no way to check, so it is the one
+   * that must be checked hardest. Chrome Web Store requires it; a person
+   * deciding whether to grant access to every site deserves it to be true.
+   */
+  const policy = readFileSync(path.join(root, 'docs/privacy.md'), 'utf8')
+
+  it('names every purpose the audited path accepts', () => {
+    for (const purpose of PURPOSES) {
+      expect(policy, `purpose ${purpose} is not in the policy`).toContain(`\`${purpose}\``)
+    }
+  })
+
+  it('names every host the extension can actually reach', () => {
+    // Destinations, taken from the source rather than from memory. A policy
+    // that omits one is worse than no policy: it is a specific false claim.
+    const hosts = new Set<string>()
+    const walk = (dir: string): void => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const p = path.join(dir, entry.name)
+        if (entry.isDirectory()) {
+          if (entry.name !== 'node_modules' && entry.name !== 'dist') walk(p)
+        } else if (entry.name.endsWith('.ts') && !entry.name.endsWith('.test.ts')) {
+          for (const m of readFileSync(p, 'utf8').matchAll(/https:\/\/([a-z0-9.-]+)/g)) {
+            hosts.add(m[1] as string)
+          }
+        }
+      }
+    }
+    walk(path.join(root, 'apps/extension/src'))
+
+    for (const host of hosts) {
+      // `.invalid` is reserved and unreachable by definition — the model
+      // endpoint that exists in the type and is never called.
+      if (host.endsWith('.invalid')) continue
+      expect(policy, `${host} is reachable from the extension and absent from the policy`).toContain(
+        host,
+      )
+    }
+  })
+
+  it('states the retention the schema enforces, for every store that has one', () => {
+    const schema = readFileSync(path.join(root, 'packages/storage/src/schema.ts'), 'utf8')
+    const block = /RETENTION_DAYS = \{([\s\S]*?)\}/.exec(schema)?.[1] ?? ''
+    const days = [...block.matchAll(/(\w+):\s*(\d+)/g)].map((m) => m[2] as string)
+    expect(days.length, 'no retention values found — the extraction broke').toBeGreaterThanOrEqual(2)
+    for (const value of new Set(days)) {
+      expect(policy, `retention of ${value} days is enforced and not stated`).toContain(value)
+    }
+  })
+
+  it('does not promise anonymity for the check that sends an address whole', () => {
+    // A screen in this product once claimed the address was hashed while it was
+    // being sent entire. The policy says so plainly, and this keeps it saying so.
+    expect(policy).toMatch(/адрес почты отправляется целиком/i)
   })
 })

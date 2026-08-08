@@ -5,6 +5,7 @@
  * read, nothing about a request is stored except what an appeal explicitly
  * contains. A domain lookup is answered and forgotten.
  */
+import { PRIVACY_HTML } from './privacy.generated.js'
 
 export interface Env {
   readonly DB: D1Like
@@ -63,6 +64,12 @@ export async function handle(request: Request, env: Env): Promise<Response> {
 
   if (url.pathname === '/status' && readOnly) {
     return statusPage(url, env)
+  }
+
+  // A stable address, because a store listing links to it and a person
+  // deciding about the permissions has not installed anything yet.
+  if (url.pathname === '/privacy' && readOnly) {
+    return privacyPage()
   }
 
   if (url.pathname === '/healthz') {
@@ -141,6 +148,33 @@ async function servePublishedFeed(name: string, env: Env): Promise<Response> {
       'last-modified': new Date(row.updated_at).toUTCString(),
     },
   })
+}
+
+/**
+ * The privacy policy, served whole and without a script.
+ *
+ * Generated from `docs/privacy.md` so the document a reader sees and the one the
+ * repository keeps cannot drift; a test compares the committed markup with what
+ * the generator produces.
+ */
+function privacyPage(): Response {
+  return new Response(
+    `<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Приватность — Okolos</title>
+<meta name="description" content="Что Okolos отправляет с устройства, что не отправляет, и сколько хранит.">
+</head>
+<body>
+<main>
+${PRIVACY_HTML}
+</main>
+</body>
+</html>`,
+    { status: 200, headers: HTML_HEADERS },
+  )
 }
 
 async function statusPage(url: URL, env: Env): Promise<Response> {

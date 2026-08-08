@@ -38,14 +38,50 @@ export interface DownloadVerdict {
   readonly unchecked: boolean
 }
 
-const EXECUTABLE = /\.(exe|msi|bat|cmd|scr|ps1|vbs|js|jar|apk|dmg|pkg|sh|deb|rpm|com|hta|lnk)$/i
-const ARCHIVE = /\.(zip|rar|7z|iso|img)$/i
+/**
+ * What counts as a program, and what a shorter list would have cost.
+ *
+ * Membership here does not block anything — it produces "this is a program, and
+ * not every check could be run on it". But it is also the gate on the
+ * double-extension check below, so an extension missing from this list disables
+ * two things at once: `invoice.pdf.wsf` reads as an ordinary file.
+ *
+ * The list is grouped by what a person would call the thing, because that is
+ * how the omissions were found: no Windows script formats, no control-panel
+ * formats, no macro-enabled Office documents — the commonest malicious
+ * attachment there is.
+ *
+ * `.html` and `.svg` are deliberately absent. They do carry payloads, and a
+ * saved page is also the most ordinary download there is; a note on every one
+ * of them is how a security extension teaches people to ignore its notes.
+ */
+const EXECUTABLE =
+  new RegExp(
+    '\\.(' +
+      // Native programs and installers.
+      'exe|msi|msp|com|scr|pif|apk|dmg|pkg|deb|rpm|appx|msix|gadget|' +
+      // Shell and scripting hosts.
+      'bat|cmd|ps1|ps2|psc1|vbs|vbe|js|jse|wsf|wsh|sh|jar|hta|mshxml|' +
+      // Formats Windows opens with a program attached to them.
+      'lnk|scf|url|reg|msc|cpl|chm|inf|ade|adp|' +
+      // Office documents that carry macros. They look like documents, which is
+      // the point of using them.
+      'docm|dotm|xlsm|xltm|xlsb|pptm|potm|ppam' +
+      ')$',
+    'i',
+  )
+
+/** Containers: what is inside was not checked, and a mounted one loses the mark of the web. */
+const ARCHIVE = /\.(zip|rar|7z|iso|img|cab|arj|lzh|ace|tar|gz|tgz|bz2|xz|zst|vhd|vhdx|wim)$/i
 
 /** A name whose real extension is hidden behind a decoy one. */
 function hasDoubleExtension(filename: string): boolean {
   const parts = filename.toLowerCase().split('.')
   if (parts.length < 3) return false
-  const decoy = /^(pdf|doc|docx|xls|xlsx|ppt|jpg|jpeg|png|txt|csv)$/
+  // A decoy is whatever looks harmless in a filename, so the set is wider than
+  // "document": an image, a video and a saved message all read as safe.
+  const decoy =
+    /^(pdf|doc|docx|rtf|odt|xls|xlsx|ods|ppt|pptx|odp|txt|csv|xml|json|jpg|jpeg|png|gif|bmp|webp|svg|mp3|mp4|avi|mov|htm|html|eml|msg|log)$/
   return decoy.test(parts[parts.length - 2] as string) && EXECUTABLE.test(filename)
 }
 

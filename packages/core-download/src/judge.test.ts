@@ -113,3 +113,66 @@ describe('what the file itself gives away', () => {
     expect(verdict.action).toBe('warn')
   })
 })
+
+describe('the shapes this list is a claim about', () => {
+  /**
+   * Membership in the executable list does not block anything — it says "this
+   * is a program, and not every check could be run on it", and it is what makes
+   * the double-extension check work at all: `hasDoubleExtension` requires the
+   * real extension to be recognised. So an extension missing from the list
+   * silently disables two things at once, and the cost of adding one is a
+   * sentence on a screen rather than a blocked file.
+   *
+   * The list held 18 extensions on 2026-08-08 and none of the Windows script
+   * and control-panel formats that carry payloads today, nor macro-enabled
+   * Office documents, which are the commonest malicious attachment there is.
+   */
+  const SKIPPED = { ran: false as const, why: 'the file is behind a login' }
+
+  const named = (filename: string) =>
+    judgeDownload(
+      evidence({ filename, mimeType: null, checks: { feed: PASS, 'file-type': PASS, hash: SKIPPED } }),
+    )
+
+  it('recognises the Windows script and control formats used to deliver payloads', () => {
+    for (const ext of ['wsf', 'jse', 'vbe', 'pif', 'msc', 'cpl', 'reg', 'chm', 'scf', 'url', 'msix', 'appx']) {
+      const verdict = named(`invoice.${ext}`)
+      expect(verdict.reasons.join(' '), ext).toMatch(/program/i)
+    }
+  })
+
+  it('recognises macro-enabled Office documents, which look like documents', () => {
+    for (const ext of ['docm', 'xlsm', 'pptm', 'xlsb', 'dotm']) {
+      expect(named(`отчёт.${ext}`).reasons.join(' '), ext).toMatch(/program|macro/i)
+    }
+  })
+
+  it('recognises the containers used to carry a payload past the browser', () => {
+    // .vhd and .cab join .iso and .img: a mounted container is where a file
+    // arrives without the mark of the web.
+    for (const ext of ['cab', 'vhd', 'vhdx', 'tar', 'gz', 'tgz', 'wim']) {
+      expect(named(`photos.${ext}`).reasons.join(' '), ext).toMatch(/archive|container/i)
+    }
+  })
+
+  it('still sees a program hidden behind a decoy extension it now knows', () => {
+    // The double-extension check is only as wide as the executable list.
+    const verdict = judgeDownload(evidence({ filename: 'счёт.pdf.wsf', mimeType: null }))
+    expect(verdict.reasons.join(' ')).toMatch(/hides a program/i)
+  })
+
+  it('treats a wider decoy set, because a decoy is whatever looks harmless', () => {
+    for (const decoy of ['rtf', 'htm', 'html', 'gif', 'mp4', 'eml', 'msg', 'xml']) {
+      const verdict = judgeDownload(evidence({ filename: `letter.${decoy}.exe`, mimeType: null }))
+      expect(verdict.reasons.join(' '), decoy).toMatch(/hides a program/i)
+    }
+  })
+
+  it('says nothing about an ordinary document', () => {
+    // The cost of widening a list is here: a plain download must stay quiet.
+    for (const name of ['отчёт.pdf', 'photo.jpg', 'notes.txt', 'таблица.xlsx', 'page.html']) {
+      const verdict = judgeDownload(evidence({ filename: name }))
+      expect(verdict.action, name).toBe('inform')
+    }
+  })
+})

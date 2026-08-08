@@ -268,6 +268,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** success, error
 - **Errors & recovery:** feeds unavailable or stale -> system says the checks were limited; the verdict never claims more than the checks that actually ran
 - **Status:** implemented
+- **What "a program" means here:** the list of extensions in `judge.ts`, and it is a coverage claim. It held 18 entries until 2026-08-08 with no Windows script or control-panel formats and no macro-enabled Office documents — the commonest malicious attachment there is. Membership never blocks; it produces "this is a program, and not every check could be run on it", and it is also the gate on the double-extension check, so a missing extension made `счёт.pdf.wsf` read as an ordinary file. `.html` and `.svg` stay out deliberately: a saved page is the most ordinary download there is, and a note on every one of them teaches people to ignore the notes
 - **Coverage:** packages/core-download/src/judge.ts:judgeDownload, apps/extension/src/background/downloads.ts:handleDownload, apps/extension/src/content/download.ts:showDownloadVerdict (unit only — driving a real download through an extension in Playwright is not stable enough to gate on; until 2026-08-05 the banner did not exist at all and the verdict was journalled in silence)
 
 ### SCN-013: Download partially checked — hash unavailable

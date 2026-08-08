@@ -1,0 +1,105 @@
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import path from 'node:path'
+import { describe, expect, it } from 'vitest'
+
+/**
+ * Every module that holds a rule is tested where the rule lives.
+ *
+ * This audit found four modules covered only through their callers, and each
+ * one hid a defect that reading the caller could not surface: the redactor
+ * could not see through percent-encoding, retention was never swept, the
+ * sanitiser counted restores nobody could see, and all nine injection signals
+ * were written in English while the product's audience reads Russian. A rule
+ * reached only through its caller is a rule whose wording nobody reads back.
+ *
+ * The exemptions below are entry points, and each one says why. An entry point
+ * runs on import and wires other people's modules together; a sibling test for
+ * it would be a test of the wiring, which is what the end-to-end suite and the
+ * structural gates in this directory are for. Adding a name here is a claim,
+ * and the claim has to be written down.
+ */
+
+const root = process.cwd()
+
+const EXEMPT: Record<string, string> = {
+  'apps/extension/src/background/index.ts':
+    'entry point: registers listeners and alarms on import. Its logic lives in the modules it calls, each of which is tested; the wiring is covered end to end and by tools/test-quality.test.ts.',
+  'apps/extension/src/content/index.ts':
+    'entry point: installs observers and the gate on import. Same shape, covered by the e2e suite in both browsers.',
+  'apps/extension/src/options/index.ts':
+    'entry point: paints on import. The state it derives is tested in popup/state.test.ts and the panels in packages/ui.',
+  'apps/extension/src/popup/index.ts':
+    'entry point: paints on import and writes the last-check time on pagehide; state.ts beside it derives everything shown and is tested.',
+  'apps/extension/src/first-run/index.ts':
+    'entry point: paints on import and asks the background what is available; the screen it draws is tested in packages/ui/src/first-run.',
+  'apps/extension/src/interstitial/index.ts':
+    'entry point: paints on import from the blocked URL in the query string; the screen is tested in packages/ui/src/interstitial.',
+  'apps/extension/src/offscreen/index.ts':
+    'entry point: hosts the model runtime on import; the session it wraps is tested in packages/model.',
+  'apps/proxy/src/index.ts': 'entry point: the worker fetch handler; router.ts beside it is tested.',
+
+  'packages/contracts/src/rpc.ts':
+    'types only at runtime — the map is checked against handlers and senders by tools/test-quality.test.ts, which is the assertion that matters for it.',
+  'packages/platform/src/index.ts':
+    'chooses an adapter from what the browser exposes; adapter.ts beside it carries the behaviour and its tests.',
+  'packages/model/src/runtime.ts':
+    'a seam that returns null until a classifier ships. There is nothing to assert beyond that, and licensing.test.ts asserts the descriptor it holds.',
+}
+
+/** Source modules, excluding tests, declarations and build output. */
+function sources(dir: string, out: string[] = []): string[] {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name)
+    if (entry.name === 'node_modules' || entry.name === 'dist') continue
+    if (entry.isDirectory()) sources(full, out)
+    else if (/\.(ts|mjs)$/.test(entry.name) && !/\.(test|d)\./.test(entry.name)) out.push(full)
+  }
+  return out
+}
+
+/** A module that only re-exports has no rule of its own to test. */
+function holdsRules(file: string): boolean {
+  const body = readFileSync(file, 'utf8')
+  const withoutComments = body.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+  return /^export (?:async )?(?:function|class)|^export const \w+ = (?:\(|async|function)/m.test(
+    withoutComments,
+  )
+}
+
+const modules = ['packages', 'apps', 'tools']
+  .filter((dir) => existsSync(path.join(root, dir)))
+  .flatMap((dir) => sources(path.join(root, dir)))
+  .map((file) => path.relative(root, file))
+  .filter(holdsRules)
+
+describe('a rule is tested where it lives', () => {
+  it('reads a real list of modules, so an empty sweep cannot pass', () => {
+    expect(modules.length).toBeGreaterThan(40)
+  })
+
+  it('every module holding a rule has a test file beside it', () => {
+    const orphans = modules.filter((file) => {
+      if (file in EXEMPT) return false
+      const base = file.replace(/\.(ts|mjs)$/, '')
+      return !existsSync(path.join(root, `${base}.test.ts`))
+    })
+    expect(
+      orphans,
+      `no test file beside: ${orphans.join(', ')}. Write one, or exempt it in tools/coverage-shape.test.ts with the reason.`,
+    ).toEqual([])
+  })
+
+  it('every exemption names a module that exists', () => {
+    // An exemption for a file that has been deleted or renamed is a hole left
+    // open for a module nobody is looking at any more.
+    const stale = Object.keys(EXEMPT).filter((file) => !existsSync(path.join(root, file)))
+    expect(stale, `exempted but absent: ${stale.join(', ')}`).toEqual([])
+  })
+
+  it('every exemption gives a reason long enough to be one', () => {
+    const thin = Object.entries(EXEMPT)
+      .filter(([, why]) => why.trim().length < 40)
+      .map(([file]) => file)
+    expect(thin, `these exemptions say nothing: ${thin.join(', ')}`).toEqual([])
+  })
+})

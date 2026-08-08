@@ -93,7 +93,11 @@ export function toUnicodeHost(host: string): string {
     .map((label) => {
       if (!label.toLowerCase().startsWith('xn--')) return label
       const decoded = decodePunycode(label.slice(4))
-      return decoded ?? label
+      // An empty decoding is not a decoding. `xn--` with nothing behind it used
+      // to come back as an empty label, so `xn--.de` became `.de` — a label
+      // gone, and two different hosts comparing equal in a check whose whole
+      // job is telling near-identical names apart.
+      return decoded === null || decoded === '' ? label : decoded
     })
     .join('.')
 }

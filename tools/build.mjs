@@ -107,5 +107,8 @@ for (const target of targets) {
   // placeholder and uploads as a broken listing.
   await cp(path.join(app, 'icons'), path.join(outDir, 'icons'), { recursive: true })
 
+  // Without these the manifest's `__MSG_appName__` is what the browser shows.
+  await cp(path.join(app, '_locales'), path.join(outDir, '_locales'), { recursive: true })
+
   console.log(`built ${target}${withTestHooks ? ' (test hooks)' : ''} → ${path.relative(root, outDir)}`)
 }

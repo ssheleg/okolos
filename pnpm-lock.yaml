@@ -104,6 +104,9 @@ importers:
       '@okolos/core-traps':
         specifier: workspace:*
         version: link:../../packages/core-traps
+      '@okolos/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@okolos/model':
         specifier: workspace:*
         version: link:../../packages/model
@@ -172,6 +175,8 @@ importers:
 
   packages/core-traps: {}
 
+  packages/i18n: {}
+
   packages/model:
     dependencies:
       '@okolos/contracts':
@@ -219,6 +224,9 @@ importers:
       '@okolos/core-recovery':
         specifier: workspace:*
         version: link:../core-recovery
+      '@okolos/i18n':
+        specifier: workspace:*
+        version: link:../i18n
 
 packages:
 

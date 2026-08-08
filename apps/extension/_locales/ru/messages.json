@@ -1,0 +1,56 @@
+{
+  "appName": {
+    "message": "Okolos — защита от скрытых инструкций"
+  },
+  "appDescription": {
+    "message": "Находит на странице текст, спрятанный для вашего ассистента, проверяет ссылки и загрузки и показывает всё, что уходит с устройства."
+  },
+  "actionTitle": {
+    "message": "Okolos"
+  },
+  "blockTitle": {
+    "message": "Эта страница заблокирована до загрузки"
+  },
+  "blockSourceKnown": {
+    "message": "Помечена списком $FEED$$ENTRY$.",
+    "placeholders": {
+      "feed": {
+        "content": "$1"
+      },
+      "entry": {
+        "content": "$2"
+      }
+    }
+  },
+  "blockSourceEntryDate": {
+    "message": ", запись от $DATE$",
+    "placeholders": {
+      "date": {
+        "content": "$1"
+      }
+    }
+  },
+  "blockSourceUnknown": {
+    "message": "Список, который её пометил, определить не удалось. Блокировка в силе; что записано, видно в журнале."
+  },
+  "blockStale": {
+    "message": "Этот список обновлялся $DAYS$ дней назад, поэтому может быть неактуален.",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "blockBack": {
+    "message": "Назад"
+  },
+  "blockContinue": {
+    "message": "Всё равно продолжить"
+  },
+  "blockOwner": {
+    "message": "Это мой сайт"
+  },
+  "blockContinueNote": {
+    "message": "Продолжение запомнит этот сайт, чтобы больше не спрашивать, и запишет решение в журнал."
+  }
+}

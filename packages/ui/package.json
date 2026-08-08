@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "license": "AGPL-3.0-only",
-  "description": "Surfaces: in-page banner, finding inspector, self-audit panel. No framework \u2014 an extension that injects a runtime into every page is weight and risk.",
+  "description": "Surfaces: in-page banner, finding inspector, self-audit panel. No framework — an extension that injects a runtime into every page is weight and risk.",
   "exports": {
     ".": "./src/index.ts"
   },
@@ -17,6 +17,7 @@
     "@okolos/core-lookalike": "workspace:*",
     "@okolos/core-leaks": "workspace:*",
     "@okolos/core-recovery": "workspace:*",
-    "@okolos/core-extensions": "workspace:*"
+    "@okolos/core-extensions": "workspace:*",
+    "@okolos/i18n": "workspace:*"
   }
 }

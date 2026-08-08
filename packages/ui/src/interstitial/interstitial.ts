@@ -16,6 +16,8 @@
  * the extension off.
  */
 
+import { t } from '@okolos/i18n'
+
 export interface InterstitialProps {
   /** Origin and path of the page that was stopped. Never its query string. */
   readonly url: string
@@ -43,7 +45,7 @@ export function renderInterstitial(
   root.setAttribute('data-role', 'interstitial')
 
   const heading = doc.createElement('h1')
-  heading.textContent = 'This page was blocked before it loaded'
+  heading.textContent = t('blockTitle')
   root.append(heading)
 
   root.append(text(doc, 'url', props.url))
@@ -53,8 +55,12 @@ export function renderInterstitial(
       doc,
       'source',
       props.feed === null
-        ? 'The list that flagged it could not be identified. The block still applies; open the journal to see what is recorded.'
-        : `Flagged by ${props.feed}${props.entryDate ? `, entry dated ${props.entryDate}` : ''}.`,
+        ? t('blockSourceUnknown')
+        : t(
+            'blockSourceKnown',
+            props.feed,
+            props.entryDate ? t('blockSourceEntryDate', props.entryDate) : '',
+          ),
     ),
   )
 
@@ -63,7 +69,7 @@ export function renderInterstitial(
       text(
         doc,
         'stale',
-        `That list was last updated ${props.feedAgeDays} days ago, so it may be out of date.`,
+        t('blockStale', String(props.feedAgeDays)),
       ),
     )
   }
@@ -71,9 +77,9 @@ export function renderInterstitial(
   const actions = doc.createElement('div')
   actions.setAttribute('data-role', 'actions')
   actions.append(
-    button(doc, 'back', 'Go back', handlers.onBack, true),
-    button(doc, 'continue', 'Continue anyway', handlers.onContinue),
-    button(doc, 'owner', 'I own this site', handlers.onOwner),
+    button(doc, 'back', t('blockBack'), handlers.onBack, true),
+    button(doc, 'continue', t('blockContinue'), handlers.onContinue),
+    button(doc, 'owner', t('blockOwner'), handlers.onOwner),
   )
   root.append(actions)
 
@@ -81,7 +87,7 @@ export function renderInterstitial(
     text(
       doc,
       'continue-note',
-      'Continuing remembers this site so you are not asked again, and records the decision in your journal.',
+      t('blockContinueNote'),
     ),
   )
 

@@ -1,7 +1,28 @@
 /** @vitest-environment happy-dom */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fromCatalogue, useResolver, type Catalogue } from '@okolos/i18n'
+
 import { renderInterstitial, type InterstitialHandlers, type InterstitialProps } from './interstitial.js'
+
+/**
+ * The words this screen shows are the shipped Russian ones, because
+ * `default_locale` is `ru`. Installing the real catalogue rather than a fake
+ * means these assertions check two things at once: that the screen says the
+ * right thing, and that the catalogue has a message for every key it asks for.
+ * A fake would let a missing key pass here and appear as `[blockBack]` on a
+ * blocked page.
+ */
+const CATALOGUE = JSON.parse(
+  readFileSync(
+    path.resolve(import.meta.dirname, '../../../../apps/extension/_locales/ru/messages.json'),
+    'utf8',
+  ),
+) as Catalogue
+
+useResolver(fromCatalogue(CATALOGUE))
 
 const PROPS: InterstitialProps = {
   url: 'https://bad.test/login',
@@ -37,7 +58,7 @@ describe('on whose authority', () => {
     // A block whose origin is unknown is still a block, and the user is
     // entitled to know which of the two they are looking at.
     const el = render({ ...PROPS, feed: null, entryDate: null })
-    expect(role(el, 'source')?.textContent).toMatch(/could not be identified/i)
+    expect(role(el, 'source')?.textContent).toMatch(/определить не удалось/i)
   })
 
   it('shows which page was stopped', () => {
@@ -48,7 +69,7 @@ describe('on whose authority', () => {
 describe('when the data is old', () => {
   it('says how old, so the user can weigh it', () => {
     const el = render({ ...PROPS, feedAgeDays: 30 })
-    expect(role(el, 'stale')?.textContent).toContain('30 days')
+    expect(role(el, 'stale')?.textContent).toContain('30 дней')
   })
 
   it('stays quiet about a fresh list', () => {
@@ -73,7 +94,7 @@ describe('the way out', () => {
     const el = render(PROPS, h)
     role(el, 'continue')?.click()
     expect(h.onContinue).toHaveBeenCalledTimes(1)
-    expect(role(el, 'continue-note')?.textContent).toMatch(/remembers|journal/i)
+    expect(role(el, 'continue-note')?.textContent).toMatch(/запомнит|журнал/i)
   })
 
   it('gives a site owner somewhere to go', () => {

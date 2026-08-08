@@ -1,0 +1,10 @@
+{
+  "name": "@okolos/i18n",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "description": "The message catalogue and the resolver that reads it. Pure — the locale comes from the host, never from a global.",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "build": "tsc -b" }
+}

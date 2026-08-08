@@ -123,7 +123,7 @@ self-audit panel.
 ### SCR-05: Block interstitial
 - **Used by:** FLW-04
 - **Purpose:** replace a known-malicious page and make the override honest
-- **Elements:** what was blocked; the verdict's source (feed name, entry date); **primary action: "Go back"**; secondary "Continue anyway" (deliberate, states that the exception is remembered and journalled); "I own this site" → SCR-14, **with the blocked domain already in the link** so the owner does not retype what they were just shown; only the host travels, never the blocked URL's path or query
+- **Elements:** what was blocked; the verdict's source (feed name, entry date); **primary action: "Назад"**; secondary "Всё равно продолжить" (deliberate, states that the exception is remembered and journalled); "Это мой сайт" → SCR-14, **with the blocked domain already in the link** so the owner does not retype what they were just shown; only the host travels, never the blocked URL's path or query
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|

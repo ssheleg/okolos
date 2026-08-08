@@ -10,7 +10,7 @@
   // fixtures — including deliberate examples of the very calls the bundle
   // gates forbid — inside the artefact those gates read.
   "exclude": ["src/**/*.test.ts"],
-  "references": [{ "path": "../contracts" },
+  "references": [{ "path": "../i18n" }, { "path": "../contracts" },
     { "path": "../core-queue" },
     { "path": "../core-leaks" },
     { "path": "../core-recovery" },

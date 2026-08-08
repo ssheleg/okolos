@@ -1,0 +1,56 @@
+{
+  "appName": {
+    "message": "Okolos — a guard against hidden instructions"
+  },
+  "appDescription": {
+    "message": "Finds text on a page hidden for your assistant, checks links and downloads, and shows you everything that leaves the device."
+  },
+  "actionTitle": {
+    "message": "Okolos"
+  },
+  "blockTitle": {
+    "message": "This page was blocked before it loaded"
+  },
+  "blockSourceKnown": {
+    "message": "Flagged by $FEED$$ENTRY$.",
+    "placeholders": {
+      "feed": {
+        "content": "$1"
+      },
+      "entry": {
+        "content": "$2"
+      }
+    }
+  },
+  "blockSourceEntryDate": {
+    "message": ", entry dated $DATE$",
+    "placeholders": {
+      "date": {
+        "content": "$1"
+      }
+    }
+  },
+  "blockSourceUnknown": {
+    "message": "The list that flagged it could not be identified. The block still applies; open the journal to see what is recorded."
+  },
+  "blockStale": {
+    "message": "That list was last updated $DAYS$ days ago, so it may be out of date.",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "blockBack": {
+    "message": "Go back"
+  },
+  "blockContinue": {
+    "message": "Continue anyway"
+  },
+  "blockOwner": {
+    "message": "This is my site"
+  },
+  "blockContinueNote": {
+    "message": "Continuing remembers this site so you are not asked again, and records the decision in your journal."
+  }
+}

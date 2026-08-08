@@ -19,6 +19,14 @@ export interface Platform {
   readonly blocking: Blocking
   readonly downloads: Downloads
   readonly extensions: Extensions
+  /**
+   * Resolves a message key against the browser's own catalogue.
+   *
+   * Here rather than in `@okolos/i18n` because this is the one place allowed to
+   * name a browser API. The renderers ask `@okolos/i18n`; the entry point wires
+   * the two together on the first line it runs.
+   */
+  readonly message: (key: string, substitutions?: readonly string[]) => string
 }
 
 /** The other extensions installed, and the ability to turn one off. */
@@ -104,6 +112,13 @@ export interface Tabs {
 
 /** The subset of the WebExtension API both browsers actually agree on. */
 export interface WebExtensionApi {
+  /**
+   * Optional because a test double has no reason to carry it, and because a
+   * page loaded outside an extension context has none either — in both cases
+   * the adapter falls back to showing the key, which is what a user would see
+   * if a message were missing. Same failure, same appearance, one code path.
+   */
+  i18n?: { getMessage?(key: string, substitutions?: string[]): string }
   storage: {
     local: {
       get(keys: string | string[] | null): Promise<Record<string, unknown>>

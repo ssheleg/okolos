@@ -23,6 +23,15 @@ const brief = readFileSync(
   'utf8',
 )
 
+/**
+ * The shipped Russian catalogue — the words a user actually reads, because
+ * `default_locale` is `ru`. A screen record quotes what is on the screen, so
+ * this is what its quoted labels are compared against.
+ */
+const CATALOGUE = JSON.parse(
+  readFileSync(path.join(root, 'apps/extension/_locales/ru/messages.json'), 'utf8'),
+) as Record<string, { message: string }>
+
 const members = (dir: string): string[] =>
   readdirSync(path.join(root, dir), { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
@@ -168,17 +177,24 @@ describe('a screen record names the controls its renderer draws', () => {
           }
         })
 
-      // Two kinds of renderer live in this repo. A DOM renderer names its copy
-      // in string literals; a server-rendered screen writes it as markup inside
-      // a template literal, where the label is a text node between tags. Read
-      // only the first and a screen that ships as HTML looks like a screen that
-      // draws nothing.
+      // Three kinds of renderer live in this repo now. A DOM renderer names its
+      // copy in string literals; a server-rendered screen writes it as markup
+      // inside a template literal, where the label is a text node between tags;
+      // and a localised renderer names a key, whose words live in the shipped
+      // catalogue. Reading only literals would let this gate go quiet exactly
+      // as a screen becomes translatable — the moment its labels stop being
+      // visible in its own source.
+      const resolved = [...renderer.matchAll(/\bt\(\s*'([a-zA-Z0-9_.]+)'/g)]
+        .map((m) => CATALOGUE[m[1] as string]?.message)
+        .filter((message): message is string => message !== undefined)
+
       const literals = [renderer, ...imported]
         .flatMap((text) => [
           ...text.matchAll(/'([^'\n]{2,60})'/g),
           ...text.matchAll(/>([^<>{}`\n]{2,60})</g),
         ])
         .map((m) => normalise(m[1] as string))
+        .concat(resolved.map(normalise))
 
       for (const [, label] of elements.matchAll(/"([^"]{2,40})"/g)) {
         const wanted = normalise(label as string)

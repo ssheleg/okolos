@@ -12,7 +12,7 @@
   "include": [
     "src/**/*.ts"
   ],
-  "references": [
+  "references": [{ "path": "../../packages/i18n" }, 
     {
       "path": "../../packages/contracts"
     },

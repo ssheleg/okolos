@@ -1,3 +1,4 @@
+import { useResolver } from '@okolos/i18n'
 import { detectPlatform } from '@okolos/platform'
 import { renderInterstitial } from '@okolos/ui'
 import '../pages.css'
@@ -14,6 +15,10 @@ import { appealLinkFor } from './appeal-link.js'
  */
 
 const platform = detectPlatform()
+
+// Before anything paints. A renderer that asks for a message before this line
+// runs gets `[key]` — visible, which is the point, but not on a real page.
+useResolver((key, substitutions) => platform.message(key, substitutions))
 const root = document.getElementById('root')
 
 async function paint(): Promise<void> {

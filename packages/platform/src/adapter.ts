@@ -86,6 +86,8 @@ export function createPlatform(kind: Platform['kind'], api: WebExtensionApi): Pl
       },
     },
 
+    message: (key, substitutions = []) =>
+      api.i18n?.getMessage?.(key, [...substitutions]) ?? `[${key}]`,
     runtime: {
       async send<T extends RpcType>(type: T, payload: RpcMap[T]['req']): Promise<RpcMap[T]['res']> {
         const envelope: Envelope<T> = { v: 1, type, payload }

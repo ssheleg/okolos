@@ -393,7 +393,7 @@ See [foundation.md](foundation.md) → Personas.
 - **Alt paths:** nothing was sent -> the empty state says so explicitly rather than showing an empty table
 - **UI elements:** weekly summary line, log rows (time, destination, purpose, payload shape), filters, row detail, "Export log"
 - **States covered:** loading, empty, error, success
-- **Errors & recovery:** the journal is unreadable -> system states the storage problem and offers repair; it never renders an empty log on error, because an empty log is a claim
+- **Errors & recovery:** the journal is unreadable -> system states the storage problem and offers repair; it never renders an empty log on error, because an empty log is a claim; **the device runs out of room** -> the audit entry cannot be written, so nothing is sent — the guarantee working, not a fault — and the extension sweeps records past their retention window once and retries. Whether that made room or not is written to the journal in plain words, because a full device otherwise stops every network feature at once and reports it feature by feature as 'that source was unavailable'
 - **Status:** implemented
 - **Coverage:** packages/ui/src/self-audit/panel.ts:renderSelfAudit, apps/extension/src/options/index.ts, e2e/scn-019.spec.ts
 

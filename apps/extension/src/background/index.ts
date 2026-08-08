@@ -33,6 +33,8 @@ import { createInferenceHost } from './inference.js'
  */
 
 const platform = detectPlatform()
+import { spaceAwareWrite } from './audit-space.js'
+
 const RETENTION_ALARM = 'okolos:retention'
 const INVENTORY_ALARM = 'okolos:inventory'
 
@@ -303,9 +305,46 @@ async function allowBlocked(payload: { url: string }): Promise<{ url: string } |
 /** Everything that may leave the device goes through this, and is logged first. */
 async function auditDeps() {
   const db = await openDb()
+  const write = spaceAwareWrite({
+    write: async (entry) => {
+      await db.put('outbound_log', entry as never)
+    },
+    // The sweep the extension already runs on a schedule. Discovering the
+    // device is full is exactly the moment to run it: without this, a full
+    // database stops every network feature at once and reports it feature by
+    // feature as "that source was unavailable".
+    freeSpace: async () => {
+      try {
+        await pruneExpired(db, Date.now())
+      } catch (cause) {
+        console.warn('okolos: could not free space for the audit log', cause)
+      }
+    },
+    report: (what) => {
+      // Written straight to the journal rather than through the audit log,
+      // which is the thing that just failed.
+      void db
+        .put('journal', {
+          id: `storage:${what}:${new Date().toISOString()}`,
+          createdAt: new Date().toISOString(),
+          kind: 'error',
+          detail: {
+            reason: what,
+            explain:
+              what === 'swept-to-make-room'
+                ? 'Storage was full, so records past their retention window were deleted to make room for the audit log.'
+                : 'Storage is full and could not be cleared. Nothing will be sent while the audit log cannot be written — that is the guarantee working, not a fault to ignore.',
+          },
+        })
+        .catch(() => {
+          // If even this cannot be written there is nowhere left to say it.
+        })
+    },
+  })
+
   return {
     writeAudit: async (entry: Parameters<typeof db.put>[1]) => {
-      await db.put('outbound_log', entry as never)
+      await write(entry)
     },
     now: () => new Date().toISOString(),
     newId: () => crypto.randomUUID(),

@@ -3,6 +3,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { showDownloadVerdict, type DownloadVerdictMessage } from './download.js'
 
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fromCatalogue, useResolver, type Catalogue } from '@okolos/i18n'
+
+/** The shipped Russian catalogue: `default_locale` is `ru`, and a fake would let a missing key pass. */
+const CATALOGUE = JSON.parse(
+  readFileSync(path.resolve(import.meta.dirname, '../../_locales/ru/messages.json'), 'utf8'),
+) as Catalogue
+
+useResolver(fromCatalogue(CATALOGUE))
+
 function message(overrides: Partial<DownloadVerdictMessage> = {}): DownloadVerdictMessage {
   return {
     action: 'block',
@@ -33,7 +44,7 @@ describe('a download that was stopped', () => {
   it('says the file never reached the disk, rather than offering to stop it', () => {
     const handle = showDownloadVerdict(message(), deps())
     const detail = handle?.root.querySelector('[data-role=detail]')?.textContent ?? ''
-    expect(detail).toContain('nothing reached your disk')
+    expect(detail).toContain('на диск ничего не попало')
   })
 
   it('names what matched', () => {
@@ -43,7 +54,7 @@ describe('a download that was stopped', () => {
 
   it('names the checks that could not run', () => {
     const handle = showDownloadVerdict(message(), deps())
-    expect(handle?.root.querySelector('[data-role=detail]')?.textContent).toContain('Not checked')
+    expect(handle?.root.querySelector('[data-role=detail]')?.textContent).toContain('Не проверено')
   })
 })
 
@@ -77,7 +88,7 @@ describe('a download that passed', () => {
 describe('the way to the full record', () => {
   it('offers the record instead of an action nobody can take', () => {
     const handle = showDownloadVerdict(message(), deps())
-    expect(handle?.root.querySelector('[data-role=primary]')?.textContent).toBe('Show the record')
+    expect(handle?.root.querySelector('[data-role=primary]')?.textContent).toBe('Показать запись')
   })
 
   it('opens the journal on request', () => {

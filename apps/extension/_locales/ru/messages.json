@@ -571,5 +571,138 @@
   },
   "leaksCoverageNone": {
     "message": "Ни один источник не ответил, поэтому проверка не состоялась."
+  },
+  "warnFoundBy": {
+    "message": "Найдено: $BY$",
+    "placeholders": {
+      "by": {
+        "content": "$1"
+      }
+    }
+  },
+  "warnInjectionHeadline": {
+    "message": "На этой странице есть инструкции, написанные для ассистента"
+  },
+  "warnInjectionNeutralised": {
+    "message": "Скрытый текст обращается к ассистенту, а не к вам$OTHERS$. Он убран со страницы, и его можно вернуть.$SCAN$",
+    "placeholders": {
+      "others": {
+        "content": "$1"
+      },
+      "scan": {
+        "content": "$2"
+      }
+    }
+  },
+  "warnInjectionPlain": {
+    "message": "Скрытый текст обращается к ассистенту, а не к вам$OTHERS$.$SCAN$",
+    "placeholders": {
+      "others": {
+        "content": "$1"
+      },
+      "scan": {
+        "content": "$2"
+      }
+    }
+  },
+  "warnLookalikeHeadline": {
+    "message": "Этот адрес лишь похож на знакомый"
+  },
+  "warnLookalikeDetail": {
+    "message": "Вы на $DECODED$, а он похож на $RESEMBLES$.",
+    "placeholders": {
+      "decoded": {
+        "content": "$1"
+      },
+      "resembles": {
+        "content": "$2"
+      }
+    }
+  },
+  "warnLookalikeSource": {
+    "message": "сравнение адреса на этом устройстве"
+  },
+  "warnCredentialHeadline": {
+    "message": "Прежде чем вводить здесь пароль"
+  },
+  "warnCredentialUnknown": {
+    "message": "Не известно: $LIST$.",
+    "placeholders": {
+      "list": {
+        "content": "$1"
+      }
+    }
+  },
+  "warnCredentialSource": {
+    "message": "то, что это устройство уже знает об этом сайте"
+  },
+  "warnDownloadBlockedHeadline": {
+    "message": "Загрузка остановлена до сохранения"
+  },
+  "warnDownloadCancelled": {
+    "message": "Файл отменён, и на диск ничего не попало."
+  },
+  "warnDownloadSkipped": {
+    "message": "Не проверено: $LIST$.",
+    "placeholders": {
+      "list": {
+        "content": "$1"
+      }
+    }
+  },
+  "warnDownloadSource": {
+    "message": "проверки, которые успели пройти до записи файла"
+  },
+  "warnDownloadShowRecord": {
+    "message": "Показать запись"
+  },
+  "warnClickfixCopied": {
+    "message": "Эта страница скопировала за вас команду"
+  },
+  "warnClickfixWants": {
+    "message": "Эта страница хочет, чтобы вы выполнили команду вне браузера"
+  },
+  "warnClickfixNever": {
+    "message": "Настоящая проверка никогда не просит выйти из браузера и что-то выполнить."
+  },
+  "warnClickfixUnreadable": {
+    "message": "Что именно скопировано, прочитать не удалось, поэтому здесь не показано."
+  },
+  "warnClickfixCopiedWhat": {
+    "message": "Скопировано: $WHAT$",
+    "placeholders": {
+      "what": {
+        "content": "$1"
+      }
+    }
+  },
+  "warnClickfixNothingYet": {
+    "message": "Пока ничего не скопировано."
+  },
+  "warnTechsupportHeadline": {
+    "message": "Предупреждение на этой странице поддельное"
+  },
+  "warnTechsupportNoOne": {
+    "message": "Никакая компания не следит за вашим компьютером, и никакой вирус здесь не найден."
+  },
+  "warnTechsupportPhone": {
+    "message": "Показанный номер, $PHONE$, ведёт к тем, кто сделал эту страницу.",
+    "placeholders": {
+      "phone": {
+        "content": "$1"
+      }
+    }
+  },
+  "warnTechsupportDialogs": {
+    "message": "Эта страница продолжает открывать окна, которые отсюда не остановить, — выход в том, чтобы закрыть вкладку."
+  },
+  "warnPasswordHeadline": {
+    "message": "Этот пароль встречался в утечке"
+  },
+  "warnPasswordSourceOffline": {
+    "message": "список, встроенный в расширение, — наружу ничего не ушло"
+  },
+  "warnPasswordSourceOnline": {
+    "message": "Have I Been Pwned (CC BY 4.0), запрос по диапазону: ушли пять символов отпечатка"
   }
 }

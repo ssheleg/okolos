@@ -1,3 +1,4 @@
+import { t } from '@okolos/i18n'
 import { guardCredentialEntry, type CredentialContext } from '@okolos/core-credential'
 import { mountBanner, type BannerHandle } from '@okolos/ui'
 
@@ -73,14 +74,14 @@ export function watchCredentialFields(deps: CredentialDeps): CredentialWatcher {
       {
         variant: 'credential',
         severity: warning.severity,
-        headline: 'Before you type a password here',
+        headline: t('warnCredentialHeadline'),
         detail: [
           ...warning.facts,
-          warning.missing.length > 0 ? `Not known: ${warning.missing.join('; ')}.` : '',
+          warning.missing.length > 0 ? t('warnCredentialUnknown', warning.missing.join('; ')) : '',
         ]
           .filter(Boolean)
           .join(' '),
-        sourceLine: 'Found by: what this device already knows about this site',
+        sourceLine: t('warnFoundBy', t('warnCredentialSource')),
       },
       {
         onPrimary: deps.leave,

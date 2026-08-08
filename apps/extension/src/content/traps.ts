@@ -1,3 +1,4 @@
+import { t } from '@okolos/i18n'
 import { detectClickFix, detectTechSupport } from '@okolos/core-traps'
 import { mountBanner, type BannerHandle } from '@okolos/ui'
 
@@ -96,17 +97,17 @@ export function watchForTraps(deps: TrapDeps): TrapWatcher {
           // anything is on the clipboard, saying it was copied is untrue.
           headline:
             clickfix.confidence === 'high'
-              ? 'This page copied a command for you to run'
-              : 'This page wants you to run a command outside the browser',
+              ? t('warnClickfixCopied')
+              : t('warnClickfixWants'),
           detail: [
-            'A real verification never asks you to leave the browser and run something.',
+            t('warnClickfixNever'),
             clickfix.confidence === 'high'
               ? clickfix.copyUnreadable
-                ? 'What was copied could not be read, so it is not shown.'
-                : `It copied: ${clickfix.copied ?? ''}`
-              : 'Nothing has been copied yet.',
+                ? t('warnClickfixUnreadable')
+                : t('warnClickfixCopiedWhat', clickfix.copied ?? '')
+              : t('warnClickfixNothingYet'),
           ].join(' '),
-          sourceLine: `Found by: ${clickfix.signals.join(', ')}`,
+          sourceLine: t('warnFoundBy', clickfix.signals.join(', ')),
         },
         {
           onPrimary: deps.leave,
@@ -126,17 +127,17 @@ export function watchForTraps(deps: TrapDeps): TrapWatcher {
         {
           variant: 'techsupport',
           severity: 'critical',
-          headline: 'The warning on this page is fake',
+          headline: t('warnTechsupportHeadline'),
           detail: [
-            'No company is watching your computer, and nothing here has detected a virus.',
-            techsupport.phone ? `The number shown, ${techsupport.phone}, reaches the people who made this page.` : '',
+            t('warnTechsupportNoOne'),
+            techsupport.phone ? t('warnTechsupportPhone', techsupport.phone) : '',
             techsupport.dialogsUnsuppressed
-              ? 'This page keeps raising dialogs that cannot be stopped from here — closing the tab is the way out.'
+              ? t('warnTechsupportDialogs')
               : '',
           ]
             .filter(Boolean)
             .join(' '),
-          sourceLine: `Found by: ${techsupport.signals.join(', ')}`,
+          sourceLine: t('warnFoundBy', techsupport.signals.join(', ')),
         },
         {
           onPrimary: deps.leave,

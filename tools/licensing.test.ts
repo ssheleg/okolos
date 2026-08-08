@@ -39,15 +39,55 @@ describe('attribution owed to data sources', () => {
     expect(readme).toContain('CC BY 4.0')
   })
 
+  /**
+   * The credit lives in the shipped catalogue now, not in the renderer.
+   *
+   * That moved it out of reach of a `grep` over the source — and a licence
+   * obligation does not depend on which language the reader chose, so this
+   * checks **every** locale rather than the default one.
+   */
+  const catalogues = readdirSync(path.join(root, 'apps/extension/_locales')).map(
+    (locale) =>
+      [locale, JSON.parse(read(`apps/extension/_locales/${locale}/messages.json`))] as const,
+  ) as ReadonlyArray<readonly [string, Record<string, { message: string }>]>
+
+  /**
+   * Per key, not per file.
+   *
+   * The first version read each catalogue as text and asked whether "CC BY 4.0"
+   * appeared anywhere in it. It does — twice, for two different surfaces — so
+   * deleting the credit from the leaks panel left the check green. Planting the
+   * defect is what showed it; a file-wide `toContain` is a coverage claim that
+   * one occurrence can satisfy.
+   */
+  const message = (
+    catalogue: Record<string, { message: string }>,
+    key: string,
+  ): string => catalogue[key]?.message ?? ''
+
+  it('reads more than one locale, or the sweep proves nothing', () => {
+    expect(catalogues.length).toBeGreaterThanOrEqual(2)
+  })
+
   it('puts the credit on the surface that shows the data, not only in the README', () => {
-    const panel = read('packages/ui/src/leaks/leaks.ts')
-    expect(panel).toContain('Have I Been Pwned')
-    expect(panel).toContain('CC BY 4.0')
+    for (const [locale, catalogue] of catalogues) {
+      const credit = message(catalogue, 'leaksAttribution')
+      expect(credit, `${locale} does not credit HIBP on the leaks panel`).toContain(
+        'Have I Been Pwned',
+      )
+      expect(credit, `${locale} omits the CC BY 4.0 terms on the leaks panel`).toContain(
+        'CC BY 4.0',
+      )
+    }
   })
 
   it('credits the range query on the banner it produces', () => {
-    const content = read('apps/extension/src/content/index.ts')
-    expect(content).toMatch(/Have I Been Pwned \(CC BY 4\.0\)/)
+    for (const [locale, catalogue] of catalogues) {
+      expect(
+        message(catalogue, 'warnPasswordSourceOnline'),
+        `${locale} does not credit the range query`,
+      ).toMatch(/Have I Been Pwned \(CC BY 4\.0\)/)
+    }
   })
 
   it('names the URL intelligence feeds it will consume', () => {

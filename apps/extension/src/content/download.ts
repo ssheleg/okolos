@@ -1,3 +1,4 @@
+import { t } from '@okolos/i18n'
 import { mountBanner, type BannerHandle } from '@okolos/ui'
 
 /**
@@ -50,18 +51,18 @@ export function showDownloadVerdict(
     {
       variant: 'download',
       severity: blocked ? 'critical' : 'major',
-      headline: blocked ? 'A download was stopped before it was saved' : message.headline,
+      headline: blocked ? t('warnDownloadBlockedHeadline') : message.headline,
       detail: [
         message.reasons,
-        blocked ? 'The file was cancelled, so nothing reached your disk.' : '',
-        message.skipped ? `Not checked: ${message.skipped}.` : '',
+        blocked ? t('warnDownloadCancelled') : '',
+        message.skipped ? t('warnDownloadSkipped', message.skipped) : '',
       ]
         .filter(Boolean)
         .join(' '),
-      sourceLine: 'Found by: the checks that could run before the file was written',
+      sourceLine: t('warnFoundBy', t('warnDownloadSource')),
       // Not "Discard the file": the browser already did, and offering an action
       // nobody can take is worse than offering none.
-      primaryLabel: blocked ? 'Show the record' : 'Discard the file',
+      primaryLabel: blocked ? t('warnDownloadShowRecord') : t('bannerActionDownload'),
     },
     {
       onPrimary: blocked ? deps.openJournal : dismiss,

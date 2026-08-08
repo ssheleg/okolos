@@ -1,6 +1,6 @@
 import { checkLookalike, DEFAULT_WATCHLIST } from '@okolos/core-lookalike'
 import { planSanitisation } from '@okolos/core-sanitizer'
-import { useResolver } from '@okolos/i18n'
+import { t, useResolver } from '@okolos/i18n'
 import { detectPlatform } from '@okolos/platform'
 import {
   mountBanner,
@@ -163,12 +163,12 @@ function show(verdict: Verdict, total: number, partialScan: boolean, neutralised
     {
       variant: 'injection',
       severity: verdict.severity,
-      headline: 'This page carries instructions written for an AI assistant',
+      headline: t('warnInjectionHeadline'),
       detail:
         neutralised > 0
-          ? `Hidden text is addressing an assistant rather than you${others}. It has been removed from the page, and you can put it back.${scanNote}`
-          : `Hidden text is addressing an assistant rather than you${others}.${scanNote}`,
-      sourceLine: `Found by: ${verdict.sources.map((s) => s.name).join(', ')}`,
+          ? t('warnInjectionNeutralised', others, scanNote)
+          : t('warnInjectionPlain', others, scanNote),
+      sourceLine: t('warnFoundBy', verdict.sources.map((s) => s.name).join(', ')),
     },
     {
       onPrimary: () => openInspector(verdict),
@@ -459,11 +459,12 @@ if (isTopFrame) {
             {
               variant: 'password',
               severity: 'major',
-              headline: 'This password has appeared in a breach',
+              headline: t('warnPasswordHeadline'),
               detail: verdict.explain,
-              sourceLine: verdict.offline
-                ? 'Found by: a list built into this extension — nothing was sent'
-                : 'Found by: Have I Been Pwned (CC BY 4.0), via a range query that sent five characters of the fingerprint',
+              sourceLine: t(
+                'warnFoundBy',
+                verdict.offline ? t('warnPasswordSourceOffline') : t('warnPasswordSourceOnline'),
+              ),
             },
             {
               onPrimary: () => undefined,

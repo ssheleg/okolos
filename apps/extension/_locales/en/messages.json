@@ -571,5 +571,138 @@
   },
   "leaksCoverageNone": {
     "message": "No sources answered, so nothing was checked."
+  },
+  "warnFoundBy": {
+    "message": "Found by: $BY$",
+    "placeholders": {
+      "by": {
+        "content": "$1"
+      }
+    }
+  },
+  "warnInjectionHeadline": {
+    "message": "This page carries instructions written for an AI assistant"
+  },
+  "warnInjectionNeutralised": {
+    "message": "Hidden text is addressing an assistant rather than you$OTHERS$. It has been removed from the page, and you can put it back.$SCAN$",
+    "placeholders": {
+      "others": {
+        "content": "$1"
+      },
+      "scan": {
+        "content": "$2"
+      }
+    }
+  },
+  "warnInjectionPlain": {
+    "message": "Hidden text is addressing an assistant rather than you$OTHERS$.$SCAN$",
+    "placeholders": {
+      "others": {
+        "content": "$1"
+      },
+      "scan": {
+        "content": "$2"
+      }
+    }
+  },
+  "warnLookalikeHeadline": {
+    "message": "This address only looks like one you know"
+  },
+  "warnLookalikeDetail": {
+    "message": "You are on $DECODED$, which resembles $RESEMBLES$.",
+    "placeholders": {
+      "decoded": {
+        "content": "$1"
+      },
+      "resembles": {
+        "content": "$2"
+      }
+    }
+  },
+  "warnLookalikeSource": {
+    "message": "comparing the address on this device"
+  },
+  "warnCredentialHeadline": {
+    "message": "Before you type a password here"
+  },
+  "warnCredentialUnknown": {
+    "message": "Not known: $LIST$.",
+    "placeholders": {
+      "list": {
+        "content": "$1"
+      }
+    }
+  },
+  "warnCredentialSource": {
+    "message": "what this device already knows about this site"
+  },
+  "warnDownloadBlockedHeadline": {
+    "message": "A download was stopped before it was saved"
+  },
+  "warnDownloadCancelled": {
+    "message": "The file was cancelled, so nothing reached your disk."
+  },
+  "warnDownloadSkipped": {
+    "message": "Not checked: $LIST$.",
+    "placeholders": {
+      "list": {
+        "content": "$1"
+      }
+    }
+  },
+  "warnDownloadSource": {
+    "message": "the checks that could run before the file was written"
+  },
+  "warnDownloadShowRecord": {
+    "message": "Show the record"
+  },
+  "warnClickfixCopied": {
+    "message": "This page copied a command for you to run"
+  },
+  "warnClickfixWants": {
+    "message": "This page wants you to run a command outside the browser"
+  },
+  "warnClickfixNever": {
+    "message": "A real verification never asks you to leave the browser and run something."
+  },
+  "warnClickfixUnreadable": {
+    "message": "What was copied could not be read, so it is not shown."
+  },
+  "warnClickfixCopiedWhat": {
+    "message": "It copied: $WHAT$",
+    "placeholders": {
+      "what": {
+        "content": "$1"
+      }
+    }
+  },
+  "warnClickfixNothingYet": {
+    "message": "Nothing has been copied yet."
+  },
+  "warnTechsupportHeadline": {
+    "message": "The warning on this page is fake"
+  },
+  "warnTechsupportNoOne": {
+    "message": "No company is watching your computer, and nothing here has detected a virus."
+  },
+  "warnTechsupportPhone": {
+    "message": "The number shown, $PHONE$, reaches the people who made this page.",
+    "placeholders": {
+      "phone": {
+        "content": "$1"
+      }
+    }
+  },
+  "warnTechsupportDialogs": {
+    "message": "This page keeps raising dialogs that cannot be stopped from here — closing the tab is the way out."
+  },
+  "warnPasswordHeadline": {
+    "message": "This password has appeared in a breach"
+  },
+  "warnPasswordSourceOffline": {
+    "message": "a list built into this extension — nothing was sent"
+  },
+  "warnPasswordSourceOnline": {
+    "message": "Have I Been Pwned (CC BY 4.0), via a range query that sent five characters of the fingerprint"
   }
 }

@@ -1,3 +1,4 @@
+import { t } from '@okolos/i18n'
 import { checkLookalike, DEFAULT_WATCHLIST, type LookalikeVerdict } from '@okolos/core-lookalike'
 import { mountBanner, renderComparison, type BannerHandle } from '@okolos/ui'
 
@@ -87,9 +88,9 @@ function show(deps: LookalikeDeps, verdict: LookalikeVerdict): LookalikeWarning 
     {
       variant: 'lookalike',
       severity: 'major',
-      headline: 'This address only looks like one you know',
-      detail: `You are on ${verdict.decoded}, which resembles ${verdict.resembles}.`,
-      sourceLine: 'Found by: comparing the address on this device',
+      headline: t('warnLookalikeHeadline'),
+      detail: t('warnLookalikeDetail', verdict.decoded, verdict.resembles),
+      sourceLine: t('warnFoundBy', t('warnLookalikeSource')),
     },
     {
       onPrimary: openComparison,

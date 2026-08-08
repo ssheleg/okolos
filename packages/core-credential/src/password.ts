@@ -72,8 +72,22 @@ export async function checkPassword(deps: PasswordCheckDeps): Promise<PasswordVe
     }
   }
 
-  const count = countIn(response.body, suffix)
-  if (count === null) {
+  const answer = countIn(response.body, suffix)
+
+  if (answer.kind === 'unreadable') {
+    // The same shape as a failed request, because it is the same situation:
+    // the question was asked and not answered.
+    return {
+      compromised: false,
+      count: null,
+      source: 'nothing',
+      offline: false,
+      explain:
+        'This password could not be checked: the answer from the breach corpus could not be read. That is not a statement that it is safe.',
+    }
+  }
+
+  if (answer.kind === 'absent') {
     return {
       compromised: false,
       count: null,
@@ -86,19 +100,38 @@ export async function checkPassword(deps: PasswordCheckDeps): Promise<PasswordVe
 
   return {
     compromised: true,
-    count,
+    count: answer.count,
     source: 'range query',
     offline: false,
-    explain: `This password appears ${count.toLocaleString('en')} times in breached data. Only the first five characters of its fingerprint were sent.`,
+    explain: `This password appears ${answer.count.toLocaleString('en')} times in breached data. Only the first five characters of its fingerprint were sent.`,
   }
 }
 
-function countIn(body: string, suffix: string): number | null {
+/**
+ * What the range response says about our suffix.
+ *
+ * Three answers, and conflating them was the bug. `absent` is the clean bill.
+ * `unreadable` is a line we found and could not parse — it says nothing, and
+ * the count used to fall back to zero, which the caller then read as a hit.
+ * And zero itself is not a hit: the request carries `Add-Padding: true`, which
+ * asks the API to invent entries so the response is a constant size, and those
+ * carry a count of zero by definition. Reporting one produced "this password
+ * appears 0 times in breached data" — a compromise verdict refuted by its own
+ * number.
+ */
+type RangeAnswer =
+  | { readonly kind: 'found'; readonly count: number }
+  | { readonly kind: 'absent' }
+  | { readonly kind: 'unreadable' }
+
+function countIn(body: string, suffix: string): RangeAnswer {
   for (const line of body.split('\n')) {
     const [candidate, count] = line.trim().split(':')
     if (candidate?.toUpperCase() !== suffix) continue
-    const parsed = Number.parseInt(count ?? '', 10)
-    return Number.isFinite(parsed) ? parsed : 0
+    const parsed = Number.parseInt((count ?? '').trim(), 10)
+    if (!Number.isFinite(parsed) || parsed < 0) return { kind: 'unreadable' }
+    // Zero is padding, and padding is not a breach.
+    return parsed === 0 ? { kind: 'absent' } : { kind: 'found', count: parsed }
   }
-  return null
+  return { kind: 'absent' }
 }

@@ -76,12 +76,24 @@ describe('a password the device does not recognise', () => {
     expect(verdict.compromised).toBe(true)
   })
 
-  it('reads a count of zero as a count, not as absence', async () => {
+  it('does not turn a line it cannot read into a compromise', async () => {
+    // This test used to assert the opposite, under a name — "reads a count of
+    // zero as a count, not as absence" — that describes a different case than
+    // the one it fed. Its body sends `:not-a-number`, and it required the
+    // verdict to be `compromised: true, count: 0`, which reaches the user as
+    // "This password appears 0 times in breached data".
+    //
+    // A sentence refuted by its own number is a false alarm, and a false alarm
+    // in a password checker is what teaches people to dismiss the real one.
+    // The file already states the principle two describes above: an unanswerable
+    // question is not a clean bill of health — and it is not a guilty verdict
+    // either.
     const verdict = await checkPassword(
       deps({ fetchRange: async () => ({ body: `${RARE.slice(PREFIX_LENGTH)}:not-a-number\n` }) }),
     )
-    expect(verdict.compromised).toBe(true)
-    expect(verdict.count).toBe(0)
+    expect(verdict.compromised).toBe(false)
+    expect(verdict.count).toBeNull()
+    expect(verdict.explain).toMatch(/could not be read/i)
   })
 })
 
@@ -96,5 +108,53 @@ describe('when the check cannot be made', () => {
     )
     expect(verdict.source).toBe('nothing')
     expect(verdict.explain).toMatch(/could not be checked/i)
+  })
+})
+
+describe('what a range response is allowed to mean', () => {
+  const SHA1 = '5BAA61E4C9B93F3F0682250B6CF8331B7EE68FD8'
+  const suffix = SHA1.slice(5)
+  const check = (body: string) =>
+    checkPassword({
+      sha1: SHA1,
+      localSuffixes: () => [],
+      fetchRange: async () => ({ body, padded: true }),
+    })
+
+  it('does not call a padding entry a breach', async () => {
+    /**
+     * The request carries `Add-Padding: true`, which asks the API to invent
+     * entries so the response is a constant size. Those entries are documented
+     * as carrying a count of zero, and a client is meant to discard them.
+     *
+     * This one did not: a zero count reached the verdict as `compromised:
+     * true` and produced the sentence "This password appears 0 times in
+     * breached data" — a compromise verdict that refutes itself in its own
+     * number. A false alarm is what gets a security product uninstalled.
+     */
+    const verdict = await check(`${suffix}:0`)
+    expect(verdict.compromised).toBe(false)
+  })
+
+  it('reports a response it cannot read as unread, not as a breach', async () => {
+    // The count fell back to zero when it would not parse, and zero was a hit.
+    // A line the client cannot read says nothing about the password.
+    const verdict = await check(`${suffix}:not-a-number`)
+    expect(verdict.compromised).toBe(false)
+    expect(verdict.count).toBeNull()
+    expect(verdict.explain).toMatch(/could not be read|could not be checked/i)
+  })
+
+  it('still reports a real hit, with its real count', async () => {
+    const verdict = await check(`${suffix}:12345`)
+    expect(verdict).toMatchObject({ compromised: true, count: 12345 })
+  })
+
+  it('is not fooled by a longer suffix that contains ours', async () => {
+    expect((await check(`AB${suffix}:9`)).compromised).toBe(false)
+  })
+
+  it('reads a response whose lines end in CRLF', async () => {
+    expect((await check(`${suffix}:7\r\nOTHER:1\r\n`)).compromised).toBe(true)
   })
 })

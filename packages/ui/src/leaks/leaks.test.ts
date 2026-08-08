@@ -70,7 +70,13 @@ describe('the number and its basis', () => {
 
 describe('before and during', () => {
   it('says what checking will send before it is asked for', () => {
-    expect(role(render({ kind: 'idle' }), 'idle')?.textContent).toMatch(/hashed form/i)
+    // This asserted the word "hashed", and so pinned a false claim in place:
+    // the leak sources take no hash, and the address itself is what goes. A
+    // test can hold a lie steady as easily as a truth.
+    const idle = role(render({ kind: 'idle' }), 'idle')?.textContent ?? ''
+    expect(idle, 'the idle state must say the address is sent').toMatch(/sends your address/i)
+    expect(idle, 'and must not imply the leak check is hashed').not.toMatch(/hashed form/i)
+    expect(idle, 'while keeping the password check distinct').toMatch(/partial hash/i)
   })
 
   it('says it is working rather than showing an empty list', () => {

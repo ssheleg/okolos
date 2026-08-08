@@ -47,7 +47,16 @@ test('the panel says what will be sent before anything is', async ({ context, ex
   const page = await context.newPage()
   await page.goto(`chrome-extension://${extensionId}/options.html`)
 
-  await expect(page.locator('[data-role=leaks] [data-role=idle]')).toContainText('hashed form')
+  // The second test that held the false claim steady. It asserted the word
+  // "hashed" about a check that sends the address itself, and the unit test
+  // one layer down asserted the same. Two tests agreeing on a lie read exactly
+  // like two tests agreeing on a truth.
+  const idle = page.locator('[data-role=leaks] [data-role=idle]')
+  await expect(idle).toContainText('sends your address')
+  await expect(idle).not.toContainText('hashed form')
+  await expect(idle, 'the password check is separate and is the hashed one').toContainText(
+    'partial hash',
+  )
   await expect(page.locator('[data-role=leaks] [data-role=total]')).toHaveCount(0)
 })
 

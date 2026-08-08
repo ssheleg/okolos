@@ -43,6 +43,11 @@ export const CAVALIER: LeakSource = {
         purpose: 'leak-lookup',
         payloadShape: `email:${redact(address)}`,
         triggeredBy: 'user:leak-check',
+        // Cavalier answers to a full address and to nothing else. Declared, so
+        // the choke point permits it knowingly and the journal records that an
+        // address left the device — rather than it slipping past a guard that
+        // could not see through percent-encoding.
+        carries: 'address',
       },
       deps,
     )
@@ -74,6 +79,9 @@ export function hibp(apiKey: string | null): LeakSource {
           payloadShape: `email:${redact(address)}`,
           triggeredBy: 'user:leak-check',
           headers: { 'hibp-api-key': apiKey ?? '' },
+          // The address is a path segment here, which the guard did not
+          // inspect at all until 2026-08-08. Declared for the same reason.
+          carries: 'address',
         },
         deps,
       )

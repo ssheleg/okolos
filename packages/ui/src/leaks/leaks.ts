@@ -46,7 +46,16 @@ export function renderLeaks(doc: Document, state: LeaksState, handlers: LeaksHan
 
   if (state.kind === 'idle') {
     root.append(
-      text(doc, 'idle', 'Nothing has been looked up yet. Checking sends a hashed form of your address, never the address itself.'),
+      // This said the address is hashed and never sent. It is not: Hudson
+      // Rock's Cavalier and HIBP's breached-account endpoint both answer only
+      // to a full address, and both receive one. The sentence a user reads
+      // before choosing must be the one that is true — the hashed check is the
+      // password one, and conflating the two was the whole error.
+      text(
+        doc,
+        'idle',
+        'Nothing has been looked up yet. Checking sends your address to the sources named below — they answer to nothing less. Your passwords are never sent: that check uses a partial hash and is separate.',
+      ),
       button(doc, 'check', 'Check now', handlers.onCheck, true),
       attribution(doc),
     )

@@ -1,6 +1,6 @@
 import type { AuditEntry, Purpose } from '@okolos/contracts'
 
-import { findForbiddenContent, type RedactionFinding } from './redactor.js'
+import { findForbiddenContent, type Carries, type RedactionFinding } from './redactor.js'
 import { transport as defaultTransport, type TransportSpec } from './transport.js'
 
 /** Closed set: the audit panel has human wording for each of these and no others. */
@@ -23,6 +23,15 @@ export interface RequestSpec {
   readonly triggeredBy: string
   readonly body?: string
   readonly headers?: Readonly<Record<string, string>>
+  /**
+   * Sensitive content this request must carry, declared up front.
+   *
+   * Undeclared, an address is refused by the redactor. Declared, it is
+   * permitted *and recorded*: the audit entry says so, which is what makes the
+   * exception something the user can see rather than something only the code
+   * knows.
+   */
+  readonly carries?: Carries
 }
 
 export interface RequestDeps {
@@ -78,7 +87,7 @@ export async function request(spec: RequestSpec, deps: RequestDeps): Promise<Res
     outcome,
   })
 
-  const forbidden = findForbiddenContent(spec.url, spec.body)
+  const forbidden = findForbiddenContent(spec.url, spec.body, spec.carries)
   if (forbidden) {
     await deps.writeAudit(entry('blocked-by-redactor'))
     throw new RedactionError(forbidden)

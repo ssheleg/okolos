@@ -31,7 +31,8 @@
     "prepare": "git config core.hooksPath .githooks || true",
     "package": "node tools/package.mjs",
     "package:check": "node tools/package.mjs --check",
-    "screenshots": "pnpm build && node tools/screenshots.mjs"
+    "screenshots": "pnpm build && node tools/screenshots.mjs",
+    "access": "node tools/access.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",

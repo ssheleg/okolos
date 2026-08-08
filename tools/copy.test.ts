@@ -90,6 +90,21 @@ describe('the shipped copy obeys the brand pack', () => {
     )
     expect(offences.map(([key]) => key)).toEqual([])
   })
+
+  it('never refuses to speak', () => {
+    /**
+     * `voice.md` names this one: «"Что-то пошло не так" — это отказ говорить».
+     * It was live in the journal's default summary for the `error` kind until
+     * 2026-08-08 — the default that appears precisely when a record carries no
+     * explanation, i.e. exactly when the reader needs one.
+     */
+    const offences = messages.filter(
+      ([, message]) =>
+        message.toLowerCase().includes('что-то пошло не так') ||
+        message.toLowerCase().includes('something went wrong'),
+    )
+    expect(offences.map(([key]) => key), 'this is a refusal to speak, not a message').toEqual([])
+  })
 })
 
 describe('a catalogue key never reaches the screen unresolved', () => {

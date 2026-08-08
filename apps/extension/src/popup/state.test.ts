@@ -4,6 +4,18 @@ import type { Verdict } from '@okolos/contracts'
 
 import { buildPopupState, mapJournal, subjectOf, toQueueItems } from './state.js'
 
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fromCatalogue, useResolver, type Catalogue } from '@okolos/i18n'
+
+/** The shipped Russian catalogue: `default_locale` is `ru`. */
+const CATALOGUE = JSON.parse(
+  readFileSync(path.resolve(import.meta.dirname, '../../_locales/ru/messages.json'), 'utf8'),
+) as Catalogue
+
+useResolver(fromCatalogue(CATALOGUE))
+
+
 const URL_A = 'https://example.test/article'
 
 function verdict(overrides: Partial<Verdict> = {}): Verdict {
@@ -200,5 +212,51 @@ describe('"not now" survives the popup closing', () => {
       }),
     )
     expect(state.queue.shown).toHaveLength(1)
+  })
+})
+
+describe('what a journal record says, and in whose language', () => {
+  /**
+   * The order is the design, so it is tested as an order rather than three
+   * separate cases that happen to pass.
+   */
+  const record = (detail: Record<string, unknown>): JournalRecord =>
+    ({
+      id: 'j1',
+      createdAt: '2026-08-08T10:00:00.000Z',
+      kind: 'error',
+      detail,
+    }) as unknown as JournalRecord
+
+  const summaryOf = (detail: Record<string, unknown>): string =>
+    mapJournal([record(detail)]).entries[0]?.summary ?? ''
+
+  it('resolves a key at read time, so the reader’s language wins', () => {
+    expect(summaryOf({ explainKey: 'journalDefaultVerdict' })).toBe('Записана находка')
+  })
+
+  it('prefers the key over a sentence stored beside it', () => {
+    expect(summaryOf({ explainKey: 'journalDefaultVerdict', explain: 'an older sentence' })).toBe(
+      'Записана находка',
+    )
+  })
+
+  it('keeps an old English sentence rather than inventing which key it came from', () => {
+    // Rewriting history to look translated is the lie a migration would tell.
+    expect(summaryOf({ explain: 'The feed could not be fetched' })).toBe(
+      'The feed could not be fetched',
+    )
+  })
+
+  it('falls back to the kind, and never to a refusal to speak', () => {
+    const summary = summaryOf({})
+    expect(summary).toBe('Ошибка без описания: подробности не сохранились')
+    expect(summary.toLowerCase()).not.toContain('что-то пошло не так')
+  })
+
+  it('ignores arguments that are not strings rather than printing undefined', () => {
+    expect(summaryOf({ explainKey: 'journalRetention', explainArgs: [90] })).not.toContain(
+      'undefined',
+    )
   })
 })

@@ -1,3 +1,4 @@
+import { t } from '@okolos/i18n'
 import { buildQueue, diffSince, QUEUE_LIMIT, type JournalEntry, type QueueItem } from '@okolos/core-queue'
 import type { FindingRecord, JournalRecord } from '@okolos/storage'
 import type { PopupState } from '@okolos/ui'
@@ -56,12 +57,11 @@ export function mapJournal(records: readonly JournalRecord[]): MappedJournal {
       continue
     }
     const detail = record.detail ?? {}
-    const explain = typeof detail.explain === 'string' ? detail.explain : null
     entries.push({
       id: record.id,
       createdAt: record.createdAt,
       kind: record.kind,
-      summary: explain ?? DEFAULT_SUMMARY[record.kind],
+      summary: summarise(detail, record.kind),
       // A decision the user made is not the same event as one the product made,
       // and the journal is the place where that difference is legible.
       automatic: detail.reason !== 'user-blocked' && detail.reason !== 'user-allowed',
@@ -71,11 +71,18 @@ export function mapJournal(records: readonly JournalRecord[]): MappedJournal {
   return { entries, unreadable }
 }
 
-const DEFAULT_SUMMARY: Record<JournalEntry['kind'], string> = {
-  verdict: 'A finding was recorded',
-  action: 'An action was decided',
-  error: 'Something went wrong',
-  'detector-disabled': 'A detector was turned off',
+/**
+ * What a record says when it carries no explanation of its own.
+ *
+ * `error` used to read "Something went wrong", which the voice forbids by name
+ * — it is a refusal to speak. This default appears only when the record has no
+ * explanation, so the true statement is that the explanation is missing.
+ */
+const DEFAULT_SUMMARY_KEY: Record<JournalEntry['kind'], string> = {
+  verdict: 'journalDefaultVerdict',
+  action: 'journalDefaultAction',
+  error: 'journalDefaultError',
+  'detector-disabled': 'journalDefaultDisabled',
 }
 
 export interface PopupInputs {
@@ -151,4 +158,32 @@ function hostOf(subject: string): string {
   } catch {
     return 'this page'
   }
+}
+
+/**
+ * The one place a stored record becomes a sentence.
+ *
+ * Three sources, in order, and the order is the whole design:
+ *
+ *   1. `explainKey` (+ `explainArgs`) — written by everything that has been
+ *      moved to the catalogue. Resolved **now**, so the reader's language
+ *      decides, not the language in force when the event happened.
+ *   2. `explain` — a sentence stored before that move. It stays English, and
+ *      that is honest: it is what was recorded. Rewriting history to look
+ *      translated would be the lie.
+ *   3. the default for its kind, when the record explains nothing at all.
+ *
+ * No migration, deliberately. A migration would have to invent which key an old
+ * sentence came from, and inventing it is how a journal stops being evidence.
+ */
+function summarise(detail: Record<string, unknown>, kind: JournalEntry['kind']): string {
+  const key = typeof detail.explainKey === 'string' ? detail.explainKey : null
+  if (key !== null) {
+    const args = Array.isArray(detail.explainArgs)
+      ? detail.explainArgs.filter((arg): arg is string => typeof arg === 'string')
+      : []
+    return t(key, ...args)
+  }
+  if (typeof detail.explain === 'string') return detail.explain
+  return t(DEFAULT_SUMMARY_KEY[kind])
 }

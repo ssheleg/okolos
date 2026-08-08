@@ -704,5 +704,17 @@
   },
   "warnPasswordSourceOnline": {
     "message": "Have I Been Pwned (CC BY 4.0), запрос по диапазону: ушли пять символов отпечатка"
+  },
+  "journalDefaultVerdict": {
+    "message": "Записана находка"
+  },
+  "journalDefaultAction": {
+    "message": "Принято решение по действию"
+  },
+  "journalDefaultError": {
+    "message": "Ошибка без описания: подробности не сохранились"
+  },
+  "journalDefaultDisabled": {
+    "message": "Детектор был выключен"
   }
 }

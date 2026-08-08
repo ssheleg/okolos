@@ -54,6 +54,45 @@ describe('a domain that is listed', () => {
     })
   })
 
+  it('carries the identifier for machines and the name for people', async () => {
+    // The identifier stays in the API — a caller keying off a display name
+    // breaks the first time the name is improved — and the name rides beside
+    // it, because `phishing` is a database key and the owner reads a reason.
+    const response = await handle(
+      get('/status/domain?domain=bad.test'),
+      env({ listing: { feed: 'phishing', entry_date: '2026-08-01' } }),
+    )
+    await expect(response.json()).resolves.toMatchObject({
+      feed: 'phishing',
+      feedName: 'Okolos phishing list',
+    })
+  })
+
+  it('leaves a third-party list called what it calls itself', async () => {
+    const response = await handle(
+      get('/status/domain?domain=bad.test'),
+      env({ listing: { feed: 'OpenPhish', entry_date: '2026-08-01' } }),
+    )
+    await expect(response.json()).resolves.toMatchObject({ feedName: 'OpenPhish' })
+  })
+
+  it('names the list on the page a site owner actually reads', async () => {
+    /**
+     * The HTML, not the JSON. This page is what an owner opens when their
+     * domain has been blocked, and until 2026-08-08 it said "listed by
+     * phishing" — a column name presented as the reason.
+     */
+    const response = await handle(
+      get('/status?domain=bad.test'),
+      env({ listing: { feed: 'phishing', entry_date: '2026-08-01' } }),
+    )
+    const html = await response.text()
+    expect(html).toContain('Okolos phishing list')
+    expect(html, 'the raw identifier is still on the page').not.toMatch(
+      /listed<\/strong> by <strong>phishing/,
+    )
+  })
+
   it('points the owner at whoever actually listed them', async () => {
     // Most listings are not ours. Saying so is the difference between an owner
     // fixing the problem and arguing with the wrong party.

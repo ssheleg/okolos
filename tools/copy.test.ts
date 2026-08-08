@@ -12,7 +12,7 @@
  * carries part of a password hash.
  */
 
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
@@ -89,5 +89,50 @@ describe('the shipped copy obeys the brand pack', () => {
       message.toLowerCase().includes('ваш компьютер под угрозой'),
     )
     expect(offences.map(([key]) => key)).toEqual([])
+  })
+})
+
+describe('a catalogue key never reaches the screen unresolved', () => {
+  /**
+   * The mistake this catches, made while writing the journal: a `*_KEY` map was
+   * introduced and one call site kept using the map's value directly, so the
+   * heading would have read `journalKindVerdict`. Nothing else notices — the key
+   * is a perfectly good string, the types are satisfied, and the screen is
+   * wrong.
+   */
+  const sources: string[] = []
+  const walk = (dir: string): void => {
+    for (const entry of readdirSync(path.join(root, dir))) {
+      const rel = path.join(dir, entry)
+      if (statSync(path.join(root, rel)).isDirectory()) {
+        if (entry !== 'node_modules' && entry !== 'dist') walk(rel)
+      } else if (entry.endsWith('.ts') && !entry.endsWith('.test.ts')) {
+        sources.push(rel)
+      }
+    }
+  }
+  walk('packages/ui/src')
+  walk('apps/extension/src')
+
+  it('is reading real files', () => {
+    expect(sources.length).toBeGreaterThan(20)
+  })
+
+  it('never sends a key straight to the screen', () => {
+    /**
+     * Two forms only, and both are the key becoming text with nothing in
+     * between: interpolated into a template, or assigned to `textContent`.
+     *
+     * A wider rule was tried first and failed honestly — it flagged
+     * `SIGNAL_KEY[signal] ? …`, which is a presence check, not a render. A gate
+     * that cries about correct code gets narrowed by whoever is in a hurry, and
+     * the narrowing is never as careful as this one.
+     */
+    const offences = sources.flatMap((file) =>
+      [...read(file).matchAll(/(?:\$\{|textContent\s*=\s*)(\w+_KEY)\[/g)].map(
+        (m) => `${file}: ${m[1] as string}[…] rendered without t()`,
+      ),
+    )
+    expect(offences, 'these would render a catalogue key as copy').toEqual([])
   })
 })

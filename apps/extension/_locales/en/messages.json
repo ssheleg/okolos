@@ -366,5 +366,40 @@
   },
   "comparisonReasonBrandSubdomain": {
     "message": "The familiar name is here, but it is not the site you are on — it has been put in front of a different address."
+  },
+  "journalKindVerdict": {
+    "message": "Found"
+  },
+  "journalKindAction": {
+    "message": "Actions"
+  },
+  "journalKindError": {
+    "message": "Problems"
+  },
+  "journalKindDisabled": {
+    "message": "Turned off"
+  },
+  "journalTitle": {
+    "message": "What changed since last time"
+  },
+  "journalEmpty": {
+    "message": "Nothing to show yet — this is your first check."
+  },
+  "journalShowHistory": {
+    "message": "Show full history"
+  },
+  "journalRetention": {
+    "message": "Anything older than $DAYS$ days is deleted.",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "journalAutomatic": {
+    "message": "done automatically"
+  },
+  "journalManual": {
+    "message": "you did this"
   }
 }

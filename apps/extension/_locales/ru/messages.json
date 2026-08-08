@@ -366,5 +366,40 @@
   },
   "comparisonReasonBrandSubdomain": {
     "message": "Знакомое имя здесь есть, но это не тот сайт: его поставили перед другим адресом."
+  },
+  "journalKindVerdict": {
+    "message": "Найдено"
+  },
+  "journalKindAction": {
+    "message": "Действия"
+  },
+  "journalKindError": {
+    "message": "Проблемы"
+  },
+  "journalKindDisabled": {
+    "message": "Выключено"
+  },
+  "journalTitle": {
+    "message": "Что изменилось с прошлого раза"
+  },
+  "journalEmpty": {
+    "message": "Показывать пока нечего — это ваша первая проверка."
+  },
+  "journalShowHistory": {
+    "message": "Показать всю историю"
+  },
+  "journalRetention": {
+    "message": "Всё старше $DAYS$ дней удаляется.",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "journalAutomatic": {
+    "message": "сделано автоматически"
+  },
+  "journalManual": {
+    "message": "это сделали вы"
   }
 }

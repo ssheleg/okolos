@@ -4,6 +4,20 @@ import { diffSince, type JournalEntry } from '@okolos/core-queue'
 
 import { renderJournal, type JournalHandlers } from './journal.js'
 
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fromCatalogue, useResolver, type Catalogue } from '@okolos/i18n'
+
+/** The shipped Russian catalogue: `default_locale` is `ru`, and a fake would let a missing key pass. */
+const CATALOGUE = JSON.parse(
+  readFileSync(
+    path.resolve(import.meta.dirname, '../../../../apps/extension/_locales/ru/messages.json'),
+    'utf8',
+  ),
+) as Catalogue
+
+useResolver(fromCatalogue(CATALOGUE))
+
 function entry(overrides: Partial<JournalEntry> = {}): JournalEntry {
   return {
     id: 'e1',
@@ -44,12 +58,12 @@ describe('what changed since last time', () => {
 
   it('says of each entry whether the product did it or the user did', () => {
     const el = render([entry({ automatic: true })], SINCE)
-    expect(role(el, 'entry')?.textContent).toMatch(/automatically/i)
+    expect(role(el, 'entry')?.textContent).toMatch(/сделано автоматически/i)
   })
 
   it('marks the ones the user chose as theirs', () => {
     const el = render([entry({ automatic: false })], SINCE)
-    expect(role(el, 'entry')?.textContent).toMatch(/you/i)
+    expect(role(el, 'entry')?.textContent).toMatch(/это сделали вы/i)
   })
 
   it('opens an entry on request', () => {
@@ -68,7 +82,7 @@ describe('the empty state says something', () => {
 
   it('says it plainly on a first-ever check', () => {
     const el = render([], null)
-    expect(role(el, 'empty')?.textContent).toMatch(/first/i)
+    expect(role(el, 'empty')?.textContent).toMatch(/первая проверка/i)
   })
 
   it('shows no group boxes when there is nothing to group', () => {
@@ -100,6 +114,6 @@ describe('the rest of it', () => {
     // The retention window is the reason full history is short. Saying it turns
     // a missing entry from a bug report into an expected outcome.
     const el = render([entry()], SINCE)
-    expect(role(el, 'retention')?.textContent).toContain('30 days')
+    expect(role(el, 'retention')?.textContent).toContain('30 дней')
   })
 })

@@ -1,3 +1,5 @@
+import { t } from '@okolos/i18n'
+
 import type { Diff, DiffGroup, JournalEntry } from '@okolos/core-queue'
 
 /**
@@ -14,11 +16,12 @@ import type { Diff, DiffGroup, JournalEntry } from '@okolos/core-queue'
  * records reads as "little happened".
  */
 
-const KIND_TITLE: Record<JournalEntry['kind'], string> = {
-  verdict: 'Found',
-  action: 'Actions',
-  error: 'Problems',
-  'detector-disabled': 'Turned off',
+/** Which kind gets which heading is a product decision; the word is a translation. */
+const KIND_TITLE_KEY: Record<JournalEntry['kind'], string> = {
+  verdict: 'journalKindVerdict',
+  action: 'journalKindAction',
+  error: 'journalKindError',
+  'detector-disabled': 'journalKindDisabled',
 }
 
 export interface JournalMeta {
@@ -40,7 +43,7 @@ export function renderJournal(
   root.setAttribute('data-role', 'journal')
 
   const heading = doc.createElement('h1')
-  heading.textContent = 'What changed since last time'
+  heading.textContent = t('journalTitle')
   root.append(heading)
 
   if (diff.total === 0) {
@@ -49,7 +52,7 @@ export function renderJournal(
         doc,
         'empty',
         diff.since === null
-          ? 'Nothing to show yet — this is your first check.'
+          ? t('journalEmpty')
           : `Nothing changed since ${shortTime(diff.since)}.`,
       ),
     )
@@ -68,8 +71,8 @@ export function renderJournal(
   }
 
   root.append(
-    button(doc, 'history', 'Show full history', handlers.onToggleHistory),
-    text(doc, 'retention', `Anything older than ${meta.retentionDays} days is deleted.`),
+    button(doc, 'history', t('journalShowHistory'), handlers.onToggleHistory),
+    text(doc, 'retention', t('journalRetention', String(meta.retentionDays))),
   )
 
   return root
@@ -81,7 +84,7 @@ function groupBlock(doc: Document, group: DiffGroup, handlers: JournalHandlers):
   el.setAttribute('data-kind', group.kind)
 
   const title = doc.createElement('h2')
-  title.textContent = `${KIND_TITLE[group.kind]} (${group.entries.length})`
+  title.textContent = `${t(KIND_TITLE_KEY[group.kind])} (${group.entries.length})`
   el.append(title)
 
   for (const item of group.entries) el.append(entryRow(doc, item, handlers))
@@ -94,7 +97,7 @@ function entryRow(doc: Document, item: JournalEntry, handlers: JournalHandlers):
   row.setAttribute('data-role', 'entry')
   row.setAttribute('data-entry', item.id)
   row.textContent = `${shortTime(item.createdAt)} — ${item.summary} (${
-    item.automatic ? 'done automatically' : 'you did this'
+    item.automatic ? t('journalAutomatic') : t('journalManual')
   })`
   row.addEventListener('click', () => handlers.onOpenEntry(item.id))
   return row

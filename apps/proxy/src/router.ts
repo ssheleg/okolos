@@ -93,6 +93,16 @@ function escapeHtml(value: string): string {
  * normalised form so `Evil.TEST.` and `evil.test` do not become two pages.
  */
 /** Names this service publishes. Anything else is a 404, not a database query. */
+/**
+ * The feeds this service publishes and can therefore lift a listing from.
+ *
+ * Used for two decisions that must not disagree: which feed name `/feeds/:name`
+ * will serve, and whether an appeal is ours to act on. Ownership used to be
+ * `feed.startsWith('okolos')` — a naming convention standing in for a
+ * permission check, and one that was already wrong: the only feed actually
+ * published is called `phishing`, so every listing we can lift was being sent
+ * to a third party that has never heard of it.
+ */
 const PUBLISHED_FEEDS = new Set(['phishing'])
 
 /**
@@ -195,7 +205,7 @@ ${body}
     )
   }
 
-  const ours = row.feed.startsWith('okolos')
+  const ours = PUBLISHED_FEEDS.has(row.feed)
   return shell(
     `${domain} is listed`,
     `<p data-role="verdict"><strong>${escapeHtml(domain)}</strong> is <strong>listed</strong> by <strong>${escapeHtml(row.feed)}</strong>, recorded ${escapeHtml(row.entry_date)}.</p>` +
@@ -259,7 +269,7 @@ async function domainStatus(domain: string | null, env: Env): Promise<Response> 
     entryDate: row.entry_date,
     // Most listings are not ours, and saying so is the difference between an
     // owner fixing the problem and an owner arguing with the wrong party.
-    appealTo: row.feed.startsWith('okolos') ? 'okolos' : row.feed,
+    appealTo: PUBLISHED_FEEDS.has(row.feed) ? 'okolos' : row.feed,
   })
 }
 

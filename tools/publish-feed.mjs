@@ -17,6 +17,8 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import path from 'node:path'
 
+import { hostOf, listingSql } from './listings.mjs'
+
 const root = path.resolve(import.meta.dirname, '..')
 const proxy = path.join(root, 'apps/proxy')
 const dryRun = process.argv.includes('--dry-run')
@@ -65,12 +67,19 @@ if (dryRun) {
 
 // Written through a file rather than inlined: a signed body on a command line
 // is a body mangled by quoting.
+//
+// Both tables in one file, because they are one fact. `feeds` is what the
+// extension downloads and blocks on; `listings` is what the public status page
+// answers from. Published separately, they drifted: the worker served a feed
+// listing four domains and told each of their owners nothing was recorded.
 const sql = path.join(tmpdir(), 'okolos-feed-publish.sql')
 const escaped = signed.replace(/'/g, "''")
+const publishedAt = new Date().toISOString()
 writeFileSync(
   sql,
-  `INSERT INTO feeds (name, body, updated_at) VALUES ('${name}', '${escaped}', '${new Date().toISOString()}')\n` +
-    `ON CONFLICT(name) DO UPDATE SET body = excluded.body, updated_at = excluded.updated_at;\n`,
+  `INSERT INTO feeds (name, body, updated_at) VALUES ('${name}', '${escaped}', '${publishedAt}')\n` +
+    `ON CONFLICT(name) DO UPDATE SET body = excluded.body, updated_at = excluded.updated_at;\n` +
+    listingSql(parsed.update, publishedAt),
 )
 execFileSync(
   'npx',
@@ -85,4 +94,28 @@ if (!response.ok) die(`the worker answered ${response.status} for /feeds/${name}
 const served = await response.text()
 if (served !== signed) die('what the worker serves is not byte-for-byte what was signed')
 console.log(`   ok    /feeds/${name} serves exactly what was signed`)
+
+// The check that was missing. Serving a feed and answering for it are two
+// paths, and for one release they disagreed: every domain in the feed was
+// answered "nothing is recorded for this domain" by the page the interstitial
+// sends its owner to. A publish that cannot answer for what it published has
+// not finished.
+const listed =
+  parsed.update.kind === 'snapshot'
+    ? (parsed.update.body.entries ?? [])[0]
+    : (parsed.update.body.added ?? [])[0]
+
+if (listed === undefined) {
+  console.log('   --    no entry to ask about: this update lists nothing')
+} else {
+  const host = hostOf(listed)
+  const answer = await fetch(
+    `${base}/status/domain?domain=${encodeURIComponent(host)}&cb=${parsed.update.body.version}`,
+  ).then((r) => r.json())
+  if (answer.status !== 'listed') {
+    die(`the status page answers "${answer.status}" for ${host}, which this feed lists`)
+  }
+  console.log(`   ok    /status answers "listed" for ${host}, by ${answer.feed}`)
+}
+
 console.log(`\npublished ${name} v${parsed.update.body.version}`)

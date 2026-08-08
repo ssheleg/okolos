@@ -1,0 +1,14 @@
+{
+  "kind": "snapshot",
+  "body": {
+    "name": "phishing",
+    "version": 3,
+    "updatedAt": "2026-08-08T09:30:00.000Z",
+    "entries": [
+      "sberbank-online-vhod.test",
+      "gosuslugi-podtverzhdenie.test",
+      "paypal-secure-login.test",
+      "apple-id-verify.test"
+    ]
+  }
+}

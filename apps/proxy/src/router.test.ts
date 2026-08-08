@@ -399,9 +399,13 @@ describe('an owner who wants to appeal, using only a browser', () => {
     })
 
   it('is offered a form when the listing is ours to lift', async () => {
+    // `phishing`, not `okolos-phishing`: ownership is the set of feeds this
+    // service publishes, not a prefix on their names. The one feed actually
+    // published is called `phishing`, so a prefix test would have hidden the
+    // form from every listing we can lift.
     const response = await handle(
       get('/status?domain=mysite.test'),
-      env({ listing: { feed: 'okolos-phishing', entry_date: '2026-08-01' } }),
+      env({ listing: { feed: 'phishing', entry_date: '2026-08-01' } }),
     )
     const html = await response.text()
     expect(html).toContain('action="/appeal"')

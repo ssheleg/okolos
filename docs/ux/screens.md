@@ -283,7 +283,7 @@ self-audit panel.
   | success | verdict found | - | verdict, source, date, appeal path |
 - **Behavior notes:** a public web page, not an extension surface; no account, no tracking, no analytics
 - **Wireframe:** wireframes/SCR-14.md
-- **Coverage:** apps/status-page/src/render.ts:renderStatus, apps/proxy/src/router.ts:handle, apps/status-page/src/render.test.ts
+- **Coverage:** apps/proxy/src/router.ts:handle (serves the page whole, answer in the markup), apps/status-page/src/render.ts:renderStatus (the interactive renderer, kept for a future client), apps/proxy/src/router.test.ts
 - **Scenarios:** SCN-026
 - **Resources:** worker status endpoint, feed metadata
 - **Status:** built

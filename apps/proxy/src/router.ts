@@ -22,6 +22,11 @@ export interface D1Like {
   }
 }
 
+const HTML_HEADERS = {
+  'content-type': 'text/html; charset=utf-8',
+  'cache-control': 'public, max-age=300',
+}
+
 const JSON_HEADERS = {
   'content-type': 'application/json; charset=utf-8',
   // Nothing here is cacheable per-user because nothing here is per-user.
@@ -47,11 +52,106 @@ export async function handle(request: Request, env: Env): Promise<Response> {
     return appeal(request, env)
   }
 
+  if (url.pathname === '/status' && request.method === 'GET') {
+    return statusPage(url, env)
+  }
+
   if (url.pathname === '/healthz') {
     return json({ ok: true })
   }
 
   return json({ error: 'not found' }, 404)
+}
+
+/** Escapes text for HTML. The domain arrives in a query string. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+/**
+ * The public status page, rendered here with the answer already in it.
+ *
+ * A page assembled by a script says nothing to the second reader every public
+ * page has — a crawler, or anything quoting it — and the answer to "is this
+ * domain listed" is exactly the kind of thing that gets quoted. So it is
+ * served whole, and needs no JavaScript to be read.
+ *
+ * One question, one address: `/status?domain=x`, with a canonical link to the
+ * normalised form so `Evil.TEST.` and `evil.test` do not become two pages.
+ */
+async function statusPage(url: URL, env: Env): Promise<Response> {
+  const raw = url.searchParams.get('domain')
+  const domain = normaliseDomain(raw)
+
+  const shell = (title: string, body: string, canonical?: string): Response =>
+    new Response(
+      `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeHtml(title)}</title>
+<meta name="description" content="${escapeHtml(title)}">
+${canonical ? `<link rel="canonical" href="${escapeHtml(canonical)}">` : ''}
+</head>
+<body>
+<main>
+<h1>Domain status</h1>
+${body}
+<form method="get" action="/status">
+<label for="domain">Check another domain</label>
+<input id="domain" name="domain" type="text" placeholder="example.com" value="${escapeHtml(domain ?? '')}">
+<button type="submit">Check</button>
+</form>
+</main>
+</body>
+</html>`,
+      { status: 200, headers: HTML_HEADERS },
+    )
+
+  if (!domain) {
+    return shell(
+      'Domain status — enter a domain',
+      '<p>Enter a domain to see whether it is listed, and by which feed.</p>',
+    )
+  }
+
+  const canonical = `${url.origin}/status?domain=${encodeURIComponent(domain)}`
+
+  let row: { feed: string; entry_date: string } | null
+  try {
+    row = await env.DB.prepare('SELECT feed, entry_date FROM listings WHERE domain = ?')
+      .bind(domain)
+      .first<{ feed: string; entry_date: string }>()
+  } catch {
+    // Never "clean" when the answer could not be looked up — the same rule the
+    // JSON endpoint holds, and for the same reason.
+    return shell(
+      `Domain status — ${domain}`,
+      `<p>The status of <strong>${escapeHtml(domain)}</strong> could not be looked up just now. That is not a statement that it is clean.</p>`,
+      canonical,
+    )
+  }
+
+  if (!row) {
+    return shell(
+      `${domain} is not listed`,
+      `<p><strong>${escapeHtml(domain)}</strong> is <strong>not listed</strong> by any feed this service carries.</p>`,
+      canonical,
+    )
+  }
+
+  const appealTo = row.feed.startsWith('okolos') ? 'okolos' : row.feed
+  return shell(
+    `${domain} is listed`,
+    `<p><strong>${escapeHtml(domain)}</strong> is <strong>listed</strong> by <strong>${escapeHtml(row.feed)}</strong>, recorded ${escapeHtml(row.entry_date)}.</p>
+<p>Appeals for this listing go to ${escapeHtml(appealTo)}.</p>`,
+    canonical,
+  )
 }
 
 async function domainStatus(domain: string | null, env: Env): Promise<Response> {

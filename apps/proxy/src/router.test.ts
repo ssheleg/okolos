@@ -203,3 +203,84 @@ describe('the same appeal, sent twice', () => {
     expect(response.status).toBe(503)
   })
 })
+
+describe('the page a person or a crawler actually gets', () => {
+  /**
+   * REQ-26 promised a public status page and SCR-14 was marked built, on a
+   * renderer that nothing called: no document, no entry point, no request to
+   * this worker. The same shape as the static analyser closed on unreachable
+   * code, recorded in the retro and repeated here.
+   *
+   * It is served from the worker with the answer already in the markup rather
+   * than fetched by a script, because the second reader of a public page is a
+   * crawler and a page that needs JavaScript says nothing to one.
+   */
+  it('serves HTML, not JSON, at the human address', async () => {
+    const response = await handle(get('/status?domain=evil.test'), env({ listing: null }))
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toMatch(/text\/html/)
+  })
+
+  it('puts the answer in the markup, where it can be read without running anything', async () => {
+    const response = await handle(
+      get('/status?domain=evil.test'),
+      env({ listing: { feed: 'openphish', entry_date: '2026-08-01' } }),
+    )
+    const html = await response.text()
+    expect(html).toContain('evil.test')
+    expect(html).toMatch(/listed/i)
+    expect(html).toContain('openphish')
+  })
+
+  it('says plainly when a domain is not listed', async () => {
+    const html = await (await handle(get('/status?domain=ok.test'), env({ listing: null }))).text()
+    expect(html).toMatch(/not listed/i)
+  })
+
+  it('escapes the feed name, which is data this service does not write', async () => {
+    /**
+     * The first version of this test sent markup as the *domain*, and passed
+     * with escaping disabled — because `normaliseDomain` rejects it, so
+     * nothing reached the output either way. Green for the wrong reason.
+     *
+     * The feed name is the value that actually matters: it comes out of the
+     * database, this service does not write it, and it is interpolated into a
+     * public page.
+     */
+    const html = await (
+      await handle(
+        get('/status?domain=evil.test'),
+        env({ listing: { feed: '<script>alert(1)</script>', entry_date: '2026-08-01' } }),
+      )
+    ).text()
+    expect(html).not.toContain('<script>alert(1)</script>')
+    expect(html).toContain('&lt;script&gt;')
+  })
+
+  it('rejects a domain that is not one before it ever reaches the markup', () => {
+    // Stated beside the escaping test so the two are not confused again: this
+    // is normalisation's job, and it is why the first version of that test
+    // proved nothing.
+    expect(normaliseDomain('<script>alert(1)</script>')).toBeNull()
+  })
+
+  it('asks for a domain rather than guessing when none was given', async () => {
+    const response = await handle(get('/status'), env())
+    const html = await response.text()
+    expect(response.headers.get('content-type')).toMatch(/text\/html/)
+    expect(html).toMatch(/enter a domain|which domain/i)
+  })
+
+  it('does not claim a domain is clean when the lookup failed', async () => {
+    const html = await (
+      await handle(get('/status?domain=evil.test'), env({ fail: true }))
+    ).text()
+    expect(html).not.toMatch(/not listed/i)
+    expect(html).toMatch(/could not/i)
+  })
+
+  it('carries a canonical link, so one question has one address', async () => {
+    const html = await (await handle(get('/status?domain=Evil.TEST.'), env({ listing: null }))).text()
+    expect(html).toMatch(/<link rel="canonical" href="[^"]*domain=evil\.test"/)
+  })
+})

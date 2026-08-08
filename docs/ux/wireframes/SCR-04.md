@@ -9,6 +9,7 @@
 `[data-role=<name>]`, which is also how the tests reach them.
 
 - `panel`
+- `restore-note`
 - `actions`
 - `item`
 - `snippet`

@@ -131,3 +131,37 @@ describe('when the evidence is gone', () => {
     expect(handle.root.querySelector('[data-role=rescan]')).not.toBeNull()
   })
 })
+
+describe('a restore that could not finish says so', () => {
+  /**
+   * "Restore the page" closed the inspector whatever happened. A user whose
+   * text did not come back saw exactly what a user whose text did — the same
+   * class as the leaks check that pressed and stayed silent, found earlier in
+   * the same audit.
+   *
+   * The sanitiser already reports `{ restored, gone, changed }`; this is the
+   * surface that had nowhere to put it.
+   */
+  const props = { evidence: [evidence()], confidence: 'high' as const }
+
+  it('shows nothing extra when there is nothing to report', () => {
+    const handle = mountInspector(document, props, handlers())
+    expect(handle.root.querySelector('[data-role=restore-note]')).toBeNull()
+    handle.destroy()
+  })
+
+  it('names what could not be put back', () => {
+    const handle = mountInspector(document, { ...props, restoreNote: 'One passage could not be put back: the page removed it.' }, handlers())
+    expect(handle.root.querySelector('[data-role=restore-note]')?.textContent).toMatch(
+      /could not be put back/i,
+    )
+    handle.destroy()
+  })
+
+  it('keeps the evidence on screen beside the note', () => {
+    // The note is not a dismissal. The snippet is why the user opened this.
+    const handle = mountInspector(document, { ...props, restoreNote: 'One passage could not be put back.' }, handlers())
+    expect(handle.root.querySelector('[data-role=snippet]')).not.toBeNull()
+    handle.destroy()
+  })
+})

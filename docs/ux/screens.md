@@ -107,7 +107,7 @@ self-audit panel.
 ### SCR-04: Finding inspector
 - **Used by:** FLW-02 (inspect), FLW-03 (from the gate)
 - **Purpose:** show the evidence so the user can judge the verdict instead of trusting it
-- **Elements:** the concealed text verbatim; concealment technique; DOM location; which stage fired and its confidence; neutralised/restored toggle; "This is wrong"; **primary action: "Keep it neutralised"**
+- **Elements:** the concealed text verbatim; concealment technique; DOM location; which stage fired and its confidence; neutralised/restored toggle; "This is wrong"; **primary action: "Keep it neutralised"**; `[data-role=restore-note]` — what a restore could not put back, shown above the buttons when it could not finish
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|

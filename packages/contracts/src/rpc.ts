@@ -97,6 +97,15 @@ export interface RpcMap {
   /** Takes trust back. The checks resume on the next navigation. */
   'trust/revoke': { req: { domain: string }; res: { ok: true } }
   'gate/decision': { req: GateDecision; res: { ok: true } }
+  /**
+   * Something the content script did that the user should be able to read back.
+   *
+   * The page has no database of its own, and the self-audit journal is the
+   * record the whole product's honesty rests on. Without this a restore that
+   * could not finish existed only in the moment it happened — the page said
+   * nothing, and nothing was written down either.
+   */
+  'page/note': { req: { kind: 'restore'; explain: string }; res: { ok: true } }
   /** Rebuilds blocking rules from the feed in force. */
   'rules/refresh': { req: Record<string, never>; res: { installed: number; dropped: number } }
   'block/context': {

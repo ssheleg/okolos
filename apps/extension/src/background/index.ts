@@ -74,6 +74,10 @@ platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>) => {
       return revokeTrusted(message.payload as { domain: string }) as Promise<RpcMap[T]['res']>
     case 'trust/add':
       return addTrusted(message.payload as { domain: string }) as Promise<RpcMap[T]['res']>
+    case 'page/note':
+      return notePageEvent(message.payload as { kind: 'restore'; explain: string }) as Promise<
+        RpcMap[T]['res']
+      >
     case 'gate/decision':
       return handleGateDecision(message.payload as GateDecision) as Promise<RpcMap[T]['res']>
     default:
@@ -302,6 +306,29 @@ async function allowBlocked(payload: { url: string }): Promise<{ url: string } |
  * history permission would give this extension every page the user has ever
  * opened, to answer a question that only needs one date per domain.
  */
+/**
+ * Writes something the content script observed into the journal.
+ *
+ * The page cannot reach storage, and a surface that fails silently is the
+ * defect this exists to close — a restore that could not finish now leaves a
+ * record as well as a sentence on screen.
+ */
+async function notePageEvent(payload: { kind: 'restore'; explain: string }): Promise<{ ok: true }> {
+  try {
+    const db = await openDb()
+    await db.put('journal', {
+      id: `page:${payload.kind}:${new Date().toISOString()}`,
+      createdAt: new Date().toISOString(),
+      kind: 'action',
+      detail: { reason: `page-${payload.kind}`, explain: payload.explain },
+    })
+  } catch (cause) {
+    // The note is the least important thing on the page at that moment.
+    console.warn('okolos: could not journal a page note', cause)
+  }
+  return { ok: true }
+}
+
 /** Everything that may leave the device goes through this, and is logged first. */
 async function auditDeps() {
   const db = await openDb()

@@ -39,6 +39,16 @@ const TECHNIQUE_WORDING: Record<string, string> = {
 export interface InspectorProps {
   readonly evidence: readonly Evidence[]
   readonly confidence: Confidence
+  /**
+   * What a restore could not do, in a sentence, or absent when it did.
+   *
+   * "Restore the page" used to close this panel whatever happened, so a user
+   * whose text did not come back saw exactly what a user whose text did. The
+   * sanitiser has always known the difference — it reports what it put back,
+   * what the page had removed, and what the page had written over — and this
+   * is the surface that had nowhere to put it.
+   */
+  readonly restoreNote?: string
 }
 
 export interface InspectorHandlers {
@@ -107,6 +117,15 @@ function panel(doc: Document, props: InspectorProps, handlers: InspectorHandlers
         'This page was too large to check in full, so there may be more than what is listed here.',
       ),
     )
+  }
+
+  if (props.restoreNote) {
+    // Above the buttons, not below: the user is about to press one of them
+    // again, and what just failed belongs in front of that decision.
+    const note = doc.createElement('p')
+    note.setAttribute('data-role', 'restore-note')
+    note.textContent = props.restoreNote
+    el.append(note)
   }
 
   const actions = doc.createElement('div')
@@ -197,6 +216,7 @@ function styles(doc: Document): HTMLStyleElement {
     }
     [data-role=locator], [data-role=stage] { color: #5b6572; font-size: 12px; margin: 2px 0; }
     [data-role=partial] { color: #7a5a12; }
+    [data-role=restore-note] { color: #7a5a12; margin: 10px 0 0; }
     [data-role=actions] { display: flex; gap: 8px; margin-block-start: 12px; flex-wrap: wrap; }
     button { font: inherit; padding: 7px 12px; border-radius: 8px; border: 1px solid #d5dbe3; background: #f3f5f8; cursor: pointer; }
     button[data-primary=true] { background: #10161d; border-color: #10161d; color: #fff; }

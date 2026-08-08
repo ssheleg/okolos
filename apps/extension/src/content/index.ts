@@ -174,16 +174,58 @@ function resolveEverything(): void {
   banner = null
 }
 
-function openInspector(verdict: Verdict): void {
+/**
+ * Turns a restore's outcome into a sentence, or null when it finished.
+ *
+ * Two ways the page moves underneath one, and they read differently to the
+ * person holding the button: the element left the page, or the page wrote its
+ * own content into it. Neither is a failure of the product, and both are worth
+ * saying out loud.
+ */
+function explainRestore(outcome: { restored: number; gone: number; changed: number }): string {
+  const parts: string[] = []
+  if (outcome.gone > 0) {
+    parts.push(
+      `${outcome.gone} ${outcome.gone === 1 ? 'passage was' : 'passages were'} not put back: the page had already removed ${outcome.gone === 1 ? 'it' : 'them'}`,
+    )
+  }
+  if (outcome.changed > 0) {
+    parts.push(
+      `${outcome.changed} ${outcome.changed === 1 ? 'was' : 'were'} left alone: the page has written its own content there since, and adding the hidden text back beside it would put the instruction into the page again`,
+    )
+  }
+  const restored =
+    outcome.restored > 0 ? `${outcome.restored} restored. ` : 'Nothing could be restored. '
+  return `${restored}${parts.join('; ')}.`
+}
+
+function openInspector(verdict: Verdict, restoreNote?: string): void {
   inspector?.destroy()
   inspector = mountInspector(
     document,
-    { evidence: verdict.evidence, confidence: verdict.confidence },
+    {
+      evidence: verdict.evidence,
+      confidence: verdict.confidence,
+      ...(restoreNote ? { restoreNote } : {}),
+    },
     {
       onKeep: closeInspector,
       onRestore: () => {
-        sanitiser.restore()
-        closeInspector()
+        const outcome = sanitiser.restore()
+        const unfinished = outcome.gone + outcome.changed
+        if (unfinished === 0) {
+          closeInspector()
+          return
+        }
+
+        // Not a dismissal. The panel stays with a sentence saying what could
+        // not be put back, because closing on a restore that did not happen is
+        // how the user learns the button does nothing.
+        const note = explainRestore(outcome)
+        openInspector(verdict, note)
+        void platform.runtime
+          .send('page/note', { kind: 'restore', explain: note })
+          .catch(() => undefined)
       },
       onDispute: () => {
         closeInspector()

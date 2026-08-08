@@ -97,7 +97,17 @@ const SYSTEM_PROMPT = /\bsystem prompt\b|\bsystem message\b|\b<\|?(system|im_sta
 
 /** What an attacker actually wants out of the session. */
 const SENSITIVE_TARGET =
-  /\b(one-time (code|password)|otp|2fa|password|passwords|credential|credentials|cookie|cookies|session token|api key|secret|inbox|private key|seed phrase|payment|transfer|wire|invoice|funds|wallet)\b|(парол[ья]|код\s+из\s+смс|одноразов\w*\s+код|секрет|учётн\w*\s+данн|сид-фраз|seed-фраз|токен\s+сесси|ключ\s+api|деньг[иа]|перевод\s+средств|средств[ао]?\s+на\s+счёт|на\s+счёт|оплат[уы]|кошел[ьё])/i
+  /\b(one-time (code|password)|otp|2fa|password|passwords|credential|credentials|cookie|cookies|session token|api key|secret|inbox|private key|seed phrase|payment|transfer|wire|invoice|funds|wallet)\b|(парол[ья]|код\s+из\s+смс|одноразов\w*\s+код|секрет|учётн\w*\s+данн|сид-фраз|seed-фраз|токен\s+сесси|ключ\s+api|деньг[иа]|перевод\s+средств|средств[ао]?\s+на\s+счёт|оплат[уы]|кошел[ьё])/i
+
+/**
+ * Money is a target only when the words denote money.
+ *
+ * A bare "на счёт" was added here on 2026-08-08 and taken out the same day: it
+ * is ordinary Russian for "regarding", so "Напиши на счёт встречи завтра" — an
+ * internal note in hidden text — became a sensitive target the moment
+ * "напиши" joined the imperative list. Widening two rules at once is how a
+ * detector starts flagging the language it was widened for.
+ */
 
 /**
  * An imperative opening a sentence, optionally after a short adverbial clause.

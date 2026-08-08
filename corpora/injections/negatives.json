@@ -360,6 +360,54 @@
         "carrier": "title-attr",
         "charClasses": []
       }
+    },
+    {
+      "name": "служебная заметка про встречу",
+      "candidate": {
+        "locator": "div.sr-only",
+        "text": "Напиши на счёт встречи завтра в переговорной",
+        "concealment": [
+          "clip"
+        ],
+        "carrier": "text-node",
+        "charClasses": []
+      }
+    },
+    {
+      "name": "подпись к контакту секретаря",
+      "candidate": {
+        "locator": "span.sr-only",
+        "text": "Позвоните секретарю приёмной по добавочному 214",
+        "concealment": [
+          "offscreen"
+        ],
+        "carrier": "text-node",
+        "charClasses": []
+      }
+    },
+    {
+      "name": "скрытая подсказка про оплату заказа",
+      "candidate": {
+        "locator": "p.sr-only",
+        "text": "Оплату можно разделить на три платежа без процентов",
+        "concealment": [
+          "clip"
+        ],
+        "carrier": "text-node",
+        "charClasses": []
+      }
+    },
+    {
+      "name": "счёт как игровой термин",
+      "candidate": {
+        "locator": "span.sr-only",
+        "text": "Открой счёт матча в новой вкладке — там таблица",
+        "concealment": [
+          "clip"
+        ],
+        "carrier": "text-node",
+        "charClasses": []
+      }
     }
   ]
 }

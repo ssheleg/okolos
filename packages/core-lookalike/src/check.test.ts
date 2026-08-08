@@ -3,6 +3,10 @@ import { describe, expect, it } from 'vitest'
 import { checkLookalike, editDistance } from './check.js'
 import { decodePunycode, toUnicodeHost } from './punycode.js'
 import { mixesScripts, skeleton } from './confusables.js'
+import { DEFAULT_WATCHLIST } from './watchlist.js'
+
+/** Latin-spelled Russian brands: a TLD test alone would miss vk.com. */
+const RU_BRANDS = new Set(['vk.com', 'yandex.com'])
 
 const WATCHLIST = ['paypal.com', 'google.com', 'microsoft.com', 'bank.test', 'sbb.ch']
 
@@ -208,5 +212,58 @@ describe('a hostname is not a URL', () => {
   it('still refuses an empty or meaningless host', () => {
     expect(checkLookalike('..', WATCH)).toBeNull()
     expect(checkLookalike('   ', WATCH)).toBeNull()
+  })
+})
+
+describe('the brands this product is actually for', () => {
+  /**
+   * The shipped watchlist held 29 names on 2026-08-08 and not one of them was
+   * Russian — no bank, no state services portal, no marketplace — while the
+   * product's own published phishing feed listed `sberbank-online-vhod.test`
+   * and `gosuslugi-podtverzhdenie.test`. A lookalike check protects the names
+   * it knows, so the list is a coverage claim, and this one covered PayPal and
+   * DHL for an audience being phished for Sberbank.
+   *
+   * The attack these entries exist for is the canonical Russian one: a Latin
+   * brand spelled with Cyrillic letters that render identically.
+   */
+  const russian = DEFAULT_WATCHLIST.filter((d) => /\.(ru|su|рф)$/.test(d) || RU_BRANDS.has(d))
+
+  it('carries the names phished in this market', () => {
+    expect(russian.length).toBeGreaterThanOrEqual(10)
+  })
+
+  it('names the two the product itself ships a feed about', () => {
+    expect(DEFAULT_WATCHLIST).toContain('sberbank.ru')
+    expect(DEFAULT_WATCHLIST).toContain('gosuslugi.ru')
+  })
+
+  it('catches a Cyrillic homoglyph of a bank, which is the attack', () => {
+    // What `location.hostname` actually hands over for "sberbаnk.ru" with a
+    // Cyrillic а: the browser punycodes it, and the check decodes it back.
+    const verdict = checkLookalike('xn--sberbnk-6fg.ru', DEFAULT_WATCHLIST)
+    expect(verdict, 'a Cyrillic а inside a Latin brand must not pass').not.toBeNull()
+    expect(verdict?.kind).toBe('mixed-script')
+    expect(verdict?.resembles).toBe('sberbank.ru')
+  })
+
+  it('catches the state services portal spelled with a Cyrillic о', () => {
+    // "gоsuslugi.ru", Cyrillic о.
+    const verdict = checkLookalike('xn--gsuslugi-nbh.ru', DEFAULT_WATCHLIST)
+    expect(verdict?.resembles).toBe('gosuslugi.ru')
+  })
+
+  it('stays quiet on the genuine sites themselves', () => {
+    // The cost of a wrong answer here is a warning on someone's own bank.
+    for (const domain of ['sberbank.ru', 'gosuslugi.ru', 'ozon.ru', 'wildberries.ru', 'vk.com']) {
+      expect(checkLookalike(domain, DEFAULT_WATCHLIST), domain).toBeNull()
+    }
+  })
+
+  it('refuses a whole URL instead of answering about "https"', () => {
+    // This function takes a hostname, and the one caller passes
+    // `location.hostname`. Handed a URL it used to split on "/" and return
+    // "https" — an answer to a question nobody asked, and a silent all-clear.
+    expect(checkLookalike('https://xn--sberbnk-6fg.ru/login', DEFAULT_WATCHLIST)).not.toBeNull()
   })
 })

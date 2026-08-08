@@ -99,7 +99,12 @@ export function checkLookalike(
  */
 function hostnameOnly(raw: string): string {
   const trimmed = raw.trim().toLowerCase()
-  const afterCredentials = trimmed.slice(trimmed.lastIndexOf('@') + 1)
+  // A whole URL used to split on "/" and leave "https" — which resembles
+  // nothing watched, so every check below passed and the caller got a silent
+  // all-clear about a domain nobody had looked at. The one caller passes
+  // `location.hostname`; this is for the next one.
+  const afterScheme = trimmed.includes('://') ? trimmed.slice(trimmed.indexOf('://') + 3) : trimmed
+  const afterCredentials = afterScheme.slice(afterScheme.lastIndexOf('@') + 1)
   const beforePath = afterCredentials.split('/')[0] ?? ''
   // IPv6 literals are bracketed, and a colon inside brackets is not a port.
   const beforePort = beforePath.startsWith('[')

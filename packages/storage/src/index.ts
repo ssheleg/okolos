@@ -1,6 +1,11 @@
 export { closeDb, openDb, type OkolosDatabase } from './db.js'
 export { exportAll, wipeAll, type WipeResult } from './export.js'
-export { pruneExpired } from './retention.js'
+export {
+  dueForSweep,
+  pruneExpired,
+  LAST_SWEEP_KEY,
+  SWEEP_INTERVAL_MS,
+} from './retention.js'
 export {
   DB_NAME,
   DB_VERSION,

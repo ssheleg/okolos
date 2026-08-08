@@ -161,3 +161,41 @@ describe('every message type is both served and sent', () => {
     }
   }
 })
+
+describe('retention is not left to an alarm that may never fire', () => {
+  /**
+   * `alarms.create` replaces an alarm of the same name, the background
+   * re-creates it on every service-worker start, and an MV3 worker starts many
+   * times a day — so a twenty-four hour alarm on a browser in daily use can be
+   * reset before it fires. The journal screen promises that anything older
+   * than ninety days is deleted.
+   *
+   * The decision of *when* is unit-tested in packages/storage. What no unit
+   * test can reach is whether the background actually asks at start: the
+   * module runs on import and cannot be loaded in isolation. This is a source
+   * check, and a source check is weaker than a behavioural one — it would not
+   * notice a sweep that ran and did nothing. It is here because deleting the
+   * call was otherwise caught by nothing at all.
+   */
+  const background = readFileSync(
+    path.join(root, 'apps/extension/src/background/index.ts'),
+    'utf8',
+  )
+
+  it('sweeps at start, not only when the alarm fires', () => {
+    const atModuleScope = /^void sweepIfDue\(\)$/m.test(background)
+    expect(atModuleScope, 'the startup sweep is gone; retention rests on the alarm alone').toBe(
+      true,
+    )
+  })
+
+  it('still sweeps on the alarm, for a session that never restarts', () => {
+    const inHandler = /RETENTION_ALARM\)[\s\S]{0,400}sweepIfDue\(\)/.test(background)
+    expect(inHandler, 'the alarm no longer sweeps').toBe(true)
+  })
+
+  it('records when it swept, or the next start cannot tell', () => {
+    expect(background).toContain('LAST_SWEEP_KEY')
+    expect(background).toContain('dueForSweep')
+  })
+})

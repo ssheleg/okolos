@@ -8,6 +8,36 @@ function olderThan(iso: string, days: number, nowMs: number): boolean {
   return Number.isFinite(at) && nowMs - at > days * DAY_MS
 }
 
+/** How long a sweep may be skipped before the next startup owes one. */
+export const SWEEP_INTERVAL_MS = 12 * 60 * 60 * 1000
+
+/** Where the last sweep's timestamp lives, so the decision survives a restart. */
+export const LAST_SWEEP_KEY = 'retention:lastSweptAt'
+
+/**
+ * Whether a sweep is owed.
+ *
+ * The alarm alone could not be trusted with this. `alarms.create` replaces an
+ * alarm of the same name, the background re-creates it on every start, and an
+ * MV3 service worker starts many times a day — so a 24-hour alarm on a browser
+ * in daily use can be reset before it ever fires, and the ninety-day promise
+ * on the journal screen would be enforced by nothing at all.
+ *
+ * A timestamp in storage does not care how often the worker restarts: the
+ * question at each start is only whether enough time has passed.
+ */
+export function dueForSweep(lastSweptAt: string | null | undefined, nowMs: number): boolean {
+  if (!lastSweptAt) return true
+  const at = Date.parse(lastSweptAt)
+  // An unreadable timestamp is not permission to skip: sweeping twice costs a
+  // few deletes, and skipping keeps data past the window the user was promised.
+  if (!Number.isFinite(at)) return true
+  // A clock that moved backwards (a corrected system time, a restored profile)
+  // would otherwise postpone the sweep indefinitely.
+  if (at > nowMs) return true
+  return nowMs - at >= SWEEP_INTERVAL_MS
+}
+
 /**
  * Runs on an alarm, not on a timer held in memory.
  *

@@ -2,7 +2,13 @@ import { classifyUndecided, detectHidden } from '@okolos/core-injection'
 import { detectPlatform } from '@okolos/platform'
 import { buildRules, matchUrl, type FeedSnapshot } from '@okolos/core-feeds'
 import { createOnnxRuntime, MODEL } from '@okolos/model'
-import { createModelCache, openDb, pruneExpired } from '@okolos/storage'
+import {
+  createModelCache,
+  dueForSweep,
+  LAST_SWEEP_KEY,
+  openDb,
+  pruneExpired,
+} from '@okolos/storage'
 import type {
   Envelope,
   GateDecision,
@@ -629,6 +635,34 @@ async function reviewExtensions(): Promise<void> {
 }
 
 void platform.alarms.create(INVENTORY_ALARM, 60 * 24)
+/**
+ * Retention runs at start as well as on the alarm, and the start is the one
+ * that can be relied on.
+ *
+ * `alarms.create` replaces an alarm of the same name, this line runs on every
+ * service-worker start, and an MV3 worker starts many times a day — so the
+ * twenty-four hour alarm on a browser in daily use is reset before it ever
+ * fires. The journal screen promises that anything older than ninety days is
+ * deleted; without this, that promise was enforced by an alarm that might
+ * never arrive.
+ *
+ * A timestamp in storage does not care how often the worker restarts.
+ */
+async function sweepIfDue(): Promise<void> {
+  try {
+    const db = await openDb()
+    const last = await db.get('settings', LAST_SWEEP_KEY)
+    if (!dueForSweep(typeof last?.value === 'string' ? last.value : null, Date.now())) return
+    await pruneExpired(db, Date.now())
+    await db.put('settings', { key: LAST_SWEEP_KEY, value: new Date().toISOString() })
+  } catch (cause) {
+    // Retention failing must not stop the extension from starting. It is
+    // reported rather than swallowed, and the next start tries again.
+    console.warn('okolos: retention sweep at start failed', cause)
+  }
+}
+
+void sweepIfDue()
 void platform.alarms.create(RETENTION_ALARM, 60 * 24)
 platform.alarms.onFired((name) => {
   if (name === INVENTORY_ALARM) {
@@ -636,12 +670,7 @@ platform.alarms.onFired((name) => {
     return
   }
   if (name !== RETENTION_ALARM) return
-  void (async () => {
-    try {
-      const db = await openDb()
-      await pruneExpired(db, Date.now())
-    } catch (cause) {
-      console.warn('okolos: retention sweep failed', cause)
-    }
-  })()
+  // The alarm still matters for a session that stays up for days, where no
+  // restart would otherwise trigger the sweep.
+  void sweepIfDue()
 })

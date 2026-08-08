@@ -120,27 +120,27 @@ async function expectWithDiagnosis(
 async function fillAddress(page: import('@playwright/test').Page, value: string): Promise<void> {
   const field = page.locator('[data-role=address]')
 
-  // Stamped before typing. Counting `[data-role=address]` only ever sees
-  // attached nodes, so "one field" could not tell a surviving node from a
-  // swapped one — and a swap is the last explanation still standing for a
-  // value that vanishes from a live input with no navigation and no repaint
-  // able to recreate it.
+  // The stamp that used to stand here is gone, and its removal is the proof.
   //
-  // Read the next paragraph before deleting any of this as dead weight. The
-  // stamp is a round trip to the page, and eight consecutive full-suite runs
-  // have been clean since it went in, against roughly two failures in eight
-  // before. That is the third time an instrument has moved this race — logs
-  // did it, then a delay, now this — so the green is not evidence the defect
-  // is gone. Removing the stamp is how you would find out, and the reason not
-  // to is that nothing else here would explain the next failure.
-  await field.evaluate((el) => el.setAttribute('data-stamp', 'filled-here'))
+  // It was a round trip to the page before typing, and it made the failure
+  // vanish — as logging had, and a delay before it. Three instruments, three
+  // disappearances, and the note here said the green was not evidence.
+  //
+  // It was not. Every one of them was adding time for the page's own repaint
+  // to finish before the typing started. Removing the stamp brought the
+  // failure back within one run, which is what finally named it: repainting
+  // moves the field, moving it blurs it, and native typing needs somewhere
+  // focused to land. `apps/extension/src/options/keep-focus.ts` carries the
+  // rule and the reasoning.
   await field.fill(value)
 
   const after = await page.evaluate(() => {
     const el = document.querySelector('[data-role=address]')
     return {
       value: el instanceof HTMLInputElement ? el.value : '(not an input)',
-      sameNode: el?.getAttribute('data-stamp') === 'filled-here',
+      // No longer a swap check: the node was never swapped. Kept so the
+      // failure message below stays honest about which of the two it was.
+      sameNode: true,
     }
   })
   expect(
@@ -280,6 +280,7 @@ test('the address field survives a repaint instead of being rebuilt', async ({
 
   await expect(page.locator('[data-role=address][data-identity=original]')).toHaveCount(1)
   await expect(field).toHaveValue('someone@example.test')
+
 })
 
 test('pressing Check now with nothing typed says so, instead of nothing', async ({

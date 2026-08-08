@@ -324,7 +324,7 @@ See [foundation.md](foundation.md) → Personas.
 - **States covered:** loading, empty, error, success
 - **Errors & recovery:** a source is unreachable or rate-limited -> that row states unavailable with a retry; results from other sources stand and the summary never implies full coverage
 - **Status:** implemented
-- **Coverage:** packages/core-leaks/src/merge.ts:mergeLeaks, packages/core-leaks/src/group.ts:groupLeaks, packages/ui/src/leaks/leaks.ts:renderLeaks, e2e/scn-015.spec.ts
+- **Coverage:** apps/extension/src/options/keep-focus.ts:keepingFocus (typing survives a repaint — focus and caret, not only the value), packages/core-leaks/src/merge.ts:mergeLeaks, packages/core-leaks/src/group.ts:groupLeaks, packages/ui/src/leaks/leaks.ts:renderLeaks, e2e/scn-015.spec.ts
 
 ### SCN-016: Repair a leak and mark it resolved
 - **Persona:** P-01

@@ -22,6 +22,7 @@ import { exportAll, openDb, RETENTION_DAYS, wipeAll, type JournalRecord } from '
 
 import { mapJournal } from '../popup/state.js'
 import { answered } from './answered.js'
+import { keepingFocus } from './keep-focus.js'
 import '../pages.css'
 
 /**
@@ -495,10 +496,19 @@ async function renderPanel(state: PanelState): Promise<void> {
     }),
   ]
 
-  root.replaceChildren(...sections)
-  // Synchronously, with no await between: the field is out of the document for
-  // one statement rather than for the length of a database read.
-  root.querySelector('[data-role=address-slot]')?.replaceWith(addressField)
+  // Moving a node preserves its value. It does not preserve focus: removing an
+  // element from the document blurs it, and native typing then goes nowhere —
+  // the browser has no focused editable element to put it in. That is where a
+  // whole address typed during the settle disappeared to, and why every
+  // instrument aimed at it made the failure go away: each one added a round
+  // trip that let the last repaint finish before the typing started.
+  keepingFocus(addressField, () => {
+    root.replaceChildren(...sections)
+    // Synchronously, with no await between: the field is out of the document
+    // for one statement rather than for the length of a database read.
+    root.querySelector('[data-role=address-slot]')?.replaceWith(addressField)
+  })
+
   revealSection()
 }
 

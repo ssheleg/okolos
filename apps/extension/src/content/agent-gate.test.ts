@@ -244,6 +244,50 @@ describe('clicks', () => {
   })
 })
 
+describe('the boundary, stated so it is a decision and not an oversight', () => {
+  it('does not hold a scripted click on a button that belongs to no form', async () => {
+    /**
+     * This is the gap, pinned deliberately. `#describe` returns null for a
+     * control outside a form, on the reasoning that it is "not an action
+     * leaving the page" — true of a tab or a card, and false of the button
+     * every modern application uses to move money, which fires `fetch` and
+     * navigates nowhere.
+     *
+     * The premise held when actions were navigations. It does not hold for a
+     * single-page application, and SCN-010's "no action proceeds without an
+     * explicit human decision" is wider than what this gate delivers. The
+     * scenario now says so in its Known limit; this test is the other half, so
+     * that a change here has to be a change to a stated decision.
+     *
+     * Closing it properly means intercepting fetch and XHR that no human
+     * gesture started — a bigger change, with the noise risk the code comment
+     * beside `#describe` warns about. Tracked, not forgotten.
+     */
+    const { ask } = install()
+    document.body.innerHTML = '<button id="pay" type="button">Transfer</button>'
+    const event = scripted('click')
+    ;(document.querySelector('#pay') as HTMLElement).dispatchEvent(event)
+    await settle()
+
+    expect(event.defaultPrevented, 'the action is not held today').toBe(false)
+    expect(ask, 'and the user is not asked').not.toHaveBeenCalled()
+  })
+
+  it('still holds the same button once it is inside a form', async () => {
+    // The difference is the form, and nothing else. Stated here so the shape
+    // of the gap is unmistakable to whoever closes it.
+    const { ask } = install()
+    document.body.innerHTML =
+      '<form action="/transfer" aria-label="Transfer"><button id="pay">Transfer</button></form>'
+    const event = scripted('click')
+    ;(document.querySelector('#pay') as HTMLElement).dispatchEvent(event)
+    await settle()
+
+    expect(event.defaultPrevented).toBe(true)
+    expect(ask).toHaveBeenCalled()
+  })
+})
+
 describe('actions nobody can name', () => {
   it('blocks a link whose destination will not parse, without asking', async () => {
     const { ask, journal } = install()

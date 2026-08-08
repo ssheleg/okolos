@@ -144,7 +144,7 @@ self-audit panel.
   |-------|---------|-------------|----------|
   | success | sensitive action on a page with an unresolved finding | - | modal, blocking, default is Block |
   | error | the action context cannot be identified | - | blocks and says what could not be determined |
-- **Behavior notes:** timing out defaults to Block, never to Allow; Block holds focus so a stray Enter blocks; Escape blocks; "Show the injection" leaves the gate standing behind the evidence
+- **Behavior notes:** timing out defaults to Block, never to Allow; Block holds focus so a stray Enter blocks; Escape blocks; "Show the injection" leaves the gate standing behind the evidence. **What never reaches this screen:** an action with no form and no navigation behind it — a scripted click on a bare button firing `fetch` — is not held, so the gate never appears for it. SCN-010's Known limit carries the reasoning
 - **Wireframe:** wireframes/SCR-06.md
 - **Coverage:** packages/ui/src/gate/gate.ts:mountGate, e2e/scn-010.spec.ts, e2e/a11y-overlays.spec.ts
 - **Scenarios:** SCN-010

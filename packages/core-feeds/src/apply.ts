@@ -51,6 +51,7 @@ export interface SignedUpdate {
 export type Verifier = (serialised: string, signature: string) => Promise<boolean>
 
 export type RefusalReason =
+  | 'bad-version'
   | 'bad-signature'
   | 'wrong-base'
   | 'no-current'
@@ -93,6 +94,17 @@ function canonical(value: unknown): string {
   return JSON.stringify(value) ?? 'null'
 }
 
+/**
+ * A version this code can order against another.
+ *
+ * Non-negative, whole, and inside the range where arithmetic still
+ * distinguishes neighbours — past 2^53 "newer" stops meaning anything, and
+ * `MAX_SAFE_INTEGER` would leave no version above it at all.
+ */
+function isUsableVersion(version: number): boolean {
+  return Number.isSafeInteger(version) && version >= 0 && version < Number.MAX_SAFE_INTEGER
+}
+
 export async function applyUpdate(
   current: FeedSnapshot | null,
   signed: SignedUpdate,
@@ -114,6 +126,18 @@ export async function applyUpdate(
     )
   }
 
+  // Before any comparison, because the comparison is what fails. `version <=
+  // current.version` is false for NaN, so a NaN sails past the replay guard —
+  // and once NaN is what is in force, every later update passes the same
+  // check, including a replay of an entry that was fixed. The guard cannot
+  // recover on its own, because the guard is what broke.
+  if (!isUsableVersion(signed.update.body.version)) {
+    return refuse(
+      'bad-version',
+      `The ${signed.update.body.name} update carries ${String(signed.update.body.version)} where a version number belongs, so it was not applied.`,
+    )
+  }
+
   if (current && current.name !== signed.update.body.name) {
     return refuse(
       'wrong-feed',
@@ -121,7 +145,11 @@ export async function applyUpdate(
     )
   }
 
-  if (current && signed.update.body.version <= current.version) {
+  // A stored version that is not usable means an earlier build let one in.
+  // Skipping the comparison against it is the only way back: every comparison
+  // against NaN is false, so nothing would ever be newer and nothing ever
+  // refused.
+  if (current && isUsableVersion(current.version) && signed.update.body.version <= current.version) {
     // A correctly signed old update, replayed, is how a fixed entry gets
     // un-fixed. The signature being valid is exactly why this check exists.
     return refuse(

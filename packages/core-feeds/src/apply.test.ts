@@ -179,3 +179,85 @@ describe('what gets signed', () => {
     expect(asDelta).not.toBe(asSnapshot)
   })
 })
+
+describe('a version that is not a version', () => {
+  /**
+   * The replay guard is `version <= current.version`, and every comparison
+   * against NaN is false. A single update carrying `version: NaN` is therefore
+   * accepted — and once NaN is what is in force, *every* later update passes
+   * the same check, including a replay of the entry that was fixed last week.
+   *
+   * It needs a valid signature, so this is not an unauthenticated attack. It
+   * is what one `parseInt(undefined)` in the publishing pipeline does to every
+   * client permanently, and the guard cannot recover on its own because the
+   * guard is what broke.
+   */
+  const good = (version: number) => ({
+    kind: 'snapshot' as const,
+    body: { name: 'phish', version, updatedAt: '2026-08-07T00:00:00.000Z', entries: ['a.test'] },
+  })
+  const current = {
+    name: 'phish',
+    version: 5,
+    updatedAt: '2026-08-01T00:00:00.000Z',
+    entries: ['old.test'],
+  }
+  const yes = async () => true
+
+  it('refuses NaN rather than letting it through the comparison', async () => {
+    const out = await applyUpdate(current, { update: good(NaN), signature: 'x' }, yes)
+    expect(out.accepted).toBe(false)
+    expect(out.accepted === false && out.kept).toEqual(current)
+  })
+
+  it('refuses Infinity, which would leave no version above it', async () => {
+    const out = await applyUpdate(current, { update: good(Infinity), signature: 'x' }, yes)
+    expect(out.accepted).toBe(false)
+  })
+
+  it('refuses a version past the safe integer range', async () => {
+    // Beyond 2^53 the arithmetic stops distinguishing neighbours, so "newer"
+    // stops meaning anything.
+    const out = await applyUpdate(
+      current,
+      { update: good(Number.MAX_SAFE_INTEGER), signature: 'x' },
+      yes,
+    )
+    expect(out.accepted).toBe(false)
+  })
+
+  it('refuses a fractional version', async () => {
+    const out = await applyUpdate(current, { update: good(5.5), signature: 'x' }, yes)
+    expect(out.accepted).toBe(false)
+  })
+
+  it('refuses a negative version even with nothing in force', async () => {
+    const out = await applyUpdate(null, { update: good(-1), signature: 'x' }, yes)
+    expect(out.accepted).toBe(false)
+  })
+
+  it('still accepts an ordinary newer version', async () => {
+    // The check must not start refusing the product's own feeds.
+    const out = await applyUpdate(current, { update: good(6), signature: 'x' }, yes)
+    expect(out.accepted).toBe(true)
+  })
+
+  it('recovers from a stored version that is already unusable', async () => {
+    // Infinity, not NaN. A stored NaN recovers on its own — every comparison
+    // against it is false, so a sane update is never refused — and a test
+    // using it proves nothing about the guard. A stored Infinity is the case
+    // that needs it: `3 <= Infinity` is true, so without the guard the client
+    // refuses every update it will ever be offered, permanently.
+    const frozen = { ...current, version: Infinity }
+    const out = await applyUpdate(frozen, { update: good(1), signature: 'x' }, yes)
+    expect(out.accepted, 'a client with a stored Infinity can never be updated again').toBe(true)
+  })
+
+  it('a stored NaN also lets a sane update through', async () => {
+    // Recorded because it recovers for a different reason than the one above,
+    // and reading them as the same case is how the guard gets removed.
+    const poisoned = { ...current, version: NaN }
+    const out = await applyUpdate(poisoned, { update: good(1), signature: 'x' }, yes)
+    expect(out.accepted).toBe(true)
+  })
+})

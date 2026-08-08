@@ -961,5 +961,5 @@ think you are testing*.
   words — encryption, imitation, age of the domain, where the form posts. That
   is now pinned by a test, so the next sweep does not have to re-derive it.
 - **Prevention:** standing instruction 13, and a Known limit in SCN-003,
-  SCN-008 and SCN-013 naming the two languages matched and saying plainly that
+  SCN-008 and SCN-009 naming the two languages matched and saying plainly that
   a third passes clean.

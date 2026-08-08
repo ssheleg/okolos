@@ -44,6 +44,24 @@ import { expect, test } from './fixtures.js'
  * - `status`  — the check started and the answer never arrived;
  * - `idle` with neither — the press never reached the handler at all.
  */
+/**
+ * Navigations seen on a page, recorded from the moment it is created.
+ *
+ * A chrome-extension page reloading mid-test would explain everything the
+ * other measurements have ruled out: one field, one panel, a `fill` that
+ * reported success, and a value gone by the press. A fresh document means a
+ * fresh module, an empty singleton and `address` back at ''.
+ */
+const navigations = new WeakMap<import('@playwright/test').Page, string[]>()
+
+function watchNavigation(page: import('@playwright/test').Page): void {
+  const seen: string[] = []
+  navigations.set(page, seen)
+  page.on('framenavigated', (frame) => {
+    if (frame === page.mainFrame()) seen.push(frame.url())
+  })
+}
+
 async function diagnose(page: import('@playwright/test').Page): Promise<string> {
   const state = await page.evaluate(() => {
     const panel = document.querySelector('[data-role=leaks]')
@@ -64,7 +82,10 @@ async function diagnose(page: import('@playwright/test').Page): Promise<string> 
       panels: document.querySelectorAll('[data-role=leaks]').length,
     }
   })
-  const where = `field held "${state.address}", ${state.fieldCount} field(s), ${state.panels} panel(s)`
+  const navs = navigations.get(page) ?? []
+  const where =
+    `field held "${state.address}", ${state.fieldCount} field(s), ${state.panels} panel(s), ` +
+    `${navs.length} navigation(s)${navs.length > 1 ? ': ' + navs.join(' -> ') : ''}`
   if (state.needs) return `the check was refused for want of an address (${where})`
   if (state.checking) return `the check started and never answered (${where})`
   if (state.ready) return 'the check finished but the expected group is absent — a product bug, not a race'
@@ -85,6 +106,43 @@ async function expectWithDiagnosis(
   }
 }
 
+/**
+ * Types an address and reads it straight back.
+ *
+ * The read-back is the point. An intermittent failure in this file ends with
+ * the field empty at the press, and everything that could explain it has been
+ * ruled out one at a time: not a repaint (an 800 ms delay forcing that race
+ * did not reproduce it), not a second copy of the page module (one field, one
+ * panel), not a reload (one navigation). What remains is whether the value was
+ * ever there — so every test asks, one statement after `fill`, and the failure
+ * lands where the value was lost rather than fifteen seconds later.
+ */
+async function fillAddress(page: import('@playwright/test').Page, value: string): Promise<void> {
+  const field = page.locator('[data-role=address]')
+
+  // Stamped before typing. Counting `[data-role=address]` only ever sees
+  // attached nodes, so "one field" could not tell a surviving node from a
+  // swapped one — and a swap is the last explanation still standing for a
+  // value that vanishes from a live input with no navigation and no repaint
+  // able to recreate it.
+  await field.evaluate((el) => el.setAttribute('data-stamp', 'filled-here'))
+  await field.fill(value)
+
+  const after = await page.evaluate(() => {
+    const el = document.querySelector('[data-role=address]')
+    return {
+      value: el instanceof HTMLInputElement ? el.value : '(not an input)',
+      sameNode: el?.getAttribute('data-stamp') === 'filled-here',
+    }
+  })
+  expect(
+    after,
+    after.sameNode
+      ? 'the value left the very node it was typed into — #29'
+      : 'the node was swapped for another after the fill — #29',
+  ).toEqual({ value, sameNode: true })
+}
+
 /** The body the single Cavalier stub returns. A test that needs another sets it. */
 let cavalierBody = '{"stealers":[]}'
 test.beforeEach(async ({ context }) => {
@@ -99,6 +157,7 @@ test.beforeEach(async ({ context }) => {
 
 test('the panel says what will be sent before anything is', async ({ context, extensionId }) => {
   const page = await context.newPage()
+  watchNavigation(page)
   await page.goto(`chrome-extension://${extensionId}/options.html`)
 
   // The second test that held the false claim steady. It asserted the word
@@ -120,9 +179,10 @@ test('a source that cannot run is named, and the total says it may be incomplete
 }) => {
   test.slow()
   const page = await context.newPage()
+  watchNavigation(page)
   await page.goto(`chrome-extension://${extensionId}/options.html`)
 
-  await page.locator('[data-role=address]').fill('someone@example.test')
+  await fillAddress(page, 'someone@example.test')
   await page.locator('[data-role=leaks] [data-role=check]').click()
 
   const coverage = page.locator('[data-role=leaks] [data-role=coverage]')
@@ -137,6 +197,7 @@ test('the credit for the data is on the page that shows it', async ({ context, e
   // CC BY 4.0 asks for attribution wherever the data appears. This is where it
   // appears; a README is not.
   const page = await context.newPage()
+  watchNavigation(page)
   await page.goto(`chrome-extension://${extensionId}/options.html`)
 
   const attribution = page.locator('[data-role=leaks] [data-role=attribution]')
@@ -156,9 +217,10 @@ test('a recent infection is separated from an old breach, and each carries its r
   cavalierBody = JSON.stringify({ stealers: [{ date_compromised: new Date().toISOString() }] })
 
   const page = await context.newPage()
+  watchNavigation(page)
   await page.goto(`chrome-extension://${extensionId}/options.html`)
 
-  await page.locator('[data-role=address]').fill('someone@example.test')
+  await fillAddress(page, 'someone@example.test')
   await page.locator('[data-role=leaks] [data-role=check]').click()
 
   const fresh = page.locator('[data-role=leak-group][data-urgency=fresh-infostealer]')
@@ -186,6 +248,7 @@ test('the address field survives a repaint instead of being rebuilt', async ({
   // field that happens to be repopulated from the right variable would pass a
   // value check while still dropping focus and the caret.
   const page = await context.newPage()
+  watchNavigation(page)
   await page.goto(`chrome-extension://${extensionId}/options.html`)
 
   const field = page.locator('[data-role=address]')
@@ -195,6 +258,9 @@ test('the address field survives a repaint instead of being rebuilt', async ({
   })
 
   await field.fill('someone@example.test')
+  await expect(field, 'the typed address did not survive the fill itself — #29').toHaveValue(
+    'someone@example.test',
+  )
 
   // The journal's history toggle calls the same full reload the leak check
   // does — loading paint, database reads, second paint — with no network in
@@ -219,6 +285,7 @@ test('pressing Check now with nothing typed says so, instead of nothing', async 
   // started, so every failure looked like the starting state and said nothing
   // about which of a dozen causes it was.
   const page = await context.newPage()
+  watchNavigation(page)
   await page.goto(`chrome-extension://${extensionId}/options.html`)
 
   await page.locator('[data-role=leaks] [data-role=check]').click()
@@ -232,9 +299,29 @@ test('pressing Check now with nothing typed says so, instead of nothing', async 
 
 test('an address that is not one is refused by name', async ({ context, extensionId }) => {
   const page = await context.newPage()
+  watchNavigation(page)
   await page.goto(`chrome-extension://${extensionId}/options.html`)
 
-  await page.locator('[data-role=address]').fill('not-an-address')
+  await fillAddress(page, 'not-an-address')
+
+  // Read back before pressing anything. This test doubles as the sharpest
+  // detector this file has for the intermittent failure: the two refusals say
+  // different things, so getting the empty-field wording after a successful
+  // fill is unambiguous, arrives in five seconds rather than fifteen, and says
+  // exactly where the value went.
+  const beforeClick = await page.evaluate(() => {
+    const fields = [...document.querySelectorAll('[data-role=address]')]
+    return {
+      count: fields.length,
+      values: fields.map((f) => (f instanceof HTMLInputElement ? f.value : '(not an input)')),
+      panels: document.querySelectorAll('[data-role=leaks]').length,
+    }
+  })
+  expect(
+    beforeClick,
+    'the typed address did not survive to the press — this is the race tracked as #29',
+  ).toEqual({ count: 1, values: ['not-an-address'], panels: 1 })
+
   await page.locator('[data-role=leaks] [data-role=check]').click()
 
   await expect(page.locator('[data-role=leaks] [data-role=needs]')).toContainText(

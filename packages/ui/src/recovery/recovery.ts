@@ -1,3 +1,5 @@
+import { t } from '@okolos/i18n'
+
 import { toPortable, type Checklist } from '@okolos/core-recovery'
 
 /**
@@ -27,7 +29,7 @@ export function renderRecovery(
   root.setAttribute('data-kind', checklist.kind)
 
   const heading = doc.createElement('h1')
-  heading.textContent = 'What to do now'
+  heading.textContent = t('recoveryTitle')
   root.append(heading)
 
   if (checklist.generic) {
@@ -35,7 +37,7 @@ export function renderRecovery(
       text(
         doc,
         'generic',
-        'We do not have a checklist for exactly what happened, so this is the broadest safe one.',
+        t('recoveryBroadest'),
       ),
     )
   }
@@ -45,7 +47,7 @@ export function renderRecovery(
       doc,
       'progress',
       checklist.remaining === 0
-        ? 'Every step is done.'
+        ? t('recoveryAllDone')
         : `${checklist.remaining} step${checklist.remaining === 1 ? '' : 's'} left, most important first.`,
     ),
   )
@@ -75,7 +77,7 @@ export function renderRecovery(
 
     item.append(control, label, text(doc, 'why', step.why))
     if (step.elsewhere) {
-      item.append(text(doc, 'elsewhere', 'This one cannot be done in this browser.'))
+      item.append(text(doc, 'elsewhere', t('recoveryElsewhere')))
     }
     list.append(item)
   }
@@ -83,7 +85,7 @@ export function renderRecovery(
   root.append(list)
 
   if (checklist.remaining === 0) {
-    root.append(button(doc, 'archive', 'Archive this incident', handlers.onArchive))
+    root.append(button(doc, 'archive', t('recoveryArchive'), handlers.onArchive))
   } else {
     root.append(portableBlock(doc, checklist, handlers))
   }
@@ -114,7 +116,7 @@ function portableBlock(
   block.setAttribute('data-role', 'portable')
 
   const heading = doc.createElement('h2')
-  heading.textContent = 'Continue on another device'
+  heading.textContent = t('recoveryPortableTitle')
   block.append(heading)
 
   block.append(
@@ -122,8 +124,8 @@ function portableBlock(
       doc,
       'portable-why',
       portable.elsewhere.length === 0
-        ? 'Every remaining step can be done here, but you can still take the list with you.'
-        : `${portable.elsewhere.length} of the remaining steps cannot be done in this browser. Take the list with you — nothing is sent anywhere.`,
+        ? t('recoveryPortableAllHere')
+        : t('recoveryPortableElsewhere', String(portable.elsewhere.length)),
     ),
   )
 
@@ -134,7 +136,7 @@ function portableBlock(
 
   if (handlers.onCopy) {
     const copy = handlers.onCopy
-    block.append(button(doc, 'copy', 'Copy these steps', () => copy(portable.text)))
+    block.append(button(doc, 'copy', t('recoveryCopy'), () => copy(portable.text)))
   }
 
   return block

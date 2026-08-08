@@ -1,3 +1,5 @@
+import { t } from '@okolos/i18n'
+
 import type { InventoryChange, PackageReport } from '@okolos/core-extensions'
 
 /**
@@ -61,7 +63,7 @@ export function renderExtensions(
   root.setAttribute('data-state', state.kind)
 
   const heading = doc.createElement('h1')
-  heading.textContent = 'What changed in your extensions'
+  heading.textContent = t('extensionsTitle')
   root.append(heading)
 
   if (state.kind === 'unsupported') {
@@ -70,7 +72,7 @@ export function renderExtensions(
   }
 
   if (state.kind === 'loading') {
-    root.append(text(doc, 'status', 'Reading what is installed…'))
+    root.append(text(doc, 'status', t('extensionsReading')))
     return root
   }
 
@@ -78,14 +80,14 @@ export function renderExtensions(
     // An empty list here would read as "nothing changed", which is the one
     // thing this screen must not say when it does not know.
     root.append(
-      text(doc, 'error', `The inventory could not be read: ${state.message}`),
-      text(doc, 'error-note', 'This is not a statement that nothing changed.'),
+      text(doc, 'error', t('extensionsError', state.message)),
+      text(doc, 'error-note', t('extensionsErrorNote')),
     )
     return root
   }
 
   if (state.changes.length === 0) {
-    root.append(text(doc, 'no-changes', 'Nothing has changed since the last check.'))
+    root.append(text(doc, 'no-changes', t('extensionsNoChanges')))
   } else {
     for (const change of state.changes) root.append(changeRow(doc, change, handlers))
   }
@@ -108,12 +110,12 @@ export function renderExtensions(
         doc,
         'permissions',
         entry.permissions.length === 0
-          ? 'No special permissions.'
+          ? t('extensionsNoPermissions')
           : `Can use: ${entry.permissions.join(', ')}`,
       ),
     )
-    if (entry.enabled) row.append(button(doc, 'disable', 'Disable', () => handlers.onDisable(entry.id)))
-    else row.append(text(doc, 'disabled', 'Already off.'))
+    if (entry.enabled) row.append(button(doc, 'disable', t('extensionsDisable'), () => handlers.onDisable(entry.id)))
+    else row.append(text(doc, 'disabled', t('extensionsAlreadyOff')))
     list.append(row)
   }
 
@@ -131,7 +133,7 @@ function analysisBlock(
   block.setAttribute('data-role', 'analysis')
 
   const heading = doc.createElement('h2')
-  heading.textContent = 'Inspect a package'
+  heading.textContent = t('extensionsInspectTitle')
   block.append(heading, text(doc, 'analysis-note', note))
 
   const picker = doc.createElement('input')
@@ -145,7 +147,7 @@ function analysisBlock(
 
   const label = doc.createElement('label')
   label.htmlFor = picker.id
-  label.textContent = 'Choose a package file'
+  label.textContent = t('extensionsChooseFile')
   block.append(label, picker)
 
   if (!report) return block
@@ -155,7 +157,7 @@ function analysisBlock(
       doc,
       'analysis-summary',
       report.findings.length === 0
-        ? 'Nothing of note was found in the text of this file.'
+        ? t('extensionsNothingOfNote')
         : `${report.findings.length} thing${report.findings.length === 1 ? '' : 's'} worth a look.`,
     ),
   )
@@ -188,8 +190,8 @@ function changeRow(
   const actions = doc.createElement('div')
   actions.setAttribute('data-role', 'change-actions')
   actions.append(
-    button(doc, 'disable', 'Disable it', () => handlers.onDisable(change.id), true),
-    button(doc, 'trust', 'This change is fine', () => handlers.onTrust(change.id)),
+    button(doc, 'disable', t('extensionsDisableIt'), () => handlers.onDisable(change.id), true),
+    button(doc, 'trust', t('extensionsTrustChange'), () => handlers.onTrust(change.id)),
   )
   row.append(actions)
   return row

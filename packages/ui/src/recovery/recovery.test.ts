@@ -4,6 +4,20 @@ import { buildChecklist } from '@okolos/core-recovery'
 
 import { renderRecovery, type RecoveryHandlers } from './recovery.js'
 
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fromCatalogue, useResolver, type Catalogue } from '@okolos/i18n'
+
+/** The shipped Russian catalogue: `default_locale` is `ru`, and a fake would let a missing key pass. */
+const CATALOGUE = JSON.parse(
+  readFileSync(
+    path.resolve(import.meta.dirname, '../../../../apps/extension/_locales/ru/messages.json'),
+    'utf8',
+  ),
+) as Catalogue
+
+useResolver(fromCatalogue(CATALOGUE))
+
 function handlers(overrides: Partial<RecoveryHandlers> = {}): RecoveryHandlers {
   return { onToggle: vi.fn(), onArchive: vi.fn(), onCopy: vi.fn(), ...overrides }
 }
@@ -67,7 +81,7 @@ describe('progress', () => {
 
 describe('when we do not know what happened', () => {
   it('says the list is the broad one rather than answering a different question', () => {
-    expect(role(render('something-nobody-defined'), 'generic')?.textContent).toMatch(/broadest safe/i)
+    expect(role(render('something-nobody-defined'), 'generic')?.textContent).toMatch(/самый широкий безопасный/i)
   })
 })
 
@@ -95,14 +109,14 @@ describe('taking the rest with you', () => {
 
   it('says how many of them this browser cannot do', () => {
     expect(role(render('pasted-command'), 'portable-why')?.textContent).toMatch(
-      /cannot be done in this browser/i,
+      /нельзя сделать в этом браузере/i,
     )
   })
 
   it('says outright that nothing is sent anywhere', () => {
     // The alternative design — syncing the incident to a server so it appears
     // on the phone — is the one this product cannot make.
-    expect(role(render('pasted-command'), 'portable-why')?.textContent).toMatch(/nothing is sent/i)
+    expect(role(render('pasted-command'), 'portable-why')?.textContent).toMatch(/никуда ничего не отправляется/i)
   })
 
   it('copies exactly what it displays', () => {

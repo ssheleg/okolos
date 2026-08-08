@@ -4,6 +4,20 @@ import type { InventoryChange } from '@okolos/core-extensions'
 
 import { renderExtensions, type ExtensionsHandlers, type ExtensionsState } from './extensions.js'
 
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fromCatalogue, useResolver, type Catalogue } from '@okolos/i18n'
+
+/** The shipped Russian catalogue: `default_locale` is `ru`, and a fake would let a missing key pass. */
+const CATALOGUE = JSON.parse(
+  readFileSync(
+    path.resolve(import.meta.dirname, '../../../../apps/extension/_locales/ru/messages.json'),
+    'utf8',
+  ),
+) as Catalogue
+
+useResolver(fromCatalogue(CATALOGUE))
+
 function handlers(overrides: Partial<ExtensionsHandlers> = {}): ExtensionsHandlers {
   return { onDisable: vi.fn(), onTrust: vi.fn(), onInspect: vi.fn(), ...overrides }
 }
@@ -54,7 +68,7 @@ describe('the delta comes first', () => {
 
   it('says plainly when nothing changed', () => {
     const el = render({ kind: 'ready', changes: [], installed: [ROW], analysis: null, analysisNote: NOTE })
-    expect(role(el, 'no-changes')?.textContent).toMatch(/nothing has changed/i)
+    expect(role(el, 'no-changes')?.textContent).toMatch(/ничего не изменилось/i)
   })
 })
 
@@ -91,14 +105,14 @@ describe('the action is real', () => {
       analysisNote: NOTE,
     })
     expect(role(el, 'installed')?.querySelector('[data-role=disable]')).toBeNull()
-    expect(role(el, 'disabled')?.textContent).toMatch(/already off/i)
+    expect(role(el, 'disabled')?.textContent).toMatch(/уже отключено/i)
   })
 })
 
 describe('what it will not claim', () => {
   it('never shows an empty list in place of a failure', () => {
     const el = render({ kind: 'error', message: 'the store is unreadable' })
-    expect(role(el, 'error-note')?.textContent).toMatch(/not a statement that nothing changed/i)
+    expect(role(el, 'error-note')?.textContent).toMatch(/не утверждение, что ничего не изменилось/i)
     expect(role(el, 'no-changes')).toBeNull()
   })
 
@@ -170,6 +184,6 @@ describe('inspecting a package the user supplies', () => {
       analysis: { findings: [], endpoints: [], minified: false, note: 'ok' },
       analysisNote: NOTE,
     })
-    expect(role(el, 'analysis-summary')?.textContent).toMatch(/nothing of note/i)
+    expect(role(el, 'analysis-summary')?.textContent).toMatch(/ничего примечательного/i)
   })
 })

@@ -199,7 +199,7 @@ self-audit panel.
 ### SCR-09: Extensions watch
 - **Used by:** FLW-12
 - **Purpose:** the inventory plus what changed in it — the delta is the product, not the list
-- **Elements:** installed extensions with risk level and last change; deltas highlighted at the top (permissions added, publisher changed, silent update); per-item detail with static findings (obfuscation, `eval`, remote code, endpoints, **powers over the browser** — `chrome.debugger`, a native host, traffic rewriting — and bulk reads of history, bookmarks or identity); **primary action: "Disable"**; "This change is fine"; "Inspect a package"
+- **Elements:** installed extensions with risk level and last change; deltas highlighted at the top (permissions added, publisher changed, silent update); per-item detail with static findings (obfuscation, `eval`, remote code, endpoints, **powers over the browser** — `chrome.debugger`, a native host, traffic rewriting — and bulk reads of history, bookmarks or identity); **primary action: "Отключить"**; "Это изменение нормально"; "Разобрать пакет"
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|
@@ -264,7 +264,7 @@ self-audit panel.
 ### SCR-13: Recovery checklist
 - **Used by:** FLW-06, FLW-07, FLW-16
 - **Purpose:** turn "I already did the bad thing" into an ordered, finishable list
-- **Elements:** incident type picker (ran a pasted command / entered credentials / installed something / not sure); ordered steps, most damaging first, each with why; per-step done state; "continue on another device" instructions; **primary action: the current step**
+- **Elements:** incident type picker (ran a pasted command / entered credentials / installed something / not sure); ordered steps, most damaging first, each with why; per-step done state; "Продолжить на другом устройстве" instructions; **primary action: the current step**
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|

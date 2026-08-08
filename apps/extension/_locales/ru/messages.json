@@ -401,5 +401,81 @@
   },
   "journalManual": {
     "message": "это сделали вы"
+  },
+  "recoveryTitle": {
+    "message": "Что делать сейчас"
+  },
+  "recoveryBroadest": {
+    "message": "Точного списка для того, что произошло, у нас нет, поэтому это самый широкий безопасный."
+  },
+  "recoveryAllDone": {
+    "message": "Все шаги сделаны."
+  },
+  "recoveryElsewhere": {
+    "message": "Этот шаг нельзя сделать в этом браузере."
+  },
+  "recoveryArchive": {
+    "message": "Убрать этот случай в архив"
+  },
+  "recoveryPortableTitle": {
+    "message": "Продолжить на другом устройстве"
+  },
+  "recoveryPortableAllHere": {
+    "message": "Все оставшиеся шаги можно сделать здесь, но список всё равно можно взять с собой."
+  },
+  "recoveryPortableElsewhere": {
+    "message": "Шагов, которые нельзя сделать в этом браузере: $COUNT$. Возьмите список с собой — никуда ничего не отправляется.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "recoveryCopy": {
+    "message": "Скопировать эти шаги"
+  },
+  "extensionsTitle": {
+    "message": "Что изменилось в ваших расширениях"
+  },
+  "extensionsReading": {
+    "message": "Читаем, что установлено…"
+  },
+  "extensionsError": {
+    "message": "Опись не удалось прочитать: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "extensionsErrorNote": {
+    "message": "Это не утверждение, что ничего не изменилось."
+  },
+  "extensionsNoChanges": {
+    "message": "С прошлой проверки ничего не изменилось."
+  },
+  "extensionsNoPermissions": {
+    "message": "Особых разрешений нет."
+  },
+  "extensionsDisable": {
+    "message": "Отключить"
+  },
+  "extensionsDisableIt": {
+    "message": "Отключить его"
+  },
+  "extensionsAlreadyOff": {
+    "message": "Уже отключено."
+  },
+  "extensionsTrustChange": {
+    "message": "Это изменение нормально"
+  },
+  "extensionsInspectTitle": {
+    "message": "Разобрать пакет"
+  },
+  "extensionsChooseFile": {
+    "message": "Выберите файл пакета"
+  },
+  "extensionsNothingOfNote": {
+    "message": "В тексте этого файла ничего примечательного не нашлось."
   }
 }

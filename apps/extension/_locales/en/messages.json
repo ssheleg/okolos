@@ -401,5 +401,81 @@
   },
   "journalManual": {
     "message": "you did this"
+  },
+  "recoveryTitle": {
+    "message": "What to do now"
+  },
+  "recoveryBroadest": {
+    "message": "We do not have a checklist for exactly what happened, so this is the broadest safe one."
+  },
+  "recoveryAllDone": {
+    "message": "Every step is done."
+  },
+  "recoveryElsewhere": {
+    "message": "This one cannot be done in this browser."
+  },
+  "recoveryArchive": {
+    "message": "Archive this incident"
+  },
+  "recoveryPortableTitle": {
+    "message": "Continue on another device"
+  },
+  "recoveryPortableAllHere": {
+    "message": "Every remaining step can be done here, but you can still take the list with you."
+  },
+  "recoveryPortableElsewhere": {
+    "message": "$COUNT$ of the remaining steps cannot be done in this browser. Take the list with you — nothing is sent anywhere.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "recoveryCopy": {
+    "message": "Copy these steps"
+  },
+  "extensionsTitle": {
+    "message": "What changed in your extensions"
+  },
+  "extensionsReading": {
+    "message": "Reading what is installed…"
+  },
+  "extensionsError": {
+    "message": "The inventory could not be read: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "extensionsErrorNote": {
+    "message": "This is not a statement that nothing changed."
+  },
+  "extensionsNoChanges": {
+    "message": "Nothing has changed since the last check."
+  },
+  "extensionsNoPermissions": {
+    "message": "No special permissions."
+  },
+  "extensionsDisable": {
+    "message": "Disable"
+  },
+  "extensionsDisableIt": {
+    "message": "Disable it"
+  },
+  "extensionsAlreadyOff": {
+    "message": "Already off."
+  },
+  "extensionsTrustChange": {
+    "message": "This change is fine"
+  },
+  "extensionsInspectTitle": {
+    "message": "Inspect a package"
+  },
+  "extensionsChooseFile": {
+    "message": "Choose a package file"
+  },
+  "extensionsNothingOfNote": {
+    "message": "Nothing of note was found in the text of this file."
   }
 }

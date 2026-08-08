@@ -125,6 +125,14 @@ async function fillAddress(page: import('@playwright/test').Page, value: string)
   // swapped one — and a swap is the last explanation still standing for a
   // value that vanishes from a live input with no navigation and no repaint
   // able to recreate it.
+  //
+  // Read the next paragraph before deleting any of this as dead weight. The
+  // stamp is a round trip to the page, and eight consecutive full-suite runs
+  // have been clean since it went in, against roughly two failures in eight
+  // before. That is the third time an instrument has moved this race — logs
+  // did it, then a delay, now this — so the green is not evidence the defect
+  // is gone. Removing the stamp is how you would find out, and the reason not
+  // to is that nothing else here would explain the next failure.
   await field.evaluate((el) => el.setAttribute('data-stamp', 'filled-here'))
   await field.fill(value)
 

@@ -10,7 +10,7 @@
 | | |
 |---|---|
 | Фаза | research → вижен → UX-цепочка → task-pipeline 0–10 → **R1–R5 закрыты** |
-| Требования | 37: **36 DONE, 1 PARTIAL** — [приёмка](superpowers/audits/2026-08-05-acceptance.md) |
+| Требования | 37: **36 DONE, 1 PARTIAL** — [приёмка](superpowers/audits/2026-08-05-acceptance.md), [аудит на дефекты](superpowers/audits/2026-08-08-bug-hunt.md) |
 | Сценарии | **26 из 26** реализованы — [scenarios.md](ux/scenarios.md) |
 | Тесты | `pnpm test` (unit + гейты), `pnpm test:e2e` (Chromium), `pnpm test:e2e:firefox` — счётчики намеренно не выписаны здесь: они устаревают следующим коммитом |
 | Код | 18 пакетов, 3 приложения — карта ниже |

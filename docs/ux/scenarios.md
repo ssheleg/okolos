@@ -132,7 +132,7 @@ See [foundation.md](foundation.md) → Personas.
 - **Alt paths:** confidence is below the automatic threshold -> system warns but does not modify the page; neutralisation becomes a button
 - **UI elements:** banner statement "hidden instructions removed", "Restore page", "Keep it neutralised"
 - **States covered:** success, error
-- **Errors & recovery:** removal fails on a protected node -> system reports which nodes could not be neutralised and keeps warning; restore always returns the DOM to its pre-change state
+- **Errors & recovery:** removal fails on a protected node -> system reports which nodes could not be neutralised and keeps warning; restore always returns the DOM to its pre-change state; **restoring will not put text back into a node the page has taken over.** If the element left the document there is nothing to restore, and if the page wrote into it while it was held, appending would splice the hidden instruction in beside the page's new content — a document neither party wrote, with the injection back in it. Both are counted and reported rather than performed
 - **Status:** implemented
 - **Coverage:** packages/core-sanitizer/src/plan.ts:planSanitisation, apps/extension/src/content/sanitize.ts:Sanitiser, e2e/scn-005.spec.ts
 

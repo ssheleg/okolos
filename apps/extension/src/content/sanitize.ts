@@ -17,6 +17,16 @@ import type { SanitisationPlan } from '@okolos/core-sanitizer'
 
 const MARKER = 'data-okolos-neutralised'
 
+/** What a restore managed, and what the page took out of its hands. */
+export interface RestoreResult {
+  /** Put back where it came from. */
+  readonly restored: number
+  /** The element left the document while it was held. */
+  readonly gone: number
+  /** The page wrote into the element, so it is no longer ours to fill. */
+  readonly changed: number
+}
+
 interface Held {
   readonly element: Element
   readonly contents: DocumentFragment
@@ -52,23 +62,45 @@ export class Sanitiser {
     return applied
   }
 
-  /** Returns how many nodes were put back. */
-  restore(): number {
+  /**
+   * Puts back what is still there to put back, and says what was not.
+   *
+   * Both refusals are the page moving underneath. `append` on a detached
+   * element succeeds, so a node the page had removed used to count as
+   * restored — a restore nobody can see. And a node the page has since written
+   * into is no longer ours to fill: appending spliced the hidden instruction
+   * in beside the page's new content and produced a document neither party
+   * wrote, with the injection back in it.
+   */
+  restore(): RestoreResult {
     let restored = 0
+    let gone = 0
+    let changed = 0
 
     for (const [, held] of this.#held) {
       try {
+        if (!held.element.isConnected) {
+          gone += 1
+          continue
+        }
+        if (held.element.firstChild !== null) {
+          // The marker stays: this node is not back to normal, and saying it is
+          // would be the same lie one level down.
+          changed += 1
+          continue
+        }
         held.element.append(held.contents)
         held.element.removeAttribute(MARKER)
         restored += 1
       } catch {
-        // The page removed the node while it was neutralised. Losing a restore
-        // is acceptable; throwing inside someone's page is not.
+        // Throwing inside someone's page is never acceptable, whatever the
+        // reason.
+        gone += 1
       }
     }
 
     this.#held.clear()
-    return restored
+    return { restored, gone, changed }
   }
 
   #find(locator: string): Element | null {

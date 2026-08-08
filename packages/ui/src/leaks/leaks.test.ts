@@ -9,7 +9,6 @@ function handlers(overrides: Partial<LeaksHandlers> = {}): LeaksHandlers {
     onCheck: vi.fn(),
     onResolve: vi.fn(),
     onChangePassword: vi.fn(),
-    onCheckReuse: vi.fn(),
     ...overrides,
   }
 }
@@ -164,13 +163,13 @@ describe('the repair each entry offers', () => {
     expect(role(el, 'no-domain')?.textContent).toMatch(/nowhere to send you/i)
   })
 
-  it('offers the reuse check on every entry, domain or not', () => {
-    const h = handlers()
+  it('offers no reuse check, because nothing records what would answer it', () => {
+    // The button existed and opened a hash nothing read. There is no local
+    // index of which sites saw which password hash, so the honest state is the
+    // absence of the control rather than a view that answers "none found".
     const inventory = mergeLeaks([{ name: 'HIBP', answered: true, leaks: [LEAK] }])
-    render({ kind: 'ready', inventory, now: NOW }, h)
-      .querySelector<HTMLElement>('[data-role=check-reuse]')
-      ?.click()
-    expect(h.onCheckReuse).toHaveBeenCalledTimes(1)
+    const el = render({ kind: 'ready', inventory, now: NOW })
+    expect(el.querySelector('[data-role=check-reuse]')).toBeNull()
   })
 
   it('calls the resolve control what the screen record calls it', () => {

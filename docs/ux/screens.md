@@ -172,7 +172,7 @@ self-audit panel.
 ### SCR-08: Leaks and repair
 - **Used by:** FLW-10 (reuse list), FLW-11, FLW-16
 - **Purpose:** what of mine is exposed, and the repair for each
-- **Elements:** monitored sources (email, phone) with add/remove; results split into "Recent — a machine was infected" and "Older breaches"; per-entry data classes, date, source; **primary action per entry: "Change password"**; "Check reuse"; "Mark resolved"; archive; manual password check field; the list of sources actually checked and when
+- **Elements:** monitored sources (email, phone) with add/remove; results split into "Recent — a machine was infected" and "Older breaches"; per-entry data classes, date, source; **primary action per entry: "Change password"**; "Mark resolved"; archive; manual password check field; the list of sources actually checked and when
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|
@@ -182,10 +182,11 @@ self-audit panel.
   | error | a source failed | - | that row states unavailable + retry; other results stand |
   | success | results present | - | freshest first, historical collapsed |
 - **Behavior notes:** the idle state names what is sent, and it is **the address itself** — Hudson Rock's Cavalier and HIBP's breached-account endpoint answer to nothing less, so a screen implying a hashed lookup would be a false privacy claim on the surface where the user decides. The password check is the k-anonymous one and is kept distinct in the copy. The network choke point permits the address only because the request declares `carries: 'address'`, and the self-audit journal records that it left.
+- **Behavior notes:** **there is no "Check reuse" control.** It existed until 2026-08-08 and opened `options.html#reuse=`, a hash nothing read; the local index of which sites saw which password hash — named under Resources as if it existed — was never built. A panel that answers "no reuse found" from a store that does not exist tells the user the safest possible lie, so the control is absent until the index is real
 - **Wireframe:** wireframes/SCR-08.md
 - **Coverage:** packages/ui/src/leaks/leaks.ts:renderLeaks, packages/core-leaks/src/group.ts:groupLeaks, packages/core-leaks/src/merge.ts:mergeLeaks, e2e/scn-015.spec.ts
 - **Scenarios:** SCN-014, SCN-015, SCN-016
-- **Resources:** source adapters (HIBP, XposedOrNot, Hudson Rock), local hash store, reuse index
+- **Resources:** source adapters (HIBP, XposedOrNot, Hudson Rock), local hash store. **No reuse index exists** — see the note under Elements
 - **Status:** built
 
 ### SCR-09: Extensions watch

@@ -32,8 +32,6 @@ export interface LeaksHandlers {
   readonly onResolve: (leakName: string) => void
   /** Opens the service's own password-change page, where it publishes one. */
   readonly onChangePassword: (leak: Leak) => void
-  /** Opens the reuse check, which is honest about what it can and cannot see. */
-  readonly onCheckReuse: (leak: Leak) => void
 }
 
 export function renderLeaks(doc: Document, state: LeaksState, handlers: LeaksHandlers): HTMLElement {
@@ -148,10 +146,13 @@ function leakRow(doc: Document, leak: Leak, handlers: LeaksHandlers): HTMLElemen
     )
   }
 
-  actions.append(
-    button(doc, 'check-reuse', 'Check reuse', () => handlers.onCheckReuse(leak)),
-    button(doc, 'resolve', 'Mark resolved', () => handlers.onResolve(leak.name)),
-  )
+  // "Check reuse" stood here until 2026-08-08. It opened `options.html#reuse=`,
+  // a hash nothing read, and behind it was supposed to be a local index of
+  // which sites had seen which password hash. No such store was ever built —
+  // `reuse` appeared in this repository exactly once outside this label, at the
+  // line that produced the dead link. A control that cannot answer is worse
+  // than none: an empty view reads as "no reuse found".
+  actions.append(button(doc, 'resolve', 'Mark resolved', () => handlers.onResolve(leak.name)))
   row.append(actions)
   return row
 }

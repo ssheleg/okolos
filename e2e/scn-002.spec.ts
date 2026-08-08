@@ -69,4 +69,16 @@ test('the way on leads to at most three things', async ({ context, extensionId }
   ])
   await expect(opened.locator('[data-role=queue-section] [data-role=item]')).toHaveCount(3)
   await expect(opened.locator('[data-role=queue-section] [data-role=show-all]')).toContainText('2 more')
+
+  // Present on the page is not the same as opened. The options page renders
+  // every section always, and `#queue` did nothing at all: the primary action
+  // of the first run dropped the user at the top of a settings page with the
+  // queue four screens below. Both assertions above passed throughout.
+  //
+  // Focus is the assertion that bites: measured with the reveal removed, the
+  // viewport check still passes at this window size, because five findings do
+  // not push the queue far enough down. It is kept as the statement of intent,
+  // not as the guard.
+  await expect(opened.locator('[data-role=queue-section]')).toBeInViewport()
+  await expect(opened.locator('[data-role=queue-section]')).toBeFocused()
 })

@@ -237,7 +237,6 @@ test('a recent infection is separated from an old breach, and each carries its r
 
   // Cavalier names no site, so the panel says so instead of guessing a login page.
   await expect(fresh.locator('[data-role=no-domain]')).toContainText('nowhere to send you')
-  await expect(fresh.locator('[data-role=check-reuse]')).toHaveCount(1)
   await expect(fresh.locator('[data-role=resolve]')).toHaveText('Mark resolved')
 })
 

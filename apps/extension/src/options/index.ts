@@ -124,11 +124,6 @@ function leaksSection(): HTMLElement {
         // lands the user on its own domain rather than on a guess of ours.
         if (leak.domain) void platform.tabs.create(`https://${leak.domain}/.well-known/change-password`)
       },
-      onCheckReuse: (leak) => {
-        void platform.tabs.create(
-          platform.runtime.getUrl(`options.html#reuse=${encodeURIComponent(leak.name)}`),
-        )
-      },
       onResolve: (name) => {
         void (async () => {
           const db = await openDb()
@@ -504,6 +499,35 @@ async function renderPanel(state: PanelState): Promise<void> {
   // Synchronously, with no await between: the field is out of the document for
   // one statement rather than for the length of a database read.
   root.querySelector('[data-role=address-slot]')?.replaceWith(addressField)
+  revealSection()
+}
+
+/**
+ * The section the hash asked for, brought into view.
+ *
+ * This page is long and everything on it is always rendered. Sending someone
+ * here with `#queue` and leaving them at the top means the primary action of
+ * the first run — "See what to do first" — opens a settings page. The section
+ * was on it the whole time, four screens down.
+ *
+ * Focus moves too, not just the scroll: someone arriving by keyboard is at the
+ * top of the document otherwise, and the scroll they cannot see did nothing
+ * for them.
+ */
+const SECTION_FOR_HASH: Readonly<Record<string, string>> = {
+  '#queue': '[data-role=queue-section]',
+}
+
+function revealSection(): void {
+  const selector = SECTION_FOR_HASH[location.hash]
+  if (selector === undefined) return
+
+  const section = root?.querySelector<HTMLElement>(selector)
+  if (!section) return
+
+  section.setAttribute('tabindex', '-1')
+  section.scrollIntoView({ block: 'start' })
+  section.focus({ preventScroll: true })
 }
 
 async function download(): Promise<void> {

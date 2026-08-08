@@ -26,7 +26,6 @@
 - `classes`
 - `change-password`
 - `no-domain`
-- `check-reuse`
 - `resolve`
 
 **States**

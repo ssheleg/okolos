@@ -300,7 +300,7 @@ See [foundation.md](foundation.md) → Personas.
   2. User sees the banner -> system states the password appears in known leaks and how the check was performed
   3. User clicks "Change password" -> system opens the site's change-password endpoint
 - **Expected result:** the user learns the password is compromised, and no password or full hash ever left the device
-- **Alt paths:** not found locally -> system performs a padded k-anonymity query with a 5-character prefix and shows the result; user clicks "Where else do I use it" -> system opens the local reuse list
+- **Alt paths:** not found locally -> system performs a padded k-anonymity query with a 5-character prefix and shows the result; user clicks "Where else do I use it" -> **not built**: there is no local reuse index, and the control was removed rather than left answering from nothing (see SCN-016)
 - **UI elements:** banner (password variant), "how this was checked" line, "Change password" (primary), "Where else do I use it", "This is wrong"
 - **States covered:** success, error
 - **Errors & recovery:** network unavailable during the k-anonymity step -> system reports the local-only result and says the online check did not run; the journal records the prefix sent, or that nothing was sent
@@ -336,7 +336,7 @@ See [foundation.md](foundation.md) → Personas.
   2. User clicks "Change password" -> system opens the site's change-password endpoint in a new tab
   3. User returns and clicks "Mark resolved" -> system archives the entry and removes it from the active queue
 - **Expected result:** the leak leaves the active list only when the user says the repair is done
-- **Alt paths:** user clicks "Check reuse" -> system lists other sites where the same password hash was seen locally; user clicks "Not now" -> the entry stays and is not re-raised as new
+- **Alt paths:** user clicks "Not now" -> the entry stays and is not re-raised as new. **"Check reuse" was removed on 2026-08-08:** it opened `options.html#reuse=`, a hash nothing read, and behind it was meant to be a local index of which sites had seen which password hash. No such store was ever built. Answering "none found" from an index that does not exist is the one wrong answer this panel must never give, so the control is gone until the index is
 - **UI elements:** leak entry, data classes, next-step buttons, "Mark resolved", "Not now", archive
 - **States covered:** success, error
 - **Errors & recovery:** the site publishes no change-password endpoint -> system opens the site's login page and says the shortcut is unavailable for this site

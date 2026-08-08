@@ -37,14 +37,38 @@ export interface ClickFixVerdict {
   readonly copyUnreadable: boolean
 }
 
-/** Where the page tells the user to paste. */
-const RUN_TARGET = /\b(win\s*\+\s*r|windows\s*\+\s*r|run dialog|powershell|command prompt|cmd\.exe|terminal|iex|invoke-expression)\b/i
+/**
+ * Where the page tells the user to paste.
+ *
+ * Russian alongside English, because that is the language of the people this
+ * product is built for — the watchlist ships `sberbank.ru` and `gosuslugi.ru`,
+ * and a campaign written for them used to pass clean. That is not an evasion,
+ * it is the normal case for this audience.
+ *
+ * Two things about the Russian side. `\b` does not mark a word boundary next
+ * to Cyrillic in a non-unicode regex, so the alternatives are matched without
+ * it — they are long enough that a substring hit is not a false positive on
+ * its own, and the verdict needs the pretext as well. And `\w` is
+ * `[A-Za-z0-9_]`: it matches no Cyrillic at all, so `командн\w*` never
+ * reached the `ую` of "командную". The classes are spelled out.
+ */
+const RUN_TARGET =
+  /\b(win\s*\+\s*r|windows\s*\+\s*r|run dialog|powershell|command prompt|cmd\.exe|terminal|iex|invoke-expression)\b|(командн[а-яё]*\s+строк|терминал|окно\s+«?выполнить|диалог[а-яё]*\s+выполнить|win\s*\+\s*r)/i
 
 /** The instruction to paste, in the phrasings these campaigns actually use. */
-const PASTE_STEP = /\b(ctrl\s*\+\s*v|cmd\s*\+\s*v|⌘\s*v|paste (?:it|the|this)|press enter|hit enter)\b/i
+const PASTE_STEP =
+  /\b(ctrl\s*\+\s*v|cmd\s*\+\s*v|⌘\s*v|paste (?:it|the|this)|press enter|hit enter)\b|(встав[а-яё]те|вставить|нажмите\s+(?:enter|ввод|ентер))/i
 
-/** The pretext: a verification that a real one never asks for. */
-const PRETEXT = /\b(verify (?:you are|you're) (?:a )?human|i am not a robot|i'm not a robot|captcha|verification (?:step|code|failed)|fix (?:the|this) (?:error|issue))\b/i
+/**
+ * The pretext: a verification that a real one never asks for.
+ *
+ * This is the signal the whole verdict rests on — without it the page is
+ * documentation however much the rest matches — so the Russian side is
+ * deliberately narrow: the exact claims these campaigns make, not the word
+ * "проверка" on its own, which appears on half the internet.
+ */
+const PRETEXT =
+  /\b(verify (?:you are|you're) (?:a )?human|i am not a robot|i'm not a robot|captcha|verification (?:step|code|failed)|fix (?:the|this) (?:error|issue))\b|(подтвердите,?\s+что\s+вы\s+не\s+робот|я\s+не\s+робот|капч[а-яё]+|проверка\s+не\s+пройдена|подтверждение\s+личности|исправить\s+ошибку|чтобы\s+исправить)/i
 
 /** What a copied ClickFix payload looks like. */
 const PAYLOAD = /\b(powershell|iex|invoke-expression|curl\s|wget\s|mshta|certutil|bitsadmin|base64|cmd\s*\/c|bash\s+-c|\/bin\/sh)\b/i

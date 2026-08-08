@@ -90,3 +90,54 @@ describe('the weaker case', () => {
     expect(verdict?.confidence).toBe('medium')
   })
 })
+
+describe('the campaigns this product’s users actually meet', () => {
+  /**
+   * The watchlist ships `sberbank.ru` and `gosuslugi.ru`, the documentation is
+   * written in Russian, and the trap detector read English only. A ClickFix
+   * page in the language of the people it is aimed at went through clean —
+   * which is not an evasion, it is the normal case for this audience.
+   */
+  const trap = (text: string) =>
+    detectClickFix({ text, scriptedCopy: true, copied: 'powershell -w hidden iex(...)' })
+
+  it('flags the Russian wording these campaigns use', () => {
+    expect(
+      trap('Подтвердите, что вы не робот. Нажмите Win + R, вставьте и нажмите Enter.'),
+    ).not.toBeNull()
+  })
+
+  it('flags it with the Russian words for the places and the keys', () => {
+    expect(
+      trap('Проверка не пройдена. Откройте командную строку, вставьте текст и нажмите ввод.'),
+    ).not.toBeNull()
+  })
+
+  it('flags the "fix the error" pretext in Russian', () => {
+    expect(
+      trap('Чтобы исправить ошибку, откройте терминал, вставьте команду и нажмите Enter.'),
+    ).not.toBeNull()
+  })
+
+  it('leaves Russian documentation alone', () => {
+    // The same instructions without the pretext are an install page, and this
+    // detector must not start warning about those in any language.
+    expect(
+      detectClickFix({
+        text: 'Откройте терминал, вставьте команду и нажмите Enter, чтобы установить пакет.',
+        scriptedCopy: true,
+        copied: 'npm install foo',
+      }),
+    ).toBeNull()
+  })
+
+  it('needs the pretext in Russian too, not just the shape', () => {
+    expect(
+      detectClickFix({
+        text: 'Нажмите Win + R, вставьте и нажмите Enter.',
+        scriptedCopy: true,
+        copied: 'powershell -w hidden',
+      }),
+    ).toBeNull()
+  })
+})

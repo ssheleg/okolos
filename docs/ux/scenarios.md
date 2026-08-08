@@ -209,6 +209,7 @@ See [foundation.md](foundation.md) → Personas.
 - **UI elements:** blocking banner (clickfix variant), copied text block, "Leave page" (primary), "I already ran it", deliberate dismiss control
 - **States covered:** success
 - **Errors & recovery:** clipboard content cannot be read -> the warning still appears based on the write event and the page pattern, and says the content could not be displayed
+- **Known limit — the wording is matched in two languages, English and Russian, and no others.** The page pattern rests on reading what the page says, so a campaign written in a third language passes clean. Russian was added on 2026-08-08 after a sweep found it missing: the watchlist ships `sberbank.ru` and `gosuslugi.ru`, so a Russian ClickFix page is not an evasion but the normal case for this audience. The clipboard payload itself is matched independently of language, and the scripted-copy signal has no language at all
 - **Status:** implemented
 - **Coverage:** packages/core-traps/src/clickfix.ts:detectClickFix, apps/extension/src/content/traps.ts:watchForTraps, e2e/scn-008.spec.ts
 

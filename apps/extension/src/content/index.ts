@@ -277,6 +277,9 @@ async function safely(work: () => Promise<void>): Promise<void> {
 new AgentGate({
   doc: document,
   unresolved: () => unresolved,
+  // Read at the moment of the action, not once at load: a page cannot change
+  // this, but reading it late costs nothing and keeps the fact current.
+  automated: () => navigator.webdriver === true,
   ask: askTheUser,
   expiry: () =>
     new Promise((resolve) =>

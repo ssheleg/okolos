@@ -8,13 +8,29 @@ import { assessAction, resolveGate, type AgentAction, type GateChoice, type Gate
  * actually carry a sensitive action out of a page — a form submitting and a
  * click that navigates or downloads — and holds the ones no human started.
  *
- * `isTrusted` is the whole basis for "no human started it". The browser sets it,
- * a page cannot forge it, and it is false for anything dispatched from script —
- * which is exactly how an agent driving a page acts. It is not a complete net:
- * a page calling `form.submit()` fires no event at all, and there is no way to
- * see that from an isolated world. That gap is stated in the docs rather than
- * papered over, because a guard that overstates its reach is worse than one
- * whose limits are known.
+ * Two facts decide whether a person started an action, and for a while only one
+ * of them was read.
+ *
+ * `isTrusted` the browser sets and a page cannot forge. But measured on
+ * 2026-08-08 it separates *page script* from *input into the browser*, not a
+ * machine from a person: `el.click()` from page script is untrusted, and
+ * automation input through the devtools protocol is **trusted**. A browser
+ * agent driving Chrome — the most ordinary kind there is, and the one this
+ * gate exists for — walked through greeted as the user.
+ *
+ * So the second fact is whether the browser admits it is being driven. Under
+ * automation a trusted event is not evidence of a person.
+ *
+ * Neither fact is a complete net, and the limits are stated rather than papered
+ * over, because a guard that overstates its reach is worse than one whose
+ * limits are known:
+ *
+ *   - a page calling `form.submit()` fires no event at all, and an isolated
+ *     world cannot see it;
+ *   - an action with no form and no navigation behind it — a scripted click on
+ *     a bare button firing `fetch` — is not held;
+ *   - `navigator.webdriver` is false for an agent driving through an extension,
+ *     and anyone who controls the browser's launch can clear it.
  */
 
 export interface GateEnvironment {
@@ -27,6 +43,12 @@ export interface GateEnvironment {
   expiry: () => Promise<void>
   journal: (decision: GateDecision) => void
   newId: () => string
+  /**
+   * Whether the browser reports it is being driven. Injected rather than read
+   * from `navigator` here so a test can state the ordinary browser — the one
+   * case an end-to-end run under automation can never reproduce.
+   */
+  automated: () => boolean
 }
 
 export class AgentGate {
@@ -102,11 +124,12 @@ export class AgentGate {
   #describe(event: Event): AgentAction | null {
     const id = this.env.newId()
     const humanGesture = event.isTrusted
+    const automated = this.env.automated()
 
     if (event.type === 'submit') {
       const form = event.target
       if (!(form instanceof HTMLFormElement)) {
-        return { id, kind: 'unknown', description: 'A form submission', humanGesture }
+        return { id, kind: 'unknown', description: 'A form submission', humanGesture, automated }
       }
       return {
         id,
@@ -114,6 +137,7 @@ export class AgentGate {
         description: `Submit ${describeForm(form)}`,
         ...withTarget(safeUrl(form.action)),
         humanGesture,
+        automated,
       }
     }
 
@@ -126,11 +150,11 @@ export class AgentGate {
       if (!target) {
         // A `javascript:` href, or something that will not parse. We can see
         // that a script clicked it and not where it goes.
-        return { id, kind: 'unknown', description: 'Follow a link on this page', humanGesture }
+        return { id, kind: 'unknown', description: 'Follow a link on this page', humanGesture, automated }
       }
       return anchor.hasAttribute('download')
-        ? { id, kind: 'download', description: 'Download a file', target, humanGesture }
-        : { id, kind: 'navigation', description: `Open ${target}`, target, humanGesture }
+        ? { id, kind: 'download', description: 'Download a file', target, humanGesture, automated }
+        : { id, kind: 'navigation', description: `Open ${target}`, target, humanGesture, automated }
 
     }
 
@@ -143,6 +167,7 @@ export class AgentGate {
         description: `Submit ${describeForm(form)}`,
         ...withTarget(safeUrl(form.action)),
         humanGesture,
+        automated,
       }
     }
 

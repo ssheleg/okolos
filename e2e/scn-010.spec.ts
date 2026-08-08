@@ -91,9 +91,23 @@ test('the evidence is one click away from the decision', async ({ context }) => 
   await expect(page.locator('okolos-gate')).toHaveCount(1)
 })
 
-test("a person's own click is not held", async ({ context }) => {
-  // The gate exists for actions nobody started. If it caught real clicks it
-  // would be the thing that broke the page.
+test('a click injected into a driven browser is held, trusted or not', async ({ context }) => {
+  /**
+   * This test read `a person's own click is not held` and passed for two
+   * months. What it actually performed was a Playwright click — automation
+   * input through the devtools protocol — and measured on 2026-08-08 that
+   * arrives with `isTrusted: true`. The gate treated it as the user and let it
+   * through, which is precisely how a browser agent acts.
+   *
+   * So the old test was not covering the person. It was demonstrating the hole,
+   * and asserting the hole was there.
+   *
+   * The ordinary browser — nothing driving, a trusted click that really is a
+   * person — cannot be reproduced here: an end-to-end run is automation by
+   * definition. That case lives in
+   * `packages/core-gate/src/decide.test.ts` → "still lets a person act when
+   * nothing is driving", and in the gate's own unit tests.
+   */
   await serve(context, PAGE)
   // After serve(): the later route wins, and serve()'s pattern also matches this one.
   await context.route('https://fixture.test/transferred**', (route) =>
@@ -103,8 +117,11 @@ test("a person's own click is not held", async ({ context }) => {
   await page.goto('https://fixture.test/')
   await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: 10_000 })
 
+  // The browser admits it: this is the fact the gate now reads.
+  expect(await page.evaluate(() => navigator.webdriver)).toBe(true)
+
   await page.locator('#pay button').click()
 
-  await expect(page.locator('okolos-gate')).toHaveCount(0)
-  await expect(page.locator('#done')).toHaveCount(1, { timeout: 10_000 })
+  await expect(page.locator('okolos-gate')).toHaveCount(1, { timeout: 10_000 })
+  await expect(page.locator('#done')).toHaveCount(0)
 })

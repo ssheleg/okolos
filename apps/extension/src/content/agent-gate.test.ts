@@ -25,6 +25,8 @@ function install(overrides: Partial<GateEnvironment> = {}): Harness {
     expiry: () => new Promise<void>(() => {}),
     journal: (decision) => journal.push(decision),
     newId: () => `a${(n += 1)}`,
+    // The ordinary browser by default; the driven one is stated per test.
+    automated: () => false,
     ...overrides,
   }
   const gate = new AgentGate(env)
@@ -33,7 +35,12 @@ function install(overrides: Partial<GateEnvironment> = {}): Harness {
   return { gate, ask, journal }
 }
 
-/** A synthetic event is exactly what an agent produces: isTrusted is false. */
+/**
+ * A synthetic event, which is what an agent acting through page script
+ * produces: `isTrusted` is false. It is *not* what a browser agent driving
+ * Chrome produces — measured 2026-08-08, automation input is trusted, which is
+ * why the gate also reads whether the browser is being driven.
+ */
 function scripted(type: string): Event {
   return new Event(type, { bubbles: true, cancelable: true })
 }
@@ -93,6 +100,19 @@ describe('when the page carries an unresolved finding', () => {
 
     expect(event.defaultPrevented).toBe(false)
     expect(ask).not.toHaveBeenCalled()
+  })
+
+  it('holds a trusted submit when the browser says it is being driven', async () => {
+    // The wiring, not the rule. `assessAction` weighs `automated`; whether this
+    // file ever asks for it is a separate question, and the answer was no until
+    // now — which is how a browser agent's trusted clicks passed as the user's.
+    const { ask } = install({ automated: () => true })
+    const event = human('submit')
+    form().dispatchEvent(event)
+    await settle()
+
+    expect(event.defaultPrevented).toBe(true)
+    expect(ask).toHaveBeenCalledTimes(1)
   })
 
   it('keeps the page from seeing the held event', async () => {

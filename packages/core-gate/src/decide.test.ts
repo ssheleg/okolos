@@ -76,6 +76,46 @@ describe('when the gate stays out of the way', () => {
   })
 })
 
+describe('a browser that is being driven', () => {
+  /**
+   * Measured 2026-08-08, three ways of clicking the same button:
+   *
+   *   page script `el.click()`     isTrusted: false
+   *   automation input (CDP)       isTrusted: TRUE
+   *   `dispatchEvent('click')`     isTrusted: false
+   *
+   * So `isTrusted` separates "page script" from "input into the browser" — not
+   * "a machine" from "a person". A browser agent driving Chrome through the
+   * devtools protocol produces trusted events, and the gate waved every one of
+   * them through as a human gesture. That is the most common kind of agent
+   * there is, and it is the one this whole screen exists for.
+   */
+  it('does not accept a trusted event as a person when something is driving', () => {
+    const assessment = assessAction(action({ humanGesture: true, automated: true }), [FINDING])
+    expect(assessment.ask).toBe(true)
+  })
+
+  it('still lets a person act when nothing is driving', () => {
+    // The ordinary case, and the one that must not turn into a prompt.
+    expect(
+      settled(assessAction(action({ humanGesture: true, automated: false }), [FINDING])).reason,
+    ).toBe('human-gesture')
+  })
+
+  it('treats an unstated automation fact as "not driven", not as "unknown"', () => {
+    // Older callers omit it. Defaulting the other way would gate every real
+    // click on any page with a finding, on every build that has not been
+    // updated yet.
+    expect(settled(assessAction(action({ humanGesture: true }), [FINDING])).reason).toBe(
+      'human-gesture',
+    )
+  })
+
+  it('holds a scripted action under automation exactly as it did before', () => {
+    expect(assessAction(action({ humanGesture: false, automated: true }), [FINDING]).ask).toBe(true)
+  })
+})
+
 describe('when the gate opens', () => {
   it('holds a scripted action on a page with an unresolved finding', () => {
     expect(asking(assessAction(action(), [FINDING])).findings).toEqual([FINDING])

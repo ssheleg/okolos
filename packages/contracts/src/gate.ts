@@ -23,6 +23,24 @@ export interface AgentAction {
   readonly target?: string
   /** True only when the browser vouched for a real human gesture. */
   readonly humanGesture: boolean
+  /**
+   * True when the browser reports it is being driven by automation.
+   *
+   * `humanGesture` alone does not mean a person. Measured on 2026-08-08: page
+   * script calling `el.click()` produces `isTrusted: false`, but automation
+   * input through the devtools protocol produces `isTrusted: true` — and that
+   * is how browser agents act. Without this fact the gate greeted every one of
+   * them as the user.
+   *
+   * It is not proof and does not pretend to be: an agent driving through an
+   * extension is not WebDriver, and anyone who controls the browser's launch
+   * can clear the flag. It closes the default configuration, which is the one
+   * almost every agent runs in.
+   *
+   * Absent means "not driven" — the ordinary browser, where a trusted click is
+   * a person and gating it would break the page.
+   */
+  readonly automated?: boolean
 }
 
 export interface UnresolvedFinding {

@@ -66,7 +66,10 @@ export function assessAction(
     )
   }
 
-  if (action.humanGesture) {
+  // A trusted event is evidence of a person only in a browser nobody is
+  // driving. Under automation the same event means the thing driving pressed
+  // the button, which is the case this gate exists for.
+  if (action.humanGesture && action.automated !== true) {
     return settle(
       'ungated',
       'human-gesture',

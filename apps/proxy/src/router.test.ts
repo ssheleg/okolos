@@ -316,3 +316,71 @@ describe('the request a link checker makes', () => {
     expect((await handle(head('/appeal'), env())).status).toBe(404)
   })
 })
+
+describe('serving the blocking feed', () => {
+  /**
+   * The extension pulls this every six hours and verifies it against a key
+   * compiled into the build. The worker never signs: the private half stays
+   * off the server, so what is served is whatever was published, verbatim.
+   *
+   * Until this route existed the extension fetched a 404 and journalled that
+   * it could not be reached — honest, and still no protection.
+   */
+  const feedEnv = (row: { body: string; updated_at: string } | null) =>
+    ({
+      DB: {
+        prepare: () => ({
+          bind: () => ({
+            first: async () => row,
+            run: async () => ({}),
+            all: async () => ({ results: [] }),
+          }),
+        }),
+      },
+    }) as unknown as Env
+
+  const signed = JSON.stringify({
+    update: { kind: 'snapshot', body: { name: 'phishing', version: 3, updatedAt: 'x', entries: ['bad.test'] } },
+    signature: 'sig',
+  })
+
+  it('serves what was published, byte for byte', async () => {
+    const response = await handle(
+      get('/feeds/phishing'),
+      feedEnv({ body: signed, updated_at: '2026-08-08T00:00:00.000Z' }),
+    )
+    expect(response.status).toBe(200)
+    expect(await response.text()).toBe(signed)
+  })
+
+  it('says nothing has been published rather than inventing an empty feed', async () => {
+    // An empty signed snapshot would be a claim that nothing is dangerous, and
+    // the extension would install zero rules believing that was the answer.
+    const response = await handle(get('/feeds/phishing'), feedEnv(null))
+    expect(response.status).toBe(404)
+    expect(await response.text()).not.toContain('entries')
+  })
+
+  it('refuses a feed name it does not publish', async () => {
+    expect((await handle(get('/feeds/../../etc/passwd'), feedEnv(null))).status).toBe(404)
+    expect((await handle(get('/feeds/'), feedEnv(null))).status).toBe(404)
+  })
+
+  it('answers HEAD, because a monitor will ask that way', async () => {
+    const response = await handle(
+      new Request('https://proxy.test/feeds/phishing', { method: 'HEAD' }),
+      feedEnv({ body: signed, updated_at: '2026-08-08T00:00:00.000Z' }),
+    )
+    expect(response.status).toBe(200)
+  })
+
+  it('is cacheable but not for long, because a feed goes stale', async () => {
+    const response = await handle(
+      get('/feeds/phishing'),
+      feedEnv({ body: signed, updated_at: '2026-08-08T00:00:00.000Z' }),
+    )
+    const cache = response.headers.get('cache-control') ?? ''
+    expect(cache).toMatch(/max-age=(\d+)/)
+    expect(Number(/max-age=(\d+)/.exec(cache)?.[1]), 'an hour at most').toBeLessThanOrEqual(3600)
+  })
+})

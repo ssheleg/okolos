@@ -57,6 +57,10 @@ export async function handle(request: Request, env: Env): Promise<Response> {
     return appeal(request, env)
   }
 
+  if (url.pathname.startsWith('/feeds/') && readOnly) {
+    return servePublishedFeed(url.pathname.slice('/feeds/'.length), env)
+  }
+
   if (url.pathname === '/status' && readOnly) {
     return statusPage(url, env)
   }
@@ -88,6 +92,47 @@ function escapeHtml(value: string): string {
  * One question, one address: `/status?domain=x`, with a canonical link to the
  * normalised form so `Evil.TEST.` and `evil.test` do not become two pages.
  */
+/** Names this service publishes. Anything else is a 404, not a database query. */
+const PUBLISHED_FEEDS = new Set(['phishing'])
+
+/**
+ * Serves a published feed exactly as it was published.
+ *
+ * The extension verifies it against a key compiled into its build, so anything
+ * this worker changed on the way out would fail verification — which is the
+ * point. It never signs and never assembles: the private half of the key is
+ * not here.
+ *
+ * A feed that has not been published is a 404, not an empty snapshot. An empty
+ * one would be a signed claim that nothing is dangerous, and the extension
+ * would install zero rules believing that was the answer.
+ */
+async function servePublishedFeed(name: string, env: Env): Promise<Response> {
+  if (!PUBLISHED_FEEDS.has(name)) return json({ error: 'not found' }, 404)
+
+  let row: { body: string; updated_at: string } | null
+  try {
+    row = await env.DB.prepare('SELECT body, updated_at FROM feeds WHERE name = ?')
+      .bind(name)
+      .first<{ body: string; updated_at: string }>()
+  } catch {
+    return json({ error: 'the feed could not be read' }, 503)
+  }
+
+  if (!row) return json({ error: 'no feed has been published under that name' }, 404)
+
+  return new Response(row.body, {
+    status: 200,
+    headers: {
+      'content-type': 'application/json; charset=utf-8',
+      // Short: a blocking feed that is an hour stale is a phishing site that
+      // stayed up an hour longer.
+      'cache-control': 'public, max-age=900',
+      'last-modified': new Date(row.updated_at).toUTCString(),
+    },
+  })
+}
+
 async function statusPage(url: URL, env: Env): Promise<Response> {
   const raw = url.searchParams.get('domain')
   const domain = normaliseDomain(raw)

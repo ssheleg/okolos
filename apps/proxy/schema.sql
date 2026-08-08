@@ -19,3 +19,12 @@ CREATE TABLE IF NOT EXISTS appeals (
 -- The retention sweep reads this; without it, 180 days is a claim rather than a
 -- rule.
 CREATE INDEX IF NOT EXISTS appeals_by_created ON appeals (created_at);
+
+-- Published feeds, served verbatim. The worker never signs: the private half of
+-- the key stays off the server, so what is stored here is exactly what the
+-- signing tool produced and exactly what the extension verifies.
+CREATE TABLE IF NOT EXISTS feeds (
+  name        TEXT PRIMARY KEY,
+  body        TEXT NOT NULL,
+  updated_at  TEXT NOT NULL
+);

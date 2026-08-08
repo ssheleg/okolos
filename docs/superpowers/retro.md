@@ -38,9 +38,19 @@ happens before adding.
    checked against the artefact. Report it as "the diagnostic says X", or
    verify it — never as "X". Reported as fact, a diagnostic's 225 dangling
    edges turned out to be zero.
-10. **Confirm a planted defect actually landed before trusting what it
-   proves.** Two wrong citation formats survived a plant that never applied,
-   and the green was read as the gate working.
+10. **Confirm a planted defect actually landed, and that it lands on the rule
+   you meant to test.** Two wrong citation formats survived a plant that never
+   applied, and the green was read as the gate working. The same mistake one
+   level deeper: a recovery clause tested with the input that recovers without
+   it reports green with the clause deleted.
+11. **A test that agrees with the code proves they agree, and nothing else.**
+   Four tests in one audit were holding wrong answers steady — two of them the
+   same false privacy sentence, at two layers, and one misnamed so that even a
+   reader who checked would look at the wrong case. Read what a test asserts
+   against what the product *should* do.
+12. **A rate limit, a retry budget or a quota must defer, never drop.** Work
+   discarded when the budget is full is work nobody re-arms, and the last item
+   of a burst is the one an attacker chooses.
 
 ### 2026-08-04 — a Firefox suite that would have passed with no extension loaded
 
@@ -865,3 +875,60 @@ happens before adding.
   landed. This adds the other half: confirm it landed *as the defect intended*,
   because a plant that breaks compilation or that the product routes around
   produces a red with no information in it.
+
+### 2026-08-08 — a bug hunt, and four defects that no gate was looking for
+
+The previous audit swept documents and gates. This one swept behaviour, and
+found four defects plus one gap in the threat model. Every one of them had a
+green suite over it.
+
+- **A rate limiter that dropped work instead of deferring it.** The content
+  script re-read the page on mutation, capped at two scans a second, and over
+  the cap it returned with nothing left to re-arm. A page that mutated hard
+  enough to exhaust the budget and then went quiet was never examined in its
+  final state — which is exactly where an injection would be placed by anyone
+  who read the file. The policy lived in two constants, two module variables
+  and a `setTimeout`; nothing tested it because nothing could.
+
+- **A privacy guard blind to percent-encoding, and a product relying on it.**
+  The choke point read the raw query, so it caught `?u=https://victim/page` —
+  a form nobody writes — and missed the encoded form that every API actually
+  uses. It never inspected the path at all, which is where HIBP takes the
+  address. Fixing both broke four leak tests, and *that* was the finding: the
+  leak check sends the user's address in clear to two third parties and passed
+  the guard only because of the encoding. The exception existed and was written
+  nowhere. It is declared now — and the panel had been telling the user
+  "Checking sends a hashed form of your address, never the address itself."
+
+- **A version of NaN disabled the replay guard permanently.** `version <=
+  current.version` is false for NaN, so a NaN was accepted; and once NaN stood
+  in force, so did every later update, including a replay of a fixed entry.
+  One `parseInt(undefined)` in the publishing pipeline would have done it to
+  every client at once.
+
+- **The padding this product asks for was read as a breach.** `Add-Padding`
+  makes the API invent zero-count entries so the response size says nothing;
+  they were reported as compromises, with the sentence "This password appears
+  0 times in breached data".
+
+- **And a gap rather than a bug:** the agent gate covers forms, links and
+  buttons inside forms. A scripted click on a plain button that fires `fetch`
+  — which is how a modern app transfers money — is not an action "leaving the
+  page" by the code's test, and is not gated. SCN-010 promises that no action
+  proceeds without a human decision. Filed as #34; the minimum is to narrow the
+  promise, and the maximum is a decision about noise.
+
+**Four tests were holding wrong answers in place.** Two asserted the false
+privacy sentence — one unit, one e2e — and a third required an unreadable
+range response to be a compromise. That third was *misnamed*: "reads a count of
+zero as a count, not as absence", feeding `:not-a-number`. A test agreeing with
+the code proves they agree, and nothing else; a misnamed one stops even the
+reader who checks.
+
+**What the plants taught this round.** One plant did not apply and reported
+"green" — the recovery clause for a stored bad version, tested with NaN, which
+recovers on its own because comparisons against NaN are false. The clause
+protects against a stored *Infinity*, where `3 <= Infinity` is true and the
+client refuses every update forever. Same shape as standing instruction 10, one
+level deeper: confirm the plant lands, and confirm it lands *on the rule you
+think you are testing*.

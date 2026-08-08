@@ -24,6 +24,14 @@ apps/proxy/wrangler.generated.toml
 # secrets — never commit
 .env
 .env.*
+
+# Local agent settings.
+#
+# `.claude/settings.json` holds permission grants — including one that lets the
+# worker be deployed without asking. Committed, that grant travels to every
+# clone and applies to whoever opens the repository next. It is a decision about
+# this machine and this operator, so it stays on this machine.
+.claude/
 !.env.example
 *.pem
 *.key

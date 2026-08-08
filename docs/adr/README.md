@@ -1,0 +1,18 @@
+# Решения (ADR)
+
+Каждое решение здесь уже принято и уже действует — это не предложения. Формат
+короткий намеренно: контекст, решение, цена, и **чем оно держится**, потому что
+решение без механизма это намерение.
+
+Записывать сюда стоит то, о чём через полгода спросят «почему так?» и ответ
+нельзя будет прочитать из кода. Всё остальное живёт в коде и в его комментариях.
+
+| № | Решение | Держится |
+|---|---|---|
+| [0001](0001-closed-shadow-root.md) | Внутристраничные поверхности — в закрытом shadow-корне | `tools/gates/bundle-scan.test.ts` |
+| [0002](0002-worker-never-signs.md) | Воркер никогда не подписывает фиды | `tools/feed-key.test.ts` |
+| [0003](0003-single-network-choke-point.md) | Один аудируемый узел сети, запись до запроса | `tools/gates/bundle-scan.test.ts`, `packages/net` |
+| [0004](0004-verdict-never-outruns-checks.md) | Вердикт не обгоняет проверки, которые прошли | `packages/core-download/src/judge.test.ts` |
+| [0005](0005-trusted-event-is-not-a-person.md) | Доверенное событие — не доказательство человека | `packages/core-gate/src/decide.test.ts` |
+| [0006](0006-third-stage-not-shipped.md) | Третья ступень на модели не выпускается | `docs/licences.md`, `tools/model/evaluate.py` |
+| [0007](0007-generate-what-would-drift.md) | Всё, что иначе разойдётся, — генерируется | `tools/wireframes.mjs`, `icons.mjs`, `tokens.mjs`, `privacy-page.mjs` |

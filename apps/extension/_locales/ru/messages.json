@@ -274,5 +274,8 @@
   },
   "gateShow": {
     "message": "Показать инструкцию"
+  },
+  "feedNamePhishing": {
+    "message": "Список Okolos: фишинг"
   }
 }

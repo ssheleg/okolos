@@ -16,6 +16,7 @@
  * the extension off.
  */
 
+import { displayFeedName } from '@okolos/core-feeds'
 import { t } from '@okolos/i18n'
 
 export interface InterstitialProps {
@@ -58,7 +59,9 @@ export function renderInterstitial(
         ? t('blockSourceUnknown')
         : t(
             'blockSourceKnown',
-            props.feed,
+            // The name, not the identifier. A site owner reading `phishing` has
+            // been handed a database key and told it is the reason.
+            displayFeedName(props.feed, t) ?? props.feed,
             props.entryDate ? t('blockSourceEntryDate', props.entryDate) : '',
           ),
     ),

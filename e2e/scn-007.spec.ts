@@ -82,7 +82,10 @@ test('the flagged page never renders, and the block names its source', async ({
   await expect(page.locator('[data-role=interstitial]')).toHaveCount(1)
   // The page's own markup never arrived.
   await expect(page.locator('#payload')).toHaveCount(0)
-  await expect(page.locator('[data-role=source]')).toContainText('phishing')
+  // The name, not the identifier. Asserting `phishing` here was the test
+  // agreeing with the defect: it is the key the feed is stored under, and a
+  // site owner reading it has been handed a database column as a reason.
+  await expect(page.locator('[data-role=source]')).toContainText('Okolos phishing list')
 })
 
 test('continuing is remembered, so the user is not asked twice', async ({

@@ -1,6 +1,8 @@
 import { classifyUndecided, detectHidden } from '@okolos/core-injection'
 import { detectPlatform } from '@okolos/platform'
-import { buildRules, matchUrl, type FeedSnapshot } from '@okolos/core-feeds'
+import { buildRules, matchUrl, type FeedSnapshot,
+  displayFeedNameEn,
+} from '@okolos/core-feeds'
 import { createOnnxRuntime, MODEL } from '@okolos/model'
 import {
   createModelCache,
@@ -238,7 +240,7 @@ export async function refreshBlockRules(): Promise<{ installed: number; dropped:
       createdAt: new Date().toISOString(),
       kind: 'error',
       detail: {
-        explain: `${set.dropped} entries from ${feed.name} could not be enforced: the browser limits how many blocking rules an extension may install.`,
+        explain: `${set.dropped} entries from ${displayFeedNameEn(feed.name) ?? feed.name} could not be enforced: the browser limits how many blocking rules an extension may install.`,
         feed: feed.name,
       },
     })

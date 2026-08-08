@@ -5,6 +5,8 @@
  * read, nothing about a request is stored except what an appeal explicitly
  * contains. A domain lookup is answered and forgotten.
  */
+import { displayFeedNameEn, isOurFeed, OUR_FEEDS } from '@okolos/core-feeds'
+
 import { PRIVACY_HTML } from './privacy.generated.js'
 
 export interface Env {
@@ -110,7 +112,7 @@ function escapeHtml(value: string): string {
  * published is called `phishing`, so every listing we can lift was being sent
  * to a third party that has never heard of it.
  */
-const PUBLISHED_FEEDS = new Set(['phishing'])
+const PUBLISHED_FEEDS = new Set(Object.keys(OUR_FEEDS))
 
 /**
  * Serves a published feed exactly as it was published.
@@ -239,13 +241,17 @@ ${body}
     )
   }
 
-  const ours = PUBLISHED_FEEDS.has(row.feed)
+  const ours = isOurFeed(row.feed)
+  // The list's name, never its identifier. This page is the one a site owner
+  // reads when their domain has been blocked, and `phishing` is a database key
+  // dressed up as a reason.
+  const named = escapeHtml(displayFeedNameEn(row.feed) ?? row.feed)
   return shell(
     `${domain} is listed`,
-    `<p data-role="verdict"><strong>${escapeHtml(domain)}</strong> is <strong>listed</strong> by <strong>${escapeHtml(row.feed)}</strong>, recorded ${escapeHtml(row.entry_date)}.</p>` +
+    `<p data-role="verdict"><strong>${escapeHtml(domain)}</strong> is <strong>listed</strong> by <strong>${named}</strong>, recorded ${escapeHtml(row.entry_date)}.</p>` +
       (ours
         ? appealForm(domain)
-        : `<p data-role="upstream">This listing is ${escapeHtml(row.feed)}'s, not ours. Their own appeal process is the one that will lift it; we follow their data.</p>`),
+        : `<p data-role="upstream">This listing is ${named}'s, not ours. Their own appeal process is the one that will lift it; we follow their data.</p>`),
     canonical,
   )
 }
@@ -299,11 +305,15 @@ async function domainStatus(domain: string | null, env: Env): Promise<Response> 
   return json({
     domain: normalised,
     status: 'listed',
+    // The identifier stays: this is an API, and a caller keying off a display
+    // name would break the first time the name is improved.
     feed: row.feed,
+    /** The same list, as a person should read it. */
+    feedName: displayFeedNameEn(row.feed),
     entryDate: row.entry_date,
     // Most listings are not ours, and saying so is the difference between an
     // owner fixing the problem and an owner arguing with the wrong party.
-    appealTo: PUBLISHED_FEEDS.has(row.feed) ? 'okolos' : row.feed,
+    appealTo: isOurFeed(row.feed) ? 'okolos' : row.feed,
   })
 }
 

@@ -14,5 +14,6 @@
     { "path": "../core-queue" },
     { "path": "../core-leaks" },
     { "path": "../core-recovery" },
-    { "path": "../core-extensions" }]
+    { "path": "../core-extensions" },
+    { "path": "../core-feeds" }]
 }

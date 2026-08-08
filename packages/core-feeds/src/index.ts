@@ -10,3 +10,10 @@ export {
 } from './apply.js'
 export { matchUrl, normaliseEntry, type FeedMatch } from './lookup.js'
 export { buildRules, RULE_LIMIT, type BlockRule, type RuleSet } from './rules.js'
+export {
+  displayFeedName,
+  displayFeedNameEn,
+  isOurFeed,
+  OUR_FEEDS,
+  type FeedName,
+} from './display.js'

@@ -1,5 +1,5 @@
 import { judgeDownload, type CheckOutcome, type DownloadVerdict } from '@okolos/core-download'
-import { matchUrl, type FeedSnapshot } from '@okolos/core-feeds'
+import { matchUrl, type FeedSnapshot, displayFeedNameEn } from '@okolos/core-feeds'
 
 /**
  * Judging a download at the only moment it can be stopped.
@@ -33,7 +33,7 @@ export async function handleDownload(item: DownloadItem, deps: DownloadDeps): Pr
       ? {
           ran: true,
           passed: false,
-          detail: `The address this came from is listed by ${feed.name} (entry from ${feed.updatedAt.slice(0, 10)}).`,
+          detail: `The address this came from is listed by ${displayFeedNameEn(feed.name) ?? feed.name} (entry from ${feed.updatedAt.slice(0, 10)}).`,
         }
       : { ran: true, passed: true }
     : { ran: false, why: 'the blocklists could not be read, so the source was not checked' }

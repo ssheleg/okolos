@@ -274,5 +274,8 @@
   },
   "gateShow": {
     "message": "Show the injection"
+  },
+  "feedNamePhishing": {
+    "message": "Okolos phishing list"
   }
 }

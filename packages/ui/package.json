@@ -13,11 +13,12 @@
   },
   "dependencies": {
     "@okolos/contracts": "workspace:*",
-    "@okolos/core-queue": "workspace:*",
-    "@okolos/core-lookalike": "workspace:*",
-    "@okolos/core-leaks": "workspace:*",
-    "@okolos/core-recovery": "workspace:*",
     "@okolos/core-extensions": "workspace:*",
+    "@okolos/core-feeds": "workspace:*",
+    "@okolos/core-leaks": "workspace:*",
+    "@okolos/core-lookalike": "workspace:*",
+    "@okolos/core-queue": "workspace:*",
+    "@okolos/core-recovery": "workspace:*",
     "@okolos/i18n": "workspace:*"
   }
 }

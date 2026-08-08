@@ -57,6 +57,10 @@ function keysAsked(): Set<string> {
             keys.add(m[1] as string)
           }
         }
+        // A key held in a field of a record, e.g. `{ messageKey: 'feedNamePhishing' }`.
+        // The field name is spelled out precisely so a generic `key:` somewhere
+        // else cannot keep a dead message alive.
+        for (const m of text.matchAll(/\bmessageKey:\s*'([a-zA-Z0-9_.]+)'/g)) keys.add(m[1] as string)
       }
     }
   }

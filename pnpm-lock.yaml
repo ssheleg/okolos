@@ -212,6 +212,9 @@ importers:
       '@okolos/core-extensions':
         specifier: workspace:*
         version: link:../core-extensions
+      '@okolos/core-feeds':
+        specifier: workspace:*
+        version: link:../core-feeds
       '@okolos/core-leaks':
         specifier: workspace:*
         version: link:../core-leaks

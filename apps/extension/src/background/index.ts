@@ -34,7 +34,10 @@ import { createInferenceHost } from './inference.js'
 
 const platform = detectPlatform()
 import { spaceAwareWrite } from './audit-space.js'
+import { createVerifier, FEED_PUBLIC_KEY, updateFeed } from './feeds.js'
+import { syncFeed } from './feed-sync.js'
 
+const FEED_ALARM = 'okolos:feeds'
 const RETENTION_ALARM = 'okolos:retention'
 const INVENTORY_ALARM = 'okolos:inventory'
 
@@ -728,9 +731,52 @@ async function sweepIfDue(): Promise<void> {
   }
 }
 
+/**
+ * Pulls the blocking feed, applies it if it verifies, and installs the rules.
+ *
+ * Until this existed the `feeds` store was empty on every install: `updateFeed`
+ * had no caller, `currentFeed()` returned null, and the number of blocking
+ * rules was always zero. Everything below it — signature checking, replay
+ * refusal, rollback, rule building — was built and tested and never reached.
+ */
+async function pullFeed(): Promise<void> {
+  try {
+    const db = await openDb()
+    await syncFeed({
+      audit: await auditDeps(),
+      apply: async (signed) => {
+        const result = await updateFeed(db, signed, createVerifier(FEED_PUBLIC_KEY), () =>
+          new Date().toISOString(),
+        )
+        return result.accepted ? { accepted: true } : { accepted: false, reason: result.explain }
+      },
+      refresh: () => refreshBlockRules(),
+      note: async (explain) => {
+        await db.put('journal', {
+          id: `feed:${new Date().toISOString()}`,
+          createdAt: new Date().toISOString(),
+          kind: 'error',
+          detail: { reason: 'feed-sync', explain },
+        })
+      },
+    })
+  } catch (cause) {
+    console.warn('okolos: feed sync failed', cause)
+  }
+}
+
+// Six hours, and once at start: a worker that restarts often would otherwise
+// keep resetting a longer alarm, which is how retention came to never run.
+void pullFeed()
+void platform.alarms.create(FEED_ALARM, 60 * 6)
+
 void sweepIfDue()
 void platform.alarms.create(RETENTION_ALARM, 60 * 24)
 platform.alarms.onFired((name) => {
+  if (name === FEED_ALARM) {
+    void pullFeed()
+    return
+  }
   if (name === INVENTORY_ALARM) {
     void reviewExtensions()
     return

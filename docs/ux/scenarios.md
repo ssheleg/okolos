@@ -182,7 +182,7 @@ See [foundation.md](foundation.md) → Personas.
 - **Feature:** web-guard
 - **Traces:** ST-005, ST-016, FLW-04 (JTBD-02, JRN-03/#2)
 - **Entry point:** navigation to a URL matching a signed feed entry
-- **Preconditions:** feeds present and signature-verified
+- **Preconditions:** feeds present and signature-verified — **and the feed has to have arrived**: until 2026-08-08 nothing fetched one, so the list was empty on every install and this scenario held only in a test that seeded storage by hand. It is pulled every six hours and once at start now, through the audited choke point, and a refusal leaves the last verified snapshot in force
 - **Steps:**
   1. User clicks a link -> system replaces the page with the interstitial before it renders
   2. User reads why -> system names the feed that produced the verdict and the entry's date
@@ -394,6 +394,7 @@ See [foundation.md](foundation.md) → Personas.
   2. User opens a row -> system shows destination, purpose, the exact payload sent, and what was redacted
   3. User clicks "Export log" -> system produces a JSON file the user can compare against a browser network trace
 - **Expected result:** the user can state what left the device this week, from the product's own records, and verify it independently
+- **What a fresh install shows:** one entry — the blocking feed being downloaded, with its purpose in plain words, `none` as the payload and `alarm:feeds` as the trigger. Until 2026-08-08 it showed the sentence "nothing has been sent", and that was true only because nothing fetched a feed: the block list was empty on every install, so the panel's honesty rested on the product doing nothing
 - **Alt paths:** nothing was sent -> the empty state says so explicitly rather than showing an empty table
 - **UI elements:** weekly summary line, log rows (time, destination, purpose, payload shape), filters, row detail, "Export log"
 - **States covered:** loading, empty, error, success

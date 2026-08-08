@@ -182,7 +182,19 @@ textarea {
   outline-offset: var(--ok-shape-focus-offset);
 }
 
-/* The address field is part of the leaks block, not a control floating above it. */
+/*
+ * The address field sits above the panel, which is not where it belongs.
+ *
+ * It belongs under the heading and above the button that reads it. Ordering it
+ * from here can only put it before the whole panel or after it, and after puts
+ * the input below the button that consumes it — measured, by looking: worse
+ * than the position it started in.
+ *
+ * The real fix is a slot inside `renderLeaks`, so the field can sit between the
+ * description and "Check now" while still being a long-lived node the repaint
+ * moves rather than rebuilds. That is a renderer change and is filed as such;
+ * this rule only stops the field looking like a stray control.
+ */
 [data-role='address'] {
   inline-size: min(100%, 320px);
   margin-block-end: var(--ok-space-3);

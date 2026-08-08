@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
@@ -50,6 +50,34 @@ describe('the tokens are one source, and the CSS is derived from them', () => {
       ...Object.keys(COLOUR_LIGHT).map((n) => `--ok-colour-${n}`),
     ]
     for (const name of declared) expect(css, `${name} is not in the generated CSS`).toContain(name)
+  })
+
+  it('is what every surface uses, including the ones inside a shadow root', () => {
+    /**
+     * The first version of this check read `pages.css` and nothing else, so it
+     * was green while the three overlays carried **twenty-two hexes of their
+     * own** — a second palette close enough to the first that drift between
+     * them would have gone unseen. An extraction that looks only where it was
+     * pointed is the recurring shape of every gap this project has found.
+     *
+     * The overlays cannot read `:root`: their host starts at `all: initial`,
+     * which is the isolation the whole surface depends on. They get the same
+     * values declared on `:host` instead, from this module.
+     */
+    const walk = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+        const p = path.join(dir, entry.name)
+        if (entry.isDirectory()) return walk(p)
+        return entry.name.endsWith('.ts') && !entry.name.endsWith('.test.ts') ? [p] : []
+      })
+
+    for (const file of walk(path.join(root, 'packages/ui/src'))) {
+      if (file.endsWith('tokens.ts')) continue
+      const text = readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
+      expect(text, `${path.relative(root, file)} writes a colour of its own`).not.toMatch(
+        /#[0-9a-f]{3,8}\b/i,
+      )
+    }
   })
 
   it('is what the pages actually use, rather than hand-written values beside it', () => {

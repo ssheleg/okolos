@@ -1,4 +1,5 @@
 import { shadowMode } from '../shadow.js'
+import { OVERLAY_TOKENS } from '../overlay-tokens.js'
 import type { Severity, VerdictCategory } from '@okolos/contracts'
 
 /**
@@ -177,32 +178,56 @@ function button(
 
 function styles(doc: Document): HTMLStyleElement {
   const el = doc.createElement('style')
-  el.textContent = `
-    :host { all: initial; }
+  el.textContent = `${OVERLAY_TOKENS}
     [data-role=panel] {
-      position: fixed; inset-block-end: 16px; inset-inline-end: 16px;
-      max-inline-size: 380px; padding: 16px; border-radius: 12px;
-      font: 14px/1.45 system-ui, sans-serif; color: #10161d;
-      background: #fff; border: 1px solid #d5dbe3;
-      box-shadow: 0 8px 28px rgb(16 22 29 / 18%); z-index: 2147483647;
+      position: fixed;
+      inset-block-end: var(--ok-space-4); inset-inline-end: var(--ok-space-4);
+      max-inline-size: var(--ok-size-popup); padding: var(--ok-space-4);
+      border-radius: var(--ok-shape-radius-lg);
+      font-family: var(--ok-type-font-family);
+      font-size: var(--ok-type-size-sm); line-height: var(--ok-type-line-base);
+      color: var(--ok-colour-text); background: var(--ok-colour-surface);
+      border: var(--ok-shape-hairline) solid var(--ok-colour-border);
+      /* The one shadow in the product: this panel floats over somebody else's
+         page and has to read as separate from it. */
+      box-shadow: 0 8px 28px rgb(0 0 0 / 18%);
+      z-index: 2147483647;
     }
     [data-role=panel][data-blocking=true] {
-      position: fixed; inset: 0; max-inline-size: none; display: grid;
-      place-content: center; text-align: center; background: #fffdf7;
+      inset: 0; max-inline-size: none; display: grid;
+      place-content: center; text-align: center;
+      background: var(--ok-colour-surface);
     }
-    [data-role=severity] { font-weight: 600; text-transform: uppercase; letter-spacing: .04em; font-size: 11px; }
-    [data-role=headline] { margin: 6px 0 4px; font-size: 15px; font-weight: 650; }
-    [data-role=detail], [data-role=source] { margin: 0 0 6px; }
-    [data-role=source] { color: #5b6572; font-size: 12px; }
-    [data-role=error] { color: #8a2018; }
-    [data-role=actions] { display: flex; gap: 8px; margin-block-start: 12px; flex-wrap: wrap; }
-    button { font: inherit; padding: 7px 12px; border-radius: 8px; border: 1px solid #d5dbe3; background: #f3f5f8; cursor: pointer; }
-    button[data-primary=true] { background: #10161d; border-color: #10161d; color: #fff; }
-    button:focus-visible { outline: 2px solid #2b6cb0; outline-offset: 2px; }
-    @media (prefers-color-scheme: dark) {
-      [data-role=panel] { color: #eef2f6; background: #171c23; border-color: #2b333d; }
-      button { background: #222932; border-color: #39424e; color: #eef2f6; }
-      button[data-primary=true] { background: #eef2f6; color: #10161d; }
+    [data-role=severity] {
+      font-weight: var(--ok-type-weight-strong); text-transform: uppercase;
+      letter-spacing: .04em; font-size: var(--ok-type-size-sm);
+    }
+    [data-role=headline] {
+      margin: var(--ok-space-1) 0; font-size: var(--ok-type-size-base);
+      font-weight: var(--ok-type-weight-strong);
+    }
+    [data-role=detail], [data-role=source] { margin: 0 0 var(--ok-space-1); }
+    [data-role=source] { color: var(--ok-colour-text-muted); font-size: var(--ok-type-size-sm); }
+    [data-role=error] { color: var(--ok-colour-severity-block); }
+    [data-role=actions] {
+      display: flex; gap: var(--ok-space-2);
+      margin-block-start: var(--ok-space-3); flex-wrap: wrap;
+    }
+    button {
+      font: inherit; min-block-size: var(--ok-shape-target-min);
+      padding: var(--ok-space-1) var(--ok-space-3);
+      border-radius: var(--ok-shape-radius);
+      border: var(--ok-shape-hairline) solid var(--ok-colour-border-strong);
+      background: var(--ok-colour-surface); color: var(--ok-colour-text);
+      cursor: pointer;
+    }
+    button[data-primary=true] {
+      background: var(--ok-colour-accent); border-color: var(--ok-colour-accent);
+      color: var(--ok-colour-accent-text);
+    }
+    button:focus-visible {
+      outline: var(--ok-shape-focus-width) solid var(--ok-colour-focus);
+      outline-offset: var(--ok-shape-focus-offset);
     }
   `
   return el

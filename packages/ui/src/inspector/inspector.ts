@@ -1,3 +1,4 @@
+import { OVERLAY_TOKENS } from '../overlay-tokens.js'
 import { shadowMode } from '../shadow.js'
 import type { Confidence, Evidence } from '@okolos/contracts'
 
@@ -199,33 +200,63 @@ function button(
 
 function styles(doc: Document): HTMLStyleElement {
   const el = doc.createElement('style')
-  el.textContent = `
-    :host { all: initial; }
+  el.textContent = `${OVERLAY_TOKENS}
     [data-role=panel] {
-      position: fixed; inset-block-end: 16px; inset-inline-end: 16px;
-      inline-size: min(520px, calc(100vw - 32px)); max-block-size: 70vh; overflow: auto;
-      padding: 16px; border-radius: 12px; background: #fff; color: #10161d;
-      border: 1px solid #d5dbe3; box-shadow: 0 8px 28px rgb(16 22 29 / 18%);
-      font: 14px/1.45 system-ui, sans-serif; z-index: 2147483647;
+      position: fixed;
+      inset-block-end: var(--ok-space-4); inset-inline-end: var(--ok-space-4);
+      inline-size: min(520px, calc(100vw - var(--ok-space-6)));
+      max-block-size: 70vh; overflow: auto;
+      padding: var(--ok-space-4); border-radius: var(--ok-shape-radius-lg);
+      background: var(--ok-colour-surface); color: var(--ok-colour-text);
+      border: var(--ok-shape-hairline) solid var(--ok-colour-border);
+      box-shadow: 0 8px 28px rgb(0 0 0 / 18%);
+      font-family: var(--ok-type-font-family);
+      font-size: var(--ok-type-size-sm); line-height: var(--ok-type-line-base);
+      z-index: 2147483647;
     }
-    h2 { margin: 0 0 10px; font-size: 15px; }
-    [data-role=item] { padding: 10px 0; border-block-start: 1px solid #e6eaef; }
+    h2 {
+      margin: 0 0 var(--ok-space-2); font-size: var(--ok-type-size-base);
+      font-weight: var(--ok-type-weight-strong);
+    }
+    [data-role=item] {
+      padding: var(--ok-space-2) 0;
+      border-block-start: var(--ok-shape-hairline) solid var(--ok-colour-border);
+    }
+    /* The concealed text itself, shown verbatim: monospace so a zero-width
+       character has somewhere visible to be. */
     [data-role=snippet] {
-      margin: 0 0 8px; padding: 10px; border-radius: 8px; background: #f3f5f8;
-      white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.5 ui-monospace, monospace;
+      margin: 0 0 var(--ok-space-2); padding: var(--ok-space-2);
+      border-radius: var(--ok-shape-radius);
+      background: var(--ok-colour-surface-sunken);
+      white-space: pre-wrap; overflow-wrap: anywhere;
+      font-family: var(--ok-type-font-mono); font-size: var(--ok-type-size-sm);
     }
-    [data-role=locator], [data-role=stage] { color: #5b6572; font-size: 12px; margin: 2px 0; }
-    [data-role=partial] { color: #7a5a12; }
-    [data-role=restore-note] { color: #7a5a12; margin: 10px 0 0; }
-    [data-role=actions] { display: flex; gap: 8px; margin-block-start: 12px; flex-wrap: wrap; }
-    button { font: inherit; padding: 7px 12px; border-radius: 8px; border: 1px solid #d5dbe3; background: #f3f5f8; cursor: pointer; }
-    button[data-primary=true] { background: #10161d; border-color: #10161d; color: #fff; }
-    button:focus-visible { outline: 2px solid #2b6cb0; outline-offset: 2px; }
-    @media (prefers-color-scheme: dark) {
-      [data-role=panel] { background: #171c23; color: #eef2f6; border-color: #2b333d; }
-      [data-role=snippet] { background: #10151b; }
-      button { background: #222932; border-color: #39424e; color: #eef2f6; }
-      button[data-primary=true] { background: #eef2f6; color: #10161d; }
+    [data-role=locator], [data-role=stage] {
+      color: var(--ok-colour-text-muted); font-size: var(--ok-type-size-sm);
+      margin: 0;
+    }
+    [data-role=partial], [data-role=restore-note] {
+      color: var(--ok-colour-severity-warn); margin: var(--ok-space-2) 0 0;
+    }
+    [data-role=actions] {
+      display: flex; gap: var(--ok-space-2);
+      margin-block-start: var(--ok-space-3); flex-wrap: wrap;
+    }
+    button {
+      font: inherit; min-block-size: var(--ok-shape-target-min);
+      padding: var(--ok-space-1) var(--ok-space-3);
+      border-radius: var(--ok-shape-radius);
+      border: var(--ok-shape-hairline) solid var(--ok-colour-border-strong);
+      background: var(--ok-colour-surface); color: var(--ok-colour-text);
+      cursor: pointer;
+    }
+    button[data-primary=true] {
+      background: var(--ok-colour-accent); border-color: var(--ok-colour-accent);
+      color: var(--ok-colour-accent-text);
+    }
+    button:focus-visible {
+      outline: var(--ok-shape-focus-width) solid var(--ok-colour-focus);
+      outline-offset: var(--ok-shape-focus-offset);
     }
   `
   return el

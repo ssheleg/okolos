@@ -1,3 +1,4 @@
+import { OVERLAY_TOKENS } from '../overlay-tokens.js'
 import { shadowMode } from '../shadow.js'
 
 /**
@@ -141,36 +142,61 @@ function button(
 
 function styles(doc: Document): HTMLStyleElement {
   const el = doc.createElement('style')
-  el.textContent = `
-    :host { all: initial; }
+  el.textContent = `${OVERLAY_TOKENS}
     [data-role=scrim] {
-      position: fixed; inset: 0; background: rgb(16 22 29 / 55%); z-index: 2147483646;
+      position: fixed; inset: 0; background: rgb(0 0 0 / 55%); z-index: 2147483646;
     }
     [data-role=dialog] {
       position: fixed; inset-block-start: 50%; inset-inline-start: 50%;
       transform: translate(-50%, -50%);
-      inline-size: min(480px, calc(100vw - 32px)); max-block-size: 80vh; overflow: auto;
-      padding: 20px; border-radius: 12px; background: #fff; color: #10161d;
-      border: 1px solid #d5dbe3; box-shadow: 0 12px 40px rgb(16 22 29 / 28%);
-      font: 14px/1.45 system-ui, sans-serif; z-index: 2147483647;
+      inline-size: min(480px, calc(100vw - var(--ok-space-6)));
+      max-block-size: 80vh; overflow: auto;
+      padding: var(--ok-space-5); border-radius: var(--ok-shape-radius-lg);
+      background: var(--ok-colour-surface); color: var(--ok-colour-text);
+      border: var(--ok-shape-hairline) solid var(--ok-colour-border);
+      box-shadow: 0 12px 40px rgb(0 0 0 / 28%);
+      font-family: var(--ok-type-font-family);
+      font-size: var(--ok-type-size-sm); line-height: var(--ok-type-line-base);
+      z-index: 2147483647;
     }
-    h2 { margin: 0 0 12px; font-size: 16px; }
-    [data-role=action] { font-weight: 600; }
-    [data-role=target] { color: #5b6572; overflow-wrap: anywhere; }
+    h2 {
+      margin: 0 0 var(--ok-space-3); font-size: var(--ok-type-size-lg);
+      font-weight: var(--ok-type-weight-strong);
+    }
+    [data-role=action] { font-weight: var(--ok-type-weight-strong); }
+    [data-role=target] { color: var(--ok-colour-text-muted); overflow-wrap: anywhere; }
+    /*
+     * The finding is marked by a bar, not a fill. A tinted panel was the only
+     * place in this product where colour carried a meaning on its own; the bar
+     * sits beside the text that already says it.
+     */
     [data-role=finding] {
-      margin: 10px 0; padding: 10px; border-radius: 8px; background: #fdf3f3;
-      border: 1px solid #f0d4d4;
+      margin: var(--ok-space-2) 0; padding: var(--ok-space-2) var(--ok-space-3);
+      border-inline-start: var(--ok-shape-severity-bar) solid var(--ok-colour-severity-block);
+      background: var(--ok-colour-surface-sunken);
+      border-radius: var(--ok-shape-radius);
     }
-    [data-role=timeout] { color: #5b6572; font-size: 12px; }
-    [data-role=actions] { display: flex; gap: 8px; margin-block-start: 16px; flex-wrap: wrap; }
-    button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid #d5dbe3; background: #f3f5f8; cursor: pointer; }
-    button[data-primary=true] { background: #a1231f; border-color: #a1231f; color: #fff; }
-    button:focus-visible { outline: 2px solid #2b6cb0; outline-offset: 2px; }
-    @media (prefers-color-scheme: dark) {
-      [data-role=dialog] { background: #171c23; color: #eef2f6; border-color: #2b333d; }
-      [data-role=finding] { background: #241618; border-color: #46262a; }
-      button { background: #222932; border-color: #39424e; color: #eef2f6; }
-      button[data-primary=true] { background: #c2312c; border-color: #c2312c; color: #fff; }
+    [data-role=timeout] { color: var(--ok-colour-text-muted); font-size: var(--ok-type-size-sm); }
+    [data-role=actions] {
+      display: flex; gap: var(--ok-space-2);
+      margin-block-start: var(--ok-space-4); flex-wrap: wrap;
+    }
+    button {
+      font: inherit; min-block-size: var(--ok-shape-target-min);
+      padding: var(--ok-space-1) var(--ok-space-3);
+      border-radius: var(--ok-shape-radius);
+      border: var(--ok-shape-hairline) solid var(--ok-colour-border-strong);
+      background: var(--ok-colour-surface); color: var(--ok-colour-text);
+      cursor: pointer;
+    }
+    /* Block is the default here, and the default is not an alarm. */
+    button[data-primary=true] {
+      background: var(--ok-colour-accent); border-color: var(--ok-colour-accent);
+      color: var(--ok-colour-accent-text);
+    }
+    button:focus-visible {
+      outline: var(--ok-shape-focus-width) solid var(--ok-colour-focus);
+      outline-offset: var(--ok-shape-focus-offset);
     }
   `
   return el

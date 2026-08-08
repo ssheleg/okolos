@@ -36,12 +36,7 @@ const rel = (p: string) => path.relative(root, p)
  * is not a formality: it is the sentence someone writes instead of noticing
  * their feature never shipped.
  */
-const EXEMPT: ReadonlyArray<{ readonly file: string; readonly why: string }> = [
-  {
-    file: 'packages/ui/src/tokens.ts',
-    why: 'the source for a generated stylesheet, consumed by parsing rather than by import: tools/tokens.mjs reads it and writes apps/extension/src/tokens.generated.css, which every page imports. Its own test asserts the generated file matches and that no stylesheet writes a value beside it.',
-  },
-]
+const EXEMPT: ReadonlyArray<{ readonly file: string; readonly why: string }> = []
 
 // ---------------------------------------------------------------------------
 // Entry points, and the evidence that each one ships.

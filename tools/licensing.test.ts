@@ -150,3 +150,39 @@ function walk(dir: string): string[] {
     return entry.isDirectory() ? walk(full) : [full]
   })
 }
+
+describe('the weights policy is written down and still true', () => {
+  const doc = path.join(root, 'docs/licences.md')
+
+  it('exists — the gate above points at it', () => {
+    // The weights rule fails a build by naming this file. A rule that names a
+    // document nobody wrote is a rule that reports a missing document instead
+    // of a missing licence.
+    expect(existsSync(doc)).toBe(true)
+  })
+
+  it('states the rule rather than a preference', () => {
+    const text = read('docs/licences.md')
+    expect(text).toMatch(/AGPL-3\.0/)
+    expect(text).toContain('Apache-2.0')
+    // The exclusion is the operative half: it is what a future contributor
+    // would otherwise re-litigate.
+    expect(text).toMatch(/Llama/)
+  })
+
+  it('carries the measurement it rests on, not a recollection of it', () => {
+    // 738,563,308 bytes and an HTTP 401 are why the decision went this way.
+    // Without them the document is an opinion.
+    const text = read('docs/licences.md')
+    expect(text).toContain('738 563 308')
+    expect(text).toMatch(/401/)
+  })
+
+  it('agrees with the descriptor the code actually carries', () => {
+    // The model descriptor and this document drifting apart is how a project
+    // ends up shipping weights its own policy forbids.
+    const runtime = read('packages/model/src/runtime.ts')
+    expect(runtime).not.toContain('pending-licence-decision')
+    expect(runtime).toMatch(/licences\.md/)
+  })
+})

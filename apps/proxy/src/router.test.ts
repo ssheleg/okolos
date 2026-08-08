@@ -284,3 +284,35 @@ describe('the page a person or a crawler actually gets', () => {
     expect(html).toMatch(/<link rel="canonical" href="[^"]*domain=evil\.test"/)
   })
 })
+
+describe('the request a link checker makes', () => {
+  /**
+   * Every route tested `request.method === 'GET'`, so HEAD fell through to the
+   * 404. Crawlers, link checkers and monitors use HEAD, and a public page that
+   * answers 404 to them is a public page that reads as broken from outside —
+   * on the one surface of this product whose whole purpose is being found and
+   * quoted.
+   */
+  const head = (path: string) => new Request(`https://proxy.test${path}`, { method: 'HEAD' })
+
+  it('answers HEAD on the status page as it answers GET', async () => {
+    const response = await handle(head('/status?domain=evil.test'), env({ listing: null }))
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toMatch(/text\/html/)
+  })
+
+  it('answers HEAD on the JSON endpoint too', async () => {
+    const response = await handle(head('/status/domain?domain=evil.test'), env({ listing: null }))
+    expect(response.status).toBe(200)
+  })
+
+  it('answers HEAD on the health check, which is what a monitor uses', async () => {
+    expect((await handle(head('/healthz'), env())).status).toBe(200)
+  })
+
+  it('still refuses HEAD where there is nothing to get', async () => {
+    // /appeal is a POST. HEAD on it is not a page, and pretending otherwise
+    // would advertise an endpoint that does nothing.
+    expect((await handle(head('/appeal'), env())).status).toBe(404)
+  })
+})

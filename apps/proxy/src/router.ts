@@ -44,7 +44,12 @@ export async function handle(request: Request, env: Env): Promise<Response> {
     })
   }
 
-  if (url.pathname === '/status/domain' && request.method === 'GET') {
+  // HEAD is a GET without a body, and the platform strips the body itself.
+  // Testing for GET alone sent every crawler, link checker and monitor to the
+  // 404 — on the surface whose whole purpose is being found and quoted.
+  const readOnly = request.method === 'GET' || request.method === 'HEAD'
+
+  if (url.pathname === '/status/domain' && readOnly) {
     return domainStatus(url.searchParams.get('domain'), env)
   }
 
@@ -52,7 +57,7 @@ export async function handle(request: Request, env: Env): Promise<Response> {
     return appeal(request, env)
   }
 
-  if (url.pathname === '/status' && request.method === 'GET') {
+  if (url.pathname === '/status' && readOnly) {
     return statusPage(url, env)
   }
 

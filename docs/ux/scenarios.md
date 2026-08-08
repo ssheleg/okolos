@@ -189,7 +189,7 @@ See [foundation.md](foundation.md) → Personas.
 - **Alt paths:** user clicks "Continue anyway" -> system states that an exception will be remembered and journalled, then loads the page; user clicks "I own this site" -> system opens the public domain status page
 - **UI elements:** interstitial, verdict source line, "Go back" (primary), "Continue anyway", "I own this site", "Details"
 - **States covered:** success, error
-- **Errors & recovery:** feed metadata unavailable -> the block still applies, the interstitial says the source is unknown and how to check it; feeds stale beyond the freshness window -> the interstitial states the data age
+- **Errors & recovery:** feed metadata unavailable -> the block still applies, the interstitial says the source is unknown and how to check it; feeds stale beyond the freshness window -> the interstitial states the data age; **a listing on a parent domain no longer overrides an exception granted on a child** — `||shop.test^` reaches www.shop.test, so a user who chose to continue there and was stopped again next visit had been taught that trusting a site does nothing. The listing still stands for everyone else, and trusting a parent never excuses a listed subdomain
 - **Status:** implemented
 - **Coverage:** packages/core-feeds/src/rules.ts:buildRules, packages/ui/src/interstitial/interstitial.ts:renderInterstitial, e2e/scn-007.spec.ts
 

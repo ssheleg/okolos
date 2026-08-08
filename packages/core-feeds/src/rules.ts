@@ -23,6 +23,15 @@ export interface BlockRule {
   readonly condition: {
     readonly urlFilter: string
     readonly resourceTypes: readonly ['main_frame']
+    /**
+     * Hosts this rule must not stop, because the user said so.
+     *
+     * `||shop.test^` covers www.shop.test as well, so a listing on a parent
+     * used to override an exception granted on a child: the user chose to
+     * continue, was stopped again next visit, and learned that trusting a site
+     * does nothing. The listing still stands for everyone else.
+     */
+    readonly excludedRequestDomains?: readonly string[]
   }
 }
 
@@ -43,6 +52,7 @@ export function buildRules(
   )
 
   const wanted: string[] = []
+  const already = new Set<string>()
   let excluded = 0
 
   for (const raw of feed.entries) {
@@ -55,24 +65,47 @@ export function buildRules(
       excluded += 1
       continue
     }
+    // The same live campaign appears on OpenPhish, PhishTank and URLhaus, so a
+    // merged feed repeats itself. Every repetition used to take a slot from a
+    // domain that would otherwise have been blocked, and to be counted as
+    // protection lost to the ceiling when it was nothing of the kind.
+    if (already.has(entry)) continue
+    already.add(entry)
     wanted.push(entry)
   }
 
   const kept = wanted.slice(0, RULE_LIMIT)
 
   return {
-    rules: kept.map((entry, index) => ({
-      id: index + 1,
-      priority: 1,
-      action: { type: 'redirect', redirect: { extensionPath: redirectPath } },
-      condition: {
-        // `||` anchors to a domain and covers its subdomains; the trailing part
-        // of the entry, if any, keeps a path-scoped listing path-scoped.
-        urlFilter: entry.includes('/') ? `||${entry}` : `||${entry}^`,
-        resourceTypes: ['main_frame'],
-      },
-    })),
+    rules: kept.map((entry, index) => {
+      const excusedBelow = trustedUnder(entry, excused)
+      return {
+        id: index + 1,
+        priority: 1,
+        action: { type: 'redirect', redirect: { extensionPath: redirectPath } },
+        condition: {
+          // `||` anchors to a domain and covers its subdomains; the trailing part
+          // of the entry, if any, keeps a path-scoped listing path-scoped.
+          urlFilter: entry.includes('/') ? `||${entry}` : `||${entry}^`,
+          resourceTypes: ['main_frame'] as const,
+          ...(excusedBelow.length > 0 ? { excludedRequestDomains: excusedBelow } : {}),
+        },
+      }
+    }),
     dropped: Math.max(0, wanted.length - kept.length),
     excluded,
   }
+}
+
+/**
+ * Trusted hosts this listing would otherwise stop.
+ *
+ * Only downwards. A listing on `shop.test` reaches `www.shop.test`, so an
+ * exception granted there has to be honoured. The reverse stays closed:
+ * trusting `shop.test` must not excuse a listing on `evil.shop.test`, because
+ * subdomain takeover is exactly how that would be abused.
+ */
+function trustedUnder(entry: string, excused: ReadonlySet<string>): string[] {
+  if (entry.includes('/')) return []
+  return [...excused].filter((host) => host.endsWith(`.${entry}`)).sort()
 }

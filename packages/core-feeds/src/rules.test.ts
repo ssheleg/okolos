@@ -75,3 +75,86 @@ describe('when the feed is larger than the browser allows', () => {
     expect(buildRules(feed(['bad.test']), [], PATH).dropped).toBe(0)
   })
 })
+
+describe('the ceiling is spent on protection, not on repetition', () => {
+  const feed = (entries: string[]) => ({
+    name: 'phish',
+    version: 1,
+    updatedAt: '2026-08-08T00:00:00.000Z',
+    entries,
+  })
+
+  it('installs one rule per domain, however many times it is listed', () => {
+    // Feeds are merged from OpenPhish, PhishTank and URLhaus, and a live
+    // campaign appears on all three. Every duplicate takes a slot from a
+    // domain that would otherwise have been blocked.
+    const set = buildRules(feed(['evil.test', 'evil.test', 'evil.test']), [], '/i.html')
+    expect(set.rules).toHaveLength(1)
+  })
+
+  it('collapses the same domain written differently', () => {
+    const set = buildRules(
+      feed(['evil.test', 'EVIL.test', 'https://evil.test', 'evil.test/']),
+      [],
+      '/i.html',
+    )
+    expect(set.rules).toHaveLength(1)
+  })
+
+  it('keeps a path-scoped listing apart from the whole domain', () => {
+    // `evil.test/login` and `evil.test` are different listings and must stay
+    // two rules; collapsing them would either over- or under-block.
+    const set = buildRules(feed(['evil.test', 'evil.test/login']), [], '/i.html')
+    expect(set.rules).toHaveLength(2)
+  })
+
+  it('does not count repetition as protection lost to the ceiling', () => {
+    // `dropped` is what the user is told could not be enforced. Repetition is
+    // not a loss, and reporting it as one overstates the gap.
+    const unique = Array.from({ length: 4990 }, (_, i) => `d${i}.test`)
+    const set = buildRules(feed([...unique, ...Array(20).fill('dup.test')]), [], '/i.html')
+    expect(set.rules).toHaveLength(4991)
+    expect(set.dropped).toBe(0)
+  })
+
+  it('still reports a genuine overflow', () => {
+    const many = Array.from({ length: RULE_LIMIT + 10 }, (_, i) => `d${i}.test`)
+    const set = buildRules(feed(many), [], '/i.html')
+    expect(set.rules).toHaveLength(RULE_LIMIT)
+    expect(set.dropped).toBe(10)
+  })
+})
+
+describe('an exception must cover what the block covers', () => {
+  const feed = (entries: string[]) => ({
+    name: 'phish',
+    version: 1,
+    updatedAt: '2026-08-08T00:00:00.000Z',
+    entries,
+  })
+
+  it('excuses a trusted host that a parent listing would block', () => {
+    // `||shop.test^` blocks www.shop.test too. A user who was stopped there,
+    // chose to continue and trust the site, and is stopped again next visit
+    // has been taught that the exception does not work — which is exactly what
+    // the code's own comment says must not happen.
+    const set = buildRules(feed(['shop.test']), ['www.shop.test'], '/i.html')
+    const rule = set.rules[0]
+    expect(rule, 'the parent listing still stands for everyone else').toBeDefined()
+    expect(rule?.condition.excludedRequestDomains).toContain('www.shop.test')
+  })
+
+  it('does not let a trusted parent excuse a listed subdomain', () => {
+    // The other direction must stay closed: subdomain takeover is a real
+    // attack, and trusting a shop does not vouch for evil.shop.test.
+    const set = buildRules(feed(['evil.shop.test']), ['shop.test'], '/i.html')
+    expect(set.rules).toHaveLength(1)
+    expect(set.rules[0]?.condition.excludedRequestDomains ?? []).toEqual([])
+  })
+
+  it('still drops the rule entirely when the exact host is trusted', () => {
+    const set = buildRules(feed(['shop.test']), ['shop.test'], '/i.html')
+    expect(set.rules).toHaveLength(0)
+    expect(set.excluded).toBe(1)
+  })
+})

@@ -832,3 +832,36 @@ happens before adding.
 - **Wiring, not remembering:** `core.hooksPath` is per-clone, so a `prepare`
   script sets it on install and a test asserts both the hook and that script
   exist. A hook nobody's clone runs is a document with a shebang.
+
+### 2026-08-08 — the second browser had four checks, and the money moved
+
+- **Symptom:** none. `pnpm test:e2e:firefox` was green and REQ-27 rested on it.
+  The suite made four assertions against sixty-four in Chromium, and three of
+  the four were about the banner.
+- **Surfaced at:** a deliberate comparison of the two suites' scope, not a
+  failure.
+- **Owned by:** the decision, correct at the time, to keep the Firefox harness
+  small. Small is fine; *arbitrary* is not, and nothing recorded why those four.
+- **What changed:** the harness now covers the paths where the engines actually
+  differ rather than a convenient subset — Firefox runs a background page
+  rather than a service worker, delivers scripted clicks through a different
+  path than real ones, and schedules MutationObserver callbacks on its own
+  terms. Nine checks: the sanitiser (the sentence is gone from the DOM an
+  assistant would read, and the element is marked rather than deleted) and the
+  agent gate (a scripted submit is held, and the page does not navigate).
+- **What the plant showed:** with the gate uninstalled, Firefox did not merely
+  fail the assertion — it navigated to `/transferred?amount=900`. The product
+  exists to stop that, and until this run nothing in the second browser would
+  have noticed it happening.
+- **Two plants that taught more than they were meant to.** Emptying the
+  sanitisation plan produced code that threw, so the banner never appeared and
+  every downstream check failed for the wrong reason — a red that proves
+  nothing. And cloning the held contents instead of moving them still ended
+  with a clean DOM, because a re-scan takes the other branch and empties the
+  element anyway; the "defect" was a delay, not a defect. Only the third
+  attempt — `apply` returning zero and touching nothing — put the injected
+  sentence back in the document.
+- **Prevention:** standing instruction 10 already covers confirming a plant
+  landed. This adds the other half: confirm it landed *as the defect intended*,
+  because a plant that breaks compilation or that the product routes around
+  produces a red with no information in it.

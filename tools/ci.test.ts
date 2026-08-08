@@ -118,3 +118,15 @@ describe('the pre-push hook exists and runs the gates', () => {
     expect(pkg.scripts.prepare ?? '').toContain('core.hooksPath')
   })
 })
+
+describe('the release archive is built by CI, not by hand', () => {
+  /**
+   * A packaging command nobody runs is a runbook with a shebang. CI runs the
+   * checks on every push so a manifest that names a missing file, a locale
+   * that cannot answer a `__MSG__`, or a build carrying the test hooks is
+   * found here rather than after an upload.
+   */
+  it('runs the packaging checks', () => {
+    expect(workflow).toContain('package:check')
+  })
+})

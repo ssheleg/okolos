@@ -54,6 +54,12 @@ jobs:
       - name: ux lint
         run: python3 docs/ux/lint.py
 
+      # Before an upload rather than after one: a manifest naming a missing
+      # file, a locale that cannot answer a __MSG__, or a build carrying the
+      # test hooks that open the shadow roots.
+      - name: release checks
+        run: pnpm package:check
+
   e2e:
     name: e2e (chromium)
     runs-on: ubuntu-latest

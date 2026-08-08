@@ -22,6 +22,8 @@ import { describe, expect, it } from 'vitest'
 const root = process.cwd()
 
 const EXEMPT: Record<string, string> = {
+  'tools/package.mjs':
+    'a release command, not a rule: it builds, refuses, and writes an archive. Its refusals are exercised by planting defects into a real build, which a sibling unit test cannot do without reimplementing the build; CI runs it on every push as `pnpm package:check`.',
   'tools/privacy-page.mjs':
     'a generator, not a rule: its only claim is that the served page equals what it makes from docs/privacy.md, and that is asserted in apps/proxy/src/router.test.ts where the page is served.',
   'apps/proxy/src/privacy.generated.ts':

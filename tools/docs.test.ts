@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -492,5 +493,74 @@ describe('the disclosure policy matches the limits the product records', () => {
 
   it('promises no bounty it has no money for', () => {
     expect(policy).toMatch(/[Нн]аграды нет/)
+  })
+})
+
+describe('the changelog says what changed for a person', () => {
+  /**
+   * A changelog that mirrors the commit log is a second commit log, and the one
+   * nobody reads. This one is gated on being about the product: it must not
+   * claim a capability the brand pack does not, it must not advertise the stage
+   * that was measured and dropped, and — while nothing has shipped — it must say
+   * so rather than imply a release.
+   */
+  const changelog = readFileSync(path.join(root, 'CHANGELOG.md'), 'utf8')
+
+  it('claims exactly the releases the repository has tagged', () => {
+    /**
+     * Asserted both ways rather than inside a branch: an assertion that only
+     * runs when there are no tags stops running the day there are, and the test
+     * goes on reporting green. (Caught by tools/test-quality.test.ts, which is
+     * the gate for exactly this.)
+     */
+    const tagged = execFileSync('git', ['tag'], { cwd: root, encoding: 'utf8' }).trim() !== ''
+    const claimsVersion = /^## \[?\d+\.\d+\.\d+/m.test(changelog)
+    expect(
+      claimsVersion,
+      tagged
+        ? 'the repository has tags and the changelog names no version'
+        : 'a version heading claims a release that has not happened',
+    ).toBe(tagged)
+    expect(changelog.includes('Не выпущено')).toBe(!tagged)
+  })
+
+  it('does not advertise the stage that was measured and dropped', () => {
+    for (const claim of ['нейросет', 'машинное обучение', 'AI-модель']) {
+      expect(changelog.toLowerCase()).not.toContain(claim.toLowerCase())
+    }
+  })
+
+  it('carries the limits rather than only the features', () => {
+    // A list of what a product does, with nothing about what it does not, is
+    // marketing wearing a changelog's clothes.
+    expect(changelog).toMatch(/[Ии]звестные пределы/)
+    expect(changelog).toContain('SECURITY.md')
+  })
+
+  it('names the same limits the scenarios record', () => {
+    const scenarios = readFileSync(path.join(root, 'docs/ux/scenarios.md'), 'utf8')
+    const block = scenarios.split('### SCN-010:')[1]?.split('\n### SCN-')[0] ?? ''
+    expect(block, 'SCN-010 is not in the scenarios').not.toBe('')
+    // Both must still describe the same boundary; if the scenario stops
+    // recording it, this stops being a limit the product can claim to know.
+    expect(block).toMatch(/fetch/)
+    expect(changelog).toMatch(/fetch/)
+  })
+})
+
+describe('the version the store will see', () => {
+  it('is the manifest one, and both browsers agree on it', () => {
+    // The packaging command names the archive from it; two manifests disagreeing
+    // would produce two versions of the same release.
+    const versions = ['chrome', 'firefox'].map(
+      (target) =>
+        (
+          JSON.parse(
+            readFileSync(path.join(root, `apps/extension/manifest.${target}.json`), 'utf8'),
+          ) as { version: string }
+        ).version,
+    )
+    expect(new Set(versions).size, `manifests disagree: ${versions.join(' vs ')}`).toBe(1)
+    expect(versions[0]).toMatch(/^\d+\.\d+\.\d+$/)
   })
 })

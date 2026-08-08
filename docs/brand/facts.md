@@ -58,7 +58,7 @@
 |---|---|---|
 | Пакетов | 19 | `ls -d packages/*/ \| wc -l` |
 | Приложений | 2 | `ls -d apps/*/ \| wc -l` |
-| Юнит-тестов | 1304 | `pnpm test` |
+| Юнит-тестов | 1309 | `pnpm test` |
 | Спек e2e | 21 файлов, 74 проверки в Chromium | `pnpm test:e2e` |
 | Проверок в Firefox | 11 | `pnpm test:e2e:firefox` |
 | Требований закрыто | 36 из 37; 37-е закрыто решением не выпускать | `docs/superpowers/briefs/` |

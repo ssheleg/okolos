@@ -10,7 +10,7 @@
 | Требования | 36 из 37 DONE, 37-е закрыто решением «не выпускается» | `grep -c '^| REQ-' docs/superpowers/briefs/2026-08-04-okolos-p0-p5.md` → 37 |
 | Сценарии | 26 из 26 `implemented` | `grep -c 'Status:\*\* implemented' docs/ux/scenarios.md` |
 | Экраны | 14 из 14 `built` | `grep -c 'Status:\*\* built' docs/ux/screens.md` |
-| Гейты | 1304 юнита, 74 e2e Chromium, 11 проверок Firefox, lint, typecheck, ux-линтер | `pnpm test && pnpm test:e2e` |
+| Гейты | 1309 юнитов, 74 e2e Chromium, 11 проверок Firefox, lint, typecheck, ux-линтер | `pnpm test && pnpm test:e2e` |
 | Прод | воркер развёрнут, фид опубликован и проверен | `node tools/deploy-worker.mjs --smoke-only` |
 
 **Функционально продукт собран. Выпустить его нельзя** — по причинам ниже, и ни
@@ -163,7 +163,7 @@
 
 ## P2 — документация и то, что делает проект поддерживаемым
 
-### B-11. `CHANGELOG.md`
+### B-11. `CHANGELOG.md` — **СДЕЛАНО 2026-08-08**
 Ни одного. История есть только в коммитах и аудитах.
 
 ### B-12. ADR

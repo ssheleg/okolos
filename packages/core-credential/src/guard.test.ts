@@ -83,3 +83,37 @@ describe('severity', () => {
     expect(warning?.severity).toBe('critical')
   })
 })
+
+describe('this guard has no language to be missing', () => {
+  /**
+   * Recorded because three detectors in this codebase turned out to read
+   * English only, and the next sweep should not have to re-derive that this
+   * one is different. It reads facts, not wording: whether the connection is
+   * encrypted, whether the address imitates a watched name, how long this
+   * device has known the domain, and where the form posts. None of that is
+   * written in any language.
+   */
+  const base = {
+    host: 'пример.рф',
+    trusted: false,
+    firstSeen: null,
+    secure: false,
+    postsTo: null,
+    resembles: null,
+    now: '2026-08-08T00:00:00.000Z',
+  }
+
+  it('warns about an unencrypted form on a host with no Latin letters in it', () => {
+    const warning = guardCredentialEntry(base)
+    expect(warning?.severity).toBe('critical')
+  })
+
+  it('gives the same verdict whatever the page is written in', () => {
+    // The context carries no page text at all, which is the point: there is
+    // nothing here for a language to change.
+    const cyrillic = guardCredentialEntry({ ...base, host: 'сбербанк-вход.рф' })
+    const latin = guardCredentialEntry({ ...base, host: 'sberbank-login.test' })
+    expect(cyrillic?.severity).toBe(latin?.severity)
+    expect(cyrillic?.facts.length).toBe(latin?.facts.length)
+  })
+})

@@ -51,6 +51,15 @@ happens before adding.
 12. **A rate limit, a retry budget or a quota must defer, never drop.** Work
    discarded when the budget is full is work nobody re-arms, and the last item
    of a burst is the one an attacker chooses.
+13. **A detector that reads wording reads a language, and the language is a
+   coverage claim.** Every text-matching detector in this codebase was written
+   in English: nine injection signals, the ClickFix page pattern, the
+   tech-support pattern. All of them shipped marked DONE, and for the audience
+   this product's own watchlist, interstitial copy and documentation are
+   written for, they found nothing at all. Name the languages a detector
+   matches in its scenario's Known limit, and name the parts that have no
+   language — an invisible-character class, a DOM difference, a fact about the
+   connection — so nobody re-derives which is which.
 
 ### 2026-08-04 — a Firefox suite that would have passed with no extension loaded
 
@@ -932,3 +941,25 @@ protects against a stored *Infinity*, where `3 <= Infinity` is true and the
 client refuses every update forever. Same shape as standing instruction 10, one
 level deeper: confirm the plant lands, and confirm it lands *on the rule you
 think you are testing*.
+
+### 2026-08-08 — three detectors, one language, and an audience that reads another
+
+- **Symptom:** none. Every text detector was green, marked DONE, and had been
+  through an acceptance audit.
+- **Surfaced at:** a probe that ran the same attacks twice — once in English,
+  once in Russian.
+- **What it found:** the nine injection signals produced **zero** on five
+  Russian attack shapes; the ClickFix page pattern passed a Russian campaign
+  clean; the tech-support pattern passed a locked-screen scam clean. The
+  watchlist ships `sberbank.ru` and `gosuslugi.ru`. The documentation is in
+  Russian. The interstitial speaks to a Russian reader. The detectors did not.
+- **Why it survived so long:** two of the three modules had no tests of their
+  own — `signals.ts` was covered through `detectHidden`, and the redactor and
+  retention modules turned out the same way earlier in this audit. A rule
+  reached only through its caller is a rule whose wording nobody reads back.
+- **What was NOT wrong:** the credential guard, which reads facts rather than
+  words — encryption, imitation, age of the domain, where the form posts. That
+  is now pinned by a test, so the next sweep does not have to re-derive it.
+- **Prevention:** standing instruction 13, and a Known limit in SCN-003,
+  SCN-008 and SCN-013 naming the two languages matched and saying plainly that
+  a third passes clean.

@@ -229,6 +229,7 @@ See [foundation.md](foundation.md) → Personas.
 - **UI elements:** banner (techsupport variant), "Close this page" (primary), "I already called them", dismiss
 - **States covered:** success, error
 - **Errors & recovery:** dialogs cannot be fully suppressed in this context -> system says so and directs the user to close the tab
+- **Known limit — the page wording is matched in English and Russian, and no other language.** The two signals that carry no language at all are unaffected and are what a third-language page still rests on: a fullscreen nobody asked for, and dialogs that keep coming back. Russian was added on 2026-08-08 after a sweep found the pattern English-only, which for this product's audience meant a locked-screen scam passed clean
 - **Status:** implemented
 - **Coverage:** packages/core-traps/src/techsupport.ts:detectTechSupport, apps/extension/src/content/traps.ts:watchForTraps, e2e/scn-008.spec.ts
 

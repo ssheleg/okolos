@@ -76,3 +76,48 @@ describe('what it refuses to call an attack', () => {
     ).toBeNull()
   })
 })
+
+describe('the same scam, in the language its victims read', () => {
+  /**
+   * The tech-support page pattern was matched in English only, like the
+   * ClickFix one and like all nine injection signals before them. Russian
+   * tech-support scams are among the most common there are — a locked-screen
+   * page, a number to call, a borrowed brand — and every one of them went
+   * through clean.
+   */
+  const scam = (text: string, extra: Partial<TechSupportEvidence> = {}) =>
+    detectTechSupport({ text, forcedFullscreen: false, dialogLoop: false, ...extra })
+
+  it('flags the locked-computer claim with a number to call', () => {
+    expect(
+      scam('Ваш компьютер заблокирован. Обнаружен вирус. Позвоните в службу поддержки: +7 495 000-00-00'),
+    ).not.toBeNull()
+  })
+
+  it('flags it when the page traps you instead of naming a number', () => {
+    expect(
+      scam('Внимание! Ваш компьютер заражён. Не выключайте компьютер.', {
+        forcedFullscreen: true,
+      }),
+    ).not.toBeNull()
+  })
+
+  it('recognises a borrowed brand written in Cyrillic', () => {
+    const verdict = scam(
+      'Служба поддержки Майкрософт: ваш компьютер заблокирован, позвоните немедленно.',
+    )
+    expect(verdict?.signals).toContain('borrows-a-familiar-name')
+  })
+
+  it('needs the scare, not merely a phone number', () => {
+    // A shop's contact page names a brand and a number. Warning there is how a
+    // detector teaches people to dismiss it.
+    expect(scam('Служба поддержки Майкрософт. Позвоните нам: +7 495 000-00-00')).toBeNull()
+  })
+
+  it('leaves an ordinary Russian security notice alone', () => {
+    expect(
+      scam('Мы заботимся о безопасности ваших данных. Антивирус рекомендуется обновлять.'),
+    ).toBeNull()
+  })
+})

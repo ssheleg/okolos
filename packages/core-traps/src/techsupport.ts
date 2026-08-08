@@ -28,11 +28,23 @@ export interface TechSupportVerdict {
   readonly dialogsUnsuppressed: boolean
 }
 
-const ALARM = /\b(your (?:computer|pc|system|device) (?:has been |is )?(?:locked|blocked|infected|compromised)|virus detected|trojan|spyware detected|security alert|do not (?:close|restart|shut down))\b/i
+/**
+ * The wording is matched in English and in Russian.
+ *
+ * The Russian tech-support scam — a locked-screen page, a number to call, a
+ * borrowed brand — is among the commonest there is, and every one of them used
+ * to pass clean here. `\w` matches no Cyrillic in a non-unicode pattern, so
+ * the alternatives are anchored on whole phrases; and the conjunction below is
+ * what keeps a shop's contact page quiet, in either language.
+ */
+const ALARM =
+  /\b(your (?:computer|pc|system|device) (?:has been |is )?(?:locked|blocked|infected|compromised)|virus detected|trojan|spyware detected|security alert|do not (?:close|restart|shut down))\b|(ваш\s+(?:компьютер|пк|устройство|телефон)\s+(?:заблокирован|заражён|заражен|взломан)|обнаружен\s+(?:вирус|троян|шпион)|вирус\s+обнаружен|угроза\s+безопасности|не\s+(?:выключайте|закрывайте|перезагружайте))/i
 
-const CALL_TO_ACTION = /\b(call (?:us|now|immediately|microsoft|apple|support)|toll[- ]free|technical support|helpline|contact support immediately)\b/i
+const CALL_TO_ACTION =
+  /\b(call (?:us|now|immediately|microsoft|apple|support)|toll[- ]free|technical support|helpline|contact support immediately)\b|(позвоните\s+(?:нам|немедленно|в\s+службу|по\s+номеру)|служба\s+поддержки|техническ\w*\s+поддержк|горяч\w*\s+лини)/i
 
-const BRAND = /\b(microsoft|windows defender|apple support|norton|mcafee)\b/i
+const BRAND =
+  /\b(microsoft|windows defender|apple support|norton|mcafee)\b|(майкрософт|виндовс|касперск|доктор\s*веб|яндекс\s*браузер)/i
 
 /** Deliberately loose: the point is to show the user the number, not to dial it. */
 const PHONE = /(\+?\d[\d\s().-]{7,}\d)/

@@ -103,5 +103,9 @@ for (const target of targets) {
   const manifest = await readFile(path.join(app, `manifest.${target}.json`), 'utf8')
   await writeFile(path.join(outDir, 'manifest.json'), manifest)
 
+  // The manifest names icon files; a package without them installs with a
+  // placeholder and uploads as a broken listing.
+  await cp(path.join(app, 'icons'), path.join(outDir, 'icons'), { recursive: true })
+
   console.log(`built ${target}${withTestHooks ? ' (test hooks)' : ''} → ${path.relative(root, outDir)}`)
 }

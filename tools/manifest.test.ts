@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -84,5 +84,66 @@ describe('what the extension asks for', () => {
       gecko: { id: string }
     }
     expect(settings.gecko.id).toMatch(/@/)
+  })
+})
+
+describe('the icon the browser and the store will actually show', () => {
+  /**
+   * `"icons": {}` shipped in both manifests until 2026-08-08, and the project
+   * carried no image file at all. The browser draws a placeholder and the store
+   * refuses the upload — a defect visible to every user before they open
+   * anything.
+   *
+   * Existence is not the check. A file named `128.png` that is 64 pixels wide
+   * passes an existence test and fails in the listing, so the size is read out
+   * of the PNG header. And the committed bytes are compared against what the
+   * generator produces, because an icon nobody can regenerate is the drift this
+   * repository already refuses for its wireframes.
+   */
+  const iconRoot = path.join(app, 'icons')
+
+  /** Width and height out of the IHDR chunk, which is always the first one. */
+  const dimensions = (file: string): { width: number; height: number } => {
+    const png = readFileSync(file)
+    expect(png.subarray(1, 4).toString('latin1'), `${file} is not a PNG`).toBe('PNG')
+    return { width: png.readUInt32BE(16), height: png.readUInt32BE(20) }
+  }
+
+  for (const target of ['chrome', 'firefox']) {
+    const manifest = JSON.parse(
+      readFileSync(path.join(app, `manifest.${target}.json`), 'utf8'),
+    ) as { icons?: Record<string, string>; action?: { default_icon?: Record<string, string> } }
+
+    it(`${target} declares icons at all`, () => {
+      expect(Object.keys(manifest.icons ?? {}).length).toBeGreaterThanOrEqual(4)
+    })
+
+    it(`${target} declares a toolbar icon, so the button is not a placeholder`, () => {
+      expect(Object.keys(manifest.action?.default_icon ?? {}).length).toBeGreaterThan(0)
+    })
+
+    it(`${target} names files that exist and are the size they claim`, () => {
+      const declared = { ...(manifest.icons ?? {}), ...(manifest.action?.default_icon ?? {}) }
+      for (const [size, file] of Object.entries(declared)) {
+        const onDisk = path.join(app, file)
+        expect(existsSync(onDisk), `${target} names ${file}, which is not there`).toBe(true)
+        expect(dimensions(onDisk), `${file} is declared as ${size}`).toEqual({
+          width: Number(size),
+          height: Number(size),
+        })
+      }
+    })
+  }
+
+  it('carries exactly the bytes the generator draws', async () => {
+    // @ts-expect-error — a plain .mjs tool, imported for the drawing it does.
+    const { SIZES, draw } = await import('./icons.mjs')
+    for (const size of SIZES) {
+      const committed = readFileSync(path.join(iconRoot, `${size}.png`))
+      expect(
+        committed.equals(draw(size)),
+        `icons/${size}.png differs from tools/icons.mjs — run \`node tools/icons.mjs\``,
+      ).toBe(true)
+    }
   })
 })

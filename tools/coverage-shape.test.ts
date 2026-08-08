@@ -22,6 +22,8 @@ import { describe, expect, it } from 'vitest'
 const root = process.cwd()
 
 const EXEMPT: Record<string, string> = {
+  'tools/icons.mjs':
+    'a generator, not a rule: its only claim is that the committed PNGs equal what it draws, and that is asserted in tools/manifest.test.ts beside the manifest entries that name them. A sibling test would assert the same bytes twice.',
   'apps/extension/src/background/index.ts':
     'entry point: registers listeners and alarms on import. Its logic lives in the modules it calls, each of which is tested; the wiring is covered end to end and by tools/test-quality.test.ts.',
   'apps/extension/src/content/index.ts':

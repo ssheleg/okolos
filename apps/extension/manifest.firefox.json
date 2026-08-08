@@ -24,7 +24,11 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Okolos"
+    "default_title": "Okolos",
+    "default_icon": {
+      "16": "icons/16.png",
+      "32": "icons/32.png"
+    }
   },
   "options_ui": {
     "page": "options.html",
@@ -39,7 +43,12 @@
     "downloads",
     "management"
   ],
-  "icons": {},
+  "icons": {
+    "16": "icons/16.png",
+    "32": "icons/32.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
   "browser_specific_settings": {
     "gecko": {
       "id": "okolos@ssheleg.dev",

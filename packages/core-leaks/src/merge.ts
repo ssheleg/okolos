@@ -43,8 +43,6 @@ export interface LeakInventory {
   readonly sources: readonly SourceReport[]
   /** True when every source answered. */
   readonly complete: boolean
-  /** One sentence stating what the total is a count of. */
-  readonly coverage: string
 }
 
 export function mergeLeaks(statuses: readonly SourceStatus[]): LeakInventory {
@@ -73,8 +71,6 @@ export function mergeLeaks(statuses: readonly SourceStatus[]): LeakInventory {
       ? { name: status.name, answered: true }
       : { name: status.name, answered: false, why: status.why },
   )
-
-  const answered = sources.filter((source) => source.answered)
   const silent = sources.filter((source) => !source.answered)
   const leaks = [...seen.values()].sort(byDateDescending)
 
@@ -82,12 +78,6 @@ export function mergeLeaks(statuses: readonly SourceStatus[]): LeakInventory {
     leaks,
     sources,
     complete: silent.length === 0,
-    coverage:
-      silent.length === 0
-        ? `Checked against ${describe(answered.map((source) => source.name))}.`
-        : `Checked against ${describe(answered.map((source) => source.name))}. ${describe(
-            silent.map((source) => source.name),
-          )} could not be reached, so this list may be incomplete.`,
   }
 }
 
@@ -99,8 +89,3 @@ function byDateDescending(a: Leak, b: Leak): number {
   return b.occurredAt.localeCompare(a.occurredAt)
 }
 
-function describe(names: readonly string[]): string {
-  if (names.length === 0) return 'no sources'
-  if (names.length === 1) return names[0] as string
-  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
-}

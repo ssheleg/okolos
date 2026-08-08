@@ -59,7 +59,6 @@ export interface RpcMap {
       }>
       sources: Array<{ name: string; answered: boolean; why?: string }>
       complete: boolean
-      coverage: string
     }
   }
   /** The extension inventory, its deltas, and the two actions on them. */

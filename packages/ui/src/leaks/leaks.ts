@@ -1,3 +1,5 @@
+import { t } from '@okolos/i18n'
+
 import { groupLeaks, type Leak, type LeakInventory } from '@okolos/core-leaks'
 
 /**
@@ -16,9 +18,16 @@ import { groupLeaks, type Leak, type LeakInventory } from '@okolos/core-leaks'
  * of "nothing found" is still a result computed from someone else's work.
  */
 
-/** Required by CC BY 4.0 wherever the data is shown. */
-export const HIBP_ATTRIBUTION =
-  'Breach data from Have I Been Pwned, used under CC BY 4.0.'
+/**
+ * Required by CC BY 4.0 wherever the data is shown.
+ *
+ * A function, not a constant. It was a constant, and moving its words into the
+ * catalogue turned it into a `t()` call evaluated at **import** time — before
+ * any entry point installs a resolver — so the credit line rendered
+ * `[leaksAttribution]` while every other string on the screen was fine. Only
+ * the test that asserted the actual words noticed.
+ */
+export const hibpAttribution = (): string => t('leaksAttribution')
 
 export type LeaksState =
   /** `needs` carries a refusal to state, so pressing the button is never silent. */
@@ -40,7 +49,7 @@ export function renderLeaks(doc: Document, state: LeaksState, handlers: LeaksHan
   root.setAttribute('data-state', state.kind)
 
   const heading = doc.createElement('h1')
-  heading.textContent = 'What has leaked'
+  heading.textContent = t('leaksTitle')
   root.append(heading)
 
   if (state.kind === 'idle') {
@@ -53,7 +62,7 @@ export function renderLeaks(doc: Document, state: LeaksState, handlers: LeaksHan
       text(
         doc,
         'idle',
-        'Nothing has been looked up yet. Checking sends your address to the sources named below — they answer to nothing less. Your passwords are never sent: that check uses a partial hash and is separate.',
+        t('leaksIdle'),
       ),
       // A button that does nothing is worse than one that refuses. Pressing
       // "Check now" without a usable address used to return in silence, which
@@ -73,23 +82,23 @@ export function renderLeaks(doc: Document, state: LeaksState, handlers: LeaksHan
       // before the whole thing or after it — after being below the button that
       // reads it.
       addressSlot(doc),
-      button(doc, 'check', 'Check now', handlers.onCheck, true),
+      button(doc, 'check', t('leaksCheck'), handlers.onCheck, true),
       attribution(doc),
     )
     return root
   }
 
   if (state.kind === 'checking') {
-    root.append(text(doc, 'status', 'Asking the sources…'), addressSlot(doc), attribution(doc))
+    root.append(text(doc, 'status', t('leaksChecking')), addressSlot(doc), attribution(doc))
     return root
   }
 
   if (state.kind === 'error') {
     root.append(
-      text(doc, 'error', `The check could not be completed: ${state.message}`),
-      text(doc, 'error-note', 'This is not a statement that nothing has leaked.'),
+      text(doc, 'error', t('leaksErrorPrefix', state.message)),
+      text(doc, 'error-note', t('leaksErrorNote')),
       addressSlot(doc),
-      button(doc, 'check', 'Try again', handlers.onCheck),
+      button(doc, 'check', t('leaksRetry'), handlers.onCheck),
       attribution(doc),
     )
     return root
@@ -101,11 +110,11 @@ export function renderLeaks(doc: Document, state: LeaksState, handlers: LeaksHan
       doc,
       'total',
       inventory.leaks.length === 0
-        ? 'No breaches were found for this address.'
-        : `${inventory.leaks.length} breach${inventory.leaks.length === 1 ? '' : 'es'} found.`,
+        ? t('leaksNone')
+        : t('leaksFound', String(inventory.leaks.length)),
     ),
     // Always, and next to the number rather than beneath the fold.
-    text(doc, 'coverage', inventory.coverage),
+    text(doc, 'coverage', coverageLine(inventory)),
     addressSlot(doc),
   )
 
@@ -118,21 +127,21 @@ export function renderLeaks(doc: Document, state: LeaksState, handlers: LeaksHan
     section.setAttribute('data-urgency', group.urgency)
 
     const title = doc.createElement('h2')
-    title.textContent = `${group.title} (${group.leaks.length})`
-    section.append(title, text(doc, 'group-why', group.why))
+    title.textContent = `${t(group.titleKey)} (${group.leaks.length})`
+    section.append(title, text(doc, 'group-why', t(group.whyKey)))
 
     for (const leak of group.leaks) section.append(leakRow(doc, leak, handlers))
     root.append(section)
   }
 
-  root.append(button(doc, 'check', 'Check again', handlers.onCheck), attribution(doc))
+  root.append(button(doc, 'check', t('leaksCheckAgain'), handlers.onCheck), attribution(doc))
   return root
 }
 
 function attribution(doc: Document): HTMLElement {
   const el = doc.createElement('p')
   el.setAttribute('data-role', 'attribution')
-  el.textContent = HIBP_ATTRIBUTION
+  el.textContent = hibpAttribution()
   return el
 }
 
@@ -142,7 +151,7 @@ function leakRow(doc: Document, leak: Leak, handlers: LeaksHandlers): HTMLElemen
   row.setAttribute('data-leak', leak.name)
   row.append(
     text(doc, 'name', `${leak.name}${leak.occurredAt ? ` (${leak.occurredAt})` : ''}`),
-    text(doc, 'classes', `Exposed: ${leak.classes.join(', ') || 'not stated by the source'}`),
+    text(doc, 'classes', t('leaksExposed', leak.classes.join(', ') || t('leaksClassesUnknown'))),
   )
 
   const actions = doc.createElement('div')
@@ -150,14 +159,14 @@ function leakRow(doc: Document, leak: Leak, handlers: LeaksHandlers): HTMLElemen
 
   if (leak.domain) {
     actions.append(
-      button(doc, 'change-password', 'Change password', () => handlers.onChangePassword(leak), true),
+      button(doc, 'change-password', t('bannerActionPassword'), () => handlers.onChangePassword(leak), true),
     )
   } else {
     // No domain from the source means no page to send anyone to. A button that
     // guesses the address of a login page is worse than a sentence saying we
     // do not have it.
     row.append(
-      text(doc, 'no-domain', 'This source did not say which site it was, so there is nowhere to send you.'),
+      text(doc, 'no-domain', t('leaksNoDomain')),
     )
   }
 
@@ -167,7 +176,7 @@ function leakRow(doc: Document, leak: Leak, handlers: LeaksHandlers): HTMLElemen
   // `reuse` appeared in this repository exactly once outside this label, at the
   // line that produced the dead link. A control that cannot answer is worse
   // than none: an empty view reads as "no reuse found".
-  actions.append(button(doc, 'resolve', 'Mark resolved', () => handlers.onResolve(leak.name)))
+  actions.append(button(doc, 'resolve', t('leaksMarkResolved'), () => handlers.onResolve(leak.name)))
   row.append(actions)
   return row
 }
@@ -207,4 +216,24 @@ function button(
   el.textContent = label
   el.addEventListener('click', onClick)
   return el
+}
+
+/**
+ * What the total is a count of, composed here rather than in `core-leaks`.
+ *
+ * The sentence used to be built inside `mergeLeaks`, which meant a core package
+ * held English prose and the screen could not be translated without translating
+ * the package. The facts — which sources answered and which did not — are what a
+ * core package should return; the sentence is presentation.
+ */
+function coverageLine(inventory: LeakInventory): string {
+  const answered = inventory.sources.filter((source) => source.answered).map((s) => s.name)
+  const silent = inventory.sources.filter((source) => !source.answered).map((s) => s.name)
+  // Three cases, and the third is the one a test remembered: with nothing
+  // answered, the two-branch version rendered "Checked against ." — a sentence
+  // that says a check happened when none did.
+  if (answered.length === 0) return t('leaksCoverageNone')
+  return silent.length === 0
+    ? t('leaksCoverage', answered.join(', '))
+    : t('leaksCoverageIncomplete', answered.join(', '), silent.join(', '))
 }

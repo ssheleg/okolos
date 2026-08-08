@@ -136,3 +136,45 @@ describe('a catalogue key never reaches the screen unresolved', () => {
     expect(offences, 'these would render a catalogue key as copy').toEqual([])
   })
 })
+
+describe('nothing asks the catalogue before a resolver exists', () => {
+  /**
+   * `t()` at module scope runs at **import** time. Every entry point installs
+   * its resolver in its own body, which runs after its imports — so a top-level
+   * `t()` captures the default and renders `[key]` forever, on a screen where
+   * every other string is fine.
+   *
+   * It happened to the HIBP credit line: a `const` whose words moved into the
+   * catalogue became a `const` holding a resolved message. Only the test that
+   * asserted the actual words noticed.
+   */
+  const sources: string[] = []
+  const walk = (dir: string): void => {
+    for (const entry of readdirSync(path.join(root, dir))) {
+      const rel = path.join(dir, entry)
+      if (statSync(path.join(root, rel)).isDirectory()) {
+        if (entry !== 'node_modules' && entry !== 'dist') walk(rel)
+      } else if (entry.endsWith('.ts') && !entry.endsWith('.test.ts')) {
+        sources.push(rel)
+      }
+    }
+  }
+  walk('packages')
+  walk('apps/extension/src')
+
+  it('is reading real files', () => {
+    expect(sources.length).toBeGreaterThan(40)
+  })
+
+  it('calls the resolver from a function, never at the top level', () => {
+    const offences = sources.flatMap((file) =>
+      read(file)
+        .split('\n')
+        // A top-level statement starts in column zero. Anything indented is
+        // inside a function, an object, or a class — i.e. deferred.
+        .filter((line) => /^(?:export )?const \w+(?::[^=]*)? = t\(/.test(line))
+        .map((line) => `${file}: ${line.trim()}`),
+    )
+    expect(offences, 'these resolve at import time, before any resolver is installed').toEqual([])
+  })
+})

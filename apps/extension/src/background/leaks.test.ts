@@ -57,7 +57,10 @@ describe('a source that fails mid-flight', () => {
   it('is not mistaken for having nothing to report', async () => {
     const { deps: d } = deps(async () => new Response('[]'))
     const inventory = await lookupLeaks('a@b.test', [silent], d)
-    expect(inventory.coverage).toMatch(/could not be reached/i)
+    // The fact, not the sentence built from it: composing the wording moved to
+    // the screen, and asserting a source is visibly silent is the stronger claim.
+    expect(inventory.complete).toBe(false)
+    expect(inventory.sources.filter((source) => !source.answered)).toHaveLength(1)
   })
 })
 
@@ -117,6 +120,10 @@ describe('a source that never answers', () => {
     const inventory = await lookupLeaks('a@b.test', [hangs, CAVALIER], d, 20)
 
     expect(inventory.sources.map((source) => source.answered)).toEqual([false, true])
-    expect(inventory.coverage).toContain('Hudson Rock Cavalier')
+    // The point is the source that DID answer is still named — a timeout on one
+    // must not take the others with it.
+    expect(inventory.sources.filter((source) => source.answered).map((s) => s.name)).toContain(
+      'Hudson Rock Cavalier',
+    )
   })
 })

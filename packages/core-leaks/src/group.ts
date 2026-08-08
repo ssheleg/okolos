@@ -19,9 +19,18 @@ export type LeakUrgency = 'fresh-infostealer' | 'historical'
 
 export interface LeakGroup {
   readonly urgency: LeakUrgency
-  readonly title: string
+  /**
+   * Catalogue key for the heading, not the heading.
+   *
+   * Which group is called what is a product decision and belongs here; the
+   * sentence is a translation and belongs in `_locales`. A core package that
+   * held English prose could not be localised without importing the resolver
+   * into every module that groups anything.
+   */
+  readonly titleKey: string
   /** One sentence on why this pile is its own pile. */
-  readonly why: string
+  /** Catalogue key for the explanation. Same reasoning as `titleKey`. */
+  readonly whyKey: string
   readonly leaks: readonly Leak[]
 }
 
@@ -56,16 +65,16 @@ export function groupLeaks(leaks: readonly Leak[], now: string): readonly LeakGr
   if (fresh.length > 0) {
     groups.push({
       urgency: 'fresh-infostealer',
-      title: 'Recent — a machine was infected',
-      why: 'Everything stored in that browser went at once, including session cookies that keep working after a password change. Sign out of your sessions as well as changing the password.',
+      titleKey: 'leaksGroupFreshTitle',
+      whyKey: 'leaksGroupFreshWhy',
       leaks: fresh,
     })
   }
   if (historical.length > 0) {
     groups.push({
       urgency: 'historical',
-      title: 'Older breaches',
-      why: 'A service you used was breached. Change the password there, and anywhere you reused it.',
+      titleKey: 'leaksGroupOlderTitle',
+      whyKey: 'leaksGroupOlderWhy',
       leaks: historical,
     })
   }

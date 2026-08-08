@@ -178,7 +178,7 @@ self-audit panel.
 ### SCR-08: Leaks and repair
 - **Used by:** FLW-10 (reuse list), FLW-11, FLW-16
 - **Purpose:** what of mine is exposed, and the repair for each
-- **Elements:** monitored sources (email, phone) with add/remove; results split into "Recent — a machine was infected" and "Older breaches"; per-entry data classes, date, source; **primary action per entry: "Change password"**; "Mark resolved"; archive; manual password check field; the list of sources actually checked and when
+- **Elements:** monitored sources (email, phone) with add/remove; results split into "Недавнее — устройство было заражено" and "Более старые утечки"; per-entry data classes, date, source; **primary action per entry: "Сменить пароль"**; "Отметить решённым"; archive; manual password check field; the list of sources actually checked and when
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|

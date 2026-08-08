@@ -23,7 +23,7 @@ export {
   type TrustedHandlers,
 } from './trusted/trusted.js'
 export { renderQueue, type QueueHandlers } from './queue/queue.js'
-export { renderLeaks, HIBP_ATTRIBUTION, type LeaksHandlers, type LeaksState } from './leaks/leaks.js'
+export { renderLeaks, hibpAttribution, type LeaksHandlers, type LeaksState } from './leaks/leaks.js'
 export { renderRecovery, type RecoveryHandlers } from './recovery/recovery.js'
 export {
   renderComparison,

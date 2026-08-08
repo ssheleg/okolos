@@ -4,6 +4,20 @@ import { mergeLeaks } from '@okolos/core-leaks'
 
 import { renderLeaks, type LeaksHandlers, type LeaksState } from './leaks.js'
 
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fromCatalogue, useResolver, type Catalogue } from '@okolos/i18n'
+
+/** The shipped Russian catalogue: `default_locale` is `ru`, and a fake would let a missing key pass. */
+const CATALOGUE = JSON.parse(
+  readFileSync(
+    path.resolve(import.meta.dirname, '../../../../apps/extension/_locales/ru/messages.json'),
+    'utf8',
+  ),
+) as Catalogue
+
+useResolver(fromCatalogue(CATALOGUE))
+
 function handlers(overrides: Partial<LeaksHandlers> = {}): LeaksHandlers {
   return {
     onCheck: vi.fn(),
@@ -42,21 +56,21 @@ describe('the number and its basis', () => {
     ])
     const el = render({ kind: 'ready', inventory, now: NOW })
 
-    expect(role(el, 'total')?.textContent).toContain('1 breach')
-    expect(role(el, 'coverage')?.textContent).toMatch(/may be incomplete/i)
+    expect(role(el, 'total')?.textContent).toContain('Найдено утечек: 1')
+    expect(role(el, 'coverage')?.textContent).toMatch(/список может быть неполным/i)
   })
 
   it('says what a clean result was checked against', () => {
     const inventory = mergeLeaks([{ name: 'HIBP', answered: true, leaks: [] }])
     const el = render({ kind: 'ready', inventory, now: NOW })
-    expect(role(el, 'total')?.textContent).toMatch(/no breaches/i)
+    expect(role(el, 'total')?.textContent).toMatch(/утечек не найдено/i)
     expect(role(el, 'coverage')?.textContent).toContain('HIBP')
   })
 
   it('lists what each breach exposed', () => {
     const inventory = mergeLeaks([{ name: 'HIBP', answered: true, leaks: [LEAK] }])
     const el = render({ kind: 'ready', inventory, now: NOW })
-    expect(role(el, 'classes')?.textContent).toContain('passwords')
+    expect(role(el, 'classes')?.textContent).toContain('Раскрыто:')
   })
 
   it('lets the user mark one as dealt with', () => {
@@ -73,9 +87,9 @@ describe('before and during', () => {
     // the leak sources take no hash, and the address itself is what goes. A
     // test can hold a lie steady as easily as a truth.
     const idle = role(render({ kind: 'idle' }), 'idle')?.textContent ?? ''
-    expect(idle, 'the idle state must say the address is sent').toMatch(/sends your address/i)
+    expect(idle, 'the idle state must say the address is sent').toMatch(/отправит ваш адрес/i)
     expect(idle, 'and must not imply the leak check is hashed').not.toMatch(/hashed form/i)
-    expect(idle, 'while keeping the password check distinct').toMatch(/partial hash/i)
+    expect(idle, 'while keeping the password check distinct').toMatch(/частичному хешу/i)
   })
 
   it('says it is working rather than showing an empty list', () => {
@@ -88,7 +102,7 @@ describe('before and during', () => {
 describe('when it fails', () => {
   it('never lets a failure read as good news', () => {
     const el = render({ kind: 'error', message: 'the network is unavailable' })
-    expect(role(el, 'error-note')?.textContent).toMatch(/not a statement that nothing has leaked/i)
+    expect(role(el, 'error-note')?.textContent).toMatch(/не утверждение, что ничего не утекло/i)
     expect(role(el, 'total')).toBeNull()
   })
 })
@@ -138,7 +152,7 @@ describe('the two piles, and what each is for', () => {
   it('says why the urgent pile is urgent', () => {
     const inventory = mergeLeaks([{ name: 'Cavalier', answered: true, leaks: [infection] }])
     const el = render({ kind: 'ready', inventory, now: NOW })
-    expect(role(el, 'group-why')?.textContent).toMatch(/session cookies/i)
+    expect(role(el, 'group-why')?.textContent).toMatch(/сессионные куки/i)
   })
 })
 
@@ -160,7 +174,7 @@ describe('the repair each entry offers', () => {
     const inventory = mergeLeaks([{ name: 'HIBP', answered: true, leaks: [LEAK] }])
     const el = render({ kind: 'ready', inventory, now: NOW })
     expect(role(el, 'change-password')).toBeNull()
-    expect(role(el, 'no-domain')?.textContent).toMatch(/nowhere to send you/i)
+    expect(role(el, 'no-domain')?.textContent).toMatch(/отправить вас некуда/i)
   })
 
   it('offers no reuse check, because nothing records what would answer it', () => {
@@ -175,7 +189,7 @@ describe('the repair each entry offers', () => {
   it('calls the resolve control what the screen record calls it', () => {
     const inventory = mergeLeaks([{ name: 'HIBP', answered: true, leaks: [LEAK] }])
     const el = render({ kind: 'ready', inventory, now: NOW })
-    expect(role(el, 'resolve')?.textContent).toBe('Mark resolved')
+    expect(role(el, 'resolve')?.textContent).toBe('Отметить решённым')
   })
 })
 

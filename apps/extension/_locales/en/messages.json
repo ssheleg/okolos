@@ -477,5 +477,99 @@
   },
   "extensionsNothingOfNote": {
     "message": "Nothing of note was found in the text of this file."
+  },
+  "leaksTitle": {
+    "message": "What has leaked"
+  },
+  "leaksIdle": {
+    "message": "Nothing has been looked up yet. Checking sends your address to the sources named below — they answer to nothing less. Your passwords are never sent: that check uses a partial hash and is separate."
+  },
+  "leaksCheck": {
+    "message": "Check now"
+  },
+  "leaksChecking": {
+    "message": "Asking the sources…"
+  },
+  "leaksErrorPrefix": {
+    "message": "The check could not be completed: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "leaksErrorNote": {
+    "message": "This is not a statement that nothing has leaked."
+  },
+  "leaksRetry": {
+    "message": "Try again"
+  },
+  "leaksNone": {
+    "message": "No breaches were found for this address."
+  },
+  "leaksFound": {
+    "message": "Breaches found: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "leaksCheckAgain": {
+    "message": "Check again"
+  },
+  "leaksExposed": {
+    "message": "Exposed: $CLASSES$",
+    "placeholders": {
+      "classes": {
+        "content": "$1"
+      }
+    }
+  },
+  "leaksClassesUnknown": {
+    "message": "not stated by the source"
+  },
+  "leaksNoDomain": {
+    "message": "This source did not say which site it was, so there is nowhere to send you."
+  },
+  "leaksAttribution": {
+    "message": "Breach data from Have I Been Pwned, used under CC BY 4.0."
+  },
+  "leaksMarkResolved": {
+    "message": "Mark resolved"
+  },
+  "leaksGroupFreshTitle": {
+    "message": "Recent — a machine was infected"
+  },
+  "leaksGroupFreshWhy": {
+    "message": "Everything stored in that browser went at once, including session cookies that keep working after a password change. Sign out of your sessions as well as changing the password."
+  },
+  "leaksGroupOlderTitle": {
+    "message": "Older breaches"
+  },
+  "leaksGroupOlderWhy": {
+    "message": "A service you used was breached. Change the password there, and anywhere you reused it."
+  },
+  "leaksCoverage": {
+    "message": "Checked against $SOURCES$.",
+    "placeholders": {
+      "sources": {
+        "content": "$1"
+      }
+    }
+  },
+  "leaksCoverageIncomplete": {
+    "message": "Checked against $ANSWERED$. $SILENT$ could not be reached, so this list may be incomplete.",
+    "placeholders": {
+      "answered": {
+        "content": "$1"
+      },
+      "silent": {
+        "content": "$2"
+      }
+    }
+  },
+  "leaksCoverageNone": {
+    "message": "No sources answered, so nothing was checked."
   }
 }

@@ -46,8 +46,10 @@ describe('the two piles', () => {
     // The response differs: cookies survive a password change. A date-sorted
     // list makes an infection look like a slightly newer breach.
     const groups = groupLeaks([leak({ name: 'Infostealer infection', occurredAt: '2026-07-20' })], NOW)
-    expect(groups[0]?.why).toMatch(/session cookies/i)
-    expect(groups[0]?.why).toMatch(/sign out/i)
+    // The key, not the sentence: the wording lives in `_locales` now, and the
+    // catalogue gate is what proves it says something.
+    expect(groups[0]?.whyKey).toBe('leaksGroupFreshWhy')
+    expect(groups[0]?.titleKey).toBe('leaksGroupFreshTitle')
   })
 
   it('treats an old infection as history', () => {

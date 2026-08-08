@@ -19,7 +19,7 @@ describe('what the number counts', () => {
   it('states the sources behind it when they all answered', () => {
     const inventory = mergeLeaks([answered('HIBP', [leak()]), answered('Cavalier', [])])
     expect(inventory.complete).toBe(true)
-    expect(inventory.coverage).toContain('HIBP and Cavalier')
+    expect(inventory.sources.map((source) => source.name)).toEqual(['HIBP', 'Cavalier'])
   })
 
   it('says the list may be incomplete when one source went quiet', () => {
@@ -30,8 +30,11 @@ describe('what the number counts', () => {
       silent('Cavalier', 'the request timed out'),
     ])
     expect(inventory.complete).toBe(false)
-    expect(inventory.coverage).toMatch(/may be incomplete/i)
-    expect(inventory.coverage).toContain('Cavalier')
+    // The facts the screen composes its sentence from; the sentence itself is
+    // no longer built in a core package.
+    expect(inventory.sources.filter((source) => !source.answered).map((s) => s.name)).toEqual([
+      'Cavalier',
+    ])
   })
 
   it('keeps the reason each source gave', () => {
@@ -43,7 +46,7 @@ describe('what the number counts', () => {
     const inventory = mergeLeaks([silent('HIBP', 'offline'), silent('Cavalier', 'offline')])
     expect(inventory.leaks).toEqual([])
     expect(inventory.complete).toBe(false)
-    expect(inventory.coverage).toMatch(/no sources/i)
+    expect(inventory.sources.every((source) => !source.answered)).toBe(true)
   })
 })
 

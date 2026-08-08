@@ -409,7 +409,6 @@ async function handleLeakCheck(payload: { address: string }) {
     leaks: inventory.leaks.map((leak) => ({ ...leak, classes: [...leak.classes] })),
     sources: inventory.sources.map((source) => ({ ...source })),
     complete: inventory.complete,
-    coverage: inventory.coverage,
   }
 }
 

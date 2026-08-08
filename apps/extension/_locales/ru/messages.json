@@ -477,5 +477,99 @@
   },
   "extensionsNothingOfNote": {
     "message": "В тексте этого файла ничего примечательного не нашлось."
+  },
+  "leaksTitle": {
+    "message": "Что утекло"
+  },
+  "leaksIdle": {
+    "message": "Пока ничего не проверялось. Проверка отправит ваш адрес источникам, названным ниже, — иначе они не ответят. Пароли не отправляются никогда: та проверка идёт по частичному хешу и отделена от этой."
+  },
+  "leaksCheck": {
+    "message": "Проверить"
+  },
+  "leaksChecking": {
+    "message": "Источники опрашиваются…"
+  },
+  "leaksErrorPrefix": {
+    "message": "Проверку не удалось завершить: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "leaksErrorNote": {
+    "message": "Это не утверждение, что ничего не утекло."
+  },
+  "leaksRetry": {
+    "message": "Попробовать снова"
+  },
+  "leaksNone": {
+    "message": "Для этого адреса утечек не найдено."
+  },
+  "leaksFound": {
+    "message": "Найдено утечек: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "leaksCheckAgain": {
+    "message": "Проверить снова"
+  },
+  "leaksExposed": {
+    "message": "Раскрыто: $CLASSES$",
+    "placeholders": {
+      "classes": {
+        "content": "$1"
+      }
+    }
+  },
+  "leaksClassesUnknown": {
+    "message": "источник не указал"
+  },
+  "leaksNoDomain": {
+    "message": "Источник не назвал сайт, поэтому отправить вас некуда."
+  },
+  "leaksAttribution": {
+    "message": "Данные об утечках — Have I Been Pwned, по лицензии CC BY 4.0."
+  },
+  "leaksMarkResolved": {
+    "message": "Отметить решённым"
+  },
+  "leaksGroupFreshTitle": {
+    "message": "Недавнее — устройство было заражено"
+  },
+  "leaksGroupFreshWhy": {
+    "message": "Всё, что хранилось в том браузере, ушло разом, включая сессионные куки: они продолжают работать и после смены пароля. Завершите сессии, а не только смените пароль."
+  },
+  "leaksGroupOlderTitle": {
+    "message": "Более старые утечки"
+  },
+  "leaksGroupOlderWhy": {
+    "message": "Сервис, которым вы пользовались, был взломан. Смените пароль там и везде, где вы его повторили."
+  },
+  "leaksCoverage": {
+    "message": "Проверено по: $SOURCES$.",
+    "placeholders": {
+      "sources": {
+        "content": "$1"
+      }
+    }
+  },
+  "leaksCoverageIncomplete": {
+    "message": "Проверено по: $ANSWERED$. Не удалось обратиться к: $SILENT$, поэтому список может быть неполным.",
+    "placeholders": {
+      "answered": {
+        "content": "$1"
+      },
+      "silent": {
+        "content": "$2"
+      }
+    }
+  },
+  "leaksCoverageNone": {
+    "message": "Ни один источник не ответил, поэтому проверка не состоялась."
   }
 }

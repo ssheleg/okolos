@@ -4,6 +4,17 @@ import type { GateChoice, GateDecision, UnresolvedFinding } from '@okolos/core-g
 
 import { AgentGate, type GateEnvironment } from './agent-gate.js'
 
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fromCatalogue, useResolver, type Catalogue } from '@okolos/i18n'
+
+/** The shipped Russian catalogue: `default_locale` is `ru`, and a fake would let a missing key pass. */
+const CATALOGUE = JSON.parse(
+  readFileSync(path.resolve(import.meta.dirname, '../../_locales/ru/messages.json'), 'utf8'),
+) as Catalogue
+
+useResolver(fromCatalogue(CATALOGUE))
+
 const FINDING: UnresolvedFinding = { id: 'f1', summary: 'Hidden instruction on this page' }
 
 interface Harness {

@@ -363,10 +363,7 @@ async function auditDeps() {
           kind: 'error',
           detail: {
             reason: what,
-            explain:
-              what === 'swept-to-make-room'
-                ? 'Storage was full, so records past their retention window were deleted to make room for the audit log.'
-                : 'Storage is full and could not be cleared. Nothing will be sent while the audit log cannot be written — that is the guarantee working, not a fault to ignore.',
+            explainKey: STORAGE_KEY[what] ?? 'logStorageFull',
           },
         })
         .catch(() => {
@@ -549,11 +546,25 @@ async function siteFacts(payload: { host: string }): Promise<{
   }
 }
 
+/** What a full-storage sweep is recorded as. `full` is the fallback, so the
+ * lookup always resolves and the type stays a string. */
+const STORAGE_KEY: Record<string, string> = {
+  'swept-to-make-room': 'logSweptToMakeRoom',
+  full: 'logStorageFull',
+}
+
+/** What each page trap is recorded as. `generic` covers one we cannot name. */
+const TRAP_KEY: Record<string, string> = {
+  clickfix: 'logTrapClickfix',
+  techsupport: 'logTrapTechsupport',
+  generic: 'logTrapGeneric',
+}
+
 async function journalTrap(payload: { kind: string; signals: string }): Promise<{ ok: true }> {
-  const wording: Record<string, string> = {
-    clickfix: 'A page copied a command and asked you to run it outside the browser.',
-    techsupport: 'A page claimed your computer was locked and gave a number to call.',
-  }
+  // Table, not a ternary, because `tools/locales.test.ts` finds the keys a
+  // build asks for by reading `t('…')`, `*_KEY` tables and `…Key:` fields — and
+  // deliberately nothing looser, since a looser reader keeps dead messages
+  // alive. Written any other way these five keys read as translated-and-unused.
   try {
     const db = await openDb()
     const now = new Date().toISOString()
@@ -561,7 +572,7 @@ async function journalTrap(payload: { kind: string; signals: string }): Promise<
       id: `trap:${payload.kind}:${now}`,
       createdAt: now,
       kind: 'verdict',
-      detail: { explain: wording[payload.kind] ?? 'A page trap was detected.', signals: payload.signals },
+      detail: { explainKey: TRAP_KEY[payload.kind] ?? 'logTrapGeneric', signals: payload.signals },
     })
   } catch (cause) {
     console.warn('okolos: could not journal a page trap', cause)

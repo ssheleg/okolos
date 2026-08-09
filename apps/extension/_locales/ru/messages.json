@@ -446,11 +446,50 @@
   "gateBlock": {
     "message": "Заблокировать"
   },
+  "gateDownloadFile": {
+    "message": "Скачивание файла"
+  },
   "gateFindingUnknown": {
     "message": "На этой странице есть неразобранная находка, которую не удалось описать."
   },
+  "gateFollowLink": {
+    "message": "Переход по ссылке на этой странице"
+  },
+  "gateFormNamed": {
+    "message": "форму «$NAME$»",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "gateFormOnPage": {
+    "message": "форму на этой странице"
+  },
+  "gateFormSubmission": {
+    "message": "Отправка формы"
+  },
+  "gateFormWithPassword": {
+    "message": "форму с паролем"
+  },
+  "gateOpenTarget": {
+    "message": "Открыть $TARGET$",
+    "placeholders": {
+      "target": {
+        "content": "$1"
+      }
+    }
+  },
   "gateShow": {
     "message": "Показать инструкцию"
+  },
+  "gateSubmitForm": {
+    "message": "Отправить $WHAT$",
+    "placeholders": {
+      "what": {
+        "content": "$1"
+      }
+    }
   },
   "gateTarget": {
     "message": "Где: $TARGET$",
@@ -722,6 +761,21 @@
         "content": "$2"
       }
     }
+  },
+  "logStorageFull": {
+    "message": "Хранилище переполнено и очистить его не удалось. Пока журнал отправок не записывается, ничего не отправляется — это работает гарантия, а не сбой, который можно не заметить."
+  },
+  "logSweptToMakeRoom": {
+    "message": "Хранилище было переполнено, поэтому записи старше срока хранения удалены, чтобы освободить место под журнал отправок."
+  },
+  "logTrapClickfix": {
+    "message": "Страница скопировала команду и попросила выполнить её вне браузера."
+  },
+  "logTrapGeneric": {
+    "message": "Обнаружена ловушка на странице."
+  },
+  "logTrapTechsupport": {
+    "message": "Страница заявила, что компьютер заблокирован, и дала номер для звонка."
   },
   "logTrustRevoked": {
     "message": "Вы перестали доверять $DOMAIN$; проверки снова применяются к нему.",

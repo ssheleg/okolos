@@ -1,3 +1,5 @@
+
+import { t } from '@okolos/i18n'
 import { assessAction, resolveGate, type AgentAction, type GateChoice, type GateDecision, type UnresolvedFinding } from '@okolos/core-gate'
 
 /**
@@ -129,12 +131,12 @@ export class AgentGate {
     if (event.type === 'submit') {
       const form = event.target
       if (!(form instanceof HTMLFormElement)) {
-        return { id, kind: 'unknown', description: 'A form submission', humanGesture, automated }
+        return { id, kind: 'unknown', description: t('gateFormSubmission'), humanGesture, automated }
       }
       return {
         id,
         kind: 'form-submit',
-        description: `Submit ${describeForm(form)}`,
+        description: t('gateSubmitForm', describeForm(form)),
         ...withTarget(safeUrl(form.action)),
         humanGesture,
         automated,
@@ -150,11 +152,11 @@ export class AgentGate {
       if (!target) {
         // A `javascript:` href, or something that will not parse. We can see
         // that a script clicked it and not where it goes.
-        return { id, kind: 'unknown', description: 'Follow a link on this page', humanGesture, automated }
+        return { id, kind: 'unknown', description: t('gateFollowLink'), humanGesture, automated }
       }
       return anchor.hasAttribute('download')
-        ? { id, kind: 'download', description: 'Download a file', target, humanGesture, automated }
-        : { id, kind: 'navigation', description: `Open ${target}`, target, humanGesture, automated }
+        ? { id, kind: 'download', description: t('gateDownloadFile'), target, humanGesture, automated }
+        : { id, kind: 'navigation', description: t('gateOpenTarget', target), target, humanGesture, automated }
 
     }
 
@@ -164,7 +166,7 @@ export class AgentGate {
       return {
         id,
         kind: 'form-submit',
-        description: `Submit ${describeForm(form)}`,
+        description: t('gateSubmitForm', describeForm(form)),
         ...withTarget(safeUrl(form.action)),
         humanGesture,
         automated,
@@ -185,9 +187,9 @@ function withTarget(target: string | undefined): { target?: string } {
 
 function describeForm(form: HTMLFormElement): string {
   const name = form.getAttribute('aria-label') ?? form.getAttribute('name') ?? ''
-  if (name.trim() !== '') return `the "${name.trim()}" form`
+  if (name.trim() !== '') return t('gateFormNamed', name.trim())
   const password = form.querySelector('input[type=password]')
-  return password ? 'a form containing a password' : 'a form on this page'
+  return password ? t('gateFormWithPassword') : t('gateFormOnPage')
 }
 
 /** Origin and path only: a query string can carry the very thing we protect. */

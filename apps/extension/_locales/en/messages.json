@@ -446,11 +446,50 @@
   "gateBlock": {
     "message": "Block"
   },
+  "gateDownloadFile": {
+    "message": "Download a file"
+  },
   "gateFindingUnknown": {
     "message": "This page has an unresolved finding that could not be described."
   },
+  "gateFollowLink": {
+    "message": "Follow a link on this page"
+  },
+  "gateFormNamed": {
+    "message": "the \"$NAME$\" form",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "gateFormOnPage": {
+    "message": "a form on this page"
+  },
+  "gateFormSubmission": {
+    "message": "A form submission"
+  },
+  "gateFormWithPassword": {
+    "message": "a form containing a password"
+  },
+  "gateOpenTarget": {
+    "message": "Open $TARGET$",
+    "placeholders": {
+      "target": {
+        "content": "$1"
+      }
+    }
+  },
   "gateShow": {
     "message": "Show the injection"
+  },
+  "gateSubmitForm": {
+    "message": "Submit $WHAT$",
+    "placeholders": {
+      "what": {
+        "content": "$1"
+      }
+    }
   },
   "gateTarget": {
     "message": "Where: $TARGET$",
@@ -722,6 +761,21 @@
         "content": "$2"
       }
     }
+  },
+  "logStorageFull": {
+    "message": "Storage is full and could not be cleared. Nothing will be sent while the audit log cannot be written — that is the guarantee working, not a fault to ignore."
+  },
+  "logSweptToMakeRoom": {
+    "message": "Storage was full, so records past their retention window were deleted to make room for the audit log."
+  },
+  "logTrapClickfix": {
+    "message": "A page copied a command and asked you to run it outside the browser."
+  },
+  "logTrapGeneric": {
+    "message": "A page trap was detected."
+  },
+  "logTrapTechsupport": {
+    "message": "A page claimed your computer was locked and gave a number to call."
   },
   "logTrustRevoked": {
     "message": "You stopped trusting $DOMAIN$; the checks apply to it again.",

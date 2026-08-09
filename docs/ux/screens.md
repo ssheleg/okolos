@@ -62,7 +62,7 @@ self-audit panel.
 ### SCR-01: First-run check
 - **Used by:** FLW-01 (all steps), FLW-14 (post-wipe return)
 - **Purpose:** deliver a real, local result within 30 seconds of install — the product's proof of value before any configuration
-- **Elements:** one-line statement of what runs locally; per-check progress list (open tabs / installed extensions / password corpus readiness); findings summary; **primary action: "See what to do first"**; secondary "Skip for now"; link "What this sends" → SCR-10
+- **Elements:** one-line statement of what runs locally; per-check progress list (open tabs / installed extensions / password corpus readiness); findings summary; **primary action: "С чего начать"**; secondary "Пока пропустить"; link "Что отправляется" → SCR-10
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|

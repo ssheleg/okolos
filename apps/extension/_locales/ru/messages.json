@@ -196,6 +196,91 @@
   "feedNamePhishing": {
     "message": "Список Okolos: фишинг"
   },
+  "firstRunCheckDownloads": {
+    "message": "Проверка загрузок"
+  },
+  "firstRunCheckDownloadsNone": {
+    "message": "этот браузер не открывает расширению загрузки"
+  },
+  "firstRunCheckDownloadsNote": {
+    "message": "выполняется до записи файла"
+  },
+  "firstRunCheckExtensions": {
+    "message": "Установленные расширения"
+  },
+  "firstRunCheckExtensionsNone": {
+    "message": "этот браузер не даёт расширению читать другие"
+  },
+  "firstRunCheckExtensionsNote": {
+    "message": "проверяются ежедневно на новые разрешения и смену издателя"
+  },
+  "firstRunCheckInjection": {
+    "message": "Поиск скрытых инструкций"
+  },
+  "firstRunCheckInjectionNote": {
+    "message": "работает на каждой открытой странице, включая фреймы"
+  },
+  "firstRunCheckPassword": {
+    "message": "Проверка утёкших паролей"
+  },
+  "firstRunCheckPasswordNote": {
+    "message": "срабатывает при отправке; самые частые отвечаются без единого запроса"
+  },
+  "firstRunCheckStorage": {
+    "message": "Локальное хранилище"
+  },
+  "firstRunCheckStorageNote": {
+    "message": "доступно"
+  },
+  "firstRunContinue": {
+    "message": "С чего начать"
+  },
+  "firstRunFound": {
+    "message": "Требует внимания: $COUNT$.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "firstRunHeading": {
+    "message": "Okolos включён"
+  },
+  "firstRunIntro": {
+    "message": "Всё, что ниже, выполняется на этом устройстве. О страницах, которые вы открываете, никуда ничего не отправляется — и это можно проверить в любой момент."
+  },
+  "firstRunNothingFound": {
+    "message": "Ничего не найдено — проверок выполнено: $COUNT$.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "firstRunPartial": {
+    "message": "Прогон неполный: отмеченные выше проверки не завершились."
+  },
+  "firstRunRetry": {
+    "message": "Проверить ещё раз"
+  },
+  "firstRunSkip": {
+    "message": "Пока пропустить"
+  },
+  "firstRunStateFailed": {
+    "message": "не удалось"
+  },
+  "firstRunStateOk": {
+    "message": "готово"
+  },
+  "firstRunStateRunning": {
+    "message": "идёт"
+  },
+  "firstRunStateUnavailable": {
+    "message": "пока недоступно"
+  },
+  "firstRunWhatSends": {
+    "message": "Что отправляется"
+  },
   "gateAction": {
     "message": "Попытка: $ACTION$",
     "placeholders": {

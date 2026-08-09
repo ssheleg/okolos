@@ -9,6 +9,8 @@
  * mistake the incumbents make with "203 threats blocked".
  */
 
+import { t } from '@okolos/i18n'
+
 export type CheckState = 'running' | 'ok' | 'unavailable' | 'failed'
 
 export interface CheckRow {
@@ -30,11 +32,16 @@ export interface FirstRunHandlers {
   readonly onOpenAudit: () => void
 }
 
-const STATE_WORDING: Record<CheckState, string> = {
-  running: 'checking',
-  ok: 'done',
-  unavailable: 'not available yet',
-  failed: 'could not run',
+/**
+ * Read through the catalogue at call time, not built once at module load: a
+ * frozen table would resolve before `useResolver` had run and freeze the
+ * fallback into every screen.
+ */
+const STATE_KEY: Record<CheckState, string> = {
+  running: 'firstRunStateRunning',
+  ok: 'firstRunStateOk',
+  unavailable: 'firstRunStateUnavailable',
+  failed: 'firstRunStateFailed',
 }
 
 export function renderFirstRun(
@@ -46,7 +53,7 @@ export function renderFirstRun(
   section.setAttribute('data-role', 'first-run')
 
   const heading = doc.createElement('h1')
-  heading.textContent = 'Okolos is on'
+  heading.textContent = t('firstRunHeading')
   section.append(heading, intro(doc))
 
   const list = doc.createElement('ul')
@@ -56,16 +63,16 @@ export function renderFirstRun(
 
   const actions = doc.createElement('div')
   actions.setAttribute('data-role', 'actions')
-  const cta = button(doc, 'continue', 'See what to do first', handlers.onContinue, true)
+  const cta = button(doc, 'continue', t('firstRunContinue'), handlers.onContinue, true)
   // A primary action with nothing behind it teaches people to ignore it.
   cta.disabled = props.findings === 0
   actions.append(
     cta,
-    button(doc, 'skip', 'Skip for now', handlers.onSkip),
-    button(doc, 'what-this-sends', 'What this sends', handlers.onOpenAudit),
+    button(doc, 'skip', t('firstRunSkip'), handlers.onSkip),
+    button(doc, 'what-this-sends', t('firstRunWhatSends'), handlers.onOpenAudit),
   )
   if (props.checks.some((c) => c.state === 'failed')) {
-    actions.append(button(doc, 'retry', 'Run the checks again', handlers.onContinue))
+    actions.append(button(doc, 'retry', t('firstRunRetry'), handlers.onContinue))
   }
   section.append(actions)
 
@@ -75,9 +82,7 @@ export function renderFirstRun(
 function intro(doc: Document): HTMLParagraphElement {
   const el = doc.createElement('p')
   el.setAttribute('data-role', 'intro')
-  el.textContent =
-    'Everything below runs on this device. Nothing about the pages you visit is sent anywhere — ' +
-    'you can check that yourself at any time.'
+  el.textContent = t('firstRunIntro')
   return el
 }
 
@@ -94,7 +99,7 @@ function row(doc: Document, check: CheckRow): HTMLLIElement {
   // reader that something is happening and nothing about what.
   const state = doc.createElement('span')
   state.setAttribute('data-role', 'check-state')
-  state.textContent = STATE_WORDING[check.state]
+  state.textContent = t(STATE_KEY[check.state])
 
   const note = doc.createElement('span')
   note.setAttribute('data-role', 'check-note')
@@ -114,11 +119,11 @@ function result(doc: Document, props: FirstRunProps): HTMLParagraphElement {
   const parts: string[] = []
   parts.push(
     props.findings === 0
-      ? `Nothing found — ${ran} check${ran === 1 ? '' : 's'} ran.`
-      : `${props.findings} thing${props.findings === 1 ? '' : 's'} need your attention.`,
+      ? t('firstRunNothingFound', String(ran))
+      : t('firstRunFound', String(props.findings)),
   )
   if (incomplete) {
-    parts.push('This run was partial: the checks marked above did not complete.')
+    parts.push(t('firstRunPartial'))
   }
 
   el.textContent = parts.join(' ')

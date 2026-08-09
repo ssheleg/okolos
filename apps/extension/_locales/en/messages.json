@@ -196,6 +196,91 @@
   "feedNamePhishing": {
     "message": "Okolos phishing list"
   },
+  "firstRunCheckDownloads": {
+    "message": "Download checks"
+  },
+  "firstRunCheckDownloadsNone": {
+    "message": "this browser does not expose downloads to an extension"
+  },
+  "firstRunCheckDownloadsNote": {
+    "message": "run before the file is written"
+  },
+  "firstRunCheckExtensions": {
+    "message": "Installed extensions"
+  },
+  "firstRunCheckExtensionsNone": {
+    "message": "this browser does not let an extension read the others"
+  },
+  "firstRunCheckExtensionsNote": {
+    "message": "reviewed daily for new permissions and changes of publisher"
+  },
+  "firstRunCheckInjection": {
+    "message": "Hidden-instruction detection"
+  },
+  "firstRunCheckInjectionNote": {
+    "message": "active on every page you open, including frames"
+  },
+  "firstRunCheckPassword": {
+    "message": "Leaked-password check"
+  },
+  "firstRunCheckPasswordNote": {
+    "message": "runs on submit; the most common ones are answered without any request"
+  },
+  "firstRunCheckStorage": {
+    "message": "Local storage"
+  },
+  "firstRunCheckStorageNote": {
+    "message": "ready"
+  },
+  "firstRunContinue": {
+    "message": "See what to do first"
+  },
+  "firstRunFound": {
+    "message": "$COUNT$ things need your attention.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "firstRunHeading": {
+    "message": "Okolos is on"
+  },
+  "firstRunIntro": {
+    "message": "Everything below runs on this device. Nothing about the pages you visit is sent anywhere — you can check that yourself at any time."
+  },
+  "firstRunNothingFound": {
+    "message": "Nothing found — $COUNT$ checks ran.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "firstRunPartial": {
+    "message": "This run was partial: the checks marked above did not complete."
+  },
+  "firstRunRetry": {
+    "message": "Run the checks again"
+  },
+  "firstRunSkip": {
+    "message": "Skip for now"
+  },
+  "firstRunStateFailed": {
+    "message": "could not run"
+  },
+  "firstRunStateOk": {
+    "message": "done"
+  },
+  "firstRunStateRunning": {
+    "message": "checking"
+  },
+  "firstRunStateUnavailable": {
+    "message": "not available yet"
+  },
+  "firstRunWhatSends": {
+    "message": "What this sends"
+  },
   "gateAction": {
     "message": "Attempted: $ACTION$",
     "placeholders": {

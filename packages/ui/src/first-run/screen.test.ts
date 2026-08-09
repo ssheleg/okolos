@@ -3,6 +3,33 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { renderFirstRun, type CheckRow } from './screen.js'
 
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fromCatalogue, useResolver, type Catalogue } from '@okolos/i18n'
+
+/** The shipped Russian catalogue: `default_locale` is `ru`, and a fake would let a missing key pass. */
+const CATALOGUE = JSON.parse(
+  readFileSync(
+    path.resolve(import.meta.dirname, '../../../../apps/extension/_locales/ru/messages.json'),
+    'utf8',
+  ),
+) as Catalogue
+
+useResolver(fromCatalogue(CATALOGUE))
+
+/**
+ * The catalogue entry, or a failure that names the missing key.
+ *
+ * A test that reaches for `CATALOGUE.someKey.message` and finds `undefined`
+ * fails somewhere else entirely, on a comparison against nothing — which is
+ * the shape this project keeps catching. This says which key is absent.
+ */
+function message(key: string): string {
+  const entry = CATALOGUE[key]
+  if (!entry) throw new Error(`the shipped catalogue has no key "${key}"`)
+  return entry.message
+}
+
 const handlers = { onContinue: vi.fn(), onSkip: vi.fn(), onOpenAudit: vi.fn() }
 
 function rows(overrides: Partial<CheckRow>[] = []): CheckRow[] {
@@ -47,8 +74,16 @@ describe('the first thing a new user sees', () => {
 
   it('says plainly that nothing was found, with what was actually checked', () => {
     const el = renderFirstRun(document, { checks: rows(), findings: 0 }, handlers)
-    expect(el.querySelector('[data-role=result]')?.textContent).toContain('Nothing found')
-    expect(el.querySelector('[data-role=result]')?.textContent).toContain('2 checks ran')
+    // Against the catalogue, not against one language's wording. Pinning the
+    // English here is what made three of these tests fail the day the screen
+    // started speaking the language it ships in.
+    expect(el.querySelector('[data-role=result]')?.textContent).toContain(
+      message('firstRunNothingFound').split('$')[0]?.trim(),
+    )
+    // The count is what this line promises — that the screen says how many
+    // checks actually ran rather than implying all of them did. The number is
+    // language-independent; the sentence around it is not.
+    expect(el.querySelector('[data-role=result]')?.textContent).toContain('2')
   })
 
   it('offers the next action only when there is something to act on', () => {
@@ -58,7 +93,7 @@ describe('the first thing a new user sees', () => {
     const found = renderFirstRun(document, { checks: rows(), findings: 3 }, handlers)
     const cta = found.querySelector<HTMLButtonElement>('[data-role=continue]')
     expect(cta?.disabled).toBe(false)
-    expect(cta?.textContent).toContain('See what to do first')
+    expect(cta?.textContent).toBe(message('firstRunContinue'))
   })
 
   it('links to the audit panel before asking for any trust', () => {
@@ -94,6 +129,6 @@ describe('the first thing a new user sees', () => {
       },
       handlers,
     )
-    expect(el.querySelector('[data-role=result]')?.textContent).toContain('This run was partial')
+    expect(el.querySelector('[data-role=result]')?.textContent).toContain(message('firstRunPartial'))
   })
 })

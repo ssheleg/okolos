@@ -11,47 +11,39 @@ happens before adding.
    overwritten by a later flat-config block, a build failure reported as
    *skipped*, a performance assertion passing on a missing measurement, and an
    e2e negative case that could not distinguish a working detector from a
-   broken one. A green nobody has watched fail is not evidence.
+   broken one. A green nobody has watched fail is not evidence. And **confirm the plant actually landed,
+   on the rule you meant to test** — two wrong citation formats survived a plant
+   that never applied, and three plants against the page watcher all turned a
+   gate red by breaking the build instead of the rule.
 2. **Check the artefact, not only the source.** ESLint reads the files it is
    pointed at, and flat config *replaces* rule options rather than merging them.
    Every runtime promise gets a second check against the built bundle.
 3. **Absence of data must never read as a pass.** Assert that the measurement
    exists before comparing it to a ceiling; assert that the list was read before
    showing it as empty.
-4. **Cross-browser claims rest on tests, not on builds.** A build that compiles
-   for Firefox proved nothing: `chrome.runtime` awaited there returns
-   `undefined` and every verdict was silently dropped. Until a test runs in the
-   second browser, REQ-27-style rows are PARTIAL.
-5. **Read the gate output before pushing.** One commit went out with lint red
-   because the command was chained past its own failure.
-6. **Say what was not covered, in the same breath as what was.** Every audit
+4. **Say what was not covered, in the same breath as what was.** Every audit
    carries a Scope and limits section, and the carry-over count is printed
    beside the verdict.
-7. **A new user-facing surface joins the accessibility sweep in the same
+5. **A new user-facing surface joins the accessibility sweep in the same
    change.** Four had accumulated outside it, and the one carrying an
    unlabelled control was the newest.
-8. **A test comment that defers an assertion to a later release names the
+6. **A test comment that defers an assertion to a later release names the
    release and the requirement**, so the ledger carries the obligation. A
    promise living only in a comment is tracked by nothing — the HIBP
    attribution waited three releases in one.
-9. **A number produced by a tool is a claim about the tool** until it has been
+7. **A number produced by a tool is a claim about the tool** until it has been
    checked against the artefact. Report it as "the diagnostic says X", or
    verify it — never as "X". Reported as fact, a diagnostic's 225 dangling
    edges turned out to be zero.
-10. **Confirm a planted defect actually landed, and that it lands on the rule
-   you meant to test.** Two wrong citation formats survived a plant that never
-   applied, and the green was read as the gate working. The same mistake one
-   level deeper: a recovery clause tested with the input that recovers without
-   it reports green with the clause deleted.
-11. **A test that agrees with the code proves they agree, and nothing else.**
+8. **A test that agrees with the code proves they agree, and nothing else.**
    Four tests in one audit were holding wrong answers steady — two of them the
    same false privacy sentence, at two layers, and one misnamed so that even a
    reader who checked would look at the wrong case. Read what a test asserts
    against what the product *should* do.
-12. **A rate limit, a retry budget or a quota must defer, never drop.** Work
+9. **A rate limit, a retry budget or a quota must defer, never drop.** Work
    discarded when the budget is full is work nobody re-arms, and the last item
    of a burst is the one an attacker chooses.
-13. **A detector that reads wording reads a language, and the language is a
+10. **A detector that reads wording reads a language, and the language is a
    coverage claim.** Every text-matching detector in this codebase was written
    in English: nine injection signals, the ClickFix page pattern, the
    tech-support pattern. All of them shipped marked DONE, and for the audience
@@ -60,6 +52,15 @@ happens before adding.
    matches in its scenario's Known limit, and name the parts that have no
    language — an invisible-character class, a DOM difference, a fact about the
    connection — so nobody re-derives which is which.
+
+**Прорежено 2026-08-09, до потолка в десять.** Каждое удаление — строкой:
+
+- «Кросс-браузерные утверждения стоят на тестах, а не на сборках» — **стала
+  проверкой**: Firefox-харнесс делает 11 проверок и гоняется в CI.
+- «Читай вывод гейта перед пушем» — **стала проверкой**: `.githooks/pre-push`
+  отказывается пушить и печатает вывод упавшего гейта.
+- «Убедись, что плант приземлился» — **слита с первой**: это одна дисциплина, и
+  вторая была написана потому, что первую делали небрежно.
 
 ### 2026-08-04 — a Firefox suite that would have passed with no extension loaded
 
@@ -138,7 +139,7 @@ happens before adding.
 - **Root cause:** the assertion compared to a ceiling without first requiring a
   reading.
 - **Fix, by grade:** mechanical — both specs assert `>= 0` before comparing.
-  Standing instruction 3 generalises it.
+  the standing instruction the one about absence never reading as a pass generalises it.
 - **Catches it next time:** `e2e/budget.spec.ts`.
 
 ### 2026-08-05 — a gate that swallowed the user's own clicks
@@ -295,7 +296,7 @@ happens before adding.
 - **Fix, by grade:** an id on the input and `for` on the label, plus a unit test
   asserting the association for every step — so the next checklist cannot
   regress it silently.
-- **Standing instruction (7):** when a new user-facing surface ships, it joins
+- **the standing instruction the one about a new surface joining the accessibility sweep:** when a new user-facing surface ships, it joins
   the axe sweep in the same change. Four surfaces had accumulated outside it,
   and the one with the defect was the one written most recently.
 
@@ -314,7 +315,7 @@ happens before adding.
   someone else's data — and on the password banner. The licensing gate now
   asserts the UI source, and an e2e asserts it on screen. Removing it turns
   three tests red.
-- **Standing instruction (8):** a test comment that defers an assertion to a
+- **the standing instruction the one about a deferred assertion naming its release:** a test comment that defers an assertion to a
   later release names the release *and* the requirement, so the ledger row
   carries the obligation. A promise living only in a comment is not tracked by
   anything.
@@ -736,7 +737,7 @@ happens before adding.
   repository gate: `graphify-out/` is gitignored and absent on a fresh clone, so
   a test asserting on it would fail for everyone but me. It is a command to run
   after rebuilding.
-- **Standing instruction (9):** a number produced by a tool is a claim about the
+- **the standing instruction the one about a number being a claim about the tool that produced it:** a number produced by a tool is a claim about the
   tool until it has been checked against the artefact. Report it as "the
   diagnostic says X" or verify it — never as "X".
 
@@ -813,7 +814,7 @@ happens before adding.
 - **Root cause:** the failure was mine too — a coverage line I had just written
   cited `packages/net/src/request.ts:sendRequest`, and the export is `request`.
   The citation gate built earlier in the same audit caught it correctly.
-- **Prevention:** none new. Standing instruction 5 already says exactly this,
+- **Prevention:** none new. the standing instruction the one about reading gate output before pushing — since retired into `.githooks/pre-push` already says exactly this,
   and it did not help, because it lives in a document and the push lives in a
   shell. The honest note is that a rule read at stage 0 does not survive
   contact with a chained command; only a hook would.
@@ -839,7 +840,7 @@ happens before adding.
 - **Prevention:** `--smoke-only`, so the checks can be attacked without a
   deploy, and a runbook that records all three traps by name.
 
-- **The other half:** standing instruction 5 — read the gate output before
+- **The other half:** the standing instruction the one about reading gate output before pushing — since retired into `.githooks/pre-push` — read the gate output before
   pushing — was broken earlier the same day, and the honest note then was that
   a rule in a document cannot stop a chained shell command. `.githooks/pre-push`
   now runs lint, typecheck, unit and the UX linter and refuses the push,
@@ -880,7 +881,7 @@ happens before adding.
   element anyway; the "defect" was a delay, not a defect. Only the third
   attempt — `apply` returning zero and touching nothing — put the injected
   sentence back in the document.
-- **Prevention:** standing instruction 10 already covers confirming a plant
+- **Prevention:** the standing instruction the one about confirming a plant landed — since merged into the planting rule already covers confirming a plant
   landed. This adds the other half: confirm it landed *as the defect intended*,
   because a plant that breaks compilation or that the product routes around
   produces a red with no information in it.
@@ -938,7 +939,7 @@ reader who checks.
 "green" — the recovery clause for a stored bad version, tested with NaN, which
 recovers on its own because comparisons against NaN are false. The clause
 protects against a stored *Infinity*, where `3 <= Infinity` is true and the
-client refuses every update forever. Same shape as standing instruction 10, one
+client refuses every update forever. Same shape as the standing instruction the one about confirming a plant landed — since merged into the planting rule, one
 level deeper: confirm the plant lands, and confirm it lands *on the rule you
 think you are testing*.
 
@@ -960,7 +961,7 @@ think you are testing*.
 - **What was NOT wrong:** the credential guard, which reads facts rather than
   words — encryption, imitation, age of the domain, where the form posts. That
   is now pinned by a test, so the next sweep does not have to re-derive it.
-- **Prevention:** standing instruction 13, and a Known limit in SCN-003,
+- **Prevention:** the standing instruction the one about a detector that reads wording reading a language, and a Known limit in SCN-003,
   SCN-008 and SCN-009 naming the two languages matched and saying plainly that
   a third passes clean.
 
@@ -1043,7 +1044,7 @@ think you are testing*.
   ships in English", which would have been wrong and expensive. The built
   artefact carries `default_locale: ru` and 195 Russian keys; a real Chrome has
   220 locale packs. It is the screenshot harness that cannot render Russian,
-  not the extension that cannot speak it. Standing instruction 9 earned its
+  not the extension that cannot speak it. the standing instruction the one about a number being a claim about the tool that produced it earned its
   place again — and one level further than usual, because the misleading number
   came from the browser rather than from a diagnostic.
 - **Fix:** `pnpm screenshots` now reads `@@ui_locale`, refuses to write a single
@@ -1139,7 +1140,7 @@ think you are testing*.
   audit log's own copy does not have one: "downloading the list of known-bad
   sites", "triggered by alarm:feeds", "none contained a page address". The true
   figure at that moment was 44 in 15 files, not 15 in 10.
-- **Owned by:** me, and standing instruction 9 applies to a number my own
+- **Owned by:** me, and the standing instruction the one about a number being a claim about the tool that produced it applies to a number my own
   command produced exactly as it applies to a diagnostic's. Reported as fact
   four times, it was a claim about a regex.
 - **What made it survive:** each count was *lower* than the last, so the shape
@@ -1236,7 +1237,7 @@ think you are testing*.
   rules with the reason, the glob scans what ships, and three new rules hold the
   watcher to observing — no destination of its own, the original called with the
   arguments it was given, and no `await` between reading a call and making it.
-- **Standing instruction 10, again, and it cost a round.** The first three
+- **the standing instruction the one about confirming a plant landed — since merged into the planting rule, again, and it cost a round.** The first three
   plants all turned the gate red — on "the artefact these gates read was
   actually built", because each broke the build. A plant that fails to compile
   tests nothing. Rewritten so each compiles, each then failed its own rule by
@@ -1340,3 +1341,25 @@ think you are testing*.
   page that had become more correct — `/listed/i`, `/not listed/i`,
   `/enter a domain/i`. The same shape as the extension's own tests a few
   iterations ago, in a different app, found the same way.
+
+### 2026-08-09 — pruning the list broke the citations, which was the point
+
+- **The prune was overdue.** The list had grown to thirteen against a hard cap
+  of ten, and stage 0 of every run reads it in full: a list nobody reads to the
+  end is worse than no list, because everyone believes it is covered. Two rules
+  had **become checks** and were retired for it — cross-browser claims (the
+  Firefox harness runs eleven of them in CI) and reading gate output before
+  pushing (`.githooks/pre-push` refuses and prints the failure). A third was
+  merged rather than deleted: confirming a plant landed is the same discipline
+  as planting, and was only written separately because the first was being done
+  carelessly.
+- **Then the gate refused the prune**, correctly: entries cited "standing
+  instruction 13", and after renumbering there is no thirteen.
+- **The fault was in the citations, not the prune.** A number is a position, and
+  a position moves the moment the list changes; a name does not. Every citation
+  in this file now names the rule it means, and two of them say the rule has
+  since been retired or merged — which is more useful to a reader than a number
+  pointing at whatever now sits in that slot.
+- **The gate that caught it was written eight iterations earlier**, for the
+  opposite fault: entries citing instructions the list had never grown to
+  include. It turns out to hold both directions.

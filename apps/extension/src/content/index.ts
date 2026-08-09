@@ -141,7 +141,7 @@ function summarise(verdict: Verdict): string {
   const snippet = verdict.evidence.find((item) => item.snippet)?.snippet
   return snippet
     ? `Hidden text on this page addresses an assistant: "${snippet.slice(0, 120)}"`
-    : 'This page carries hidden text written for an AI assistant.'
+    : t('contentHiddenText')
 }
 
 function worst(verdicts: readonly Verdict[]): Verdict {
@@ -210,7 +210,7 @@ function explainRestore(outcome: { restored: number; gone: number; changed: numb
     )
   }
   const restored =
-    outcome.restored > 0 ? `${outcome.restored} restored. ` : 'Nothing could be restored. '
+    outcome.restored > 0 ? `${outcome.restored} restored. ` : t('contentNothingRestored')
   return `${restored}${parts.join('; ')}.`
 }
 

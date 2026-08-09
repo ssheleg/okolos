@@ -35,9 +35,18 @@ import { createInferenceHost } from './inference.js'
  */
 
 const platform = detectPlatform()
+
+/**
+ * The worker shows copy too — a download verdict reaches a banner within the
+ * same second — so it resolves like every other entry point. What it must not
+ * do is resolve anything it *stores*: the journal takes keys and the reader
+ * resolves them, so a record keeps meaning the same thing next month.
+ */
+useResolver((key, substitutions) => platform.message(key, substitutions))
 import { spaceAwareWrite } from './audit-space.js'
 import { createVerifier, FEED_PUBLIC_KEY, updateFeed } from './feeds.js'
 import { syncFeed } from './feed-sync.js'
+import { useResolver } from '@okolos/i18n'
 
 const FEED_ALARM = 'okolos:feeds'
 const RETENTION_ALARM = 'okolos:retention'
@@ -768,12 +777,12 @@ async function pullFeed(): Promise<void> {
         return result.accepted ? { accepted: true } : { accepted: false, reason: result.explain }
       },
       refresh: () => refreshBlockRules(),
-      note: async (explain) => {
+      note: async (explainKey, ...explainArgs) => {
         await db.put('journal', {
           id: `feed:${new Date().toISOString()}`,
           createdAt: new Date().toISOString(),
           kind: 'error',
-          detail: { reason: 'feed-sync', explain },
+          detail: { reason: 'feed-sync', explainKey, explainArgs },
         })
       },
     })

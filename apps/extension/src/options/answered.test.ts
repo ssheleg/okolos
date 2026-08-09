@@ -2,6 +2,17 @@ import { describe, expect, it } from 'vitest'
 
 import { answered, NoAnswerError } from './answered.js'
 
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fromCatalogue, useResolver, type Catalogue } from '@okolos/i18n'
+
+/** The shipped Russian catalogue: `default_locale` is `ru`, and a fake would let a missing key pass. */
+const CATALOGUE = JSON.parse(
+  readFileSync(path.resolve(import.meta.dirname, '../../_locales/ru/messages.json'), 'utf8'),
+) as Catalogue
+
+useResolver(fromCatalogue(CATALOGUE))
+
 describe('an answer that never came', () => {
   it('is a failure, not an empty result', () => {
     // `?? []` here is how "we could not ask" becomes "you trust nothing" —
@@ -11,6 +22,10 @@ describe('an answer that never came', () => {
   })
 
   it('names what was being asked, so the message means something', () => {
+    // The subject travels through, whatever language the sentence around it is
+    // in. Matching the English wording here would have made this test fail the
+    // day the message moved into the catalogue — on a product that had become
+    // more correct, not less.
     expect(() => answered(null, 'the trusted list')).toThrow(/trusted list/)
   })
 

@@ -180,6 +180,9 @@
       }
     }
   },
+  "blockThisSite": {
+    "message": "страница на этом сайте"
+  },
   "blockTitle": {
     "message": "Эта страница заблокирована до загрузки"
   },
@@ -237,6 +240,12 @@
   "confidenceMedium": {
     "message": "средняя"
   },
+  "contentHiddenText": {
+    "message": "На этой странице есть скрытый текст, написанный для ИИ-ассистента."
+  },
+  "contentNothingRestored": {
+    "message": "Восстановить ничего не удалось. "
+  },
   "dataConfirmNo": {
     "message": "Оставить данные"
   },
@@ -258,6 +267,21 @@
   "dataIntro": {
     "message": "Всё хранится на этом устройстве. Заберите копию или удалите целиком — аккаунт не нужен ни для того, ни для другого."
   },
+  "dataKindAudit": {
+    "message": "журнал отправленного наружу"
+  },
+  "dataKindExceptions": {
+    "message": "доверенные домены и исключения правил"
+  },
+  "dataKindFindings": {
+    "message": "находки и их доказательства"
+  },
+  "dataKindJournal": {
+    "message": "журнал произошедшего"
+  },
+  "dataKindSettings": {
+    "message": "настройки"
+  },
   "dataWipe": {
     "message": "Удалить все данные"
   },
@@ -271,6 +295,43 @@
   },
   "dataWipeRetry": {
     "message": "Попробовать ещё раз"
+  },
+  "downloadFeedUnread": {
+    "message": "списки заблокированных не прочитались, поэтому источник не проверен"
+  },
+  "downloadListedBy": {
+    "message": "Адрес, с которого он пришёл, есть в списке $FEED$ (запись от $DATE$).",
+    "placeholders": {
+      "feed": {
+        "content": "$1"
+      },
+      "date": {
+        "content": "$2"
+      }
+    }
+  },
+  "downloadNoFilename": {
+    "message": "браузер не сообщил имя файла"
+  },
+  "downloadNotWritten": {
+    "message": "файл ещё не записан, поэтому хешировать нечего"
+  },
+  "errCheckEmpty": {
+    "message": "проверка ничего не вернула"
+  },
+  "errNoAnswer": {
+    "message": "фон не ответил"
+  },
+  "errNoAnswerFor": {
+    "message": "фон не ответил про $WHAT$",
+    "placeholders": {
+      "what": {
+        "content": "$1"
+      }
+    }
+  },
+  "errTrustedList": {
+    "message": "список доверенных"
   },
   "extensionsAlreadyOff": {
     "message": "Уже отключено."
@@ -341,8 +402,35 @@
   "extensionsUnknownReason": {
     "message": "причина неизвестна"
   },
+  "feedFetchFailed": {
+    "message": "Список блокировок не скачался: $CAUSE$. Остаётся тот, что уже действует.",
+    "placeholders": {
+      "cause": {
+        "content": "$1"
+      }
+    }
+  },
+  "feedFetchStatus": {
+    "message": "Список блокировок не скачался: сервис ответил $STATUS$. Остаётся тот, что уже действует.",
+    "placeholders": {
+      "status": {
+        "content": "$1"
+      }
+    }
+  },
   "feedNamePhishing": {
     "message": "Список Okolos: фишинг"
+  },
+  "feedNotVerified": {
+    "message": "подпись не сошлась"
+  },
+  "feedRefused": {
+    "message": "Обновление списка блокировок отклонено: $WHY$. Остаётся тот, что уже действует.",
+    "placeholders": {
+      "why": {
+        "content": "$1"
+      }
+    }
   },
   "firstRunCheckDownloads": {
     "message": "Проверка загрузок"
@@ -499,8 +587,22 @@
       }
     }
   },
+  "gateTimeoutNote": {
+    "message": "Если не ответить за $SECONDS$ с, действие будет заблокировано.",
+    "placeholders": {
+      "seconds": {
+        "content": "$1"
+      }
+    }
+  },
   "gateTitle": {
     "message": "Что-то попыталось действовать на этой странице"
+  },
+  "inferenceNoModel": {
+    "message": "Хост классификатора сообщил, что модели нет."
+  },
+  "inferenceNotReady": {
+    "message": "Классификатор не подготовлен."
   },
   "inspectorEmpty": {
     "message": "Страница изменилась после находки, и доказательства больше нет."
@@ -837,6 +939,14 @@
   "popupJournal": {
     "message": "Журнал"
   },
+  "popupLocalUnread": {
+    "message": "Локальные данные не прочитались: $CAUSE$",
+    "placeholders": {
+      "cause": {
+        "content": "$1"
+      }
+    }
+  },
   "popupPageClean": {
     "message": "Скрытых инструкций на этой странице не найдено."
   },
@@ -896,6 +1006,9 @@
   },
   "queueOpen": {
     "message": "Открыть"
+  },
+  "queueSeverityOnly": {
+    "message": "Порядок только по серьёзности — остальных данных для ранжирования нет."
   },
   "recoveryAllDone": {
     "message": "Все шаги сделаны."

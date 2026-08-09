@@ -52,8 +52,18 @@ function keysAsked(): Set<string> {
       } else if (name.endsWith('.ts') && !name.endsWith('.test.ts')) {
         const text = readFileSync(p, 'utf8')
         for (const m of text.matchAll(/\bt\(\s*'([a-zA-Z0-9_.]+)'/g)) keys.add(m[1] as string)
-        for (const block of text.matchAll(/const \w+_KEY: Record<[^>]*> = \{([\s\S]*?)\n\}/g)) {
+        for (const block of text.matchAll(/const \w+_KEY(?::[^=]*)? = \{([\s\S]*?)\n\}/g)) {
           for (const m of (block[1] as string).matchAll(/:\s*'([a-zA-Z0-9_.]+)'/g)) {
+            keys.add(m[1] as string)
+          }
+        }
+        // A `*_KEY` array as well as a `*_KEY` record. An ordered list of keys
+        // is what a confirmation dialog naming five categories needs, and it is
+        // exactly as explicit as the record form: the discipline that keeps a
+        // dead message from staying alive is the name ending in `_KEY`, not the
+        // bracket that follows it.
+        for (const block of text.matchAll(/const \w+_KEY(?::[^=]*)? = \[([\s\S]*?)\n\]/g)) {
+          for (const m of (block[1] as string).matchAll(/'([a-zA-Z0-9_.]+)'/g)) {
             keys.add(m[1] as string)
           }
         }

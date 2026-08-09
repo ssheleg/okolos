@@ -59,8 +59,17 @@ describe('wiping asks once, and says what it will take', () => {
     const { el } = mount()
     el.querySelector<HTMLButtonElement>('[data-role=wipe]')?.click()
     const confirm = el.querySelector('[data-role=confirm]')?.textContent ?? ''
-    for (const category of ['findings', 'journal', 'outbound log', 'trusted domains', 'settings']) {
-      expect(confirm).toContain(category)
+    // The five categories, by key. Listing the English words here pinned the
+    // test to one language and to the exact nouns, neither of which is what
+    // this control promises: it promises to name everything it will delete.
+    for (const key of [
+      'dataKindFindings',
+      'dataKindJournal',
+      'dataKindAudit',
+      'dataKindExceptions',
+      'dataKindSettings',
+    ]) {
+      expect(confirm).toContain(message(key))
     }
   })
 

@@ -1,4 +1,4 @@
-import { useResolver } from '@okolos/i18n'
+import { t, useResolver } from '@okolos/i18n'
 import { detectPlatform } from '@okolos/platform'
 import { renderInterstitial } from '@okolos/ui'
 import '../pages.css'
@@ -43,7 +43,7 @@ function paint(context: BlockContext | null): void {
     renderInterstitial(
       document,
       {
-        url: context?.url ?? 'a page on this site',
+        url: context?.url ?? t('blockThisSite'),
         feed: context?.feed ?? null,
         entryDate: context?.entryDate ?? null,
         feedAgeDays: context?.feedAgeDays ?? null,

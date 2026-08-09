@@ -23,12 +23,12 @@ export interface DataControlsHandlers {
 }
 
 /** What the confirmation lists, in the user's words rather than store names. */
-const CATEGORIES = [
-  'findings and their evidence',
-  'the journal of what happened',
-  'the outbound log of what was sent',
-  'trusted domains and rule exceptions',
-  'settings',
+const CATEGORY_KEY = [
+  'dataKindFindings',
+  'dataKindJournal',
+  'dataKindAudit',
+  'dataKindExceptions',
+  'dataKindSettings',
 ] as const
 
 export function renderDataControls(doc: Document, handlers: DataControlsHandlers): HTMLElement {
@@ -62,9 +62,9 @@ export function renderDataControls(doc: Document, handlers: DataControlsHandlers
     confirm.setAttribute('role', 'alertdialog')
 
     const list = doc.createElement('ul')
-    for (const category of CATEGORIES) {
+    for (const key of CATEGORY_KEY) {
       const item = doc.createElement('li')
-      item.textContent = category
+      item.textContent = t(key)
       list.append(item)
     }
 

@@ -3,6 +3,24 @@ import type { FeedSnapshot } from '@okolos/core-feeds'
 
 import { handleDownload, type DownloadDeps, type DownloadItem } from './downloads.js'
 
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fromCatalogue, useResolver, type Catalogue } from '@okolos/i18n'
+
+/** The shipped Russian catalogue: `default_locale` is `ru`, and a fake would let a missing key pass. */
+const CATALOGUE = JSON.parse(
+  readFileSync(path.resolve(import.meta.dirname, '../../_locales/ru/messages.json'), 'utf8'),
+) as Catalogue
+
+useResolver(fromCatalogue(CATALOGUE))
+
+/** The entry, or a failure that names the key rather than comparing to undefined. */
+function message(key: string): string {
+  const entry = CATALOGUE[key]
+  if (!entry) throw new Error(`the shipped catalogue has no key "${key}"`)
+  return entry.message
+}
+
 const FEED: FeedSnapshot = {
   name: 'URLhaus',
   version: 4,
@@ -56,7 +74,7 @@ describe('the check that can never run here', () => {
     const verdict = await handleDownload(item(), deps())
     expect(verdict.skipped).toContainEqual({
       check: 'hash',
-      why: 'the file has not been written yet, so there are no bytes to hash',
+      why: message('downloadNotWritten'),
     })
   })
 

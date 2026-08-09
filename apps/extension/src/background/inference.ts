@@ -1,3 +1,5 @@
+
+import { t } from '@okolos/i18n'
 import { ClassifierSession, type InferenceRuntime } from '@okolos/model'
 import type { InferenceHost } from '@okolos/core-injection'
 import type { InferenceHostKind } from '@okolos/platform'
@@ -86,10 +88,10 @@ export function createInferenceHost(deps: InferenceDeps): PreparedInference {
       if (session) return session.score(text)
       if (remote) {
         const value = await remote(text)
-        if (value === null) throw new Error('The classifier host reported no model.')
+        if (value === null) throw new Error(t('inferenceNoModel'))
         return value
       }
-      throw new Error('The classifier is not prepared.')
+      throw new Error(t('inferenceNotReady'))
     },
   }
 }

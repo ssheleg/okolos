@@ -1178,3 +1178,34 @@ think you are testing*.
 - **No migration, deliberately**, following the journal's note: guessing which
   key an old English sentence came from is how a record stops being evidence.
   Rows written before today keep their sentence and are shown as written.
+
+### 2026-08-09 — the gate that kept refusing me, and was right five times
+
+- **Symptom:** finishing the localisation meant `tools/locales.test.ts` failing
+  five separate times with "translated and never shown" — five keys I had just
+  written and wired.
+- **Root cause, each time mine:** it finds the keys a build asks for by reading
+  `t('…')`, `*_KEY` tables and `…Key:` fields, and deliberately nothing looser,
+  because a looser reader keeps dead messages alive. I wrote, in order: a
+  ternary, a table named `key`, a table with a type intersection
+  (`Record<…> & {…} = {` is not `Record<…> = {`), a `*_KEY` **array** where it
+  only read records, and three keys handed to a function as bare positional
+  arguments.
+- **The rule that held:** widen the gate only where the discipline survives.
+  Four of the five were fixed by writing the code the way the gate reads — a
+  `*_KEY` table with its fallback present as an entry. Two were fixed by
+  widening: `*_KEY` arrays are as explicit as `*_KEY` records, and the type
+  annotation is not what stops a dead message, the name is. Both widenings were
+  then checked with plants in each direction — an unused key and a key nobody
+  translated each still turn it red.
+- **The defect it was standing in front of:** the service worker had started
+  reaching `t()` without installing a resolver, so every download-verdict string
+  would have rendered as `[downloadFeedUnread]`. A second gate,
+  `tools/entry-resolver.test.ts`, named the entry point outright.
+- **And the rule that came out of it:** the worker resolves what it *shows* and
+  never what it *stores*. `feed-sync`'s note now hands the journal a key and its
+  arguments instead of a finished sentence — a record written in whichever
+  language was active that day has stopped being one record.
+- **The brand pack caught a word.** My translation of the feed failure used
+  «сервер»; `terminology.md` forbids it and names «сервис». Translating is
+  writing, and writing goes through the brand pack.

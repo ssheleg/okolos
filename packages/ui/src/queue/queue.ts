@@ -45,7 +45,7 @@ export function renderQueue(doc: Document, queue: Queue, handlers: QueueHandlers
       text(
         doc,
         'ranking-note',
-        'Ordered by severity alone — the rest of the ranking data is unavailable.',
+        t('queueSeverityOnly'),
       ),
     )
   }

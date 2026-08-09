@@ -57,7 +57,7 @@ export function renderPopup(
 
   if (state.kind === 'error') {
     root.append(
-      text(doc, 'error', `Local data could not be read: ${state.message}`),
+      text(doc, 'error', t('popupLocalUnread', state.message)),
       text(
         doc,
         'error-note',

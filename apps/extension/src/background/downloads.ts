@@ -1,3 +1,5 @@
+
+import { t } from '@okolos/i18n'
 import { judgeDownload, type CheckOutcome, type DownloadVerdict } from '@okolos/core-download'
 import { matchUrl, type FeedSnapshot, displayFeedNameEn } from '@okolos/core-feeds'
 
@@ -33,10 +35,10 @@ export async function handleDownload(item: DownloadItem, deps: DownloadDeps): Pr
       ? {
           ran: true,
           passed: false,
-          detail: `The address this came from is listed by ${displayFeedNameEn(feed.name) ?? feed.name} (entry from ${feed.updatedAt.slice(0, 10)}).`,
+          detail: t('downloadListedBy', displayFeedNameEn(feed.name) ?? feed.name, feed.updatedAt.slice(0, 10)),
         }
       : { ran: true, passed: true }
-    : { ran: false, why: 'the blocklists could not be read, so the source was not checked' }
+    : { ran: false, why: t('downloadFeedUnread') }
 
   const verdict = judgeDownload({
     url: item.url,
@@ -44,10 +46,10 @@ export async function handleDownload(item: DownloadItem, deps: DownloadDeps): Pr
     mimeType: item.mime,
     checks: {
       feed: feedCheck,
-      'file-type': item.filename ? { ran: true, passed: true } : { ran: false, why: 'the browser reported no filename' },
+      'file-type': item.filename ? { ran: true, passed: true } : { ran: false, why: t('downloadNoFilename') },
       hash: {
         ran: false,
-        why: 'the file has not been written yet, so there are no bytes to hash',
+        why: t('downloadNotWritten'),
       },
     },
   })

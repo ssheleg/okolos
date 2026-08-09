@@ -18,6 +18,14 @@ const CATALOGUE = JSON.parse(
 
 useResolver(fromCatalogue(CATALOGUE))
 
+/** The entry, or a failure that names the key rather than comparing to undefined. */
+function message(key: string): string {
+  const entry = CATALOGUE[key]
+  if (!entry) throw new Error(`the shipped catalogue has no key "${key}"`)
+  return entry.message
+}
+
+
 function handlers(overrides: Partial<QueueHandlers> = {}): QueueHandlers {
   return {
     onAct: vi.fn(),
@@ -74,7 +82,7 @@ describe('what the queue shows', () => {
 
   it('says when the ranking is reduced rather than presenting it as considered', () => {
     const el = render({ shown: [item()], hidden: 0, rankedBy: 'severity-only' })
-    expect(role(el, 'ranking-note')?.textContent).toMatch(/severity/i)
+    expect(role(el, 'ranking-note')?.textContent).toBe(message('queueSeverityOnly'))
   })
 })
 

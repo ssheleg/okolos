@@ -12,6 +12,7 @@ import { syncFeed, FEED_URL } from './feed-sync.js'
  */
 
 function deps(overrides: Partial<Parameters<typeof syncFeed>[0]> & { body?: unknown; status?: number; throws?: unknown } = {}) {
+  /** Key first, then its arguments — the shape the journal is handed. */
   const notes: string[] = []
   const refreshed: number[] = []
   const applied: unknown[] = []
@@ -35,8 +36,8 @@ function deps(overrides: Partial<Parameters<typeof syncFeed>[0]> & { body?: unkn
       refreshed.push(1)
       return undefined
     },
-    note: async (explain: string) => {
-      notes.push(explain)
+    note: async (explainKey: string, ...explainArgs: string[]) => {
+      notes.push([explainKey, ...explainArgs].join(' '))
     },
     ...overrides,
   }
@@ -75,7 +76,7 @@ describe('pulling the blocking feed', () => {
     const result = await syncFeed(d)
     expect(result.accepted).toBe(false)
     expect(refreshed, 'rules must not be rebuilt from a feed that was refused').toHaveLength(0)
-    expect(notes.join(' ')).toMatch(/refused|bad-signature/i)
+    expect(notes.join(' ')).toMatch(/feedRefused|bad-signature/i)
   })
 
   it('says so when the server refuses, rather than failing silently', async () => {

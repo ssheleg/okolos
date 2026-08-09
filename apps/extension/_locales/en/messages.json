@@ -180,6 +180,9 @@
       }
     }
   },
+  "blockThisSite": {
+    "message": "a page on this site"
+  },
   "blockTitle": {
     "message": "This page was blocked before it loaded"
   },
@@ -237,6 +240,12 @@
   "confidenceMedium": {
     "message": "medium"
   },
+  "contentHiddenText": {
+    "message": "This page carries hidden text written for an AI assistant."
+  },
+  "contentNothingRestored": {
+    "message": "Nothing could be restored. "
+  },
   "dataConfirmNo": {
     "message": "Keep my data"
   },
@@ -258,6 +267,21 @@
   "dataIntro": {
     "message": "Everything is stored on this device. Take a copy, or delete all of it — no account is involved either way."
   },
+  "dataKindAudit": {
+    "message": "the outbound log of what was sent"
+  },
+  "dataKindExceptions": {
+    "message": "trusted domains and rule exceptions"
+  },
+  "dataKindFindings": {
+    "message": "findings and their evidence"
+  },
+  "dataKindJournal": {
+    "message": "the journal of what happened"
+  },
+  "dataKindSettings": {
+    "message": "settings"
+  },
   "dataWipe": {
     "message": "Delete all data"
   },
@@ -271,6 +295,43 @@
   },
   "dataWipeRetry": {
     "message": "Try again"
+  },
+  "downloadFeedUnread": {
+    "message": "the blocklists could not be read, so the source was not checked"
+  },
+  "downloadListedBy": {
+    "message": "The address this came from is listed by $FEED$ (entry from $DATE$).",
+    "placeholders": {
+      "feed": {
+        "content": "$1"
+      },
+      "date": {
+        "content": "$2"
+      }
+    }
+  },
+  "downloadNoFilename": {
+    "message": "the browser reported no filename"
+  },
+  "downloadNotWritten": {
+    "message": "the file has not been written yet, so there are no bytes to hash"
+  },
+  "errCheckEmpty": {
+    "message": "the check returned nothing"
+  },
+  "errNoAnswer": {
+    "message": "the background did not answer"
+  },
+  "errNoAnswerFor": {
+    "message": "the background did not answer for $WHAT$",
+    "placeholders": {
+      "what": {
+        "content": "$1"
+      }
+    }
+  },
+  "errTrustedList": {
+    "message": "the trusted list"
   },
   "extensionsAlreadyOff": {
     "message": "Already off."
@@ -341,8 +402,35 @@
   "extensionsUnknownReason": {
     "message": "unknown reason"
   },
+  "feedFetchFailed": {
+    "message": "The blocking feed could not be fetched: $CAUSE$. The list already in force stays.",
+    "placeholders": {
+      "cause": {
+        "content": "$1"
+      }
+    }
+  },
+  "feedFetchStatus": {
+    "message": "The blocking feed could not be fetched: the service answered $STATUS$. The list already in force stays.",
+    "placeholders": {
+      "status": {
+        "content": "$1"
+      }
+    }
+  },
   "feedNamePhishing": {
     "message": "Okolos phishing list"
+  },
+  "feedNotVerified": {
+    "message": "it did not verify"
+  },
+  "feedRefused": {
+    "message": "A blocking-feed update was refused: $WHY$. The list already in force stays.",
+    "placeholders": {
+      "why": {
+        "content": "$1"
+      }
+    }
   },
   "firstRunCheckDownloads": {
     "message": "Download checks"
@@ -499,8 +587,22 @@
       }
     }
   },
+  "gateTimeoutNote": {
+    "message": "If you do not answer within $SECONDS$ seconds, the action is blocked.",
+    "placeholders": {
+      "seconds": {
+        "content": "$1"
+      }
+    }
+  },
   "gateTitle": {
     "message": "Something tried to act on this page"
+  },
+  "inferenceNoModel": {
+    "message": "The classifier host reported no model."
+  },
+  "inferenceNotReady": {
+    "message": "The classifier is not prepared."
   },
   "inspectorEmpty": {
     "message": "The page changed since this was found, so the evidence is gone."
@@ -837,6 +939,14 @@
   "popupJournal": {
     "message": "Journal"
   },
+  "popupLocalUnread": {
+    "message": "Local data could not be read: $CAUSE$",
+    "placeholders": {
+      "cause": {
+        "content": "$1"
+      }
+    }
+  },
   "popupPageClean": {
     "message": "No hidden instructions were found on this page."
   },
@@ -896,6 +1006,9 @@
   },
   "queueOpen": {
     "message": "Open"
+  },
+  "queueSeverityOnly": {
+    "message": "Ordered by severity alone — the rest of the ranking data is unavailable."
   },
   "recoveryAllDone": {
     "message": "Every step is done."

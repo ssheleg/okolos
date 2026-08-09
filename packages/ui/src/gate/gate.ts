@@ -87,11 +87,7 @@ function dialog(doc: Document, props: GateProps, handlers: GateHandlers): HTMLEl
   }
 
   el.append(
-    text(
-      doc,
-      'timeout',
-      `If you do not answer within ${props.timeoutSeconds} seconds, the action is blocked.`,
-    ),
+    text(doc, 'timeout', t('gateTimeoutNote', String(props.timeoutSeconds))),
   )
 
   // One decision per gate. A second click after the surface has been answered

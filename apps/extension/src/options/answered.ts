@@ -11,9 +11,11 @@
  * distinction is made once and in a place a test can reach.
  */
 
+import { t } from '@okolos/i18n'
+
 export class NoAnswerError extends Error {
   constructor(what: string) {
-    super(`the background did not answer for ${what}`)
+    super(t('errNoAnswerFor', what))
     this.name = 'NoAnswerError'
   }
 }

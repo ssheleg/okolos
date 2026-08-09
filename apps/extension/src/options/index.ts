@@ -124,7 +124,7 @@ function leaksSection(): HTMLElement {
                   inventory: { ...result, leaks: result.leaks },
                   now: new Date().toISOString(),
                 }
-              : { kind: 'error', message: 'the check returned nothing' }
+              : { kind: 'error', message: t('errCheckEmpty') }
           } catch (cause) {
             leaks = { kind: 'error', message: String(cause) }
           }
@@ -225,7 +225,7 @@ async function extensionsSection(): Promise<HTMLElement> {
   try {
     const result = await platform.runtime.send('extensions/state', {})
     if (!result) {
-      state = { kind: 'error', message: 'the background did not answer' }
+      state = { kind: 'error', message: t('errNoAnswer') }
     } else if (!result.supported) {
       state = {
         kind: 'unsupported',
@@ -304,7 +304,7 @@ async function trustedSection(): Promise<HTMLElement> {
   try {
     // Not `?? []`: silence is not an empty list, and the comment three lines
     // below has always said so.
-    const result = answered(await platform.runtime.send('trust/list', {}), 'the trusted list')
+    const result = answered(await platform.runtime.send('trust/list', {}), t('errTrustedList'))
     entries = result.entries.map((entry) => ({
       domain: entry.domain,
       grantedAt: entry.grantedAt,

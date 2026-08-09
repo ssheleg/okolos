@@ -1,3 +1,5 @@
+
+import { t } from '@okolos/i18n'
 import { request, type RequestDeps } from '@okolos/net'
 import type { SignedUpdate } from '@okolos/core-feeds'
 
@@ -27,9 +29,26 @@ export interface FeedSyncDeps {
   readonly apply: (signed: SignedUpdate) => Promise<{ accepted: boolean; reason?: string }>
   /** Rebuilds blocking rules from whatever is now in force. */
   readonly refresh: () => Promise<unknown>
-  /** Says what happened, in the journal a user can read. */
-  readonly note: (explain: string) => Promise<void>
+  /**
+   * Says what happened, in the journal a user can read — as a key and its
+   * arguments, never as a finished sentence. The journal is a record, and a
+   * record written in whichever language was active that day has stopped
+   * being one record.
+   */
+  readonly note: (explainKey: string, ...explainArgs: string[]) => Promise<void>
 }
+
+/**
+ * What each outcome is recorded as. A table rather than three positional
+ * strings, because `tools/locales.test.ts` reads `t('…')`, `*_KEY` tables and
+ * `…Key:` fields and deliberately nothing looser — a key handed in as a bare
+ * argument reads to it as translated-and-never-shown, and it is right to.
+ */
+const NOTE_KEY = {
+  status: 'feedFetchStatus',
+  failed: 'feedFetchFailed',
+  refused: 'feedRefused',
+} as const
 
 export interface FeedSyncResult {
   readonly fetched: boolean
@@ -58,12 +77,12 @@ export async function syncFeed(deps: FeedSyncDeps): Promise<FeedSyncResult> {
       deps.audit,
     )
     if (!response.ok) {
-      await deps.note(`The blocking feed could not be fetched: the server answered ${response.status}. The list already in force stays.`)
+      await deps.note(NOTE_KEY.status, String(response.status))
       return { fetched: false, accepted: false, why: `status ${response.status}` }
     }
     signed = (await response.json()) as SignedUpdate
   } catch (cause) {
-    await deps.note(`The blocking feed could not be fetched: ${String(cause)}. The list already in force stays.`)
+    await deps.note(NOTE_KEY.failed, String(cause))
     return { fetched: false, accepted: false, why: String(cause) }
   }
 
@@ -72,7 +91,7 @@ export async function syncFeed(deps: FeedSyncDeps): Promise<FeedSyncResult> {
     // A refused update is the guard working, and the user should be able to
     // read that it happened — a signature that stopped verifying is exactly
     // the event worth seeing in a journal.
-    await deps.note(`A blocking-feed update was refused: ${outcome.reason ?? 'it did not verify'}. The list already in force stays.`)
+    await deps.note(NOTE_KEY.refused, outcome.reason ?? t('feedNotVerified'))
     return { fetched: true, accepted: false, why: outcome.reason ?? 'refused' }
   }
 

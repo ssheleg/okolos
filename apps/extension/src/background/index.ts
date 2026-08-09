@@ -78,6 +78,10 @@ platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>) => {
       return deferFinding(message.payload as { id: string; until: string }) as Promise<RpcMap[T]['res']>
     case 'site/facts':
       return siteFacts(message.payload as { host: string }) as Promise<RpcMap[T]['res']>
+    case 'page/request':
+      return journalPageRequest(message.payload as { method: string; host: string }) as Promise<
+        RpcMap[T]['res']
+      >
     case 'trap/warned':
       return journalTrap(message.payload as { kind: string; signals: string }) as Promise<RpcMap[T]['res']>
     case 'recovery/open':
@@ -567,6 +571,34 @@ const TRAP_KEY: Record<string, string> = {
   clickfix: 'logTrapClickfix',
   techsupport: 'logTrapTechsupport',
   generic: 'logTrapGeneric',
+}
+
+/**
+ * A state-changing request the page made while a finding was unresolved.
+ *
+ * Recorded and never stopped — the wording says so, because a journal line that
+ * reads like an interception would be the product claiming a reach it does not
+ * have. Host and method only: a query string carries the very thing this
+ * product exists to keep on the device.
+ */
+async function journalPageRequest(payload: { method: string; host: string }): Promise<{ ok: true }> {
+  try {
+    const db = await openDb()
+    const now = new Date().toISOString()
+    await db.put('journal', {
+      id: `page-request:${payload.host}:${now}`,
+      createdAt: now,
+      kind: 'verdict',
+      detail: {
+        explainKey: 'logPageRequest',
+        explainArgs: [payload.method, payload.host],
+        reason: 'page-request',
+      },
+    })
+  } catch (cause) {
+    console.warn('okolos: could not journal a page request', cause)
+  }
+  return { ok: true }
 }
 
 async function journalTrap(payload: { kind: string; signals: string }): Promise<{ ok: true }> {

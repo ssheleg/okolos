@@ -1209,3 +1209,45 @@ think you are testing*.
 - **The brand pack caught a word.** My translation of the feed failure used
   «сервер»; `terminology.md` forbids it and names «сервис». Translating is
   writing, and writing goes through the brand pack.
+
+### 2026-08-09 — the question was not which fetch, it was whether any
+
+- **The task as written:** "decide what counts as a sensitive request with no
+  form and no navigation behind it" — a criterion to pick.
+- **What checking first showed:** there is nothing to pick from. A content
+  script is in an isolated world and never sees the page's `fetch`; MV3 has no
+  blocking `webRequest`; `declarativeNetRequest` is declarative and cannot ask a
+  person anything. Holding such a request is not achievable. The only vantage
+  point is a `MAIN`-world script, and one that *held* would either break other
+  people's sites or, against a page that captured `fetch` first, promise a reach
+  it does not have.
+- **So the answer is a record, not a gate**, and the journal line says the
+  request was not stopped in those words. A user whose page moved money while a
+  hidden instruction sat unresolved can find that out; nothing claims it was
+  prevented.
+- **The strongest gate in this product half-noticed.** REQ-08 — one module
+  reaches the network — passed the new file at source level because the token it
+  scans for is `fetch(` and the code spells `originalFetch.apply`. It fired at
+  bundle level, but on `dist/page-watch/index.js`: a `tsc` artefact that ships to
+  nobody, because the glob was `dist/*/*.js` rather than the two directories a
+  browser loads. So one rule passed by an accident of spelling and the other
+  fired on a file nobody installs.
+- **Fixed by naming, not by silencing:** the exemption is written into both
+  rules with the reason, the glob scans what ships, and three new rules hold the
+  watcher to observing — no destination of its own, the original called with the
+  arguments it was given, and no `await` between reading a call and making it.
+- **Standing instruction 10, again, and it cost a round.** The first three
+  plants all turned the gate red — on "the artefact these gates read was
+  actually built", because each broke the build. A plant that fails to compile
+  tests nothing. Rewritten so each compiles, each then failed its own rule by
+  name.
+- **The seam the unit tests found:** `watchPage(win)` took a window and then
+  read the ambient `window` and `location` anyway, and `armed` was module state.
+  In production these are the same objects, so nothing would have broken — which
+  is exactly why it was worth fixing: a dependency that works because the global
+  happens to be right is one no test can check.
+- **A test premise corrected by measurement:** "an unparseable URL reports
+  nothing" was wrong. Almost anything resolves against a base, and a POST to a
+  relative path is a state-changing request to the page's own host — worth
+  recording. The test now asserts that, and a separate one covers input that is
+  not a URL at all.

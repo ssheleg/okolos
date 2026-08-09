@@ -100,6 +100,34 @@ const MARK_START = 'okolos:collect:start'
 const MARK_END = 'okolos:collect:end'
 export const MEASURE_COLLECT = 'okolos:collect'
 
+/**
+ * The bridge to the MAIN-world watcher.
+ *
+ * It is armed only while this page carries a finding nobody has dealt with, so
+ * an ordinary page pays nothing and no request anywhere is recorded without a
+ * reason. The channel is `window.postMessage`, which the page can post on too:
+ * a hostile page can therefore add entries that never happened. It cannot
+ * remove the real ones, and a forged journal line costs noise rather than
+ * silence — which is the right way round for a record.
+ */
+function armPageWatch(on: boolean): void {
+  try {
+    window.postMessage({ source: on ? 'okolos:page-watch:arm' : 'okolos:page-watch:disarm' }, '*')
+  } catch {
+    // The watcher stays as it was. It observes; nothing depends on it.
+  }
+}
+
+window.addEventListener('message', (event) => {
+  if (event.source !== window) return
+  const data = event.data as { source?: unknown; method?: unknown; host?: unknown } | null
+  if (data?.source !== 'okolos:page-watch:report') return
+  if (typeof data.method !== 'string' || typeof data.host !== 'string') return
+  void safely(async () => {
+    await platform.runtime.send('page/request', { method: data.method as string, host: data.host as string })
+  })
+})
+
 async function scan(): Promise<void> {
   const started = performance.now()
   performance.mark(MARK_START)
@@ -132,6 +160,7 @@ async function scan(): Promise<void> {
   // in an iframe submits that iframe's form, and the top frame never sees it.
   lastVerdicts = verdicts
   unresolved = verdicts.map((verdict) => ({ id: verdict.id, summary: summarise(verdict) }))
+  armPageWatch(unresolved.length > 0)
 
   if (!isTopFrame) return
   show(worst(verdicts), verdicts.length, page.truncated, neutralised)
@@ -185,6 +214,7 @@ function show(verdict: Verdict, total: number, partialScan: boolean, neutralised
 /** The user has said this page is fine. The gate stands down with the banner. */
 function resolveEverything(): void {
   unresolved = []
+  armPageWatch(false)
   banner?.destroy()
   banner = null
 }

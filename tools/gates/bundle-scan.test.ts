@@ -117,22 +117,80 @@ describe('REQ-08 — exactly one module may reach the network', () => {
       ...filesIn('apps/*/src/**/*.ts'),
     ].filter((f) => !f.endsWith('.test.ts'))
 
-    const withFetch = offenders(sources, ['fetch(']).map((h) => h.file)
+    // `page-watch` wraps the *page's* `fetch` from the MAIN world and calls it
+    // through with the arguments it was handed. It initiates nothing, so it is
+    // not egress this product is answerable for — but it is the one place other
+    // than the transport that touches the API at all, so it is named here
+    // rather than left to pass because it happens not to spell `fetch(`.
+    // The rule below is what actually holds it to observing.
+    const PAGE_WATCH = 'apps/extension/src/page-watch/index.ts'
+    const withFetch = offenders(sources, ['fetch(', '.fetch =', 'XMLHttpRequest.prototype'])
+      .map((h) => h.file)
+      .filter((f) => f !== PAGE_WATCH)
     expect(withFetch).toEqual([TRANSPORT_SOURCE])
+
+    // And it must still be there: an exemption for a file that no longer exists
+    // silently becomes an exemption for nothing. `sources` holds absolute
+    // paths, `offenders` reports repo-relative ones — compared like with like.
+    expect(sources.map((f) => path.relative(root, f))).toContain(PAGE_WATCH)
   })
 
   it('leaves no stray network call in the shipped extension bundles', () => {
     // The extension may legitimately contain the transport, so an occurrence
     // is only acceptable when it arrived through it: any bundle carrying a
     // network token must also carry the audit-log write that precedes it.
-    for (const file of filesIn('apps/extension/dist/*/*.js')) {
+    // The two directories the browsers actually load. `dist/` also holds tsc's
+    // per-module output — `dist/page-watch/index.js` and its siblings — which
+    // ships to nobody, and scanning it made this gate fire on a file that is
+    // not part of any bundle.
+    for (const file of [...filesIn('apps/extension/dist/chrome/*.js'), ...filesIn('apps/extension/dist/firefox/*.js')]) {
       const source = readFileSync(file, 'utf8')
       const reachesNetwork = NETWORK_TOKENS.some((t) => source.includes(t))
       if (!reachesNetwork) continue
+      // One bundle is exempt, narrowly and by name: the MAIN-world watcher
+      // wraps the page's own `fetch` and calls it through untouched. It has no
+      // audit entry because it sends nothing of ours — the rule above proves
+      // that from its source, and this line makes the exemption a decision
+      // rather than a hole.
+      if (path.basename(file) === 'page-watch.js') continue
       expect(source, `${path.relative(root, file)} sends without the audit log`).toContain(
         'outbound_log',
       )
     }
+  })
+})
+
+describe('the page watcher observes and never sends', () => {
+  /**
+   * The one module outside the transport that touches `fetch`, and the reason
+   * it is allowed to: it wraps what the page calls and hands the call straight
+   * back. If it ever composed a request of its own, REQ-08's promise — one
+   * module reaches the network — would be false, and the exemption above would
+   * be covering it.
+   */
+  const source = readFileSync(path.join(root, 'apps/extension/src/page-watch/index.ts'), 'utf8')
+
+  it('is there to be checked', () => {
+    expect(source.length).toBeGreaterThan(500)
+  })
+
+  it('names no destination of its own', () => {
+    // A URL literal here would mean it had somewhere to send something.
+    expect(source).not.toMatch(/https?:\/\/[a-z]/i)
+  })
+
+  it('calls the original with the arguments it was given, and nothing else', () => {
+    expect(source).toContain('originalFetch.apply(this as never, args)')
+    // No `new Request(`, no second argument built here — the page's call goes
+    // through as the page made it.
+    expect(source).not.toContain('new Request(')
+  })
+
+  it('never awaits its own decision before calling through', () => {
+    // `await` between reading the call and making it is how observing turns
+    // into holding, which is the thing this module promises not to do.
+    const body = source.slice(source.indexOf('export function watchPage'))
+    expect(body).not.toContain('await ')
   })
 })
 

@@ -853,6 +853,17 @@
       }
     }
   },
+  "logPageRequest": {
+    "message": "The page sent a $METHOD$ request to $HOST$ while a finding on it was unresolved. The request was not stopped.",
+    "placeholders": {
+      "method": {
+        "content": "$1"
+      },
+      "host": {
+        "content": "$2"
+      }
+    }
+  },
   "logRulesTruncated": {
     "message": "$COUNT$ entries from $FEED$ could not be enforced: the browser limits how many blocking rules an extension may install.",
     "placeholders": {

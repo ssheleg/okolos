@@ -58,6 +58,21 @@ for (const target of targets) {
     },
   })
 
+  // 1b. Page watcher — MAIN world, so it can see the page's own requests.
+  // Same constraints as the content script: one self-contained IIFE.
+  await build({
+    ...shared,
+    build: {
+      outDir,
+      emptyOutDir: false,
+      target: 'chrome116',
+      rollupOptions: {
+        input: path.join(app, 'src/page-watch/index.ts'),
+        output: { entryFileNames: 'page-watch.js', format: 'iife', inlineDynamicImports: true },
+      },
+    },
+  })
+
   // 2. Background — module.
   await build({
     ...shared,

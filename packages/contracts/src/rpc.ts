@@ -78,6 +78,11 @@ export interface RpcMap {
   'finding/defer': { req: { id: string; until: string }; res: { ok: true } }
   'site/facts': { req: { host: string }; res: { trusted: boolean; firstSeen: string | null } }
   'trap/warned': { req: { kind: string; signals: string }; res: { ok: true } }
+  /**
+   * A state-changing request the page made while a finding on it was
+   * unresolved. Observed, never held — see apps/extension/src/page-watch.
+   */
+  'page/request': { req: { method: string; host: string }; res: { ok: true } }
   'recovery/open': { req: { kind: string }; res: { ok: true } }
   /**
    * `domains` is kept for callers that only need the names — the lookalike

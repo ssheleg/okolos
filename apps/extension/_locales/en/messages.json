@@ -1,15 +1,74 @@
 {
-  "appName": {
-    "message": "Okolos — a guard against hidden instructions"
-  },
-  "appDescription": {
-    "message": "Finds text on a page hidden for your assistant, checks links and downloads, and shows you everything that leaves the device."
+  "actionDispute": {
+    "message": "This is wrong"
   },
   "actionTitle": {
     "message": "Okolos"
   },
-  "blockTitle": {
-    "message": "This page was blocked before it loaded"
+  "appDescription": {
+    "message": "Finds text on a page hidden for your assistant, checks links and downloads, and shows you everything that leaves the device."
+  },
+  "appName": {
+    "message": "Okolos — a guard against hidden instructions"
+  },
+  "bannerActionClickfix": {
+    "message": "Leave this page"
+  },
+  "bannerActionCredential": {
+    "message": "Leave this page"
+  },
+  "bannerActionDownload": {
+    "message": "Discard the file"
+  },
+  "bannerActionInjection": {
+    "message": "Show me"
+  },
+  "bannerActionLookalike": {
+    "message": "Show the comparison"
+  },
+  "bannerActionPassword": {
+    "message": "Change password"
+  },
+  "bannerActionTechsupport": {
+    "message": "Close this page"
+  },
+  "bannerDismiss": {
+    "message": "Dismiss"
+  },
+  "bannerRetry": {
+    "message": "Try again"
+  },
+  "bannerSeverityCritical": {
+    "message": "Critical"
+  },
+  "bannerSeverityInfo": {
+    "message": "For information"
+  },
+  "bannerSeverityMajor": {
+    "message": "Serious"
+  },
+  "bannerSeverityMinor": {
+    "message": "Minor"
+  },
+  "blockBack": {
+    "message": "Go back"
+  },
+  "blockContinue": {
+    "message": "Continue anyway"
+  },
+  "blockContinueNote": {
+    "message": "Continuing remembers this site so you are not asked again, and records the decision in your journal."
+  },
+  "blockOwner": {
+    "message": "This is my site"
+  },
+  "blockSourceEntryDate": {
+    "message": ", entry dated $DATE$",
+    "placeholders": {
+      "date": {
+        "content": "$1"
+      }
+    }
   },
   "blockSourceKnown": {
     "message": "Flagged by $FEED$$ENTRY$.",
@@ -19,14 +78,6 @@
       },
       "entry": {
         "content": "$2"
-      }
-    }
-  },
-  "blockSourceEntryDate": {
-    "message": ", entry dated $DATE$",
-    "placeholders": {
-      "date": {
-        "content": "$1"
       }
     }
   },
@@ -41,86 +92,181 @@
       }
     }
   },
-  "blockBack": {
-    "message": "Go back"
+  "blockTitle": {
+    "message": "This page was blocked before it loaded"
   },
-  "blockContinue": {
-    "message": "Continue anyway"
+  "comparisonAria": {
+    "message": "Compare this address with the one it resembles"
   },
-  "blockOwner": {
-    "message": "This is my site"
+  "comparisonClose": {
+    "message": "Close"
   },
-  "blockContinueNote": {
-    "message": "Continuing remembers this site so you are not asked again, and records the decision in your journal."
+  "comparisonDecoded": {
+    "message": "Which reads as"
   },
-  "actionDispute": {
-    "message": "This is wrong"
+  "comparisonLeave": {
+    "message": "Leave"
   },
-  "bannerSeverityCritical": {
-    "message": "Critical"
+  "comparisonReasonBrandSubdomain": {
+    "message": "The familiar name is here, but it is not the site you are on — it has been put in front of a different address."
   },
-  "bannerSeverityMajor": {
-    "message": "Serious"
+  "comparisonReasonHomograph": {
+    "message": "Some characters here only look like the letters they stand for."
   },
-  "bannerSeverityMinor": {
-    "message": "Minor"
+  "comparisonReasonMixedScript": {
+    "message": "This name is written with letters from more than one alphabet."
   },
-  "bannerSeverityInfo": {
-    "message": "For information"
+  "comparisonReasonTldSwap": {
+    "message": "The name is the same, but the ending after the last dot is different."
   },
-  "bannerActionInjection": {
-    "message": "Show me"
+  "comparisonReasonTypo": {
+    "message": "This name is one typing mistake away from the one it resembles."
   },
-  "bannerActionLookalike": {
-    "message": "Show the comparison"
+  "comparisonResembles": {
+    "message": "It resembles"
   },
-  "bannerActionClickfix": {
-    "message": "Leave this page"
+  "comparisonTitle": {
+    "message": "This address is not the one you may think"
   },
-  "bannerActionTechsupport": {
-    "message": "Close this page"
+  "comparisonTrust": {
+    "message": "This is legitimate"
   },
-  "bannerActionDownload": {
-    "message": "Discard the file"
+  "comparisonTrustNote": {
+    "message": "Marking it legitimate stops the warning for this address and can be undone in settings."
   },
-  "bannerActionCredential": {
-    "message": "Leave this page"
+  "comparisonVisited": {
+    "message": "You are on"
   },
-  "bannerActionPassword": {
-    "message": "Change password"
+  "confidenceCertain": {
+    "message": "certain"
   },
-  "bannerRetry": {
-    "message": "Try again"
+  "confidenceHigh": {
+    "message": "high"
   },
-  "bannerDismiss": {
-    "message": "Dismiss"
+  "confidenceLow": {
+    "message": "low"
   },
-  "inspectorTitle": {
-    "message": "What was hidden on this page"
+  "confidenceMedium": {
+    "message": "medium"
+  },
+  "extensionsAlreadyOff": {
+    "message": "Already off."
+  },
+  "extensionsChooseFile": {
+    "message": "Choose a package file"
+  },
+  "extensionsDisable": {
+    "message": "Disable"
+  },
+  "extensionsDisableIt": {
+    "message": "Disable it"
+  },
+  "extensionsError": {
+    "message": "The inventory could not be read: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "extensionsErrorNote": {
+    "message": "This is not a statement that nothing changed."
+  },
+  "extensionsInspectTitle": {
+    "message": "Inspect a package"
+  },
+  "extensionsNoChanges": {
+    "message": "Nothing has changed since the last check."
+  },
+  "extensionsNoPermissions": {
+    "message": "No special permissions."
+  },
+  "extensionsNothingOfNote": {
+    "message": "Nothing of note was found in the text of this file."
+  },
+  "extensionsReading": {
+    "message": "Reading what is installed…"
+  },
+  "extensionsTitle": {
+    "message": "What changed in your extensions"
+  },
+  "extensionsTrustChange": {
+    "message": "This change is fine"
+  },
+  "feedNamePhishing": {
+    "message": "Okolos phishing list"
+  },
+  "gateAction": {
+    "message": "Attempted: $ACTION$",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "gateAllowOnce": {
+    "message": "Allow once"
+  },
+  "gateAriaLabel": {
+    "message": "An action was held for your decision"
+  },
+  "gateBlock": {
+    "message": "Block"
+  },
+  "gateFindingUnknown": {
+    "message": "This page has an unresolved finding that could not be described."
+  },
+  "gateShow": {
+    "message": "Show the injection"
+  },
+  "gateTarget": {
+    "message": "Where: $TARGET$",
+    "placeholders": {
+      "target": {
+        "content": "$1"
+      }
+    }
+  },
+  "gateTitle": {
+    "message": "Something tried to act on this page"
   },
   "inspectorEmpty": {
     "message": "The page changed since this was found, so the evidence is gone."
   },
-  "inspectorRescan": {
-    "message": "Scan again"
-  },
-  "inspectorPartial": {
-    "message": "This page was too large to check in full, so there may be more than what is listed here."
-  },
   "inspectorKeep": {
     "message": "Keep it neutralised"
   },
-  "inspectorRestore": {
-    "message": "Restore the page"
+  "inspectorLocator": {
+    "message": "Where: $WHERE$",
+    "placeholders": {
+      "where": {
+        "content": "$1"
+      }
+    }
+  },
+  "inspectorLocatorUnknown": {
+    "message": "unknown"
   },
   "inspectorNoText": {
     "message": "(no text captured)"
   },
-  "inspectorWhy": {
-    "message": "Why it was flagged: $SIGNALS$.",
+  "inspectorPartial": {
+    "message": "This page was too large to check in full, so there may be more than what is listed here."
+  },
+  "inspectorRescan": {
+    "message": "Scan again"
+  },
+  "inspectorRestore": {
+    "message": "Restore the page"
+  },
+  "inspectorStage": {
+    "message": "Decided by: $STAGE$, $CONFIDENCE$ confidence",
     "placeholders": {
-      "signals": {
+      "stage": {
         "content": "$1"
+      },
+      "confidence": {
+        "content": "$2"
       }
     }
   },
@@ -135,258 +281,49 @@
   "inspectorTechniqueUnknown": {
     "message": "not stated"
   },
-  "inspectorLocator": {
-    "message": "Where: $WHERE$",
+  "inspectorTitle": {
+    "message": "What was hidden on this page"
+  },
+  "inspectorWhy": {
+    "message": "Why it was flagged: $SIGNALS$.",
     "placeholders": {
-      "where": {
+      "signals": {
         "content": "$1"
       }
     }
   },
-  "inspectorLocatorUnknown": {
-    "message": "unknown"
+  "journalAutomatic": {
+    "message": "done automatically"
   },
-  "inspectorStage": {
-    "message": "Decided by: $STAGE$, $CONFIDENCE$ confidence",
-    "placeholders": {
-      "stage": {
-        "content": "$1"
-      },
-      "confidence": {
-        "content": "$2"
-      }
-    }
+  "journalDefaultAction": {
+    "message": "An action was decided"
   },
-  "signalOverride": {
-    "message": "cancels earlier instructions"
+  "journalDefaultDisabled": {
+    "message": "A detector was turned off"
   },
-  "signalRoleAssignment": {
-    "message": "tells the assistant who it now is"
+  "journalDefaultError": {
+    "message": "An error with no description: the details were not recorded"
   },
-  "signalVocative": {
-    "message": "addresses an assistant directly"
-  },
-  "signalSecrecy": {
-    "message": "asks the assistant to keep this from you"
-  },
-  "signalConditionalIdentity": {
-    "message": "speaks only to a machine (\"if you are an AI…\")"
-  },
-  "signalToolInvocation": {
-    "message": "reaches for the assistant's tools"
-  },
-  "signalSystemPrompt": {
-    "message": "impersonates the system layer"
-  },
-  "signalSensitiveTarget": {
-    "message": "asks for credentials or codes"
-  },
-  "signalCharAnomaly": {
-    "message": "uses characters invisible to a reader but not to a model"
-  },
-  "techniqueColorOnColor": {
-    "message": "same colour as its background"
-  },
-  "techniqueDisplayNone": {
-    "message": "removed from the layout"
-  },
-  "techniqueVisibilityHidden": {
-    "message": "made invisible"
-  },
-  "techniqueOpacityZero": {
-    "message": "fully transparent"
-  },
-  "techniqueFontSizeZero": {
-    "message": "shrunk to no size"
-  },
-  "techniqueClip": {
-    "message": "clipped to nothing"
-  },
-  "techniqueOffscreen": {
-    "message": "moved off the screen"
-  },
-  "techniqueAriaHidden": {
-    "message": "hidden from assistive technology"
-  },
-  "techniqueNonRendered": {
-    "message": "in a part of the page that never renders"
-  },
-  "stageDiff": {
-    "message": "a comparison"
-  },
-  "stageRules": {
-    "message": "rules"
-  },
-  "stageModel": {
-    "message": "a model"
-  },
-  "stageFeed": {
-    "message": "a list"
-  },
-  "stageInventory": {
-    "message": "the inventory"
-  },
-  "stageCorpus": {
-    "message": "the corpus"
-  },
-  "confidenceCertain": {
-    "message": "certain"
-  },
-  "confidenceHigh": {
-    "message": "high"
-  },
-  "confidenceMedium": {
-    "message": "medium"
-  },
-  "confidenceLow": {
-    "message": "low"
-  },
-  "gateAriaLabel": {
-    "message": "An action was held for your decision"
-  },
-  "gateTitle": {
-    "message": "Something tried to act on this page"
-  },
-  "gateAction": {
-    "message": "Attempted: $ACTION$",
-    "placeholders": {
-      "action": {
-        "content": "$1"
-      }
-    }
-  },
-  "gateTarget": {
-    "message": "Where: $TARGET$",
-    "placeholders": {
-      "target": {
-        "content": "$1"
-      }
-    }
-  },
-  "gateFindingUnknown": {
-    "message": "This page has an unresolved finding that could not be described."
-  },
-  "gateBlock": {
-    "message": "Block"
-  },
-  "gateAllowOnce": {
-    "message": "Allow once"
-  },
-  "gateShow": {
-    "message": "Show the injection"
-  },
-  "feedNamePhishing": {
-    "message": "Okolos phishing list"
-  },
-  "popupChecking": {
-    "message": "Checking this page…"
-  },
-  "popupRepair": {
-    "message": "Repair storage"
-  },
-  "popupSelfAudit": {
-    "message": "What was sent"
-  },
-  "popupJournal": {
-    "message": "Journal"
-  },
-  "popupSettings": {
-    "message": "Settings"
-  },
-  "queueEmpty": {
-    "message": "Nothing needs you right now."
-  },
-  "queueOpen": {
-    "message": "Open"
-  },
-  "queueDone": {
-    "message": "Done"
-  },
-  "queueDefer": {
-    "message": "Not now"
-  },
-  "trustedTitle": {
-    "message": "Sites you marked legitimate"
-  },
-  "trustedRevoke": {
-    "message": "Stop trusting"
-  },
-  "comparisonTitle": {
-    "message": "This address is not the one you may think"
-  },
-  "comparisonAria": {
-    "message": "Compare this address with the one it resembles"
-  },
-  "comparisonVisited": {
-    "message": "You are on"
-  },
-  "comparisonDecoded": {
-    "message": "Which reads as"
-  },
-  "comparisonResembles": {
-    "message": "It resembles"
-  },
-  "comparisonLeave": {
-    "message": "Leave"
-  },
-  "comparisonTrust": {
-    "message": "This is legitimate"
-  },
-  "comparisonClose": {
-    "message": "Close"
-  },
-  "comparisonTrustNote": {
-    "message": "Marking it legitimate stops the warning for this address and can be undone in settings."
-  },
-  "comparisonReasonMixedScript": {
-    "message": "This name is written with letters from more than one alphabet."
-  },
-  "comparisonReasonHomograph": {
-    "message": "Some characters here only look like the letters they stand for."
-  },
-  "comparisonReasonTypo": {
-    "message": "This name is one typing mistake away from the one it resembles."
-  },
-  "comparisonReasonTldSwap": {
-    "message": "The name is the same, but the ending after the last dot is different."
-  },
-  "trustedEmpty": {
-    "message": "You have not marked any site as legitimate. When you do, it will be listed here and you can take it back."
-  },
-  "trustedNote": {
-    "message": "These addresses no longer raise a warning. Taking one back restores the checks immediately."
-  },
-  "trustedGrantedOn": {
-    "message": "Trusted on $DATE$",
-    "placeholders": {
-      "date": {
-        "content": "$1"
-      }
-    }
-  },
-  "comparisonReasonBrandSubdomain": {
-    "message": "The familiar name is here, but it is not the site you are on — it has been put in front of a different address."
-  },
-  "journalKindVerdict": {
-    "message": "Found"
-  },
-  "journalKindAction": {
-    "message": "Actions"
-  },
-  "journalKindError": {
-    "message": "Problems"
-  },
-  "journalKindDisabled": {
-    "message": "Turned off"
-  },
-  "journalTitle": {
-    "message": "What changed since last time"
+  "journalDefaultVerdict": {
+    "message": "A finding was recorded"
   },
   "journalEmpty": {
     "message": "Nothing to show yet — this is your first check."
   },
-  "journalShowHistory": {
-    "message": "Show full history"
+  "journalKindAction": {
+    "message": "Actions"
+  },
+  "journalKindDisabled": {
+    "message": "Turned off"
+  },
+  "journalKindError": {
+    "message": "Problems"
+  },
+  "journalKindVerdict": {
+    "message": "Found"
+  },
+  "journalManual": {
+    "message": "you did this"
   },
   "journalRetention": {
     "message": "Anything older than $DAYS$ days is deleted.",
@@ -396,159 +333,26 @@
       }
     }
   },
-  "journalAutomatic": {
-    "message": "done automatically"
+  "journalShowHistory": {
+    "message": "Show full history"
   },
-  "journalManual": {
-    "message": "you did this"
-  },
-  "recoveryTitle": {
-    "message": "What to do now"
-  },
-  "recoveryBroadest": {
-    "message": "We do not have a checklist for exactly what happened, so this is the broadest safe one."
-  },
-  "recoveryAllDone": {
-    "message": "Every step is done."
-  },
-  "recoveryElsewhere": {
-    "message": "This one cannot be done in this browser."
-  },
-  "recoveryArchive": {
-    "message": "Archive this incident"
-  },
-  "recoveryPortableTitle": {
-    "message": "Continue on another device"
-  },
-  "recoveryPortableAllHere": {
-    "message": "Every remaining step can be done here, but you can still take the list with you."
-  },
-  "recoveryPortableElsewhere": {
-    "message": "$COUNT$ of the remaining steps cannot be done in this browser. Take the list with you — nothing is sent anywhere.",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "recoveryCopy": {
-    "message": "Copy these steps"
-  },
-  "extensionsTitle": {
-    "message": "What changed in your extensions"
-  },
-  "extensionsReading": {
-    "message": "Reading what is installed…"
-  },
-  "extensionsError": {
-    "message": "The inventory could not be read: $REASON$",
-    "placeholders": {
-      "reason": {
-        "content": "$1"
-      }
-    }
-  },
-  "extensionsErrorNote": {
-    "message": "This is not a statement that nothing changed."
-  },
-  "extensionsNoChanges": {
-    "message": "Nothing has changed since the last check."
-  },
-  "extensionsNoPermissions": {
-    "message": "No special permissions."
-  },
-  "extensionsDisable": {
-    "message": "Disable"
-  },
-  "extensionsDisableIt": {
-    "message": "Disable it"
-  },
-  "extensionsAlreadyOff": {
-    "message": "Already off."
-  },
-  "extensionsTrustChange": {
-    "message": "This change is fine"
-  },
-  "extensionsInspectTitle": {
-    "message": "Inspect a package"
-  },
-  "extensionsChooseFile": {
-    "message": "Choose a package file"
-  },
-  "extensionsNothingOfNote": {
-    "message": "Nothing of note was found in the text of this file."
-  },
-  "leaksTitle": {
-    "message": "What has leaked"
-  },
-  "leaksIdle": {
-    "message": "Nothing has been looked up yet. Checking sends your address to the sources named below — they answer to nothing less. Your passwords are never sent: that check uses a partial hash and is separate."
-  },
-  "leaksCheck": {
-    "message": "Check now"
-  },
-  "leaksChecking": {
-    "message": "Asking the sources…"
-  },
-  "leaksErrorPrefix": {
-    "message": "The check could not be completed: $REASON$",
-    "placeholders": {
-      "reason": {
-        "content": "$1"
-      }
-    }
-  },
-  "leaksErrorNote": {
-    "message": "This is not a statement that nothing has leaked."
-  },
-  "leaksRetry": {
-    "message": "Try again"
-  },
-  "leaksNone": {
-    "message": "No breaches were found for this address."
-  },
-  "leaksFound": {
-    "message": "Breaches found: $COUNT$",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "leaksCheckAgain": {
-    "message": "Check again"
-  },
-  "leaksExposed": {
-    "message": "Exposed: $CLASSES$",
-    "placeholders": {
-      "classes": {
-        "content": "$1"
-      }
-    }
-  },
-  "leaksClassesUnknown": {
-    "message": "not stated by the source"
-  },
-  "leaksNoDomain": {
-    "message": "This source did not say which site it was, so there is nowhere to send you."
+  "journalTitle": {
+    "message": "What changed since last time"
   },
   "leaksAttribution": {
     "message": "Breach data from Have I Been Pwned, used under CC BY 4.0."
   },
-  "leaksMarkResolved": {
-    "message": "Mark resolved"
+  "leaksCheck": {
+    "message": "Check now"
   },
-  "leaksGroupFreshTitle": {
-    "message": "Recent — a machine was infected"
+  "leaksCheckAgain": {
+    "message": "Check again"
   },
-  "leaksGroupFreshWhy": {
-    "message": "Everything stored in that browser went at once, including session cookies that keep working after a password change. Sign out of your sessions as well as changing the password."
+  "leaksChecking": {
+    "message": "Asking the sources…"
   },
-  "leaksGroupOlderTitle": {
-    "message": "Older breaches"
-  },
-  "leaksGroupOlderWhy": {
-    "message": "A service you used was breached. Change the password there, and anywhere you reused it."
+  "leaksClassesUnknown": {
+    "message": "not stated by the source"
   },
   "leaksCoverage": {
     "message": "Checked against $SOURCES$.",
@@ -571,6 +375,372 @@
   },
   "leaksCoverageNone": {
     "message": "No sources answered, so nothing was checked."
+  },
+  "leaksErrorNote": {
+    "message": "This is not a statement that nothing has leaked."
+  },
+  "leaksErrorPrefix": {
+    "message": "The check could not be completed: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "leaksExposed": {
+    "message": "Exposed: $CLASSES$",
+    "placeholders": {
+      "classes": {
+        "content": "$1"
+      }
+    }
+  },
+  "leaksFound": {
+    "message": "Breaches found: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "leaksGroupFreshTitle": {
+    "message": "Recent — a machine was infected"
+  },
+  "leaksGroupFreshWhy": {
+    "message": "Everything stored in that browser went at once, including session cookies that keep working after a password change. Sign out of your sessions as well as changing the password."
+  },
+  "leaksGroupOlderTitle": {
+    "message": "Older breaches"
+  },
+  "leaksGroupOlderWhy": {
+    "message": "A service you used was breached. Change the password there, and anywhere you reused it."
+  },
+  "leaksIdle": {
+    "message": "Nothing has been looked up yet. Checking sends your address to the sources named below — they answer to nothing less. Your passwords are never sent: that check uses a partial hash and is separate."
+  },
+  "leaksMarkResolved": {
+    "message": "Mark resolved"
+  },
+  "leaksNoDomain": {
+    "message": "This source did not say which site it was, so there is nowhere to send you."
+  },
+  "leaksNone": {
+    "message": "No breaches were found for this address."
+  },
+  "leaksRetry": {
+    "message": "Try again"
+  },
+  "leaksTitle": {
+    "message": "What has leaked"
+  },
+  "logExtensionAccepted": {
+    "message": "You accepted the change to extension $ID$.",
+    "placeholders": {
+      "id": {
+        "content": "$1"
+      }
+    }
+  },
+  "logExtensionDisabled": {
+    "message": "You disabled the extension $ID$.",
+    "placeholders": {
+      "id": {
+        "content": "$1"
+      }
+    }
+  },
+  "logKeptVisiting": {
+    "message": "You chose to keep visiting $HOST$ after it was blocked.",
+    "placeholders": {
+      "host": {
+        "content": "$1"
+      }
+    }
+  },
+  "logRulesTruncated": {
+    "message": "$COUNT$ entries from $FEED$ could not be enforced: the browser limits how many blocking rules an extension may install.",
+    "placeholders": {
+      "feed": {
+        "content": "$1"
+      },
+      "count": {
+        "content": "$2"
+      }
+    }
+  },
+  "logTrustRevoked": {
+    "message": "You stopped trusting $DOMAIN$; the checks apply to it again.",
+    "placeholders": {
+      "domain": {
+        "content": "$1"
+      }
+    }
+  },
+  "popupChangedCount": {
+    "message": "$COUNT$ new since your last check",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "popupChangedSince": {
+    "message": "Nothing new since $WHEN$",
+    "placeholders": {
+      "when": {
+        "content": "$1"
+      }
+    }
+  },
+  "popupChecking": {
+    "message": "Checking this page…"
+  },
+  "popupFirstRun": {
+    "message": "your first run"
+  },
+  "popupJournal": {
+    "message": "Journal"
+  },
+  "popupPageClean": {
+    "message": "No hidden instructions were found on this page."
+  },
+  "popupPageFinding": {
+    "message": "Hidden text on this page addresses an assistant rather than you ($COUNT$).",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "popupPageUnknown": {
+    "message": "This page could not be identified, so it was not checked."
+  },
+  "popupQueueFound": {
+    "message": "Something was found on $HOST$",
+    "placeholders": {
+      "host": {
+        "content": "$1"
+      }
+    }
+  },
+  "popupQueueHidden": {
+    "message": "Hidden text on $HOST$: \"$SNIPPET$\"",
+    "placeholders": {
+      "host": {
+        "content": "$1"
+      },
+      "snippet": {
+        "content": "$2"
+      }
+    }
+  },
+  "popupQueueOpen": {
+    "message": "Open the page"
+  },
+  "popupRepair": {
+    "message": "Repair storage"
+  },
+  "popupSelfAudit": {
+    "message": "What was sent"
+  },
+  "popupSettings": {
+    "message": "Settings"
+  },
+  "popupStorageNote": {
+    "message": "This is a storage problem. It is not a statement that this page is fine."
+  },
+  "queueDefer": {
+    "message": "Not now"
+  },
+  "queueDone": {
+    "message": "Done"
+  },
+  "queueEmpty": {
+    "message": "Nothing needs you right now."
+  },
+  "queueOpen": {
+    "message": "Open"
+  },
+  "recoveryAllDone": {
+    "message": "Every step is done."
+  },
+  "recoveryArchive": {
+    "message": "Archive this incident"
+  },
+  "recoveryBroadest": {
+    "message": "We do not have a checklist for exactly what happened, so this is the broadest safe one."
+  },
+  "recoveryCopy": {
+    "message": "Copy these steps"
+  },
+  "recoveryElsewhere": {
+    "message": "This one cannot be done in this browser."
+  },
+  "recoveryPortableAllHere": {
+    "message": "Every remaining step can be done here, but you can still take the list with you."
+  },
+  "recoveryPortableElsewhere": {
+    "message": "$COUNT$ of the remaining steps cannot be done in this browser. Take the list with you — nothing is sent anywhere.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "recoveryPortableTitle": {
+    "message": "Continue on another device"
+  },
+  "recoveryTitle": {
+    "message": "What to do now"
+  },
+  "signalCharAnomaly": {
+    "message": "uses characters invisible to a reader but not to a model"
+  },
+  "signalConditionalIdentity": {
+    "message": "speaks only to a machine (\"if you are an AI…\")"
+  },
+  "signalOverride": {
+    "message": "cancels earlier instructions"
+  },
+  "signalRoleAssignment": {
+    "message": "tells the assistant who it now is"
+  },
+  "signalSecrecy": {
+    "message": "asks the assistant to keep this from you"
+  },
+  "signalSensitiveTarget": {
+    "message": "asks for credentials or codes"
+  },
+  "signalSystemPrompt": {
+    "message": "impersonates the system layer"
+  },
+  "signalToolInvocation": {
+    "message": "reaches for the assistant's tools"
+  },
+  "signalVocative": {
+    "message": "addresses an assistant directly"
+  },
+  "stageCorpus": {
+    "message": "the corpus"
+  },
+  "stageDiff": {
+    "message": "a comparison"
+  },
+  "stageFeed": {
+    "message": "a list"
+  },
+  "stageInventory": {
+    "message": "the inventory"
+  },
+  "stageModel": {
+    "message": "a model"
+  },
+  "stageRules": {
+    "message": "rules"
+  },
+  "techniqueAriaHidden": {
+    "message": "hidden from assistive technology"
+  },
+  "techniqueClip": {
+    "message": "clipped to nothing"
+  },
+  "techniqueColorOnColor": {
+    "message": "same colour as its background"
+  },
+  "techniqueDisplayNone": {
+    "message": "removed from the layout"
+  },
+  "techniqueFontSizeZero": {
+    "message": "shrunk to no size"
+  },
+  "techniqueNonRendered": {
+    "message": "in a part of the page that never renders"
+  },
+  "techniqueOffscreen": {
+    "message": "moved off the screen"
+  },
+  "techniqueOpacityZero": {
+    "message": "fully transparent"
+  },
+  "techniqueVisibilityHidden": {
+    "message": "made invisible"
+  },
+  "trustedEmpty": {
+    "message": "You have not marked any site as legitimate. When you do, it will be listed here and you can take it back."
+  },
+  "trustedGrantedOn": {
+    "message": "Trusted on $DATE$",
+    "placeholders": {
+      "date": {
+        "content": "$1"
+      }
+    }
+  },
+  "trustedNote": {
+    "message": "These addresses no longer raise a warning. Taking one back restores the checks immediately."
+  },
+  "trustedRevoke": {
+    "message": "Stop trusting"
+  },
+  "trustedTitle": {
+    "message": "Sites you marked legitimate"
+  },
+  "warnClickfixCopied": {
+    "message": "This page copied a command for you to run"
+  },
+  "warnClickfixCopiedWhat": {
+    "message": "It copied: $WHAT$",
+    "placeholders": {
+      "what": {
+        "content": "$1"
+      }
+    }
+  },
+  "warnClickfixNever": {
+    "message": "A real verification never asks you to leave the browser and run something."
+  },
+  "warnClickfixNothingYet": {
+    "message": "Nothing has been copied yet."
+  },
+  "warnClickfixUnreadable": {
+    "message": "What was copied could not be read, so it is not shown."
+  },
+  "warnClickfixWants": {
+    "message": "This page wants you to run a command outside the browser"
+  },
+  "warnCredentialHeadline": {
+    "message": "Before you type a password here"
+  },
+  "warnCredentialSource": {
+    "message": "what this device already knows about this site"
+  },
+  "warnCredentialUnknown": {
+    "message": "Not known: $LIST$.",
+    "placeholders": {
+      "list": {
+        "content": "$1"
+      }
+    }
+  },
+  "warnDownloadBlockedHeadline": {
+    "message": "A download was stopped before it was saved"
+  },
+  "warnDownloadCancelled": {
+    "message": "The file was cancelled, so nothing reached your disk."
+  },
+  "warnDownloadShowRecord": {
+    "message": "Show the record"
+  },
+  "warnDownloadSkipped": {
+    "message": "Not checked: $LIST$.",
+    "placeholders": {
+      "list": {
+        "content": "$1"
+      }
+    }
+  },
+  "warnDownloadSource": {
+    "message": "the checks that could run before the file was written"
   },
   "warnFoundBy": {
     "message": "Found by: $BY$",
@@ -605,9 +775,6 @@
       }
     }
   },
-  "warnLookalikeHeadline": {
-    "message": "This address only looks like one you know"
-  },
   "warnLookalikeDetail": {
     "message": "You are on $DECODED$, which resembles $RESEMBLES$.",
     "placeholders": {
@@ -619,65 +786,23 @@
       }
     }
   },
+  "warnLookalikeHeadline": {
+    "message": "This address only looks like one you know"
+  },
   "warnLookalikeSource": {
     "message": "comparing the address on this device"
   },
-  "warnCredentialHeadline": {
-    "message": "Before you type a password here"
+  "warnPasswordHeadline": {
+    "message": "This password has appeared in a breach"
   },
-  "warnCredentialUnknown": {
-    "message": "Not known: $LIST$.",
-    "placeholders": {
-      "list": {
-        "content": "$1"
-      }
-    }
+  "warnPasswordSourceOffline": {
+    "message": "a list built into this extension — nothing was sent"
   },
-  "warnCredentialSource": {
-    "message": "what this device already knows about this site"
+  "warnPasswordSourceOnline": {
+    "message": "Have I Been Pwned (CC BY 4.0), via a range query that sent five characters of the fingerprint"
   },
-  "warnDownloadBlockedHeadline": {
-    "message": "A download was stopped before it was saved"
-  },
-  "warnDownloadCancelled": {
-    "message": "The file was cancelled, so nothing reached your disk."
-  },
-  "warnDownloadSkipped": {
-    "message": "Not checked: $LIST$.",
-    "placeholders": {
-      "list": {
-        "content": "$1"
-      }
-    }
-  },
-  "warnDownloadSource": {
-    "message": "the checks that could run before the file was written"
-  },
-  "warnDownloadShowRecord": {
-    "message": "Show the record"
-  },
-  "warnClickfixCopied": {
-    "message": "This page copied a command for you to run"
-  },
-  "warnClickfixWants": {
-    "message": "This page wants you to run a command outside the browser"
-  },
-  "warnClickfixNever": {
-    "message": "A real verification never asks you to leave the browser and run something."
-  },
-  "warnClickfixUnreadable": {
-    "message": "What was copied could not be read, so it is not shown."
-  },
-  "warnClickfixCopiedWhat": {
-    "message": "It copied: $WHAT$",
-    "placeholders": {
-      "what": {
-        "content": "$1"
-      }
-    }
-  },
-  "warnClickfixNothingYet": {
-    "message": "Nothing has been copied yet."
+  "warnTechsupportDialogs": {
+    "message": "This page keeps raising dialogs that cannot be stopped from here — closing the tab is the way out."
   },
   "warnTechsupportHeadline": {
     "message": "The warning on this page is fake"
@@ -689,73 +814,6 @@
     "message": "The number shown, $PHONE$, reaches the people who made this page.",
     "placeholders": {
       "phone": {
-        "content": "$1"
-      }
-    }
-  },
-  "warnTechsupportDialogs": {
-    "message": "This page keeps raising dialogs that cannot be stopped from here — closing the tab is the way out."
-  },
-  "warnPasswordHeadline": {
-    "message": "This password has appeared in a breach"
-  },
-  "warnPasswordSourceOffline": {
-    "message": "a list built into this extension — nothing was sent"
-  },
-  "warnPasswordSourceOnline": {
-    "message": "Have I Been Pwned (CC BY 4.0), via a range query that sent five characters of the fingerprint"
-  },
-  "journalDefaultVerdict": {
-    "message": "A finding was recorded"
-  },
-  "journalDefaultAction": {
-    "message": "An action was decided"
-  },
-  "journalDefaultError": {
-    "message": "An error with no description: the details were not recorded"
-  },
-  "journalDefaultDisabled": {
-    "message": "A detector was turned off"
-  },
-  "logRulesTruncated": {
-    "message": "$COUNT$ entries from $FEED$ could not be enforced: the browser limits how many blocking rules an extension may install.",
-    "placeholders": {
-      "feed": {
-        "content": "$1"
-      },
-      "count": {
-        "content": "$2"
-      }
-    }
-  },
-  "logKeptVisiting": {
-    "message": "You chose to keep visiting $HOST$ after it was blocked.",
-    "placeholders": {
-      "host": {
-        "content": "$1"
-      }
-    }
-  },
-  "logExtensionDisabled": {
-    "message": "You disabled the extension $ID$.",
-    "placeholders": {
-      "id": {
-        "content": "$1"
-      }
-    }
-  },
-  "logExtensionAccepted": {
-    "message": "You accepted the change to extension $ID$.",
-    "placeholders": {
-      "id": {
-        "content": "$1"
-      }
-    }
-  },
-  "logTrustRevoked": {
-    "message": "You stopped trusting $DOMAIN$; the checks apply to it again.",
-    "placeholders": {
-      "domain": {
         "content": "$1"
       }
     }

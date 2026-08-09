@@ -35,9 +35,9 @@ export function toQueueItems(
         severity: verdict?.severity ?? 'minor',
         createdAt: finding.createdAt,
         summary: snippet
-          ? `Hidden text on ${hostOf(finding.subject)}: "${snippet.slice(0, 80)}"`
-          : `Something was found on ${hostOf(finding.subject)}`,
-        actionLabel: 'Open the page',
+          ? t('popupQueueHidden', hostOf(finding.subject), snippet.slice(0, 80))
+          : t('popupQueueFound', hostOf(finding.subject)),
+        actionLabel: t('popupQueueOpen'),
         // Absent on purpose when there is no verdict to read it from: the queue
         // then says it is ranking by severity alone rather than implying more.
         ...(verdict ? { fixability: 'one-click' as const } : {}),
@@ -120,24 +120,24 @@ function pageVerdict(
 ): { verdict: 'clean' | 'finding' | 'unknown'; reason: string } {
   if (activeUrl === null) {
     // Not knowing which page this is means not being able to say it is clean.
-    return { verdict: 'unknown', reason: 'This page could not be identified, so it was not checked.' }
+    return { verdict: 'unknown', reason: t('popupPageUnknown') }
   }
 
   const subject = subjectOf(activeUrl)
   if (subject === null) {
-    return { verdict: 'unknown', reason: 'This page could not be identified, so it was not checked.' }
+    return { verdict: 'unknown', reason: t('popupPageUnknown') }
   }
 
   const open = findings.filter(
     (finding) => finding.resolvedAt === null && finding.subject === subject,
   )
   return open.length === 0
-    ? { verdict: 'clean', reason: 'No hidden instructions were found on this page.' }
+    ? { verdict: 'clean', reason: t('popupPageClean') }
     : {
         verdict: 'finding',
-        reason: `Hidden text on this page addresses an assistant rather than you (${open.length} finding${
-          open.length === 1 ? '' : 's'
-        }).`,
+        // The count goes in as a number the catalogue places, because English
+        // pluralises with an -s and Russian does not pluralise that way at all.
+        reason: t('popupPageFinding', String(open.length)),
       }
 }
 

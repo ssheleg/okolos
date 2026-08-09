@@ -1,15 +1,74 @@
 {
-  "appName": {
-    "message": "Okolos — защита от скрытых инструкций"
-  },
-  "appDescription": {
-    "message": "Находит на странице текст, спрятанный для вашего ассистента, проверяет ссылки и загрузки и показывает всё, что уходит с устройства."
+  "actionDispute": {
+    "message": "Это неверно"
   },
   "actionTitle": {
     "message": "Okolos"
   },
-  "blockTitle": {
-    "message": "Эта страница заблокирована до загрузки"
+  "appDescription": {
+    "message": "Находит на странице текст, спрятанный для вашего ассистента, проверяет ссылки и загрузки и показывает всё, что уходит с устройства."
+  },
+  "appName": {
+    "message": "Okolos — защита от скрытых инструкций"
+  },
+  "bannerActionClickfix": {
+    "message": "Уйти со страницы"
+  },
+  "bannerActionCredential": {
+    "message": "Уйти со страницы"
+  },
+  "bannerActionDownload": {
+    "message": "Удалить файл"
+  },
+  "bannerActionInjection": {
+    "message": "Показать"
+  },
+  "bannerActionLookalike": {
+    "message": "Показать сравнение"
+  },
+  "bannerActionPassword": {
+    "message": "Сменить пароль"
+  },
+  "bannerActionTechsupport": {
+    "message": "Закрыть страницу"
+  },
+  "bannerDismiss": {
+    "message": "Скрыть"
+  },
+  "bannerRetry": {
+    "message": "Попробовать снова"
+  },
+  "bannerSeverityCritical": {
+    "message": "Критично"
+  },
+  "bannerSeverityInfo": {
+    "message": "К сведению"
+  },
+  "bannerSeverityMajor": {
+    "message": "Серьёзно"
+  },
+  "bannerSeverityMinor": {
+    "message": "Незначительно"
+  },
+  "blockBack": {
+    "message": "Назад"
+  },
+  "blockContinue": {
+    "message": "Всё равно продолжить"
+  },
+  "blockContinueNote": {
+    "message": "Продолжение запомнит этот сайт, чтобы больше не спрашивать, и запишет решение в журнал."
+  },
+  "blockOwner": {
+    "message": "Это мой сайт"
+  },
+  "blockSourceEntryDate": {
+    "message": ", запись от $DATE$",
+    "placeholders": {
+      "date": {
+        "content": "$1"
+      }
+    }
   },
   "blockSourceKnown": {
     "message": "Помечена списком $FEED$$ENTRY$.",
@@ -19,14 +78,6 @@
       },
       "entry": {
         "content": "$2"
-      }
-    }
-  },
-  "blockSourceEntryDate": {
-    "message": ", запись от $DATE$",
-    "placeholders": {
-      "date": {
-        "content": "$1"
       }
     }
   },
@@ -41,86 +92,181 @@
       }
     }
   },
-  "blockBack": {
-    "message": "Назад"
+  "blockTitle": {
+    "message": "Эта страница заблокирована до загрузки"
   },
-  "blockContinue": {
-    "message": "Всё равно продолжить"
+  "comparisonAria": {
+    "message": "Сравнение этого адреса с тем, на который он похож"
   },
-  "blockOwner": {
-    "message": "Это мой сайт"
+  "comparisonClose": {
+    "message": "Закрыть"
   },
-  "blockContinueNote": {
-    "message": "Продолжение запомнит этот сайт, чтобы больше не спрашивать, и запишет решение в журнал."
+  "comparisonDecoded": {
+    "message": "Читается как"
   },
-  "actionDispute": {
-    "message": "Это неверно"
+  "comparisonLeave": {
+    "message": "Уйти"
   },
-  "bannerSeverityCritical": {
-    "message": "Критично"
+  "comparisonReasonBrandSubdomain": {
+    "message": "Знакомое имя здесь есть, но это не тот сайт: его поставили перед другим адресом."
   },
-  "bannerSeverityMajor": {
-    "message": "Серьёзно"
+  "comparisonReasonHomograph": {
+    "message": "Некоторые символы здесь только выглядят как буквы, за которые себя выдают."
   },
-  "bannerSeverityMinor": {
-    "message": "Незначительно"
+  "comparisonReasonMixedScript": {
+    "message": "Это имя написано буквами из нескольких алфавитов."
   },
-  "bannerSeverityInfo": {
-    "message": "К сведению"
+  "comparisonReasonTldSwap": {
+    "message": "Имя то же, но окончание после последней точки другое."
   },
-  "bannerActionInjection": {
-    "message": "Показать"
+  "comparisonReasonTypo": {
+    "message": "Это имя отличается от похожего на одну опечатку."
   },
-  "bannerActionLookalike": {
-    "message": "Показать сравнение"
+  "comparisonResembles": {
+    "message": "Похож на"
   },
-  "bannerActionClickfix": {
-    "message": "Уйти со страницы"
+  "comparisonTitle": {
+    "message": "Этот адрес — не тот, за который его можно принять"
   },
-  "bannerActionTechsupport": {
-    "message": "Закрыть страницу"
+  "comparisonTrust": {
+    "message": "Это настоящий сайт"
   },
-  "bannerActionDownload": {
-    "message": "Удалить файл"
+  "comparisonTrustNote": {
+    "message": "Отметка снимет предупреждение для этого адреса; отменить её можно в настройках."
   },
-  "bannerActionCredential": {
-    "message": "Уйти со страницы"
+  "comparisonVisited": {
+    "message": "Вы на"
   },
-  "bannerActionPassword": {
-    "message": "Сменить пароль"
+  "confidenceCertain": {
+    "message": "точная"
   },
-  "bannerRetry": {
-    "message": "Попробовать снова"
+  "confidenceHigh": {
+    "message": "высокая"
   },
-  "bannerDismiss": {
-    "message": "Скрыть"
+  "confidenceLow": {
+    "message": "низкая"
   },
-  "inspectorTitle": {
-    "message": "Что было скрыто на этой странице"
+  "confidenceMedium": {
+    "message": "средняя"
+  },
+  "extensionsAlreadyOff": {
+    "message": "Уже отключено."
+  },
+  "extensionsChooseFile": {
+    "message": "Выберите файл пакета"
+  },
+  "extensionsDisable": {
+    "message": "Отключить"
+  },
+  "extensionsDisableIt": {
+    "message": "Отключить его"
+  },
+  "extensionsError": {
+    "message": "Опись не удалось прочитать: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "extensionsErrorNote": {
+    "message": "Это не утверждение, что ничего не изменилось."
+  },
+  "extensionsInspectTitle": {
+    "message": "Разобрать пакет"
+  },
+  "extensionsNoChanges": {
+    "message": "С прошлой проверки ничего не изменилось."
+  },
+  "extensionsNoPermissions": {
+    "message": "Особых разрешений нет."
+  },
+  "extensionsNothingOfNote": {
+    "message": "В тексте этого файла ничего примечательного не нашлось."
+  },
+  "extensionsReading": {
+    "message": "Читаем, что установлено…"
+  },
+  "extensionsTitle": {
+    "message": "Что изменилось в ваших расширениях"
+  },
+  "extensionsTrustChange": {
+    "message": "Это изменение нормально"
+  },
+  "feedNamePhishing": {
+    "message": "Список Okolos: фишинг"
+  },
+  "gateAction": {
+    "message": "Попытка: $ACTION$",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "gateAllowOnce": {
+    "message": "Разрешить один раз"
+  },
+  "gateAriaLabel": {
+    "message": "Действие удержано до вашего решения"
+  },
+  "gateBlock": {
+    "message": "Заблокировать"
+  },
+  "gateFindingUnknown": {
+    "message": "На этой странице есть неразобранная находка, которую не удалось описать."
+  },
+  "gateShow": {
+    "message": "Показать инструкцию"
+  },
+  "gateTarget": {
+    "message": "Где: $TARGET$",
+    "placeholders": {
+      "target": {
+        "content": "$1"
+      }
+    }
+  },
+  "gateTitle": {
+    "message": "Что-то попыталось действовать на этой странице"
   },
   "inspectorEmpty": {
     "message": "Страница изменилась после находки, и доказательства больше нет."
   },
-  "inspectorRescan": {
-    "message": "Проверить снова"
-  },
-  "inspectorPartial": {
-    "message": "Страница слишком велика, чтобы проверить её целиком, — найденного может быть больше перечисленного."
-  },
   "inspectorKeep": {
     "message": "Оставить обезвреженным"
   },
-  "inspectorRestore": {
-    "message": "Вернуть страницу"
+  "inspectorLocator": {
+    "message": "Где: $WHERE$",
+    "placeholders": {
+      "where": {
+        "content": "$1"
+      }
+    }
+  },
+  "inspectorLocatorUnknown": {
+    "message": "неизвестно"
   },
   "inspectorNoText": {
     "message": "(текст не сохранён)"
   },
-  "inspectorWhy": {
-    "message": "Почему помечено: $SIGNALS$.",
+  "inspectorPartial": {
+    "message": "Страница слишком велика, чтобы проверить её целиком, — найденного может быть больше перечисленного."
+  },
+  "inspectorRescan": {
+    "message": "Проверить снова"
+  },
+  "inspectorRestore": {
+    "message": "Вернуть страницу"
+  },
+  "inspectorStage": {
+    "message": "Решено: $STAGE$, уверенность $CONFIDENCE$",
     "placeholders": {
-      "signals": {
+      "stage": {
         "content": "$1"
+      },
+      "confidence": {
+        "content": "$2"
       }
     }
   },
@@ -135,258 +281,49 @@
   "inspectorTechniqueUnknown": {
     "message": "не указано"
   },
-  "inspectorLocator": {
-    "message": "Где: $WHERE$",
+  "inspectorTitle": {
+    "message": "Что было скрыто на этой странице"
+  },
+  "inspectorWhy": {
+    "message": "Почему помечено: $SIGNALS$.",
     "placeholders": {
-      "where": {
+      "signals": {
         "content": "$1"
       }
     }
   },
-  "inspectorLocatorUnknown": {
-    "message": "неизвестно"
+  "journalAutomatic": {
+    "message": "сделано автоматически"
   },
-  "inspectorStage": {
-    "message": "Решено: $STAGE$, уверенность $CONFIDENCE$",
-    "placeholders": {
-      "stage": {
-        "content": "$1"
-      },
-      "confidence": {
-        "content": "$2"
-      }
-    }
+  "journalDefaultAction": {
+    "message": "Принято решение по действию"
   },
-  "signalOverride": {
-    "message": "отменяет предыдущие инструкции"
+  "journalDefaultDisabled": {
+    "message": "Детектор был выключен"
   },
-  "signalRoleAssignment": {
-    "message": "назначает ассистенту новую роль"
+  "journalDefaultError": {
+    "message": "Ошибка без описания: подробности не сохранились"
   },
-  "signalVocative": {
-    "message": "обращается к ассистенту напрямую"
-  },
-  "signalSecrecy": {
-    "message": "просит ассистента скрыть это от вас"
-  },
-  "signalConditionalIdentity": {
-    "message": "говорит только с машиной («если ты ИИ…»)"
-  },
-  "signalToolInvocation": {
-    "message": "тянется к инструментам ассистента"
-  },
-  "signalSystemPrompt": {
-    "message": "выдаёт себя за системный слой"
-  },
-  "signalSensitiveTarget": {
-    "message": "просит доступы или коды"
-  },
-  "signalCharAnomaly": {
-    "message": "использует символы, невидимые читателю, но не модели"
-  },
-  "techniqueColorOnColor": {
-    "message": "того же цвета, что и фон"
-  },
-  "techniqueDisplayNone": {
-    "message": "убран из вёрстки"
-  },
-  "techniqueVisibilityHidden": {
-    "message": "сделан невидимым"
-  },
-  "techniqueOpacityZero": {
-    "message": "полностью прозрачен"
-  },
-  "techniqueFontSizeZero": {
-    "message": "сжат до нулевого размера"
-  },
-  "techniqueClip": {
-    "message": "обрезан до ничего"
-  },
-  "techniqueOffscreen": {
-    "message": "вынесен за экран"
-  },
-  "techniqueAriaHidden": {
-    "message": "скрыт от вспомогательных технологий"
-  },
-  "techniqueNonRendered": {
-    "message": "в части страницы, которая никогда не отображается"
-  },
-  "stageDiff": {
-    "message": "сравнение"
-  },
-  "stageRules": {
-    "message": "правила"
-  },
-  "stageModel": {
-    "message": "модель"
-  },
-  "stageFeed": {
-    "message": "список"
-  },
-  "stageInventory": {
-    "message": "опись"
-  },
-  "stageCorpus": {
-    "message": "корпус"
-  },
-  "confidenceCertain": {
-    "message": "точная"
-  },
-  "confidenceHigh": {
-    "message": "высокая"
-  },
-  "confidenceMedium": {
-    "message": "средняя"
-  },
-  "confidenceLow": {
-    "message": "низкая"
-  },
-  "gateAriaLabel": {
-    "message": "Действие удержано до вашего решения"
-  },
-  "gateTitle": {
-    "message": "Что-то попыталось действовать на этой странице"
-  },
-  "gateAction": {
-    "message": "Попытка: $ACTION$",
-    "placeholders": {
-      "action": {
-        "content": "$1"
-      }
-    }
-  },
-  "gateTarget": {
-    "message": "Где: $TARGET$",
-    "placeholders": {
-      "target": {
-        "content": "$1"
-      }
-    }
-  },
-  "gateFindingUnknown": {
-    "message": "На этой странице есть неразобранная находка, которую не удалось описать."
-  },
-  "gateBlock": {
-    "message": "Заблокировать"
-  },
-  "gateAllowOnce": {
-    "message": "Разрешить один раз"
-  },
-  "gateShow": {
-    "message": "Показать инструкцию"
-  },
-  "feedNamePhishing": {
-    "message": "Список Okolos: фишинг"
-  },
-  "popupChecking": {
-    "message": "Страница проверяется…"
-  },
-  "popupRepair": {
-    "message": "Починить хранилище"
-  },
-  "popupSelfAudit": {
-    "message": "Что отправлено"
-  },
-  "popupJournal": {
-    "message": "Журнал"
-  },
-  "popupSettings": {
-    "message": "Настройки"
-  },
-  "queueEmpty": {
-    "message": "Сейчас от вас ничего не нужно."
-  },
-  "queueOpen": {
-    "message": "Открыть"
-  },
-  "queueDone": {
-    "message": "Готово"
-  },
-  "queueDefer": {
-    "message": "Не сейчас"
-  },
-  "trustedTitle": {
-    "message": "Сайты, которые вы отметили настоящими"
-  },
-  "trustedRevoke": {
-    "message": "Перестать доверять"
-  },
-  "comparisonTitle": {
-    "message": "Этот адрес — не тот, за который его можно принять"
-  },
-  "comparisonAria": {
-    "message": "Сравнение этого адреса с тем, на который он похож"
-  },
-  "comparisonVisited": {
-    "message": "Вы на"
-  },
-  "comparisonDecoded": {
-    "message": "Читается как"
-  },
-  "comparisonResembles": {
-    "message": "Похож на"
-  },
-  "comparisonLeave": {
-    "message": "Уйти"
-  },
-  "comparisonTrust": {
-    "message": "Это настоящий сайт"
-  },
-  "comparisonClose": {
-    "message": "Закрыть"
-  },
-  "comparisonTrustNote": {
-    "message": "Отметка снимет предупреждение для этого адреса; отменить её можно в настройках."
-  },
-  "comparisonReasonMixedScript": {
-    "message": "Это имя написано буквами из нескольких алфавитов."
-  },
-  "comparisonReasonHomograph": {
-    "message": "Некоторые символы здесь только выглядят как буквы, за которые себя выдают."
-  },
-  "comparisonReasonTypo": {
-    "message": "Это имя отличается от похожего на одну опечатку."
-  },
-  "comparisonReasonTldSwap": {
-    "message": "Имя то же, но окончание после последней точки другое."
-  },
-  "trustedEmpty": {
-    "message": "Вы ещё не отмечали ни один сайт настоящим. Когда отметите, он появится здесь, и отметку можно будет снять."
-  },
-  "trustedNote": {
-    "message": "Эти адреса больше не вызывают предупреждения. Снятие отметки возвращает проверки сразу."
-  },
-  "trustedGrantedOn": {
-    "message": "Отмечен $DATE$",
-    "placeholders": {
-      "date": {
-        "content": "$1"
-      }
-    }
-  },
-  "comparisonReasonBrandSubdomain": {
-    "message": "Знакомое имя здесь есть, но это не тот сайт: его поставили перед другим адресом."
-  },
-  "journalKindVerdict": {
-    "message": "Найдено"
-  },
-  "journalKindAction": {
-    "message": "Действия"
-  },
-  "journalKindError": {
-    "message": "Проблемы"
-  },
-  "journalKindDisabled": {
-    "message": "Выключено"
-  },
-  "journalTitle": {
-    "message": "Что изменилось с прошлого раза"
+  "journalDefaultVerdict": {
+    "message": "Записана находка"
   },
   "journalEmpty": {
     "message": "Показывать пока нечего — это ваша первая проверка."
   },
-  "journalShowHistory": {
-    "message": "Показать всю историю"
+  "journalKindAction": {
+    "message": "Действия"
+  },
+  "journalKindDisabled": {
+    "message": "Выключено"
+  },
+  "journalKindError": {
+    "message": "Проблемы"
+  },
+  "journalKindVerdict": {
+    "message": "Найдено"
+  },
+  "journalManual": {
+    "message": "это сделали вы"
   },
   "journalRetention": {
     "message": "Всё старше $DAYS$ дней удаляется.",
@@ -396,159 +333,26 @@
       }
     }
   },
-  "journalAutomatic": {
-    "message": "сделано автоматически"
+  "journalShowHistory": {
+    "message": "Показать всю историю"
   },
-  "journalManual": {
-    "message": "это сделали вы"
-  },
-  "recoveryTitle": {
-    "message": "Что делать сейчас"
-  },
-  "recoveryBroadest": {
-    "message": "Точного списка для того, что произошло, у нас нет, поэтому это самый широкий безопасный."
-  },
-  "recoveryAllDone": {
-    "message": "Все шаги сделаны."
-  },
-  "recoveryElsewhere": {
-    "message": "Этот шаг нельзя сделать в этом браузере."
-  },
-  "recoveryArchive": {
-    "message": "Убрать этот случай в архив"
-  },
-  "recoveryPortableTitle": {
-    "message": "Продолжить на другом устройстве"
-  },
-  "recoveryPortableAllHere": {
-    "message": "Все оставшиеся шаги можно сделать здесь, но список всё равно можно взять с собой."
-  },
-  "recoveryPortableElsewhere": {
-    "message": "Шагов, которые нельзя сделать в этом браузере: $COUNT$. Возьмите список с собой — никуда ничего не отправляется.",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "recoveryCopy": {
-    "message": "Скопировать эти шаги"
-  },
-  "extensionsTitle": {
-    "message": "Что изменилось в ваших расширениях"
-  },
-  "extensionsReading": {
-    "message": "Читаем, что установлено…"
-  },
-  "extensionsError": {
-    "message": "Опись не удалось прочитать: $REASON$",
-    "placeholders": {
-      "reason": {
-        "content": "$1"
-      }
-    }
-  },
-  "extensionsErrorNote": {
-    "message": "Это не утверждение, что ничего не изменилось."
-  },
-  "extensionsNoChanges": {
-    "message": "С прошлой проверки ничего не изменилось."
-  },
-  "extensionsNoPermissions": {
-    "message": "Особых разрешений нет."
-  },
-  "extensionsDisable": {
-    "message": "Отключить"
-  },
-  "extensionsDisableIt": {
-    "message": "Отключить его"
-  },
-  "extensionsAlreadyOff": {
-    "message": "Уже отключено."
-  },
-  "extensionsTrustChange": {
-    "message": "Это изменение нормально"
-  },
-  "extensionsInspectTitle": {
-    "message": "Разобрать пакет"
-  },
-  "extensionsChooseFile": {
-    "message": "Выберите файл пакета"
-  },
-  "extensionsNothingOfNote": {
-    "message": "В тексте этого файла ничего примечательного не нашлось."
-  },
-  "leaksTitle": {
-    "message": "Что утекло"
-  },
-  "leaksIdle": {
-    "message": "Пока ничего не проверялось. Проверка отправит ваш адрес источникам, названным ниже, — иначе они не ответят. Пароли не отправляются никогда: та проверка идёт по частичному хешу и отделена от этой."
-  },
-  "leaksCheck": {
-    "message": "Проверить"
-  },
-  "leaksChecking": {
-    "message": "Источники опрашиваются…"
-  },
-  "leaksErrorPrefix": {
-    "message": "Проверку не удалось завершить: $REASON$",
-    "placeholders": {
-      "reason": {
-        "content": "$1"
-      }
-    }
-  },
-  "leaksErrorNote": {
-    "message": "Это не утверждение, что ничего не утекло."
-  },
-  "leaksRetry": {
-    "message": "Попробовать снова"
-  },
-  "leaksNone": {
-    "message": "Для этого адреса утечек не найдено."
-  },
-  "leaksFound": {
-    "message": "Найдено утечек: $COUNT$",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "leaksCheckAgain": {
-    "message": "Проверить снова"
-  },
-  "leaksExposed": {
-    "message": "Раскрыто: $CLASSES$",
-    "placeholders": {
-      "classes": {
-        "content": "$1"
-      }
-    }
-  },
-  "leaksClassesUnknown": {
-    "message": "источник не указал"
-  },
-  "leaksNoDomain": {
-    "message": "Источник не назвал сайт, поэтому отправить вас некуда."
+  "journalTitle": {
+    "message": "Что изменилось с прошлого раза"
   },
   "leaksAttribution": {
     "message": "Данные об утечках — Have I Been Pwned, по лицензии CC BY 4.0."
   },
-  "leaksMarkResolved": {
-    "message": "Отметить решённым"
+  "leaksCheck": {
+    "message": "Проверить"
   },
-  "leaksGroupFreshTitle": {
-    "message": "Недавнее — устройство было заражено"
+  "leaksCheckAgain": {
+    "message": "Проверить снова"
   },
-  "leaksGroupFreshWhy": {
-    "message": "Всё, что хранилось в том браузере, ушло разом, включая сессионные куки: они продолжают работать и после смены пароля. Завершите сессии, а не только смените пароль."
+  "leaksChecking": {
+    "message": "Источники опрашиваются…"
   },
-  "leaksGroupOlderTitle": {
-    "message": "Более старые утечки"
-  },
-  "leaksGroupOlderWhy": {
-    "message": "Сервис, которым вы пользовались, был взломан. Смените пароль там и везде, где вы его повторили."
+  "leaksClassesUnknown": {
+    "message": "источник не указал"
   },
   "leaksCoverage": {
     "message": "Проверено по: $SOURCES$.",
@@ -571,6 +375,372 @@
   },
   "leaksCoverageNone": {
     "message": "Ни один источник не ответил, поэтому проверка не состоялась."
+  },
+  "leaksErrorNote": {
+    "message": "Это не утверждение, что ничего не утекло."
+  },
+  "leaksErrorPrefix": {
+    "message": "Проверку не удалось завершить: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "leaksExposed": {
+    "message": "Раскрыто: $CLASSES$",
+    "placeholders": {
+      "classes": {
+        "content": "$1"
+      }
+    }
+  },
+  "leaksFound": {
+    "message": "Найдено утечек: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "leaksGroupFreshTitle": {
+    "message": "Недавнее — устройство было заражено"
+  },
+  "leaksGroupFreshWhy": {
+    "message": "Всё, что хранилось в том браузере, ушло разом, включая сессионные куки: они продолжают работать и после смены пароля. Завершите сессии, а не только смените пароль."
+  },
+  "leaksGroupOlderTitle": {
+    "message": "Более старые утечки"
+  },
+  "leaksGroupOlderWhy": {
+    "message": "Сервис, которым вы пользовались, был взломан. Смените пароль там и везде, где вы его повторили."
+  },
+  "leaksIdle": {
+    "message": "Пока ничего не проверялось. Проверка отправит ваш адрес источникам, названным ниже, — иначе они не ответят. Пароли не отправляются никогда: та проверка идёт по частичному хешу и отделена от этой."
+  },
+  "leaksMarkResolved": {
+    "message": "Отметить решённым"
+  },
+  "leaksNoDomain": {
+    "message": "Источник не назвал сайт, поэтому отправить вас некуда."
+  },
+  "leaksNone": {
+    "message": "Для этого адреса утечек не найдено."
+  },
+  "leaksRetry": {
+    "message": "Попробовать снова"
+  },
+  "leaksTitle": {
+    "message": "Что утекло"
+  },
+  "logExtensionAccepted": {
+    "message": "Вы приняли изменение в расширении $ID$.",
+    "placeholders": {
+      "id": {
+        "content": "$1"
+      }
+    }
+  },
+  "logExtensionDisabled": {
+    "message": "Вы отключили расширение $ID$.",
+    "placeholders": {
+      "id": {
+        "content": "$1"
+      }
+    }
+  },
+  "logKeptVisiting": {
+    "message": "Вы решили продолжить на $HOST$ после блокировки.",
+    "placeholders": {
+      "host": {
+        "content": "$1"
+      }
+    }
+  },
+  "logRulesTruncated": {
+    "message": "Записей из списка $FEED$, которые не удалось применить: $COUNT$. Браузер ограничивает число блокирующих правил у расширения.",
+    "placeholders": {
+      "feed": {
+        "content": "$1"
+      },
+      "count": {
+        "content": "$2"
+      }
+    }
+  },
+  "logTrustRevoked": {
+    "message": "Вы перестали доверять $DOMAIN$; проверки снова применяются к нему.",
+    "placeholders": {
+      "domain": {
+        "content": "$1"
+      }
+    }
+  },
+  "popupChangedCount": {
+    "message": "$COUNT$ нового с прошлой проверки",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "popupChangedSince": {
+    "message": "Ничего нового с $WHEN$",
+    "placeholders": {
+      "when": {
+        "content": "$1"
+      }
+    }
+  },
+  "popupChecking": {
+    "message": "Страница проверяется…"
+  },
+  "popupFirstRun": {
+    "message": "первого запуска"
+  },
+  "popupJournal": {
+    "message": "Журнал"
+  },
+  "popupPageClean": {
+    "message": "Скрытых инструкций на этой странице не найдено."
+  },
+  "popupPageFinding": {
+    "message": "Скрытый текст на этой странице обращается к ассистенту, а не к вам ($COUNT$).",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "popupPageUnknown": {
+    "message": "Эта страница не опознана, поэтому не проверялась."
+  },
+  "popupQueueFound": {
+    "message": "На $HOST$ что-то найдено",
+    "placeholders": {
+      "host": {
+        "content": "$1"
+      }
+    }
+  },
+  "popupQueueHidden": {
+    "message": "Скрытый текст на $HOST$: «$SNIPPET$»",
+    "placeholders": {
+      "host": {
+        "content": "$1"
+      },
+      "snippet": {
+        "content": "$2"
+      }
+    }
+  },
+  "popupQueueOpen": {
+    "message": "Открыть страницу"
+  },
+  "popupRepair": {
+    "message": "Починить хранилище"
+  },
+  "popupSelfAudit": {
+    "message": "Что отправлено"
+  },
+  "popupSettings": {
+    "message": "Настройки"
+  },
+  "popupStorageNote": {
+    "message": "Это неполадка хранилища. Это не утверждение, что страница в порядке."
+  },
+  "queueDefer": {
+    "message": "Не сейчас"
+  },
+  "queueDone": {
+    "message": "Готово"
+  },
+  "queueEmpty": {
+    "message": "Сейчас от вас ничего не нужно."
+  },
+  "queueOpen": {
+    "message": "Открыть"
+  },
+  "recoveryAllDone": {
+    "message": "Все шаги сделаны."
+  },
+  "recoveryArchive": {
+    "message": "Убрать этот случай в архив"
+  },
+  "recoveryBroadest": {
+    "message": "Точного списка для того, что произошло, у нас нет, поэтому это самый широкий безопасный."
+  },
+  "recoveryCopy": {
+    "message": "Скопировать эти шаги"
+  },
+  "recoveryElsewhere": {
+    "message": "Этот шаг нельзя сделать в этом браузере."
+  },
+  "recoveryPortableAllHere": {
+    "message": "Все оставшиеся шаги можно сделать здесь, но список всё равно можно взять с собой."
+  },
+  "recoveryPortableElsewhere": {
+    "message": "Шагов, которые нельзя сделать в этом браузере: $COUNT$. Возьмите список с собой — никуда ничего не отправляется.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "recoveryPortableTitle": {
+    "message": "Продолжить на другом устройстве"
+  },
+  "recoveryTitle": {
+    "message": "Что делать сейчас"
+  },
+  "signalCharAnomaly": {
+    "message": "использует символы, невидимые читателю, но не модели"
+  },
+  "signalConditionalIdentity": {
+    "message": "говорит только с машиной («если ты ИИ…»)"
+  },
+  "signalOverride": {
+    "message": "отменяет предыдущие инструкции"
+  },
+  "signalRoleAssignment": {
+    "message": "назначает ассистенту новую роль"
+  },
+  "signalSecrecy": {
+    "message": "просит ассистента скрыть это от вас"
+  },
+  "signalSensitiveTarget": {
+    "message": "просит доступы или коды"
+  },
+  "signalSystemPrompt": {
+    "message": "выдаёт себя за системный слой"
+  },
+  "signalToolInvocation": {
+    "message": "тянется к инструментам ассистента"
+  },
+  "signalVocative": {
+    "message": "обращается к ассистенту напрямую"
+  },
+  "stageCorpus": {
+    "message": "корпус"
+  },
+  "stageDiff": {
+    "message": "сравнение"
+  },
+  "stageFeed": {
+    "message": "список"
+  },
+  "stageInventory": {
+    "message": "опись"
+  },
+  "stageModel": {
+    "message": "модель"
+  },
+  "stageRules": {
+    "message": "правила"
+  },
+  "techniqueAriaHidden": {
+    "message": "скрыт от вспомогательных технологий"
+  },
+  "techniqueClip": {
+    "message": "обрезан до ничего"
+  },
+  "techniqueColorOnColor": {
+    "message": "того же цвета, что и фон"
+  },
+  "techniqueDisplayNone": {
+    "message": "убран из вёрстки"
+  },
+  "techniqueFontSizeZero": {
+    "message": "сжат до нулевого размера"
+  },
+  "techniqueNonRendered": {
+    "message": "в части страницы, которая никогда не отображается"
+  },
+  "techniqueOffscreen": {
+    "message": "вынесен за экран"
+  },
+  "techniqueOpacityZero": {
+    "message": "полностью прозрачен"
+  },
+  "techniqueVisibilityHidden": {
+    "message": "сделан невидимым"
+  },
+  "trustedEmpty": {
+    "message": "Вы ещё не отмечали ни один сайт настоящим. Когда отметите, он появится здесь, и отметку можно будет снять."
+  },
+  "trustedGrantedOn": {
+    "message": "Отмечен $DATE$",
+    "placeholders": {
+      "date": {
+        "content": "$1"
+      }
+    }
+  },
+  "trustedNote": {
+    "message": "Эти адреса больше не вызывают предупреждения. Снятие отметки возвращает проверки сразу."
+  },
+  "trustedRevoke": {
+    "message": "Перестать доверять"
+  },
+  "trustedTitle": {
+    "message": "Сайты, которые вы отметили настоящими"
+  },
+  "warnClickfixCopied": {
+    "message": "Эта страница скопировала за вас команду"
+  },
+  "warnClickfixCopiedWhat": {
+    "message": "Скопировано: $WHAT$",
+    "placeholders": {
+      "what": {
+        "content": "$1"
+      }
+    }
+  },
+  "warnClickfixNever": {
+    "message": "Настоящая проверка никогда не просит выйти из браузера и что-то выполнить."
+  },
+  "warnClickfixNothingYet": {
+    "message": "Пока ничего не скопировано."
+  },
+  "warnClickfixUnreadable": {
+    "message": "Что именно скопировано, прочитать не удалось, поэтому здесь не показано."
+  },
+  "warnClickfixWants": {
+    "message": "Эта страница хочет, чтобы вы выполнили команду вне браузера"
+  },
+  "warnCredentialHeadline": {
+    "message": "Прежде чем вводить здесь пароль"
+  },
+  "warnCredentialSource": {
+    "message": "то, что это устройство уже знает об этом сайте"
+  },
+  "warnCredentialUnknown": {
+    "message": "Не известно: $LIST$.",
+    "placeholders": {
+      "list": {
+        "content": "$1"
+      }
+    }
+  },
+  "warnDownloadBlockedHeadline": {
+    "message": "Загрузка остановлена до сохранения"
+  },
+  "warnDownloadCancelled": {
+    "message": "Файл отменён, и на диск ничего не попало."
+  },
+  "warnDownloadShowRecord": {
+    "message": "Показать запись"
+  },
+  "warnDownloadSkipped": {
+    "message": "Не проверено: $LIST$.",
+    "placeholders": {
+      "list": {
+        "content": "$1"
+      }
+    }
+  },
+  "warnDownloadSource": {
+    "message": "проверки, которые успели пройти до записи файла"
   },
   "warnFoundBy": {
     "message": "Найдено: $BY$",
@@ -605,9 +775,6 @@
       }
     }
   },
-  "warnLookalikeHeadline": {
-    "message": "Этот адрес лишь похож на знакомый"
-  },
   "warnLookalikeDetail": {
     "message": "Вы на $DECODED$, а он похож на $RESEMBLES$.",
     "placeholders": {
@@ -619,65 +786,23 @@
       }
     }
   },
+  "warnLookalikeHeadline": {
+    "message": "Этот адрес лишь похож на знакомый"
+  },
   "warnLookalikeSource": {
     "message": "сравнение адреса на этом устройстве"
   },
-  "warnCredentialHeadline": {
-    "message": "Прежде чем вводить здесь пароль"
+  "warnPasswordHeadline": {
+    "message": "Этот пароль встречался в утечке"
   },
-  "warnCredentialUnknown": {
-    "message": "Не известно: $LIST$.",
-    "placeholders": {
-      "list": {
-        "content": "$1"
-      }
-    }
+  "warnPasswordSourceOffline": {
+    "message": "список, встроенный в расширение, — наружу ничего не ушло"
   },
-  "warnCredentialSource": {
-    "message": "то, что это устройство уже знает об этом сайте"
+  "warnPasswordSourceOnline": {
+    "message": "Have I Been Pwned (CC BY 4.0), запрос по диапазону: ушли пять символов отпечатка"
   },
-  "warnDownloadBlockedHeadline": {
-    "message": "Загрузка остановлена до сохранения"
-  },
-  "warnDownloadCancelled": {
-    "message": "Файл отменён, и на диск ничего не попало."
-  },
-  "warnDownloadSkipped": {
-    "message": "Не проверено: $LIST$.",
-    "placeholders": {
-      "list": {
-        "content": "$1"
-      }
-    }
-  },
-  "warnDownloadSource": {
-    "message": "проверки, которые успели пройти до записи файла"
-  },
-  "warnDownloadShowRecord": {
-    "message": "Показать запись"
-  },
-  "warnClickfixCopied": {
-    "message": "Эта страница скопировала за вас команду"
-  },
-  "warnClickfixWants": {
-    "message": "Эта страница хочет, чтобы вы выполнили команду вне браузера"
-  },
-  "warnClickfixNever": {
-    "message": "Настоящая проверка никогда не просит выйти из браузера и что-то выполнить."
-  },
-  "warnClickfixUnreadable": {
-    "message": "Что именно скопировано, прочитать не удалось, поэтому здесь не показано."
-  },
-  "warnClickfixCopiedWhat": {
-    "message": "Скопировано: $WHAT$",
-    "placeholders": {
-      "what": {
-        "content": "$1"
-      }
-    }
-  },
-  "warnClickfixNothingYet": {
-    "message": "Пока ничего не скопировано."
+  "warnTechsupportDialogs": {
+    "message": "Эта страница продолжает открывать окна, которые отсюда не остановить, — выход в том, чтобы закрыть вкладку."
   },
   "warnTechsupportHeadline": {
     "message": "Предупреждение на этой странице поддельное"
@@ -689,73 +814,6 @@
     "message": "Показанный номер, $PHONE$, ведёт к тем, кто сделал эту страницу.",
     "placeholders": {
       "phone": {
-        "content": "$1"
-      }
-    }
-  },
-  "warnTechsupportDialogs": {
-    "message": "Эта страница продолжает открывать окна, которые отсюда не остановить, — выход в том, чтобы закрыть вкладку."
-  },
-  "warnPasswordHeadline": {
-    "message": "Этот пароль встречался в утечке"
-  },
-  "warnPasswordSourceOffline": {
-    "message": "список, встроенный в расширение, — наружу ничего не ушло"
-  },
-  "warnPasswordSourceOnline": {
-    "message": "Have I Been Pwned (CC BY 4.0), запрос по диапазону: ушли пять символов отпечатка"
-  },
-  "journalDefaultVerdict": {
-    "message": "Записана находка"
-  },
-  "journalDefaultAction": {
-    "message": "Принято решение по действию"
-  },
-  "journalDefaultError": {
-    "message": "Ошибка без описания: подробности не сохранились"
-  },
-  "journalDefaultDisabled": {
-    "message": "Детектор был выключен"
-  },
-  "logRulesTruncated": {
-    "message": "Записей из списка $FEED$, которые не удалось применить: $COUNT$. Браузер ограничивает число блокирующих правил у расширения.",
-    "placeholders": {
-      "feed": {
-        "content": "$1"
-      },
-      "count": {
-        "content": "$2"
-      }
-    }
-  },
-  "logKeptVisiting": {
-    "message": "Вы решили продолжить на $HOST$ после блокировки.",
-    "placeholders": {
-      "host": {
-        "content": "$1"
-      }
-    }
-  },
-  "logExtensionDisabled": {
-    "message": "Вы отключили расширение $ID$.",
-    "placeholders": {
-      "id": {
-        "content": "$1"
-      }
-    }
-  },
-  "logExtensionAccepted": {
-    "message": "Вы приняли изменение в расширении $ID$.",
-    "placeholders": {
-      "id": {
-        "content": "$1"
-      }
-    }
-  },
-  "logTrustRevoked": {
-    "message": "Вы перестали доверять $DOMAIN$; проверки снова применяются к нему.",
-    "placeholders": {
-      "domain": {
         "content": "$1"
       }
     }

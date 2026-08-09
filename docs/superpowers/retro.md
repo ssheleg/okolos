@@ -1092,3 +1092,38 @@ think you are testing*.
   it took reading the intent rather than the values, and the check that replaced
   it guards something real that nothing guarded. A duplicated constant is not a
   defect on its own; a constraint nobody asserts is.
+
+### 2026-08-09 — the catalogue was guarded on one side only
+
+- **Symptom:** with the screenshots finally rendering Russian, the popup came
+  out half in each language, and the first-run screen came out entirely in
+  English — on a build declaring `default_locale: ru` with 195 Russian keys.
+- **Root cause:** 49 user-facing sentences are held in the code rather than
+  asked of the catalogue. `tools/locales.test.ts` checks the catalogue
+  thoroughly — same keys in every locale, no empty messages, every key the code
+  asks for exists, nothing present that nobody asks for — and never asks
+  whether the code goes around it. A gate that guards one side of a boundary
+  and does not know the other side exists.
+- **How the harness was fixed on the way, and what that taught:** Chrome picks
+  a catalogue by its *application* locale, and the browsers here ship no locale
+  packs, so that locale is en_GB whatever `--lang` says. The fix needs no other
+  browser: take the shots against a copy of the build with `_locales/en`
+  removed, and Chrome falls back to `default_locale`, which is `ru`. Every
+  string rendered is the real catalogue's; the extension's code is byte-identical.
+- **The check that agreed with itself, twice.** Yesterday's guard read
+  `@@ui_locale` — and would have refused this very run, since Chrome still
+  calls its locale en_GB while resolving Russian. Corrected to compare the
+  rendered string against the catalogue, it then passed while `02-first-run`
+  was English from its heading down, because it read one key on one screen. It
+  now runs per screen: this product ships Russian first, so a screen with no
+  Cyrillic anywhere is a screen nobody translated. Blunt on purpose — it cannot
+  catch a half-translated screen, and it cannot be satisfied by a lucky string.
+- **A test pinned to prose, again.** Moving the popup's "Nothing new since…"
+  into the catalogue turned a unit test red on a screen that had become more
+  correct. It asserted `/nothing new/i`. It asserts the moment now — the
+  control's promise is that a zero is never shown bare, not that it is shown in
+  English.
+- **Fix by grade:** the popup's nine sentences are in the catalogue (10 keys);
+  the remaining 43 in 14 files are a ledger row with a measured count, not a
+  vague "finish i18n"; and `pnpm screenshots` names every untranslated screen
+  and exits non-zero.

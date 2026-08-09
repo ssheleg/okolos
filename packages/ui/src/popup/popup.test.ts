@@ -99,7 +99,14 @@ describe('what changed', () => {
 
   it('says when it last looked rather than showing a bare zero', () => {
     const el = render(READY)
-    expect(role(el, 'changed')?.textContent).toMatch(/nothing new/i)
+    const label = role(el, 'changed')?.textContent ?? ''
+    // The moment, not the wording. This assertion used to match /nothing new/i,
+    // which pinned one language's prose: the day the line moved into the
+    // catalogue the test failed on a screen that had become more correct, not
+    // less. What the control actually promises is that a zero is never shown
+    // bare — it names the point it is counting from.
+    expect(label).toContain('2026-08-05')
+    expect(label.length).toBeGreaterThan('2026-08-05'.length)
   })
 })
 

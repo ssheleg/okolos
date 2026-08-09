@@ -61,7 +61,7 @@ export function renderPopup(
       text(
         doc,
         'error-note',
-        'This is a storage problem. It is not a statement that this page is fine.',
+        t('popupStorageNote'),
       ),
       button(doc, 'repair', t('popupRepair'), handlers.onRepair),
     )
@@ -95,8 +95,8 @@ function changedLine(
   el.setAttribute('data-role', 'changed')
   el.textContent =
     changed > 0
-      ? `${changed} new since your last check`
-      : `Nothing new since ${lastCheck ? shortTime(lastCheck) : 'your first run'}`
+      ? t('popupChangedCount', String(changed))
+      : t('popupChangedSince', lastCheck ? shortTime(lastCheck) : t('popupFirstRun'))
   el.addEventListener('click', handlers.onWhatChanged)
   return el
 }
@@ -113,8 +113,11 @@ function footer(doc: Document, handlers: PopupHandlers): HTMLElement {
 }
 
 function shortTime(iso: string): string {
-  // Deliberately not localised: one language ships first, and a half-translated
-  // timestamp reads worse than an unambiguous one.
+  // The timestamp itself stays language-neutral: digits and UTC read the same
+  // in both catalogues, and a half-localised date is worse than an unambiguous
+  // one. The sentence around it is not neutral, and that part now comes from
+  // the catalogue — the older comment justified leaving the whole line in
+  // English back when English was the language that shipped first. It is not.
   return iso.replace('T', ' ').replace(/\.\d+Z$/, ' UTC')
 }
 

@@ -12,11 +12,34 @@
  * with the state seeded through the same storage the product uses.
  */
 import { chromium } from '@playwright/test'
-import { mkdirSync } from 'node:fs'
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import path from 'node:path'
 
 const root = path.resolve(import.meta.dirname, '..')
 const BUILD = path.join(root, 'apps/extension/dist/chrome')
+
+/**
+ * A copy of the build with the English catalogue removed.
+ *
+ * `chrome.i18n` picks a catalogue by Chrome's *application* locale, and the
+ * browsers available here ship no locale packs, so that locale is en_GB
+ * whatever `--lang` says. What Chrome does do reliably is fall back to
+ * `default_locale` when the chosen one is absent — and this project's
+ * `default_locale` is `ru`.
+ *
+ * So the shots are taken against the real build minus one directory. Every
+ * string rendered is the real Russian catalogue the real user gets; nothing is
+ * substituted, and the extension's own code is byte-identical.
+ */
+function stageRussianOnly() {
+  const staged = mkdtempSync(path.join(tmpdir(), 'okolos-shots-'))
+  cpSync(BUILD, staged, { recursive: true })
+  rmSync(path.join(staged, '_locales/en'), { recursive: true, force: true })
+  return staged
+}
+
+const STAGED = stageRussianOnly()
 const OUT = path.join(root, 'docs/store/screenshots')
 
 /** What the store asks for. Anything else is rejected at upload. */
@@ -36,7 +59,7 @@ const context = await chromium.launchPersistentContext('', {
   // The consequence was four English screenshots on a Russian-first listing,
   // taken by a tool whose comment promised the opposite. The guard below now
   // refuses to write them rather than letting the claim stand.
-  args: [`--disable-extensions-except=${BUILD}`, `--load-extension=${BUILD}`, '--lang=ru'],
+  args: [`--disable-extensions-except=${STAGED}`, `--load-extension=${STAGED}`, '--lang=ru'],
   locale: 'ru-RU',
   viewport: SIZE,
 })
@@ -63,12 +86,35 @@ const CENTRE = `
   }
 `
 
+/** Screens that went out untranslated, and the shot that caught each one. */
+const untranslated = []
+
 async function shot(name, open, { centre = false } = {}) {
   const page = await context.newPage()
   await page.setViewportSize(SIZE)
   await open(page)
   if (centre) await page.addStyleTag({ content: CENTRE })
   await page.waitForTimeout(400)
+
+  /**
+   * Per screen, not once per run.
+   *
+   * The first version of this check read one key on one screen and passed —
+   * while `02-first-run` was English from its heading to its last button. A
+   * listing is four images, and one of them being right says nothing about the
+   * other three.
+   *
+   * The rule is deliberately blunt: this product ships Russian first, so a
+   * screen with no Cyrillic anywhere in its visible text is a screen nobody
+   * translated. It cannot catch a half-translated screen — that is what
+   * `tools/locales.test.ts` and the catalogue sweep are for — but it cannot be
+   * satisfied by a lucky string either.
+   */
+  const visible = await page.evaluate(() => document.body.innerText)
+  if (!/[а-яА-ЯёЁ]/.test(visible)) {
+    untranslated.push({ name, sample: visible.trim().split('\n')[0]?.slice(0, 60) ?? '' })
+  }
+
   await page.screenshot({ path: path.join(OUT, `${name}.png`) })
   await page.close()
   console.log(`   ${name}.png`)
@@ -136,16 +182,24 @@ async function seedFindings(page) {
     sample: chrome.i18n.getMessage('popupSelfAudit'),
   }))
   await page.close()
-  if (!seen.locale.startsWith('ru')) {
+  // Compared against the catalogue, not against the locale's name. The first
+  // version of this check read `@@ui_locale` and would have refused this very
+  // run: with the English catalogue staged out, Chrome still calls its locale
+  // en_GB while resolving every string from `ru`. What matters is the sentence
+  // that reaches the image.
+  const expected = JSON.parse(
+    readFileSync(path.join(root, 'apps/extension/_locales/ru/messages.json'), 'utf8'),
+  ).popupSelfAudit.message
+  if (seen.sample !== expected) {
     console.error(
-      `\nscreenshots: refusing to write. The extension is resolving messages as ` +
-        `${seen.locale}, not ru — "popupSelfAudit" came back as ${JSON.stringify(seen.sample)}.\n` +
-        `  The listing is Russian first, so English shots would misrepresent the product.\n` +
-        `  Cause, measured: the browser used here ships no locale packs, so Chrome's\n` +
-        `  application locale falls back regardless of --lang. Run against a browser that\n` +
-        `  has them (a real Chrome install) and re-run.`,
+      `\nscreenshots: refusing to write. "popupSelfAudit" rendered as ` +
+        `${JSON.stringify(seen.sample)}, and the Russian catalogue says ` +
+        `${JSON.stringify(expected)} (Chrome reports its locale as ${seen.locale}).\n` +
+        `  The listing is Russian first, so shots in another language would\n` +
+        `  misrepresent the product — and an image is the one artefact nobody diffs.`,
     )
     await context.close()
+    rmSync(STAGED, { recursive: true, force: true })
     process.exit(1)
   }
 }
@@ -179,4 +233,16 @@ await shot(
 )
 
 await context.close()
+rmSync(STAGED, { recursive: true, force: true })
+
+if (untranslated.length > 0) {
+  console.error(
+    `\nscreenshots: ${untranslated.length} of the images show a screen with no Russian on it.\n` +
+      untranslated.map((u) => `  ${u.name}: "${u.sample}"`).join('\n') +
+      `\n\n  The files were written — they are the truth about the build — but the\n` +
+      `  listing cannot use them. Those screens render sentences the code holds\n` +
+      `  directly instead of asking the catalogue for them.`,
+  )
+  process.exit(1)
+}
 console.log(`\nwrote to ${path.relative(root, OUT)} at ${SIZE.width}×${SIZE.height}`)

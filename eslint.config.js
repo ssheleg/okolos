@@ -112,6 +112,10 @@ export default tseslint.config(
         document: 'readonly',
         window: 'readonly',
         Buffer: 'readonly',
+        // Two tools run code inside the browser via page.evaluate, where the
+        // page's globals are the ones in scope, not Node's.
+        chrome: 'readonly',
+        indexedDB: 'readonly',
       },
     },
   },

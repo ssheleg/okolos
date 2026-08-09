@@ -1024,3 +1024,36 @@ think you are testing*.
 - **The wider point:** a gate that pins prose rather than facts will be
   satisfied by wrong prose and will refuse right prose. Assert what was
   measured, and let the sentence be written by whoever writes sentences.
+
+### 2026-08-09 — the check that agreed with the intention
+
+- **Symptom:** four Chrome Web Store screenshots were in English, on a
+  Russian-first listing, taken by a tool whose own comment said `--lang=ru`
+  existed precisely to prevent that.
+- **Surfaced at:** looking at the regenerated image, while fixing an unrelated
+  framing defect. Nothing was failing.
+- **Root cause, measured rather than assumed:** `chrome.i18n.getUILanguage()`
+  returns `ru-RU` and `chrome.i18n.getMessage('@@ui_locale')` returns `en_GB`
+  **in the same call**. Playwright's bundled Chromium ships no locale packs at
+  all, so Chrome's application locale — the one message selection actually uses
+  — falls back regardless of the flag.
+- **Why it survived:** the obvious check agrees with the intention. Anyone
+  verifying `--lang=ru` by asking `getUILanguage()` gets `ru-RU` and stops.
+- **The near-miss worth recording:** the first reading of this was "the product
+  ships in English", which would have been wrong and expensive. The built
+  artefact carries `default_locale: ru` and 195 Russian keys; a real Chrome has
+  220 locale packs. It is the screenshot harness that cannot render Russian,
+  not the extension that cannot speak it. Standing instruction 9 earned its
+  place again — and one level further than usual, because the misleading number
+  came from the browser rather than from a diagnostic.
+- **Fix:** `pnpm screenshots` now reads `@@ui_locale`, refuses to write a single
+  file when it is not Russian, and prints the cause and the way out. Verified by
+  planting: with the check disabled it writes four English images; restored, it
+  refuses. An image is the one artefact nobody diffs, so a silent wrong one
+  looks finished.
+- **Also fixed, and smaller than it looked:** the popup is a ~390px panel shot
+  into a 1280×800 frame, so it sat in the corner with two thirds empty. It is
+  centred now, with a seeded queue — a listing image of "nothing needs you" is a
+  picture of the product with nothing to say. The reported "footer buttons
+  stacked" was measured and **is not a defect**: three labels do not fit on one
+  line at panel width, and they wrap.

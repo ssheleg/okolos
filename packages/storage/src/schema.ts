@@ -57,6 +57,17 @@ export interface ExceptionRecord {
   scope: 'domain' | 'rule' | 'extension'
   ref: string
   createdAt: string
+  /**
+   * A catalogue key, resolved when the row is read, so the reader's language
+   * decides rather than the language in force when they clicked. The same
+   * shape the journal already uses for `explainKey`.
+   */
+  reasonKey?: string
+  /**
+   * A sentence stored before that move. It stays as written — rewriting it to
+   * look translated would be inventing which key it came from, and the trusted
+   * list is a record of decisions, not a place to guess.
+   */
   reason?: string
 }
 

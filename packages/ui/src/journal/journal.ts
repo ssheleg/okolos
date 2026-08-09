@@ -53,7 +53,7 @@ export function renderJournal(
         'empty',
         diff.since === null
           ? t('journalEmpty')
-          : `Nothing changed since ${shortTime(diff.since)}.`,
+          : t('journalNothingChanged', shortTime(diff.since)),
       ),
     )
   } else {

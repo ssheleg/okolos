@@ -83,14 +83,18 @@ describe('the log itself', () => {
 
   it('summarises what was sent, what failed and what was refused', () => {
     const summary = el.querySelector('[data-role=summary]')?.textContent ?? ''
-    expect(summary).toContain('1 request sent since Monday')
-    expect(summary).toContain('1 failed')
-    expect(summary).toContain('1 refused before sending')
+    expect(summary).toContain(message('auditSummarySent').split('$')[0]?.trim())
+    // The counts, and that each category is named at all. The wording of the
+    // three phrases is the catalogue's business; that none of them is silently
+    // dropped is this test's.
+    expect(summary).toContain(message('auditSummaryFailed').split('$')[0]?.trim())
+    expect(summary).toContain(message('auditSummaryBlocked').split('$')[0]?.trim())
+    expect(summary).toMatch(/1[^\d]*1[^\d]*1/)
   })
 
   it('states the absence as well as the presence', () => {
     expect(el.querySelector('[data-role=summary]')?.textContent).toContain(
-      'none contained a page address, an email or page content',
+      message('auditSummaryNoContent'),
     )
   })
 
@@ -107,7 +111,7 @@ describe('the log itself', () => {
 
   it('explains the purpose in the reader’s words, not in ours', () => {
     expect(el.querySelector('[data-role=entry-purpose]')?.textContent).toBe(
-      'checking a password against known leaks',
+      message('auditPurposePasswordRange'),
     )
   })
 

@@ -20,11 +20,73 @@
   "auditHeading": {
     "message": "Что ушло с этого устройства"
   },
+  "auditPayloadNone": {
+    "message": "ничего"
+  },
+  "auditPurposeDomainStatus": {
+    "message": "проверка статуса домена"
+  },
+  "auditPurposeFeedUpdate": {
+    "message": "скачивание списка известных плохих сайтов"
+  },
+  "auditPurposeFileHash": {
+    "message": "проверка скачанного файла"
+  },
+  "auditPurposeLeakLookup": {
+    "message": "проверка адреса по утечкам"
+  },
+  "auditPurposeModelUpdate": {
+    "message": "скачивание модели детекции"
+  },
+  "auditPurposePasswordRange": {
+    "message": "проверка пароля по утечкам"
+  },
   "auditReading": {
     "message": "Журнал читается…"
   },
   "auditRepair": {
     "message": "Починить хранилище"
+  },
+  "auditSinceSevenDays": {
+    "message": "последние семь дней"
+  },
+  "auditSummaryBlocked": {
+    "message": "остановлено до отправки: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "auditSummaryFailed": {
+    "message": "не удалось: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "auditSummaryNoContent": {
+    "message": "ни в одном не было адреса страницы, почты или её содержимого"
+  },
+  "auditSummarySent": {
+    "message": "запросов отправлено с $SINCE$: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "since": {
+        "content": "$2"
+      }
+    }
+  },
+  "auditTriggeredBy": {
+    "message": "источник: $WHAT$",
+    "placeholders": {
+      "what": {
+        "content": "$1"
+      }
+    }
   },
   "auditUnread": {
     "message": "Журнал не прочитался: $CAUSE$",
@@ -496,6 +558,14 @@
   "journalManual": {
     "message": "это сделали вы"
   },
+  "journalNothingChanged": {
+    "message": "С $WHEN$ ничего не менялось.",
+    "placeholders": {
+      "when": {
+        "content": "$1"
+      }
+    }
+  },
   "journalRetention": {
     "message": "Всё старше $DAYS$ дней удаляется.",
     "placeholders": {
@@ -876,6 +946,15 @@
   },
   "techniqueVisibilityHidden": {
     "message": "сделан невидимым"
+  },
+  "trustChangeAccepted": {
+    "message": "вы приняли это изменение"
+  },
+  "trustContinuedPastBlock": {
+    "message": "вы продолжили, несмотря на блокировку"
+  },
+  "trustMarkedLegitimate": {
+    "message": "вы отметили сайт как настоящий"
   },
   "trustedEmpty": {
     "message": "Вы ещё не отмечали ни один сайт настоящим. Когда отметите, он появится здесь, и отметку можно будет снять."

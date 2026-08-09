@@ -79,10 +79,10 @@ function summarise(entries: readonly AuditEntry[], since: string): string {
   const blocked = entries.filter((e) => e.outcome === 'blocked-by-redactor').length
   const failed = entries.filter((e) => e.outcome === 'failed').length
 
-  const parts = [`${sent} request${sent === 1 ? '' : 's'} sent since ${since}`]
-  if (failed > 0) parts.push(`${failed} failed`)
-  if (blocked > 0) parts.push(`${blocked} refused before sending`)
-  parts.push('none contained a page address, an email or page content')
+  const parts = [t('auditSummarySent', String(sent), since)]
+  if (failed > 0) parts.push(t('auditSummaryFailed', String(failed)))
+  if (blocked > 0) parts.push(t('auditSummaryBlocked', String(blocked)))
+  parts.push(t('auditSummaryNoContent'))
   return `${parts.join(' · ')}.`
 }
 
@@ -93,22 +93,36 @@ function row(doc: Document, entry: AuditEntry): HTMLLIElement {
   item.append(
     text(doc, 'entry-time', entry.createdAt),
     text(doc, 'entry-destination', entry.destination),
-    text(doc, 'entry-purpose', PURPOSE_WORDING[entry.purpose] ?? entry.purpose),
-    // The exact shape of what was sent, in the user's terms rather than ours.
-    text(doc, 'entry-payload', entry.payloadShape),
-    text(doc, 'entry-trigger', `triggered by ${entry.triggeredBy}`),
+    // The purpose id is the fallback on purpose: a destination this build does
+    // not have wording for is still shown, named as the contract names it,
+    // rather than vanishing from the log that exists to be complete.
+    text(doc, 'entry-purpose', purposeKey(entry.purpose) ? t(purposeKey(entry.purpose) as string) : entry.purpose),
+    // Translated on read, never on write. `payloadShape` is stored in the audit
+    // log, and a log written in whatever language was active that day stops
+    // being one record. Only the bare "none" is prose; `email:…` and
+    // `hash-prefix:…` are shapes, and shapes are the same in every language.
+    text(
+      doc,
+      'entry-payload',
+      entry.payloadShape === 'none' ? t('auditPayloadNone') : entry.payloadShape,
+    ),
+    text(doc, 'entry-trigger', t('auditTriggeredBy', entry.triggeredBy)),
   )
   return item
 }
 
-const PURPOSE_WORDING: Record<string, string> = {
-  'feed-update': 'downloading the list of known-bad sites',
-  'model-update': 'downloading the detection model',
-  'password-range': 'checking a password against known leaks',
-  'leak-lookup': 'checking an address against known breaches',
-  'file-hash': 'checking a downloaded file',
-  'domain-status': 'checking a domain status',
+/** Keys, not sentences: a table of words built at module load resolves before
+ * `useResolver` runs and freezes the fallback into every screen. */
+const PURPOSE_KEY: Record<string, string> = {
+  'feed-update': 'auditPurposeFeedUpdate',
+  'model-update': 'auditPurposeModelUpdate',
+  'password-range': 'auditPurposePasswordRange',
+  'leak-lookup': 'auditPurposeLeakLookup',
+  'file-hash': 'auditPurposeFileHash',
+  'domain-status': 'auditPurposeDomainStatus',
 }
+
+const purposeKey = (purpose: string): string | undefined => PURPOSE_KEY[purpose]
 
 function text(doc: Document, role: string, content: string): HTMLParagraphElement {
   const el = doc.createElement('p')

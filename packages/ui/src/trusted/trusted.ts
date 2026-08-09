@@ -20,7 +20,9 @@ import { t } from '@okolos/i18n'
 export interface TrustedDomain {
   readonly domain: string
   readonly grantedAt: string
-  /** The user's own words, or ours describing what they clicked. */
+  /** A catalogue key, resolved here so the reader's language decides. */
+  readonly reasonKey?: string
+  /** A sentence stored before the move to keys. Shown as recorded. */
   readonly reason?: string
 }
 
@@ -69,8 +71,10 @@ export function renderTrusted(
       text(
         doc,
         'granted',
-        entry.reason
-          ? `${shortDate(entry.grantedAt)} — ${entry.reason}`
+        // Key first, stored sentence second, date alone when there is neither
+        // — the same order the journal reads in, for the same reason.
+        entry.reasonKey ?? entry.reason
+          ? `${shortDate(entry.grantedAt)} — ${entry.reasonKey ? t(entry.reasonKey) : entry.reason}`
           : t('trustedGrantedOn', shortDate(entry.grantedAt)),
       ),
       button(doc, 'revoke', t('trustedRevoke'), () => handlers.onRevoke(entry.domain)),

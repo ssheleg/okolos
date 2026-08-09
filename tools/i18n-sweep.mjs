@@ -6,6 +6,13 @@
  *   node tools/i18n-sweep.mjs          # the count, by file
  *   node tools/i18n-sweep.mjs --list   # every hit, with its line
  *
+ * **What it cannot see.** Untranslated copy also travels as *data*: a value
+ * passed into a substitution (`since: 'the last seven days'`), and a field
+ * stored on a record and rendered later (`payloadShape: 'none'`). Both looked
+ * like arguments to this sweep and like English to the reader, and both were
+ * found by looking at a screenshot rather than by counting. A number from here
+ * is a floor, not a total.
+ *
  * It exists because the number kept being wrong. Four iterations reported 49,
  * 43, 36 and 15 remaining, each derived by a fresh throwaway regex, and every
  * one of them undercounted: the pattern required a capital first letter, and

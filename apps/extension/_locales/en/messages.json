@@ -20,11 +20,73 @@
   "auditHeading": {
     "message": "What left this device"
   },
+  "auditPayloadNone": {
+    "message": "none"
+  },
+  "auditPurposeDomainStatus": {
+    "message": "checking a domain status"
+  },
+  "auditPurposeFeedUpdate": {
+    "message": "downloading the list of known-bad sites"
+  },
+  "auditPurposeFileHash": {
+    "message": "checking a downloaded file"
+  },
+  "auditPurposeLeakLookup": {
+    "message": "checking an address against known breaches"
+  },
+  "auditPurposeModelUpdate": {
+    "message": "downloading the detection model"
+  },
+  "auditPurposePasswordRange": {
+    "message": "checking a password against known leaks"
+  },
   "auditReading": {
     "message": "Reading the log…"
   },
   "auditRepair": {
     "message": "Repair storage"
+  },
+  "auditSinceSevenDays": {
+    "message": "the last seven days"
+  },
+  "auditSummaryBlocked": {
+    "message": "$COUNT$ refused before sending",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "auditSummaryFailed": {
+    "message": "$COUNT$ failed",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "auditSummaryNoContent": {
+    "message": "none contained a page address, an email or page content"
+  },
+  "auditSummarySent": {
+    "message": "$COUNT$ requests sent since $SINCE$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "since": {
+        "content": "$2"
+      }
+    }
+  },
+  "auditTriggeredBy": {
+    "message": "triggered by $WHAT$",
+    "placeholders": {
+      "what": {
+        "content": "$1"
+      }
+    }
   },
   "auditUnread": {
     "message": "The log could not be read: $CAUSE$",
@@ -496,6 +558,14 @@
   "journalManual": {
     "message": "you did this"
   },
+  "journalNothingChanged": {
+    "message": "Nothing changed since $WHEN$.",
+    "placeholders": {
+      "when": {
+        "content": "$1"
+      }
+    }
+  },
   "journalRetention": {
     "message": "Anything older than $DAYS$ days is deleted.",
     "placeholders": {
@@ -876,6 +946,15 @@
   },
   "techniqueVisibilityHidden": {
     "message": "made invisible"
+  },
+  "trustChangeAccepted": {
+    "message": "the user accepted this change"
+  },
+  "trustContinuedPastBlock": {
+    "message": "continued past a block"
+  },
+  "trustMarkedLegitimate": {
+    "message": "marked legitimate by the user"
   },
   "trustedEmpty": {
     "message": "You have not marked any site as legitimate. When you do, it will be listed here and you can take it back."

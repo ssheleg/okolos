@@ -342,7 +342,7 @@ async function load(): Promise<PanelState> {
     const db = await openDb()
     const entries = await db.getAll('outbound_log')
     if (entries.length === 0) return { kind: 'empty' }
-    return { kind: 'ready', entries, since: 'the last seven days' }
+    return { kind: 'ready', entries, since: t('auditSinceSevenDays') }
   } catch (cause) {
     return { kind: 'error', message: String(cause) }
   }

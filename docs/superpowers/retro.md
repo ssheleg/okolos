@@ -1149,3 +1149,32 @@ think you are testing*.
   down, reviewable and the same every run, and `--list` prints file and line so
   the number can be checked rather than believed. The generate-what-would-drift
   rule (ADR-0007) applies to measurements, not only to documents.
+
+### 2026-08-09 — untranslated copy travelling as data
+
+- **Symptom:** the self-audit screenshot read "запросов отправлено с the last
+  seven days: 1", and one row's payload said "none" among Russian neighbours —
+  while `pnpm i18n:sweep`, written that same hour to stop exactly this kind of
+  guessing, reported the file clean.
+- **Root cause:** a sweep over source literals can only see copy that *is* a
+  literal in the module that renders it. Two other shapes exist and it is blind
+  to both:
+    - a value handed in as a substitution — `since: 'the last seven days'` sits
+      in the options page, arrives as an argument, and reads as English inside a
+      Russian sentence;
+    - a field stored on a record and rendered later — `payloadShape: 'none'`,
+      written by the background into the audit log.
+- **Owned by:** the measurement, again, and this time it was found by looking
+  at a picture. The sweep now says so in its own docstring: a number from it is
+  a floor, not a total.
+- **The stored-field case has a rule, and it is not "translate it".** The audit
+  log and the trusted list are records. Translating on write freezes whichever
+  language was active that day into evidence, and a log half in each language
+  has stopped being one record. So: store a key, resolve on read — the pattern
+  the journal already used for `explainKey`, now extended to exception rows
+  (`reasonKey`) and to the one payload shape that is prose rather than shape.
+  `email:…` and `hash-prefix:…` stay as they are; a shape reads the same in
+  every language.
+- **No migration, deliberately**, following the journal's note: guessing which
+  key an old English sentence came from is how a record stops being evidence.
+  Rows written before today keep their sentence and are shown as written.

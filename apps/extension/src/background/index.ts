@@ -286,7 +286,7 @@ async function allowBlocked(payload: { url: string }): Promise<{ url: string } |
       scope: 'domain',
       ref: host,
       createdAt: new Date().toISOString(),
-      reason: 'continued past a block',
+      reasonKey: 'trustContinuedPastBlock',
     })
     await db.put('journal', {
       id: `exception:${host}:${new Date().toISOString()}`,
@@ -486,7 +486,7 @@ async function trustExtensionChange(payload: { id: string }): Promise<{ ok: true
       scope: 'extension',
       ref: payload.id,
       createdAt: now,
-      reason: 'the user accepted this change',
+      reasonKey: 'trustChangeAccepted',
     })
     await db.put('journal', {
       id: `extension-trusted:${payload.id}:${now}`,
@@ -578,7 +578,7 @@ async function openRecovery(payload: { kind: string }): Promise<{ ok: true }> {
 
 async function listTrusted(): Promise<{
   domains: string[]
-  entries: Array<{ domain: string; grantedAt: string; reason?: string }>
+  entries: Array<{ domain: string; grantedAt: string; reasonKey?: string; reason?: string }>
 }> {
   try {
     const db = await openDb()
@@ -588,6 +588,9 @@ async function listTrusted(): Promise<{
       entries: rows.map((row) => ({
         domain: row.ref,
         grantedAt: row.createdAt,
+        // Both travel: the key for rows written since the move, the sentence
+        // for those written before it. The screen decides which it has.
+        ...(row.reasonKey ? { reasonKey: row.reasonKey } : {}),
         ...(row.reason ? { reason: row.reason } : {}),
       })),
     }
@@ -630,7 +633,7 @@ async function addTrusted(payload: { domain: string }): Promise<{ ok: true }> {
       scope: 'domain',
       ref: payload.domain,
       createdAt: new Date().toISOString(),
-      reason: 'marked legitimate by the user',
+      reasonKey: 'trustMarkedLegitimate',
     })
     await refreshBlockRules()
   } catch (cause) {

@@ -11,6 +11,19 @@ let handle: OkolosDatabase | null = null
  * by the browser at will, so nothing may live in memory between calls — but
  * within a single wake-up, reopening on every read would be wasteful.
  */
+/**
+ * The password-reuse index, added in version 4.
+ *
+ * Keyed by [tag, host] so one password on one site is one row however often it
+ * is submitted, and indexed by tag so "where else" is a lookup rather than a
+ * scan of everything the user has ever typed a password into.
+ */
+function addReuseStore(db: IDBPDatabase<OkolosDB>): void {
+  if (db.objectStoreNames.contains('reuse')) return
+  const reuse = db.createObjectStore('reuse', { keyPath: ['tag', 'host'] })
+  reuse.createIndex('by-tag', 'tag')
+}
+
 export async function openDb(): Promise<OkolosDatabase> {
   if (handle) return handle
 
@@ -21,6 +34,7 @@ export async function openDb(): Promise<OkolosDatabase> {
       if (from > 0 && db.objectStoreNames.contains('findings')) {
         if (from < 2) addModelStore(db)
         if (from < 3) addFeedStore(db)
+        if (from < 4) addReuseStore(db)
         return
       }
 
@@ -43,6 +57,7 @@ export async function openDb(): Promise<OkolosDatabase> {
       db.createObjectStore('snapshots', { keyPath: 'extensionId' })
       addModelStore(db)
       addFeedStore(db)
+      addReuseStore(db)
     },
   })
 

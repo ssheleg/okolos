@@ -455,6 +455,20 @@ if (isTopFrame) {
 }
 
 /**
+ * What the banner says about reuse, and the distinction it must not blur.
+ *
+ * "Not seen anywhere else" and "never seen at all" are different sentences.
+ * A fresh install knows nothing, and a panel that reads its own emptiness as
+ * reassurance is the reason the "Check reuse" control was removed for two
+ * releases rather than left answering from a store that did not exist.
+ */
+function reuseLine(verdict: { reusedOn: string[]; reuseUnknown: boolean }): string {
+  if (verdict.reuseUnknown) return t('warnPasswordReuseUnknown')
+  if (verdict.reusedOn.length === 0) return t('warnPasswordReuseNone')
+  return t('warnPasswordReuse', String(verdict.reusedOn.length), verdict.reusedOn.join(', '))
+}
+
+/**
  * The password check runs on submit, on the digest, never on the password.
  *
  * SHA-1 is computed here in the page's own context; what crosses into the
@@ -481,7 +495,13 @@ if (isTopFrame) {
             .join('')
             .toUpperCase()
 
-          const verdict = await platform.runtime.send('password/check', { sha1 })
+          // The host travels with the digest: it is what makes "where else do I use
+          // this" answerable, and it is already the address of the page the user
+          // is looking at.
+          const verdict = await platform.runtime.send('password/check', {
+            sha1,
+            host: location.host,
+          })
           if (!verdict?.compromised) return
 
           mountBanner(
@@ -490,7 +510,11 @@ if (isTopFrame) {
               variant: 'password',
               severity: 'major',
               headline: t('warnPasswordHeadline'),
-              detail: verdict.explain,
+              // The reuse line is appended rather than replacing the verdict:
+              // "this password is in a breach" and "you use it in four places"
+              // are two facts, and the second is what turns the first into
+              // something to do this evening.
+              detail: `${verdict.explain} ${reuseLine(verdict)}`,
               sourceLine: t(
                 'warnFoundBy',
                 verdict.offline ? t('warnPasswordSourceOffline') : t('warnPasswordSourceOnline'),

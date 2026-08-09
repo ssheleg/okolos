@@ -2,7 +2,7 @@ import type { DBSchema } from 'idb'
 import type { AuditEntry, Verdict } from '@okolos/contracts'
 
 export const DB_NAME = 'okolos'
-export const DB_VERSION = 3
+export const DB_VERSION = 4
 
 /**
  * Retention windows in days. They are short on purpose: a security tool that
@@ -25,6 +25,7 @@ export const STORES = [
   'snapshots',
   'models',
   'feeds',
+  'reuse',
 ] as const
 
 export type StoreName = (typeof STORES)[number]
@@ -101,6 +102,25 @@ export interface FeedRecord {
   entries: string[]
 }
 
+/**
+ * One password tag seen on one host.
+ *
+ * The tag is an HMAC over the digest the leak check already computes, keyed by
+ * a random value generated on this device and never synchronised. It is not
+ * reversible to a password without that key, and the key is wiped with
+ * everything else — a device where it is readable is a device whose browser
+ * password store is readable too, which is strictly more than this.
+ *
+ * `seenAt` is the **first** time this tag was recorded for this host, not the
+ * latest: refreshing it on every login would make the index a record of when
+ * the user last visited a site, which is browsing history under another name.
+ */
+export interface ReuseRecord {
+  tag: string
+  host: string
+  seenAt: string
+}
+
 export interface SnapshotRecord {
   extensionId: string
   takenAt: string
@@ -118,4 +138,5 @@ export interface OkolosDB extends DBSchema {
   models: { key: string; value: ModelRecord; indexes: { 'by-id': string } }
   feeds: { key: string; value: FeedRecord }
   snapshots: { key: string; value: SnapshotRecord }
+  reuse: { key: [string, string]; value: ReuseRecord; indexes: { 'by-tag': string } }
 }

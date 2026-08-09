@@ -1251,3 +1251,42 @@ think you are testing*.
   relative path is a state-changing request to the page's own host — worth
   recording. The test now asserts that, and a separate one covers input that is
   not a URL at all.
+
+### 2026-08-09 — `git checkout --` on a file whose work was not committed
+
+- **Symptom:** reverting a planted defect deleted three tests and an import
+  that had been written minutes earlier and never committed.
+- **Root cause:** all session the plant-and-revert pattern had been
+  `cp file /tmp/x.bak` first, then `cp /tmp/x.bak file` to undo. For one file I
+  had made no backup and reached for `git checkout -- <file>` instead, which
+  restores the *committed* state and discards everything since.
+- **Cost:** small — the content was still in context and was rewritten in one
+  step. It would not have been small an hour later.
+- **Prevention:** the backup is part of the plant, not an optional first step.
+  `git checkout` reverts to a commit, and a plant is not a commit.
+
+### 2026-08-09 — an index that had to be able to say "I do not know"
+
+- **The decision B-14 needed** was not an algorithm but what may sit on the
+  disk. The check already computes SHA-1 of the password in the content script
+  and sends only that; the tag is now an HMAC over *that digest*, taken in the
+  worker under a device-local random key — so the password crosses no new
+  boundary, and nothing new is derived where the password actually is.
+- **No truncation, deliberately.** A shorter tag collides, and a collision here
+  reads as "you use this password on a site you have never used it on". A
+  product that refuses to lie cannot buy disk space with a false positive.
+- **The third answer is the point.** The old "Check reuse" control was removed
+  because a panel answering "no reuse found" out of an index that did not exist
+  tells the safest possible lie. The new one distinguishes three states — the
+  other sites, "not seen on any other site on this device", and "unknown: this
+  device has not seen it before" — and the third is what a fresh install has to
+  say. `reuseOf` returns `unknown` separately from an empty list for exactly
+  this reason, and a test pins the distinction.
+- **What it stores is pinned by shape, not by intention:** three keys and no
+  more, and a date rather than a timestamp — storing the hour someone logs in
+  would make the index a record of their evenings. Both verified by planting.
+- **The privacy document is where this is really decided.** It gained a
+  paragraph naming the one thing derived from a password, why it cannot be
+  reversed, and that the browser's own password store is richer than it — and
+  the generated page a stranger reads was regenerated in the same change,
+  because a gate compares them.

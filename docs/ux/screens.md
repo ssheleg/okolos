@@ -188,12 +188,12 @@ self-audit panel.
   | error | a source failed | - | that row states unavailable + retry; other results stand |
   | success | results present | - | freshest first, historical collapsed |
 - **Behavior notes:** the idle state names what is sent, and it is **the address itself** — Hudson Rock's Cavalier and HIBP's breached-account endpoint answer to nothing less, so a screen implying a hashed lookup would be a false privacy claim on the surface where the user decides. The password check is the k-anonymous one and is kept distinct in the copy. The network choke point permits the address only because the request declares `carries: 'address'`, and the self-audit journal records that it left.
-- **Behavior notes:** **there is no "Check reuse" control.** It existed until 2026-08-08 and opened `options.html#reuse=`, a hash nothing read; the local index of which sites saw which password hash — named under Resources as if it existed — was never built. A panel that answers "no reuse found" from a store that does not exist tells the user the safest possible lie, so the control is absent until the index is real
+- **Behavior notes:** the reuse answer is **on the password warning, not behind a control**. Between 2026-08-08 and 2026-08-09 there was no answer at all: a "Check reuse" control opened `options.html#reuse=`, a hash nothing read, and the index it implied was never built. A panel answering "no reuse found" from a store that does not exist tells the safest possible lie, so the control was removed rather than left lying. The index exists now (`reuse` store, DB v4) and the warning says one of three things — the other sites, "not seen on any other site on this device", or "unknown: this device has not seen it before". The third is the one the old control could not say, and it is what a fresh install has to say
 - **Behavior notes (address field):** the field is moved between repaints, never rebuilt, and **its focus and caret are carried with it**. Moving a node keeps its value; removing it from the document blurs it, and native typing needs a focused element to land in — so an address typed while the page was still settling went nowhere. That was the four-day flake tracked as #29: `apps/extension/src/options/keep-focus.ts` carries the rule
 - **Wireframe:** wireframes/SCR-08.md
 - **Coverage:** packages/ui/src/leaks/leaks.ts:renderLeaks, packages/core-leaks/src/group.ts:groupLeaks, packages/core-leaks/src/merge.ts:mergeLeaks, e2e/scn-015.spec.ts
 - **Scenarios:** SCN-014, SCN-015, SCN-016
-- **Resources:** source adapters (HIBP, XposedOrNot, Hudson Rock), local hash store. **No reuse index exists** — see the note under Elements
+- **Resources:** source adapters (HIBP, XposedOrNot, Hudson Rock), local hash store, **reuse index** — `reuse` store keyed by [tag, host], tag = HMAC-SHA-256 over the leak-check digest under a device-local random key ([privacy](../privacy.md))
 - **Status:** built
 
 ### SCR-09: Extensions watch

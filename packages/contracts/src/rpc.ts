@@ -43,8 +43,25 @@ export interface RpcMap {
   }
   /** SHA-1 of a submitted password. The password itself never crosses this line. */
   'password/check': {
-    req: { sha1: string }
-    res: { compromised: boolean; count: number | null; offline: boolean; explain: string }
+    /**
+     * The digest, never the password, and the host it was submitted to — the
+     * host is what makes "where else do I use this" answerable at all.
+     */
+    req: { sha1: string; host: string }
+    res: {
+      compromised: boolean
+      count: number | null
+      offline: boolean
+      explain: string
+      /** Other hosts this device has seen the same password on, oldest first. */
+      reusedOn: string[]
+      /**
+       * True when this device has no record of the password at all. Not the
+       * same as "used nowhere else": a fresh install knows nothing, and the
+       * screen must say which of the two it is.
+       */
+      reuseUnknown: boolean
+    }
   }
   /** User-initiated: nothing is looked up in the background. */
   'leaks/check': {

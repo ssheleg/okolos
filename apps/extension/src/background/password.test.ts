@@ -1,7 +1,9 @@
+import 'fake-indexeddb/auto'
 import { describe, expect, it, vi } from 'vitest'
 import type { AuditEntry } from '@okolos/contracts'
 
 import { checkSubmittedPassword, COMMON_SHA1 } from './password.js'
+import { openDb, STORES } from '@okolos/storage'
 
 const RARE = 'A1B2C3D4E5F60718293A4B5C6D7E8F9012345678'
 
@@ -106,5 +108,47 @@ describe('the built-in list itself', () => {
 
   it('has no duplicates', () => {
     expect(new Set(COMMON_SHA1).size).toBe(COMMON_SHA1.length)
+  })
+})
+
+describe('the reuse index, and what it puts on disk', () => {
+  /**
+   * The index answers a question the product refused to answer for two
+   * releases, so what it stores is the part worth pinning: a tag that is an
+   * HMAC over the digest — never a password, never the digest itself — a host,
+   * and the date it was first seen there.
+   */
+  it('stores a tag, a host and a date, and nothing that resembles a password', async () => {
+    const db = await openDb()
+    await db.put('reuse', { tag: 'a3f1', host: 'bank.test', seenAt: '2026-08-09' })
+    const rows = await db.getAllFromIndex('reuse', 'by-tag', 'a3f1')
+
+    expect(rows).toHaveLength(1)
+    expect(Object.keys(rows[0] ?? {}).sort()).toEqual(['host', 'seenAt', 'tag'])
+    // A date, not a timestamp: the hour a person logs in is not this index's
+    // business, and storing it would make the file a record of their evenings.
+    expect(rows[0]?.seenAt).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    await db.clear('reuse')
+  })
+
+  it('keeps one row per password per host however often it is submitted', async () => {
+    const db = await openDb()
+    await db.put('reuse', { tag: 'a3f1', host: 'bank.test', seenAt: '2026-03-01' })
+    await db.put('reuse', { tag: 'a3f1', host: 'bank.test', seenAt: '2026-08-09' })
+    expect(await db.getAllFromIndex('reuse', 'by-tag', 'a3f1')).toHaveLength(1)
+    await db.clear('reuse')
+  })
+
+  it('is wiped with everything else, key included', async () => {
+    // The device key lives in `settings`, which the data screen clears. An
+    // index whose key survived a wipe would be a file the user believed gone.
+    const db = await openDb()
+    await db.put('reuse', { tag: 'a3f1', host: 'bank.test', seenAt: '2026-08-09' })
+    await db.put('settings', { key: 'reuse:key', value: 'a-device-key' })
+
+    for (const store of STORES) await db.clear(store)
+
+    expect(await db.getAll('reuse')).toEqual([])
+    expect(await db.get('settings', 'reuse:key')).toBeUndefined()
   })
 })

@@ -11,3 +11,4 @@ export {
   type PasswordVerdict,
   type RangeResponse,
 } from './password.js'
+export { reuseOf, recordUse, type Reuse, type ReuseEntry } from './reuse.js'

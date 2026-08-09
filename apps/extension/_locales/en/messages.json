@@ -1264,6 +1264,23 @@
   "warnPasswordHeadline": {
     "message": "This password has appeared in a breach"
   },
+  "warnPasswordReuse": {
+    "message": "The same password has been seen on $COUNT$ other site(s): $HOSTS$.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "hosts": {
+        "content": "$2"
+      }
+    }
+  },
+  "warnPasswordReuseNone": {
+    "message": "This password has not been seen on any other site on this device."
+  },
+  "warnPasswordReuseUnknown": {
+    "message": "Where else this password is used is unknown: this device has not seen it before."
+  },
   "warnPasswordSourceOffline": {
     "message": "a list built into this extension — nothing was sent"
   },

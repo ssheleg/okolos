@@ -1264,6 +1264,23 @@
   "warnPasswordHeadline": {
     "message": "Этот пароль встречался в утечке"
   },
+  "warnPasswordReuse": {
+    "message": "Этот же пароль видели ещё на $COUNT$ сайте(-ах): $HOSTS$.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "hosts": {
+        "content": "$2"
+      }
+    }
+  },
+  "warnPasswordReuseNone": {
+    "message": "На других сайтах этот пароль на этом устройстве не встречался."
+  },
+  "warnPasswordReuseUnknown": {
+    "message": "Где ещё используется этот пароль — неизвестно: на этом устройстве он раньше не встречался."
+  },
   "warnPasswordSourceOffline": {
     "message": "список, встроенный в расширение, — наружу ничего не ушло"
   },

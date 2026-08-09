@@ -47,6 +47,7 @@ import { spaceAwareWrite } from './audit-space.js'
 import { createVerifier, FEED_PUBLIC_KEY, updateFeed } from './feeds.js'
 import { syncFeed } from './feed-sync.js'
 import { useResolver } from '@okolos/i18n'
+import { reuseOf } from '@okolos/core-credential'
 
 const FEED_ALARM = 'okolos:feeds'
 const RETENTION_ALARM = 'okolos:retention'
@@ -63,7 +64,9 @@ platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>) => {
     case 'block/allow':
       return allowBlocked(message.payload as { url: string }) as Promise<RpcMap[T]['res']>
     case 'password/check':
-      return handlePasswordCheck(message.payload as { sha1: string }) as Promise<RpcMap[T]['res']>
+      return handlePasswordCheck(message.payload as { sha1: string; host: string }) as Promise<
+        RpcMap[T]['res']
+      >
     case 'leaks/check':
       return handleLeakCheck(message.payload as { address: string }) as Promise<RpcMap[T]['res']>
     case 'extensions/state':
@@ -394,18 +397,103 @@ async function auditDeps() {
   }
 }
 
-async function handlePasswordCheck(payload: { sha1: string }): Promise<{
+const REUSE_KEY_SETTING = 'reuse:key'
+
+/**
+ * The device key the reuse index is tagged with.
+ *
+ * Random, generated once, never synchronised, and wiped with everything else on
+ * the data screen. Its whole job is to make the stored tags meaningless to
+ * anyone who has the file and not the device: without it a tag is an HMAC over
+ * an unknown digest, and a dictionary of common passwords tells them nothing.
+ */
+async function reuseKey(): Promise<CryptoKey | null> {
+  try {
+    const db = await openDb()
+    const stored = (await db.get('settings', REUSE_KEY_SETTING))?.value
+    let raw: Uint8Array
+    if (typeof stored === 'string' && stored.length > 0) {
+      raw = Uint8Array.from(atob(stored), (c) => c.charCodeAt(0))
+    } else {
+      raw = crypto.getRandomValues(new Uint8Array(32))
+      await db.put('settings', {
+        key: REUSE_KEY_SETTING,
+        value: btoa(String.fromCharCode(...raw)),
+      })
+    }
+    // `.buffer` rather than the view: a Uint8Array over a SharedArrayBuffer is
+    // not a BufferSource, and the DOM types are right to say so.
+    return await crypto.subtle.importKey(
+      'raw',
+      raw.slice().buffer,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign'],
+    )
+  } catch {
+    // No key means no index. The check still answers; the reuse half reports
+    // itself unknown, which is true and is the safe direction.
+    return null
+  }
+}
+
+/**
+ * The tag for one password on this device.
+ *
+ * Taken over the digest the content script already computed, not over the
+ * password: the password never crossed into the worker and this does not make
+ * it start. Same password, same digest, same tag — which is all reuse needs.
+ */
+async function reuseTag(sha1: string): Promise<string | null> {
+  const key = await reuseKey()
+  if (key === null) return null
+  try {
+    const mac = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(sha1.toUpperCase()))
+    return [...new Uint8Array(mac)].map((b) => b.toString(16).padStart(2, '0')).join('')
+  } catch {
+    return null
+  }
+}
+
+async function handlePasswordCheck(payload: { sha1: string; host: string }): Promise<{
   compromised: boolean
   count: number | null
   offline: boolean
   explain: string
+  reusedOn: string[]
+  reuseUnknown: boolean
 }> {
   const verdict = await checkSubmittedPassword(payload.sha1, await auditDeps())
+
+  let reusedOn: string[] = []
+  let reuseUnknown = true
+  const tag = await reuseTag(payload.sha1)
+  if (tag !== null && payload.host) {
+    try {
+      const db = await openDb()
+      const rows = await db.getAllFromIndex('reuse', 'by-tag', tag)
+      const answer = reuseOf(rows, tag, payload.host)
+      reusedOn = answer.elsewhere.map((row) => row.host)
+      reuseUnknown = answer.unknown
+      // Recorded after the answer, so a first submission reads as unknown
+      // rather than as "seen here already".
+      if (answer.unknown || !rows.some((row) => row.host === payload.host)) {
+        await db.put('reuse', { tag, host: payload.host, seenAt: new Date().toISOString().slice(0, 10) })
+      }
+    } catch {
+      // An unreadable index answers "unknown", never "nowhere else".
+      reusedOn = []
+      reuseUnknown = true
+    }
+  }
+
   return {
     compromised: verdict.compromised,
     count: verdict.count,
     offline: verdict.offline,
     explain: verdict.explain,
+    reusedOn,
+    reuseUnknown,
   }
 }
 

@@ -35,7 +35,36 @@ export function toHtml(markdown) {
       .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (whole, label, href) =>
         href.endsWith('.md') || href.startsWith('..') ? label : `<a href="${href}">${label}</a>`)
 
-  for (const line of markdown.split('\n')) {
+  /**
+   * Wrapped prose is one paragraph, not one per line.
+   *
+   * This ran line by line, so a source line was a `<p>` and a `**bold**`
+   * opened on one line and closed on the next matched nothing — both markers
+   * went to the served page as literal asterisks. Found by reading the
+   * deployed page rather than the generator: the markup was valid, and the
+   * sentence was broken.
+   */
+  const joined = []
+  let paragraph = []
+  const flush = () => {
+    if (paragraph.length > 0) {
+      joined.push(paragraph.join(' '))
+      paragraph = []
+    }
+  }
+  for (const raw of markdown.split('\n')) {
+    const structural =
+      raw.trim() === '' || raw.startsWith('|') || raw.startsWith('- ') || raw.startsWith('#')
+    if (structural) {
+      flush()
+      joined.push(raw)
+    } else {
+      paragraph.push(raw.trim())
+    }
+  }
+  flush()
+
+  for (const line of joined) {
     if (/^\|\s*-+/.test(line)) continue
     if (line.startsWith('|')) {
       const cells = line.split('|').slice(1, -1).map((c) => inline(c.trim()))

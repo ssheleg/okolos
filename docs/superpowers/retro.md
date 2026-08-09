@@ -1290,3 +1290,27 @@ think you are testing*.
   reversed, and that the browser's own password store is richer than it — and
   the generated page a stranger reads was regenerated in the same change,
   because a gate compares them.
+
+### 2026-08-09 — three artefacts agreed with each other and the page was broken
+
+- **Symptom:** the deployed privacy policy carried literal `**` in its text and
+  read as a column of one-line fragments. Found by fetching the live page after
+  a deploy, to confirm a paragraph had landed.
+- **Root cause:** the generator transformed the document line by line. Bold
+  opened on one source line and closed on the next matched nothing, so both
+  markers survived; and every wrapped line became its own `<p>`.
+- **Why nothing caught it:** the markdown was correct, the generator's inline
+  rule was correct, and the gate compares the served page to what the generator
+  produces — so all three agreed. A gate that checks two artefacts against each
+  other cannot see a fault they share.
+- **The cache nearly hid it too.** The first check after deploying found the
+  paragraph missing and I nearly reported the deploy as failed; the page sets
+  `max-age=300` and curl had a five-minute-old copy. The deploy was fine and the
+  check was wrong.
+- **Fix:** prose is joined before it is marked up, and four rules now read the
+  generated markup rather than comparing it to its own source — no unrendered
+  emphasis, emphasis actually rendered (the mirror, or stripping every asterisk
+  would satisfy the first), and a paragraph count well below the source line
+  count. Verified by planting both the old behaviour and the lazy fix.
+- **The general shape:** when a document, a generator and a comparison gate all
+  agree, the thing to look at is the artefact a stranger receives.

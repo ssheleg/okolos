@@ -571,3 +571,44 @@ describe('the version the store will see', () => {
     expect(versions[0]).toMatch(/^\d+\.\d+\.\d+$/)
   })
 })
+
+describe('the page a stranger reads is prose, not source', () => {
+  /**
+   * The served privacy policy carried literal `**` for three releases. The
+   * generator handled bold correctly and ran line by line, so a phrase opened
+   * on one source line and closed on the next matched nothing — and every
+   * wrapped line became its own paragraph, which is why the page read as a
+   * column of fragments.
+   *
+   * Neither was visible in the markdown, in the generator, or in the gate that
+   * compares the two: all three agreed with each other. It was visible on the
+   * deployed page, which is where this is checked from now on.
+   */
+  const html = readFileSync(path.join(root, 'apps/proxy/src/privacy.generated.ts'), 'utf8')
+
+  it('is generated at all, so an empty file cannot pass as clean markup', () => {
+    expect(html.length).toBeGreaterThan(2000)
+    expect(html).toContain('<p>')
+  })
+
+  it('leaves no Markdown emphasis unrendered', () => {
+    expect(html).not.toMatch(/\*\*/)
+  })
+
+  it('renders the emphasis rather than dropping it', () => {
+    // The mirror of the rule above: stripping every asterisk would satisfy it
+    // and lose every emphasis the document places deliberately.
+    expect((html.match(/<strong>/g) ?? []).length).toBeGreaterThan(10)
+  })
+
+  it('joins wrapped lines, so a paragraph is a paragraph', () => {
+    // A source line per paragraph would put the count near the document's line
+    // count instead of near its paragraph count.
+    const paragraphs = (html.match(/<p>/g) ?? []).length
+    const sourceLines = readFileSync(path.join(root, 'docs/privacy.md'), 'utf8')
+      .split('\n')
+      .filter((l) => l.trim() !== '' && !l.startsWith('|') && !l.startsWith('- ') && !l.startsWith('#'))
+      .length
+    expect(paragraphs).toBeLessThan(sourceLines / 2)
+  })
+})

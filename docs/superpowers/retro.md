@@ -963,3 +963,64 @@ think you are testing*.
 - **Prevention:** standing instruction 13, and a Known limit in SCN-003,
   SCN-008 and SCN-009 naming the two languages matched and saying plainly that
   a third passes clean.
+
+### 2026-08-09 — the suite had been talking to production all along
+
+- **Symptom:** SCN-007 failed about one run in seventy, always the same way —
+  a page that should have been blocked loaded instead. Two hypotheses stood
+  recorded, neither checked. One of them claimed a real window in which a
+  flagged page reaches a real user; that is the kind of claim worth being sure
+  about.
+- **Surfaced at:** a probe written to measure the gap rather than argue about
+  it — install the rules, navigate at once, record blocked-or-not and the delay,
+  twenty times over.
+- **Owned by:** the fixture, which had no opinion about the network at all.
+- **What the probe showed:** round 0 blocked; every round after it did not,
+  with the rules still present. Dumping them was the whole answer — they were
+  not the test's rules. They named `sberbank-online-vhod.test` and three other
+  domains from the **published** feed. `pullFeed()` runs at every service-worker
+  boot and fetches from the production worker; nothing in the suite stopped it,
+  so the seeded feed was being replaced mid-test. Whether the test passed
+  depended on who won a race with the internet.
+- **Both recorded hypotheses were wrong.** There is no propagation window: the
+  first round blocked in about 100 ms. Retiring that one mattered more than
+  fixing the test, because it had been standing as a possible security limit.
+- **Prevention:** the fixture refuses every outbound request except the test
+  origin, registered first so a spec can still stub the one destination it is
+  about; the readiness helper now asks whether the domain under test is
+  covered, not whether any rule exists.
+
+### 2026-08-09 — a gate that watched its own recorder
+
+- **Symptom:** the new "nothing reaches a real host" check passed a planted
+  defect that let requests through to the real internet.
+- **Root cause:** it asserted over the fixture's own list of attempted URLs.
+  Recording a request and then forwarding it satisfies that list exactly as
+  well as recording and refusing it. The gate was watching the instrument
+  rather than the world.
+- **Fix:** assert the product's consequence instead — the journal must contain
+  the feed pull failing with the fixture's 503. A suite that reached production
+  would have fetched a real feed and written nothing of the kind. Both plants
+  now turn it red.
+- **The same shape, one file over:** two SCN-021 journal tests broke the moment
+  the network closed, because they asserted exact entry counts over a store the
+  extension also writes to. They had been green only while the extension
+  happened to stay silent. Their `seed()` now clears before writing — a helper
+  that adds to an unknown state cannot establish a known one.
+
+### 2026-08-09 — a counting gate that demanded wrong Russian
+
+- **Symptom:** adding one e2e spec turned `tools/docs.test.ts` red, correctly.
+  Writing the new count in correct Russian — «22 файла» — left it red.
+- **Root cause:** the gate asserted the document contained the literal
+  `${n} файлов`. Russian chooses файл / файла / файлов by the last digits, so
+  the genitive plural is right for 5 and wrong for 22. The gate was enforcing a
+  grammatical error into `docs/brand/facts.md`, of all documents — the one
+  whose entire subject is the product speaking properly.
+- **Owned by:** a check written in a language it does not decline.
+- **Fix:** match the row and compare the *number*; the noun after it is the
+  writer's business. Both branches verified by planting — a drifted count and a
+  deleted row each turn it red, and the correct grammar now passes.
+- **The wider point:** a gate that pins prose rather than facts will be
+  satisfied by wrong prose and will refuse right prose. Assert what was
+  measured, and let the sentence be written by whoever writes sentences.

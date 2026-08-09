@@ -37,29 +37,40 @@ async function seedFeed(page: import('@playwright/test').Page): Promise<void> {
 }
 
 /**
- * Waits until the blocking rules are actually installed.
+ * Waits until the rule for the domain this file is about is installed.
  *
- * `rules/refresh` resolving means the background handled the message, not that
- * `declarativeNetRequest` has finished installing what it built. Navigating on
- * the strength of the message is a race, and under a full-suite load it is one
- * this file lost: the same three tests pass alone and one fails in the run.
+ * The earlier version waited for `getDynamicRules()` to return anything at all,
+ * on the theory that the rules were committed but the network stack had not
+ * picked them up yet. Measured, that theory was wrong — and the truth was
+ * worse. A probe that installed the rules and navigated immediately, twenty
+ * times over, blocked on the first round and failed on every round after it,
+ * with the rule set no longer naming `fixture.test` at all: it named
+ * `sberbank-online-vhod.test` and three other domains from the *published*
+ * feed. The extension pulls that feed from the production worker at every
+ * service-worker boot, and it was replacing what the test had seeded.
  *
- * Asking the API what it holds is the readiness this test actually needs.
+ * So the wait was satisfied by the wrong rules. It now asks the only question
+ * that means anything here — is the domain this file is about actually
+ * covered — and the fixture no longer lets the suite reach the internet at all.
  */
 async function rulesInstalled(seeder: import('@playwright/test').Page): Promise<void> {
   await seeder.evaluate(async () => {
     await chrome.runtime.sendMessage({ v: 1, type: 'rules/refresh', payload: {} })
   })
   const deadline = Date.now() + 10_000
-  let installed = 0
-  while (installed === 0) {
-    installed = await seeder.evaluate(
-      async () => (await chrome.declarativeNetRequest.getDynamicRules()).length,
-    )
-    if (installed === 0 && Date.now() > deadline) {
-      throw new Error('the blocking rules never appeared')
+  let matching = 0
+  while (matching === 0) {
+    matching = await seeder.evaluate(async () => {
+      const rules = await chrome.declarativeNetRequest.getDynamicRules()
+      return rules.filter((rule) => rule.condition.urlFilter?.includes('fixture.test')).length
+    })
+    if (matching === 0 && Date.now() > deadline) {
+      const rules = await seeder.evaluate(
+        async () => JSON.stringify(await chrome.declarativeNetRequest.getDynamicRules()),
+      )
+      throw new Error(`no rule for fixture.test was installed. What is installed: ${rules}`)
     }
-    if (installed === 0) await seeder.waitForTimeout(100)
+    if (matching === 0) await seeder.waitForTimeout(100)
   }
 }
 

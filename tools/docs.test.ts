@@ -345,7 +345,14 @@ describe('the brand pack states facts, and a fact is checkable', () => {
 
   it('counts e2e spec files rather than remembering them', () => {
     const specs = readdirSync(path.join(root, 'e2e')).filter((f) => f.endsWith('.spec.ts')).length
-    expect(facts).toContain(`${specs} файлов`)
+    // The number, not the noun after it. Hardcoding `${n} файлов` demanded the
+    // genitive plural for every count, so at 22 the gate insisted on "22
+    // файлов" — wrong Russian, in the one document whose subject is the
+    // product speaking properly. Russian picks файл / файла / файлов by the
+    // last digits, and a gate has no business choosing.
+    const row = /^\| Спек e2e \| (\d+) фай\S+/m.exec(facts)
+    expect(row, 'facts.md has no "Спек e2e" row to check').not.toBeNull()
+    expect(Number(row?.[1])).toBe(specs)
   })
 
   it('states the retention the code enforces', () => {

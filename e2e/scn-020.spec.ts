@@ -9,7 +9,15 @@ import { expect, test } from './fixtures.js'
  * item, no silently shortened journal.
  */
 
-/** Writes findings and journal records the way the background does. */
+/**
+ * Establishes a known state — it does not add to an unknown one.
+ *
+ * The clear is the point. Without it these tests asserted exact counts over a
+ * store the extension also writes to, so they held only while the extension
+ * happened to stay silent. Once the fixture stopped letting the suite reach the
+ * production feed, the honest "the blocking feed could not be fetched" entry
+ * appeared and two of them broke — having been green for the wrong reason.
+ */
 async function seed(
   page: import('@playwright/test').Page,
   data: { findings?: unknown[]; journal?: unknown[]; lastCheck?: string },
@@ -21,6 +29,8 @@ async function seed(
       open.onerror = () => reject(open.error)
     })
     const tx = db.transaction(['findings', 'journal', 'settings'], 'readwrite')
+    tx.objectStore('findings').clear()
+    tx.objectStore('journal').clear()
     for (const finding of payload.findings ?? []) tx.objectStore('findings').put(finding)
     for (const entry of payload.journal ?? []) tx.objectStore('journal').put(entry)
     if (payload.lastCheck) {

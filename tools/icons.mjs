@@ -31,9 +31,35 @@ const root = path.resolve(import.meta.dirname, '..')
 const OUT = path.join(root, 'apps/extension/icons')
 export const SIZES = [16, 32, 48, 128]
 
-/** Deep slate — dark enough for a light toolbar, light enough for a dark one. */
-const BACKGROUND = [30, 41, 59]
-const RING = [226, 232, 240]
+/**
+ * The mark's two colours, and why they are its own rather than the palette's.
+ *
+ * They coincide with `packages/ui/src/tokens.ts` — #1e293b is the light
+ * scheme's `accent`, #e2e8f0 the dark scheme's `text` — because both come from
+ * the same slate family, not because the icon follows a token. It cannot: a
+ * toolbar icon is one fixed artwork rendered against a light toolbar and a dark
+ * one at the same moment, and there is no theme at that point to pick a side.
+ *
+ * What actually governs is contrast, and it works by handing the mark over
+ * between the two, which is measured rather than asserted:
+ *
+ *   against a light toolbar (#ffffff)  plate 14.63:1   ring  1.23:1
+ *   against a dark toolbar  (#292a2d)  plate  1.02:1   ring 11.64:1
+ *
+ * So the silhouette differs by toolbar — a dark rounded square holding a light
+ * ring on light, and on dark the plate disappears and the ring alone carries
+ * it. Both legible; the same mark; not the same shape. An earlier version of
+ * this comment claimed the plate was "dark enough for a light toolbar, light
+ * enough for a dark one", which is the one thing 1.02:1 says it is not.
+ *
+ * `tools/icons.test.ts` holds the rule this rests on: at least one of the two
+ * must clear 3:1 (WCAG 2.2 non-text contrast) against both. Without it a tweak
+ * that made both colours dark would leave the icon invisible on a dark toolbar
+ * with every gate still green — `tools/manifest.test.ts` compares the committed
+ * bytes to `draw()`, so it agrees with whatever this file decides.
+ */
+export const BACKGROUND = [30, 41, 59]
+export const RING = [226, 232, 240]
 
 /** Supersampling factor. 4× is enough that a 16px ring has no jagged edge. */
 const SS = 4

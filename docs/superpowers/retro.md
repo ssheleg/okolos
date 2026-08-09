@@ -1057,3 +1057,38 @@ think you are testing*.
   picture of the product with nothing to say. The reported "footer buttons
   stacked" was measured and **is not a defect**: three labels do not fit on one
   line at panel width, and they wrap.
+
+### 2026-08-09 — a defect retracted, and the check it was standing in front of
+
+- **The claim:** `tools/icons.mjs` hardcodes `[30, 41, 59]` and
+  `[226, 232, 240]`, which are exactly two values in
+  `packages/ui/src/tokens.ts`, with no import between them — so a palette change
+  would leave the icon behind while every gate stayed green.
+- **The first two facts were right and the conclusion was wrong.** The values do
+  coincide and there is no link, but a toolbar icon is one fixed artwork
+  rendered against a light toolbar and a dark one at the same moment. There is
+  no theme at that point to pick a side, so it *cannot* follow a token. Wiring
+  it to `accent` would have created a false dependency and made a UI decision
+  silently change the brand mark.
+- **Checked before concluding:** no document claims the linkage. The
+  design-system rule that "no stylesheet writes a colour of its own" is about
+  stylesheets; ADR-0007 lists icons as generated, which is about regeneration.
+  The docs and the code agree — the reader's assumption was the only thing
+  wrong, and two readers made it, including a vision agent.
+- **What was actually missing, one level down:** nothing checked the constraint
+  that does govern. `tools/manifest.test.ts` compares the committed PNGs to
+  `draw()`, so it agrees with whatever the generator decides. Both colours could
+  be made dark and the icon would vanish on a dark toolbar, green throughout.
+- **Measured, which also corrected a comment:** against a light toolbar the
+  plate carries the mark at 14.63:1 while the ring is invisible at 1.23:1;
+  against a dark toolbar they swap — plate 1.02:1, ring 11.64:1. The silhouette
+  differs by toolbar, and the docstring had claimed the plate was "dark enough
+  for a light toolbar, light enough for a dark one", which 1.02:1 says it is
+  not.
+- **Fix:** `tools/icons.test.ts` — at least one colour clears 3:1 (WCAG 2.2
+  non-text contrast) against four real toolbar surfaces, and the two stay
+  legible against each other. Both rules verified by planting.
+- **The lesson worth keeping:** the wrong premise was worth chasing. Retracting
+  it took reading the intent rather than the values, and the check that replaced
+  it guards something real that nothing guarded. A duplicated constant is not a
+  defect on its own; a constraint nobody asserts is.

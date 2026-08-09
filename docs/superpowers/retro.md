@@ -1314,3 +1314,29 @@ think you are testing*.
   count. Verified by planting both the old behaviour and the lazy fix.
 - **The general shape:** when a document, a generator and a comparison gate all
   agree, the thing to look at is the artefact a stranger receives.
+
+### 2026-08-09 — the landing page, and the page beside it that was in the wrong language
+
+- **The decision B-15 needed** was where the page lives, not what it says. It
+  went to the root of the worker that already serves `/privacy` and `/status`:
+  one origin, one deploy, one set of gates, and internal links that explain the
+  structure to a crawler rather than to a human alone. An ugly address changes
+  with one CNAME; a second deployment target does not.
+- **Designed for two readers rather than optimised for one afterwards.** The
+  answer is in the markup, there is no executable script at all, and the
+  structured block repeats the same claims in the form a machine reads. Eleven
+  rules hold it, four verified by planting — a script appearing, a forbidden
+  superlative appearing, the "what it does not do" list gutted, and the JSON-LD
+  becoming invalid.
+- **Half the page is what the product does not do**, and that is a rule rather
+  than modesty: a security tool listing only its powers is describing something
+  nobody can check. The gate counts both lists so neither can quietly shrink.
+- **Found while reading the neighbouring page:** `/status` was served with
+  `lang="en"` and English copy — the public surface a site owner reaches from a
+  blocked page, in a product whose four screenshots, catalogue and privacy page
+  are Russian. Nothing had flagged it because nothing compares one public page
+  to another. Translated in the same change, with the appeal form.
+- **Four test assertions were pinned to the English wording** and went red on a
+  page that had become more correct — `/listed/i`, `/not listed/i`,
+  `/enter a domain/i`. The same shape as the extension's own tests a few
+  iterations ago, in a different app, found the same way.

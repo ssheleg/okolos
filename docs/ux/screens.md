@@ -281,7 +281,7 @@ self-audit panel.
 ### SCR-14: Public domain status
 - **Used by:** FLW-04 (from the interstitial), FLW-15
 - **Purpose:** let an affected site owner see and dispute a verdict without an account — the gap that generated the loudest complaint about the incumbent
-- **Elements:** domain lookup field; current verdict with feed source and entry date; upstream appeal link when the verdict came from a third-party feed; appeal form (domain, contact, note) with reference id; **primary action: "Check domain"**
+- **Elements:** domain lookup field; current verdict with feed source and entry date; upstream appeal link when the verdict came from a third-party feed; appeal form (domain, contact, note) with reference id; **primary action: "Проверить"**
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|

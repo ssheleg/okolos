@@ -267,13 +267,16 @@ describe('the page a person or a crawler actually gets', () => {
     )
     const html = await response.text()
     expect(html).toContain('evil.test')
-    expect(html).toMatch(/listed/i)
+    // The verdict word, in the language the page ships in. Matching /listed/i
+    // pinned the English wording and would have gone red the day this page
+    // started speaking to the people who read it.
+    expect(html).toMatch(/числится/)
     expect(html).toContain('openphish')
   })
 
   it('says plainly when a domain is not listed', async () => {
     const html = await (await handle(get('/status?domain=ok.test'), env({ listing: null }))).text()
-    expect(html).toMatch(/not listed/i)
+    expect(html).toMatch(/не числится/)
   })
 
   it('escapes the feed name, which is data this service does not write', async () => {
@@ -307,15 +310,16 @@ describe('the page a person or a crawler actually gets', () => {
     const response = await handle(get('/status'), env())
     const html = await response.text()
     expect(response.headers.get('content-type')).toMatch(/text\/html/)
-    expect(html).toMatch(/enter a domain|which domain/i)
+    expect(html).toMatch(/введите домен/i)
   })
 
   it('does not claim a domain is clean when the lookup failed', async () => {
     const html = await (
       await handle(get('/status?domain=evil.test'), env({ fail: true }))
     ).text()
-    expect(html).not.toMatch(/not listed/i)
-    expect(html).toMatch(/could not/i)
+    // Neither of the two things a failed lookup must never say.
+    expect(html).not.toMatch(/не числится/)
+    expect(html).toMatch(/не удалось выяснить/)
   })
 
   it('carries a canonical link, so one question has one address', async () => {

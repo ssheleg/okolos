@@ -8,6 +8,10 @@
 **Elements, in the order the renderer emits them.** Each is addressable as
 `[data-role=<name>]`, which is also how the tests reach them.
 
+- `lede`
+- `does`
+- `does-not`
+- `pages`
 - `title`
 - `lookup`
 - `domain`

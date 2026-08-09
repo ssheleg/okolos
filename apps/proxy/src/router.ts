@@ -70,6 +70,10 @@ export async function handle(request: Request, env: Env): Promise<Response> {
 
   // A stable address, because a store listing links to it and a person
   // deciding about the permissions has not installed anything yet.
+  if (url.pathname === '/' && readOnly) {
+    return landingPage(url)
+  }
+
   if (url.pathname === '/privacy' && readOnly) {
     return privacyPage()
   }
@@ -179,6 +183,104 @@ ${PRIVACY_HTML}
   )
 }
 
+/**
+ * The page a stranger lands on, written for two readers at once.
+ *
+ * A person arrives asking what this is and whether it can be trusted. A crawler
+ * or an assistant arrives to quote it, and can only quote what is in the markup
+ * — so every claim is a sentence in the HTML rather than something a script
+ * fills in, there is no script at all, and the structured block below says the
+ * same things in the form a machine reads.
+ *
+ * Every claim here is one this project can prove: they come from
+ * `docs/brand/facts.md`, where each row carries the file, command or measured
+ * number behind it. Two of the four sections are about what the product does
+ * **not** do, which is not modesty — a security tool that lists only its
+ * powers is describing a product nobody can check.
+ */
+function landingPage(url: URL): Response {
+  const origin = url.origin
+  const structured = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'Okolos',
+    applicationCategory: 'BrowserApplication',
+    operatingSystem: 'Chrome, Edge, Firefox',
+    description:
+      'Расширение против инструкций, спрятанных на странице для ИИ-ассистента, а не для человека. Работает на устройстве.',
+    license: 'https://www.gnu.org/licenses/agpl-3.0.html',
+    isAccessibleForFree: true,
+    url: origin,
+  }
+
+  return new Response(
+    `<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Okolos — защита от скрытых инструкций для ассистента</title>
+<meta name="description" content="Находит на странице текст, спрятанный от человека, но видимый ИИ-ассистенту, и обезвреживает его до того, как ассистент прочтёт. Работает на устройстве, история браузинга никуда не уходит.">
+<link rel="canonical" href="${escapeHtml(origin)}/">
+<script type="application/ld+json">${JSON.stringify(structured)}</script>
+</head>
+<body>
+<main>
+<h1>Okolos — защита от скрытых инструкций</h1>
+
+<p data-role="lede">На странице бывает текст, который человек не видит, а
+ассистент читает и исполняет. Okolos находит такой текст, обезвреживает его до
+того, как ассистент до него доберётся, и умеет вернуть страницу как было.</p>
+
+<h2 id="what">Что он делает</h2>
+<ul data-role="does">
+<li>Находит текст, скрытый от человека и видимый ассистенту.</li>
+<li>Обезвреживает найденное, не ломая страницу, и возвращает как было.</li>
+<li>Держит действие агента до решения человека — переходы и отправку форм.</li>
+<li>Блокирует страницы по подписанному списку <strong>до</strong> их загрузки.</li>
+<li>Предупреждает о доменах-двойниках, включая кириллические подмены.</li>
+<li>Судит о загрузках и не выдаёт непроверенное за проверенное.</li>
+<li>Следит за изменениями в установленных расширениях.</li>
+<li>Проверяет утечки по адресу почты и пароли по префиксу хеша.</li>
+<li>Ведёт восстановление после инцидента по шагам.</li>
+</ul>
+
+<h2 id="does-not">Чего он не делает</h2>
+<p>Это не оговорки мелким шрифтом, а часть обещания.</p>
+<ul data-role="does-not">
+<li>Не отправляет историю браузинга. Страницы проверяются на устройстве по
+списку, скачанному целиком.</li>
+<li>Не считает «заблокированные угрозы» и не рисует уровень защиты.</li>
+<li>Не хранит события дольше 90 дней.</li>
+<li>Не удерживает действие, у которого нет формы и навигации — но
+<strong>записывает</strong> такие запросы, пока находка на странице не разобрана.</li>
+<li>Не опознаёт агента, который снял флаг автоматизации.</li>
+<li>Не выпускает третью ступень на модели: она принимает подписи для
+скринридеров за инструкции.</li>
+</ul>
+
+<h2 id="trust">Почему этому можно верить</h2>
+<p>Не потому, что мы так говорим. Каждый запрос наружу
+<strong>записывается в журнал до того, как уйти</strong>, и если запись не
+удалась — запрос отменяется. Журнал целиком виден на экране «Что ушло с этого
+устройства», выгружается одним файлом и стирается целиком.</p>
+<p>Исходный код открыт под AGPL-3.0, включая код сервиса: у размещённой копии
+нет способа отличаться от опубликованной.</p>
+
+<h2 id="pages">Что ещё здесь есть</h2>
+<ul data-role="pages">
+<li><a href="/privacy">Приватность</a> — что уходит с устройства, что не уходит и
+сколько хранится. Полный список назначений, без исключений.</li>
+<li><a href="/status">Статус домена</a> — для владельца сайта: числится ли домен
+в списке, в каком именно и с какой даты. Там же подаётся апелляция.</li>
+</ul>
+</main>
+</body>
+</html>`,
+    { status: 200, headers: HTML_HEADERS },
+  )
+}
+
 async function statusPage(url: URL, env: Env): Promise<Response> {
   const raw = url.searchParams.get('domain')
   const domain = normaliseDomain(raw)
@@ -186,7 +288,7 @@ async function statusPage(url: URL, env: Env): Promise<Response> {
   const shell = (title: string, body: string, canonical?: string): Response =>
     new Response(
       `<!doctype html>
-<html lang="en">
+<html lang="ru">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -196,12 +298,12 @@ ${canonical ? `<link rel="canonical" href="${escapeHtml(canonical)}">` : ''}
 </head>
 <body>
 <main>
-<h1 data-role="title">Domain status</h1>
+<h1 data-role="title">Статус домена</h1>
 ${body}
 <form method="get" action="/status" data-role="lookup">
-<label for="domain">Domain to check</label>
+<label for="domain">Домен для проверки</label>
 <input id="domain" name="domain" data-role="domain" type="text" placeholder="example.com" value="${escapeHtml(domain ?? '')}">
-<button type="submit" data-role="check">Check domain</button>
+<button type="submit" data-role="check">Проверить</button>
 </form>
 </main>
 </body>
@@ -211,8 +313,8 @@ ${body}
 
   if (!domain) {
     return shell(
-      'Domain status — enter a domain',
-      '<p data-role="hint">Enter a domain to see whether it is listed, and by which feed.</p>',
+      'Статус домена — введите домен',
+      '<p data-role="hint">Введите домен, чтобы узнать, числится ли он в списке и в каком именно.</p>',
     )
   }
 
@@ -227,16 +329,16 @@ ${body}
     // Never "clean" when the answer could not be looked up — the same rule the
     // JSON endpoint holds, and for the same reason.
     return shell(
-      `Domain status — ${domain}`,
-      `<p data-role="error">The status of <strong>${escapeHtml(domain)}</strong> could not be looked up just now. That is not a statement that it is clean.</p>`,
+      `Статус домена — ${domain}`,
+      `<p data-role="error">Статус <strong>${escapeHtml(domain)}</strong> сейчас не удалось выяснить. Это не утверждение, что домен чист.</p>`,
       canonical,
     )
   }
 
   if (!row) {
     return shell(
-      `${domain} is not listed`,
-      `<p data-role="verdict"><strong>${escapeHtml(domain)}</strong> is <strong>not listed</strong> by any feed this service carries.</p>`,
+      `${domain} — не числится`,
+      `<p data-role="verdict"><strong>${escapeHtml(domain)}</strong> <strong>не числится</strong> ни в одном списке, который несёт этот сервис.</p>`,
       canonical,
     )
   }
@@ -247,11 +349,11 @@ ${body}
   // dressed up as a reason.
   const named = escapeHtml(displayFeedNameEn(row.feed) ?? row.feed)
   return shell(
-    `${domain} is listed`,
-    `<p data-role="verdict"><strong>${escapeHtml(domain)}</strong> is <strong>listed</strong> by <strong>${named}</strong>, recorded ${escapeHtml(row.entry_date)}.</p>` +
+    `${domain} — числится`,
+    `<p data-role="verdict"><strong>${escapeHtml(domain)}</strong> <strong>числится</strong> в списке <strong>${named}</strong>, запись от ${escapeHtml(row.entry_date)}.</p>` +
       (ours
         ? appealForm(domain)
-        : `<p data-role="upstream">This listing is ${named}'s, not ours. Their own appeal process is the one that will lift it; we follow their data.</p>`),
+        : `<p data-role="upstream">Эта запись принадлежит списку ${named}, а не нам. Снять её может только их процедура апелляции; мы следуем их данным.</p>`),
     canonical,
   )
 }
@@ -270,13 +372,13 @@ ${body}
  */
 function appealForm(domain: string): string {
   return `<form method="post" action="/appeal" data-role="appeal">
-<h2>Appeal this listing</h2>
+<h2>Оспорить запись</h2>
 <input type="hidden" name="domain" value="${escapeHtml(domain)}">
-<label for="contact">How we can reach you</label>
+<label for="contact">Как с вами связаться</label>
 <input id="contact" name="contact" data-role="contact" type="text" maxlength="200" placeholder="you@${escapeHtml(domain)}">
-<label for="message">What changed</label>
+<label for="message">Что изменилось</label>
 <textarea id="message" name="message" data-role="message" maxlength="2000" rows="4"></textarea>
-<button type="submit" data-role="send-appeal">Send appeal</button>
+<button type="submit" data-role="send-appeal">Отправить апелляцию</button>
 </form>`
 }
 

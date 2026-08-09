@@ -8,6 +8,8 @@
  * "are you sure?" tells the reader nothing they did not already know.
  */
 
+import { t } from '@okolos/i18n'
+
 export interface WipeOutcome {
   readonly ok: boolean
   readonly failed: readonly string[]
@@ -34,21 +36,21 @@ export function renderDataControls(doc: Document, handlers: DataControlsHandlers
   section.setAttribute('data-role', 'data-controls')
 
   const heading = doc.createElement('h2')
-  heading.textContent = 'Your data'
+  heading.textContent = t('dataHeading')
   section.append(
     heading,
     text(
       doc,
       'blurb',
-      'Everything is stored on this device. Take a copy, or delete all of it — no account is involved either way.',
+      t('dataIntro'),
     ),
   )
 
   const actions = doc.createElement('div')
   actions.setAttribute('data-role', 'actions')
   actions.append(
-    button(doc, 'export', 'Export all data', () => void handlers.onExport(), true),
-    button(doc, 'wipe', 'Delete all data', () => askFirst()),
+    button(doc, 'export', t('dataExport'), () => void handlers.onExport(), true),
+    button(doc, 'wipe', t('dataWipe'), () => askFirst()),
   )
   section.append(actions)
 
@@ -67,11 +69,11 @@ export function renderDataControls(doc: Document, handlers: DataControlsHandlers
     }
 
     confirm.append(
-      text(doc, 'confirm-title', 'This deletes, from this device:'),
+      text(doc, 'confirm-title', t('dataConfirmTitle')),
       list,
-      text(doc, 'confirm-note', 'It cannot be undone. Export first if you want a copy.'),
-      button(doc, 'confirm-yes', 'Delete everything', () => void run()),
-      button(doc, 'confirm-no', 'Keep my data', () => confirm.remove()),
+      text(doc, 'confirm-note', t('dataConfirmNote')),
+      button(doc, 'confirm-yes', t('dataConfirmYes'), () => void run()),
+      button(doc, 'confirm-no', t('dataConfirmNo'), () => confirm.remove()),
     )
     section.append(confirm)
   }
@@ -93,9 +95,9 @@ export function renderDataControls(doc: Document, handlers: DataControlsHandlers
       text(
         doc,
         'wipe-failed',
-        `Some data was not deleted: ${outcome.failed.join(', ')}. The rest is gone.`,
+        t('dataWipePartial', outcome.failed.join(', ')),
       ),
-      button(doc, 'wipe-retry', 'Try again', () => void run()),
+      button(doc, 'wipe-retry', t('dataWipeRetry'), () => void run()),
     )
   }
 

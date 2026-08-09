@@ -1,7 +1,7 @@
 import { analysePackage, type InventoryChange, type PackageReport } from '@okolos/core-extensions'
 import { buildChecklist, type StepProgress } from '@okolos/core-recovery'
 import { diffSince } from '@okolos/core-queue'
-import { useResolver } from '@okolos/i18n'
+import { t, useResolver } from '@okolos/i18n'
 import { detectPlatform } from '@okolos/platform'
 import { buildQueue } from '@okolos/core-queue'
 import { toQueueItems } from '../popup/state.js'
@@ -108,8 +108,8 @@ function leaksSection(): HTMLElement {
               kind: 'idle',
               needs:
                 address.trim() === ''
-                  ? 'Enter the email address you want checked, then press Check now.'
-                  : 'That does not look like an email address, so nothing was sent.',
+                  ? t('leaksPromptAddress')
+                  : t('leaksNotAnAddress'),
             }
             await paintCurrent()
             return
@@ -145,7 +145,7 @@ function leaksSection(): HTMLElement {
             id: `leak-resolved:${name}:${now}`,
             createdAt: now,
             kind: 'action',
-            detail: { explain: `You marked the ${name} breach as dealt with.`, reason: 'user-allowed' },
+            detail: { explain: t('leaksMarkedDealtWith', name), reason: 'user-allowed' },
           })
           await reload()
         })()
@@ -170,7 +170,7 @@ async function queueSection(): Promise<HTMLElement> {
   container.setAttribute('data-role', 'queue-section')
 
   const heading = document.createElement('h1')
-  heading.textContent = 'What needs you'
+  heading.textContent = t('optionsQueueHeading')
   container.append(heading)
 
   try {
@@ -209,7 +209,7 @@ async function queueSection(): Promise<HTMLElement> {
     // most damaging sentence in this product to say wrongly.
     const failed = document.createElement('p')
     failed.setAttribute('data-role', 'queue-error')
-    failed.textContent = `The queue could not be read: ${String(cause)}`
+    failed.textContent = t('optionsQueueUnread', String(cause))
     container.append(failed)
   }
 
@@ -229,7 +229,7 @@ async function extensionsSection(): Promise<HTMLElement> {
     } else if (!result.supported) {
       state = {
         kind: 'unsupported',
-        why: 'This browser does not let an extension read the others, so nothing can be watched here.',
+        why: t('extensionsNotVisible'),
       }
     } else {
       state = {
@@ -246,8 +246,7 @@ async function extensionsSection(): Promise<HTMLElement> {
         installed: result.installed,
         analysis: lastAnalysis,
         analysisNote:
-          'No browser hands one extension another’s code, so nothing here can be analysed on its own. ' +
-          'Choose a package you downloaded and it is read on this device — nothing is uploaded.',
+          t('extensionsInspectNote'),
       }
     }
   } catch (cause) {
@@ -260,7 +259,9 @@ async function extensionsSection(): Promise<HTMLElement> {
       onDisable: (id: string) => {
         void (async () => {
           const result = await platform.runtime.send('extensions/disable', { id })
-          if (result && !result.ok) window.alert(`Could not disable it: ${result.why ?? 'unknown reason'}`)
+          if (result && !result.ok) {
+            window.alert(t('extensionsDisableFailed', result.why ?? t('extensionsUnknownReason')))
+          }
           await reload()
         })()
       },
@@ -281,7 +282,7 @@ async function extensionsSection(): Promise<HTMLElement> {
               findings: [],
               endpoints: [],
               minified: false,
-              note: `That file could not be read: ${String(cause)}`,
+              note: t('extensionsFileUnread', String(cause)),
             }
           }
           await reload()
@@ -314,7 +315,7 @@ async function trustedSection(): Promise<HTMLElement> {
     failed.setAttribute('data-role', 'trusted-error')
     // Never an empty list in place of a failure: it would read as "you trust
     // nothing", which is the reassuring answer and possibly the wrong one.
-    failed.textContent = `The trusted list could not be read: ${String(cause)}`
+    failed.textContent = t('optionsTrustedUnread', String(cause))
     container.append(failed)
     return container
   }
@@ -357,7 +358,7 @@ async function journalSection(): Promise<HTMLElement> {
   } catch (cause) {
     const failed = document.createElement('section')
     failed.setAttribute('data-role', 'journal-error')
-    failed.textContent = `The journal could not be read: ${String(cause)}`
+    failed.textContent = t('optionsJournalUnread', String(cause))
     return failed
   }
 

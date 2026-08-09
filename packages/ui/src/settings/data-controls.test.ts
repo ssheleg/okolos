@@ -3,6 +3,27 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { renderDataControls, type DataControlsHandlers } from './data-controls.js'
 
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fromCatalogue, useResolver, type Catalogue } from '@okolos/i18n'
+
+/** The shipped Russian catalogue: `default_locale` is `ru`, and a fake would let a missing key pass. */
+const CATALOGUE = JSON.parse(
+  readFileSync(
+    path.resolve(import.meta.dirname, '../../../../apps/extension/_locales/ru/messages.json'),
+    'utf8',
+  ),
+) as Catalogue
+
+useResolver(fromCatalogue(CATALOGUE))
+
+/** The entry, or a failure that names the key rather than comparing to undefined. */
+function message(key: string): string {
+  const entry = CATALOGUE[key]
+  if (!entry) throw new Error(`the shipped catalogue has no key "${key}"`)
+  return entry.message
+}
+
 function handlers(overrides: Partial<DataControlsHandlers> = {}): DataControlsHandlers {
   return {
     onExport: vi.fn(async () => undefined),
@@ -69,7 +90,7 @@ describe('a wipe that half-worked never reports success', () => {
     await vi.waitFor(() => {
       const failure = el.querySelector('[data-role=wipe-failed]')?.textContent ?? ''
       expect(failure).toContain('journal')
-      expect(failure).toContain('not deleted')
+      expect(failure).toContain(message('dataWipePartial').split('$')[0]?.trim())
     })
     expect(el.querySelector('[data-role=wipe-retry]')).not.toBeNull()
   })

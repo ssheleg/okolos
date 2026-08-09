@@ -11,6 +11,32 @@
   "appName": {
     "message": "Okolos — защита от скрытых инструкций"
   },
+  "auditEmpty": {
+    "message": "С этого устройства ничего не отправлялось."
+  },
+  "auditExport": {
+    "message": "Выгрузить журнал"
+  },
+  "auditHeading": {
+    "message": "Что ушло с этого устройства"
+  },
+  "auditReading": {
+    "message": "Журнал читается…"
+  },
+  "auditRepair": {
+    "message": "Починить хранилище"
+  },
+  "auditUnread": {
+    "message": "Журнал не прочитался: $CAUSE$",
+    "placeholders": {
+      "cause": {
+        "content": "$1"
+      }
+    }
+  },
+  "auditUnreadNote": {
+    "message": "Это неполадка хранилища, а не утверждение, что ничего не отправлялось."
+  },
   "bannerActionClickfix": {
     "message": "Уйти со страницы"
   },
@@ -149,6 +175,41 @@
   "confidenceMedium": {
     "message": "средняя"
   },
+  "dataConfirmNo": {
+    "message": "Оставить данные"
+  },
+  "dataConfirmNote": {
+    "message": "Отменить будет нельзя. Если нужна копия — сначала выгрузите."
+  },
+  "dataConfirmTitle": {
+    "message": "С этого устройства будет удалено:"
+  },
+  "dataConfirmYes": {
+    "message": "Удалить всё"
+  },
+  "dataExport": {
+    "message": "Выгрузить все данные"
+  },
+  "dataHeading": {
+    "message": "Ваши данные"
+  },
+  "dataIntro": {
+    "message": "Всё хранится на этом устройстве. Заберите копию или удалите целиком — аккаунт не нужен ни для того, ни для другого."
+  },
+  "dataWipe": {
+    "message": "Удалить все данные"
+  },
+  "dataWipePartial": {
+    "message": "Часть данных не удалилась: $WHAT$. Остальное стёрто.",
+    "placeholders": {
+      "what": {
+        "content": "$1"
+      }
+    }
+  },
+  "dataWipeRetry": {
+    "message": "Попробовать ещё раз"
+  },
   "extensionsAlreadyOff": {
     "message": "Уже отключено."
   },
@@ -157,6 +218,14 @@
   },
   "extensionsDisable": {
     "message": "Отключить"
+  },
+  "extensionsDisableFailed": {
+    "message": "Отключить не удалось: $WHY$",
+    "placeholders": {
+      "why": {
+        "content": "$1"
+      }
+    }
   },
   "extensionsDisableIt": {
     "message": "Отключить его"
@@ -172,6 +241,17 @@
   "extensionsErrorNote": {
     "message": "Это не утверждение, что ничего не изменилось."
   },
+  "extensionsFileUnread": {
+    "message": "Файл не прочитался: $CAUSE$",
+    "placeholders": {
+      "cause": {
+        "content": "$1"
+      }
+    }
+  },
+  "extensionsInspectNote": {
+    "message": "Ни один браузер не отдаёт одному расширению код другого, поэтому сам по себе здесь ничего не разобрать. Выберите скачанный пакет — он будет прочитан на этом устройстве, никуда ничего не уходит."
+  },
   "extensionsInspectTitle": {
     "message": "Разобрать пакет"
   },
@@ -180,6 +260,9 @@
   },
   "extensionsNoPermissions": {
     "message": "Особых разрешений нет."
+  },
+  "extensionsNotVisible": {
+    "message": "Этот браузер не даёт расширению читать другие, поэтому следить здесь не за чем."
   },
   "extensionsNothingOfNote": {
     "message": "В тексте этого файла ничего примечательного не нашлось."
@@ -192,6 +275,9 @@
   },
   "extensionsTrustChange": {
     "message": "Это изменение нормально"
+  },
+  "extensionsUnknownReason": {
+    "message": "причина неизвестна"
   },
   "feedNamePhishing": {
     "message": "Список Okolos: фишинг"
@@ -506,11 +592,25 @@
   "leaksMarkResolved": {
     "message": "Отметить решённым"
   },
+  "leaksMarkedDealtWith": {
+    "message": "Утечка «$NAME$» отмечена как разобранная.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
   "leaksNoDomain": {
     "message": "Источник не назвал сайт, поэтому отправить вас некуда."
   },
   "leaksNone": {
     "message": "Для этого адреса утечек не найдено."
+  },
+  "leaksNotAnAddress": {
+    "message": "Это не похоже на адрес почты, поэтому ничего не отправлено."
+  },
+  "leaksPromptAddress": {
+    "message": "Введите адрес почты, который нужно проверить, и нажмите «Проверить»."
   },
   "leaksRetry": {
     "message": "Попробовать снова"
@@ -557,6 +657,33 @@
     "message": "Вы перестали доверять $DOMAIN$; проверки снова применяются к нему.",
     "placeholders": {
       "domain": {
+        "content": "$1"
+      }
+    }
+  },
+  "optionsJournalUnread": {
+    "message": "Журнал не прочитался: $CAUSE$",
+    "placeholders": {
+      "cause": {
+        "content": "$1"
+      }
+    }
+  },
+  "optionsQueueHeading": {
+    "message": "Что требует вас"
+  },
+  "optionsQueueUnread": {
+    "message": "Очередь не прочиталась: $CAUSE$",
+    "placeholders": {
+      "cause": {
+        "content": "$1"
+      }
+    }
+  },
+  "optionsTrustedUnread": {
+    "message": "Список доверенных не прочитался: $CAUSE$",
+    "placeholders": {
+      "cause": {
         "content": "$1"
       }
     }

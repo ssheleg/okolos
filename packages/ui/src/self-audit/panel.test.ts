@@ -4,6 +4,27 @@ import type { AuditEntry } from '@okolos/contracts'
 
 import { renderSelfAudit } from './panel.js'
 
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fromCatalogue, useResolver, type Catalogue } from '@okolos/i18n'
+
+/** The shipped Russian catalogue: `default_locale` is `ru`, and a fake would let a missing key pass. */
+const CATALOGUE = JSON.parse(
+  readFileSync(
+    path.resolve(import.meta.dirname, '../../../../apps/extension/_locales/ru/messages.json'),
+    'utf8',
+  ),
+) as Catalogue
+
+useResolver(fromCatalogue(CATALOGUE))
+
+/** The entry, or a failure that names the key rather than comparing to undefined. */
+function message(key: string): string {
+  const entry = CATALOGUE[key]
+  if (!entry) throw new Error(`the shipped catalogue has no key "${key}"`)
+  return entry.message
+}
+
 const handlers = { onExport: vi.fn(), onRepair: vi.fn() }
 
 function entry(overrides: Partial<AuditEntry> = {}): AuditEntry {
@@ -22,9 +43,7 @@ function entry(overrides: Partial<AuditEntry> = {}): AuditEntry {
 describe('an empty log is a sentence, not an empty table', () => {
   it('says plainly that nothing was sent', () => {
     const el = renderSelfAudit(document, { kind: 'empty' }, handlers)
-    expect(el.querySelector('[data-role=empty]')?.textContent).toBe(
-      'Nothing has been sent from this device.',
-    )
+    expect(el.querySelector('[data-role=empty]')?.textContent).toBe(message('auditEmpty'))
     expect(el.querySelector('[data-role=entries]')).toBeNull()
   })
 })
@@ -39,8 +58,8 @@ describe('a failure never looks like silence', () => {
   it('says explicitly that this is not a claim that nothing was sent', () => {
     // Showing an empty list on a read error would be the one lie this panel
     // cannot afford: the reader would conclude the product sent nothing.
-    expect(el.querySelector('[data-role=error-note]')?.textContent).toContain(
-      'not a statement that nothing was sent',
+    expect(el.querySelector('[data-role=error-note]')?.textContent).toBe(
+      message('auditUnreadNote'),
     )
     expect(el.querySelector('[data-role=entries]')).toBeNull()
   })
@@ -100,7 +119,7 @@ describe('the log itself', () => {
 describe('loading', () => {
   it('says it is reading rather than showing an empty list', () => {
     const el = renderSelfAudit(document, { kind: 'loading' }, handlers)
-    expect(el.querySelector('[data-role=status]')?.textContent).toContain('Reading the log')
+    expect(el.querySelector('[data-role=status]')?.textContent).toContain(message('auditReading'))
     expect(el.querySelector('[data-role=entries]')).toBeNull()
   })
 })

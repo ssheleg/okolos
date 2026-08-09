@@ -11,6 +11,32 @@
   "appName": {
     "message": "Okolos — a guard against hidden instructions"
   },
+  "auditEmpty": {
+    "message": "Nothing has been sent from this device."
+  },
+  "auditExport": {
+    "message": "Export log"
+  },
+  "auditHeading": {
+    "message": "What left this device"
+  },
+  "auditReading": {
+    "message": "Reading the log…"
+  },
+  "auditRepair": {
+    "message": "Repair storage"
+  },
+  "auditUnread": {
+    "message": "The log could not be read: $CAUSE$",
+    "placeholders": {
+      "cause": {
+        "content": "$1"
+      }
+    }
+  },
+  "auditUnreadNote": {
+    "message": "This is a storage problem, not a statement that nothing was sent."
+  },
   "bannerActionClickfix": {
     "message": "Leave this page"
   },
@@ -149,6 +175,41 @@
   "confidenceMedium": {
     "message": "medium"
   },
+  "dataConfirmNo": {
+    "message": "Keep my data"
+  },
+  "dataConfirmNote": {
+    "message": "It cannot be undone. Export first if you want a copy."
+  },
+  "dataConfirmTitle": {
+    "message": "This deletes, from this device:"
+  },
+  "dataConfirmYes": {
+    "message": "Delete everything"
+  },
+  "dataExport": {
+    "message": "Export all data"
+  },
+  "dataHeading": {
+    "message": "Your data"
+  },
+  "dataIntro": {
+    "message": "Everything is stored on this device. Take a copy, or delete all of it — no account is involved either way."
+  },
+  "dataWipe": {
+    "message": "Delete all data"
+  },
+  "dataWipePartial": {
+    "message": "Some data was not deleted: $WHAT$. The rest is gone.",
+    "placeholders": {
+      "what": {
+        "content": "$1"
+      }
+    }
+  },
+  "dataWipeRetry": {
+    "message": "Try again"
+  },
   "extensionsAlreadyOff": {
     "message": "Already off."
   },
@@ -157,6 +218,14 @@
   },
   "extensionsDisable": {
     "message": "Disable"
+  },
+  "extensionsDisableFailed": {
+    "message": "Could not disable it: $WHY$",
+    "placeholders": {
+      "why": {
+        "content": "$1"
+      }
+    }
   },
   "extensionsDisableIt": {
     "message": "Disable it"
@@ -172,6 +241,17 @@
   "extensionsErrorNote": {
     "message": "This is not a statement that nothing changed."
   },
+  "extensionsFileUnread": {
+    "message": "That file could not be read: $CAUSE$",
+    "placeholders": {
+      "cause": {
+        "content": "$1"
+      }
+    }
+  },
+  "extensionsInspectNote": {
+    "message": "No browser hands one extension another’s code, so nothing here can be analysed on its own. Choose a package you downloaded and it is read on this device — nothing is uploaded."
+  },
   "extensionsInspectTitle": {
     "message": "Inspect a package"
   },
@@ -180,6 +260,9 @@
   },
   "extensionsNoPermissions": {
     "message": "No special permissions."
+  },
+  "extensionsNotVisible": {
+    "message": "This browser does not let an extension read the others, so nothing can be watched here."
   },
   "extensionsNothingOfNote": {
     "message": "Nothing of note was found in the text of this file."
@@ -192,6 +275,9 @@
   },
   "extensionsTrustChange": {
     "message": "This change is fine"
+  },
+  "extensionsUnknownReason": {
+    "message": "unknown reason"
   },
   "feedNamePhishing": {
     "message": "Okolos phishing list"
@@ -506,11 +592,25 @@
   "leaksMarkResolved": {
     "message": "Mark resolved"
   },
+  "leaksMarkedDealtWith": {
+    "message": "You marked the $NAME$ breach as dealt with.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
   "leaksNoDomain": {
     "message": "This source did not say which site it was, so there is nowhere to send you."
   },
   "leaksNone": {
     "message": "No breaches were found for this address."
+  },
+  "leaksNotAnAddress": {
+    "message": "That does not look like an email address, so nothing was sent."
+  },
+  "leaksPromptAddress": {
+    "message": "Enter the email address you want checked, then press Check now."
   },
   "leaksRetry": {
     "message": "Try again"
@@ -557,6 +657,33 @@
     "message": "You stopped trusting $DOMAIN$; the checks apply to it again.",
     "placeholders": {
       "domain": {
+        "content": "$1"
+      }
+    }
+  },
+  "optionsJournalUnread": {
+    "message": "The journal could not be read: $CAUSE$",
+    "placeholders": {
+      "cause": {
+        "content": "$1"
+      }
+    }
+  },
+  "optionsQueueHeading": {
+    "message": "What needs you"
+  },
+  "optionsQueueUnread": {
+    "message": "The queue could not be read: $CAUSE$",
+    "placeholders": {
+      "cause": {
+        "content": "$1"
+      }
+    }
+  },
+  "optionsTrustedUnread": {
+    "message": "The trusted list could not be read: $CAUSE$",
+    "placeholders": {
+      "cause": {
         "content": "$1"
       }
     }

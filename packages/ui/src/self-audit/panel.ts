@@ -1,3 +1,5 @@
+
+import { t } from '@okolos/i18n'
 import type { AuditEntry } from '@okolos/contracts'
 
 /**
@@ -31,27 +33,27 @@ export function renderSelfAudit(
   section.setAttribute('data-state', state.kind)
 
   const heading = doc.createElement('h1')
-  heading.textContent = 'What left this device'
+  heading.textContent = t('auditHeading')
   section.append(heading)
 
   switch (state.kind) {
     case 'loading':
-      section.append(text(doc, 'status', 'Reading the log…'))
+      section.append(text(doc, 'status', t('auditReading')))
       return section
 
     case 'empty':
       // An empty table is a claim the reader has to interpret. A sentence is
       // the claim itself, and it is the one people install this product for.
-      section.append(text(doc, 'empty', 'Nothing has been sent from this device.'))
+      section.append(text(doc, 'empty', t('auditEmpty')))
       return section
 
     case 'error': {
       // Never an empty list on failure: silence would read as "nothing was
       // sent", which is precisely the lie this panel exists to prevent.
       section.append(
-        text(doc, 'error', `The log could not be read: ${state.message}`),
-        text(doc, 'error-note', 'This is a storage problem, not a statement that nothing was sent.'),
-        action(doc, 'repair', 'Repair storage', handlers.onRepair),
+        text(doc, 'error', t('auditUnread', state.message)),
+        text(doc, 'error-note', t('auditUnreadNote')),
+        action(doc, 'repair', t('auditRepair'), handlers.onRepair),
       )
       return section
     }
@@ -61,7 +63,7 @@ export function renderSelfAudit(
       const list = doc.createElement('ol')
       list.setAttribute('data-role', 'entries')
       for (const entry of state.entries) list.append(row(doc, entry))
-      section.append(list, action(doc, 'export', 'Export log', handlers.onExport))
+      section.append(list, action(doc, 'export', t('auditExport'), handlers.onExport))
       return section
     }
   }

@@ -1127,3 +1127,25 @@ think you are testing*.
   the remaining 43 in 14 files are a ledger row with a measured count, not a
   vague "finish i18n"; and `pnpm screenshots` names every untranslated screen
   and exits non-zero.
+
+### 2026-08-09 — four counts in a row, all of them low
+
+- **Symptom:** each iteration of the localisation work reported how many
+  sentences were left — 49, then 43, then 36, then 15. The screenshot of the
+  self-audit page then showed English lines that none of those numbers had
+  counted.
+- **Root cause:** the count was re-derived every iteration by a throwaway regex
+  typed into the shell, and every version required a capital first letter. The
+  audit log's own copy does not have one: "downloading the list of known-bad
+  sites", "triggered by alarm:feeds", "none contained a page address". The true
+  figure at that moment was 44 in 15 files, not 15 in 10.
+- **Owned by:** me, and standing instruction 9 applies to a number my own
+  command produced exactly as it applies to a diagnostic's. Reported as fact
+  four times, it was a claim about a regex.
+- **What made it survive:** each count was *lower* than the last, so the shape
+  of the sequence looked like progress. A number that moves the way you expect
+  is the hardest kind to doubt.
+- **Fix:** `tools/i18n-sweep.mjs` and `pnpm i18n:sweep`. The pattern is written
+  down, reviewable and the same every run, and `--list` prints file and line so
+  the number can be checked rather than believed. The generate-what-would-drift
+  rule (ADR-0007) applies to measurements, not only to documents.

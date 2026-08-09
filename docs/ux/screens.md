@@ -216,7 +216,7 @@ self-audit panel.
 ### SCR-10: Self-audit
 - **Used by:** FLW-13, FLW-17
 - **Purpose:** make "we don't collect your browsing" verifiable rather than promised
-- **Elements:** outbound request log — time, destination, purpose, payload shape, what triggered it; filters by period and feature; **primary action: "Export log"**; per-row detail with the exact bytes sent and redaction applied; a one-line summary ("this week: N requests, none containing a URL or address")
+- **Elements:** outbound request log — time, destination, purpose, payload shape, what triggered it; filters by period and feature; **primary action: "Выгрузить журнал"**; per-row detail with the exact bytes sent and redaction applied; a one-line summary ("this week: N requests, none containing a URL or address")
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|
@@ -249,7 +249,7 @@ self-audit panel.
 ### SCR-12: Settings
 - **Used by:** FLW-05 (watchlist edit), FLW-14
 - **Purpose:** the few switches that change behaviour, plus data ownership
-- **Elements:** brand watchlist (add/edit/remove); trusted domains list (populated by the this-is-legitimate decisions taken on other screens, editable); quiet mode toggle; proxy on/off with a plain explanation of what each option reveals and to whom; retention period; **primary action: "Export all data"**; "Delete all data" (destructive, confirms with a list of what is deleted)
+- **Elements:** brand watchlist (add/edit/remove); trusted domains list (populated by the this-is-legitimate decisions taken on other screens, editable); quiet mode toggle; proxy on/off with a plain explanation of what each option reveals and to whom; retention period; **primary action: "Выгрузить все данные"**; "Удалить все данные" (разрушительное, подтверждается списком того, что удаляется)
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|

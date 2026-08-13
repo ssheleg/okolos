@@ -1,3 +1,4 @@
+import { inflateSync } from 'node:zlib'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -87,6 +88,32 @@ describe('what the extension asks for', () => {
   })
 })
 
+
+/**
+ * A PNG's pixels, not its packaging.
+ *
+ * This gate compared whole files until 2026-08-13, and it passed on every
+ * machine that had run the generator — because the generator's `deflateSync`
+ * does not emit identical bytes across zlib builds. The committed files were
+ * drawn on macOS; the first CI run that ever reached this test was on Linux,
+ * and it reported the icon as changed when not one pixel had moved.
+ *
+ * The promise was never about compression. It is that the committed artwork is
+ * the artwork this script draws, and that survives being re-packed.
+ */
+function pixels(png: Buffer): Buffer {
+  const idat: Buffer[] = []
+  let at = 8 // past the PNG signature
+  while (at + 8 <= png.length) {
+    const length = png.readUInt32BE(at)
+    const type = png.toString('ascii', at + 4, at + 8)
+    if (type === 'IDAT') idat.push(png.subarray(at + 8, at + 8 + length))
+    at += 12 + length // length + type + data + crc
+    if (type === 'IEND') break
+  }
+  return inflateSync(Buffer.concat(idat))
+}
+
 describe('the icon the browser and the store will actually show', () => {
   /**
    * `"icons": {}` shipped in both manifests until 2026-08-08, and the project
@@ -135,15 +162,25 @@ describe('the icon the browser and the store will actually show', () => {
     })
   }
 
-  it('carries exactly the bytes the generator draws', async () => {
+  it('carries exactly the image the generator draws', async () => {
     // @ts-expect-error — a plain .mjs tool, imported for the drawing it does.
     const { SIZES, draw } = await import('./icons.mjs')
     for (const size of SIZES) {
       const committed = readFileSync(path.join(iconRoot, `${size}.png`))
       expect(
-        committed.equals(draw(size)),
+        pixels(committed).equals(pixels(draw(size) as Buffer)),
         `icons/${size}.png differs from tools/icons.mjs — run \`node tools/icons.mjs\``,
       ).toBe(true)
     }
+  })
+
+  it('would notice a changed pixel — the comparison is not blind', () => {
+    // The rule above compares decompressed pixels, so it has to be shown that
+    // it still sees a difference. A comparison that unpacks two files into
+    // empty buffers agrees with itself perfectly.
+    const one = readFileSync(path.join(iconRoot, '16.png'))
+    const other = readFileSync(path.join(iconRoot, '32.png'))
+    expect(pixels(one).length).toBeGreaterThan(0)
+    expect(pixels(one).equals(pixels(other))).toBe(false)
   })
 })

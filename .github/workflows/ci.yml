@@ -48,6 +48,15 @@ jobs:
       # when the build is broken.
       - name: unit tests and bundle gates
         run: pnpm test
+        env:
+          # The pair test in `tools/feed-key.test.ts` signs an update with the
+          # private key and verifies it with the public one that ships in the
+          # extension. The private key is a secret and must not be in the
+          # repository, so CI is handed it here. Without it that one test fails
+          # by design and names the remedy: an unverifiable signing pair is a
+          # real problem for a product whose feed is signed, not a detail to
+          # skip past in green.
+          OKOLOS_FEED_KEY: ${{ secrets.OKOLOS_FEED_KEY }}
 
       - name: upload builds
         uses: actions/upload-artifact@v4
@@ -123,6 +132,13 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps firefox
       - run: pnpm build
+      # Both builds, because the runner installs both. The shipping build is
+      # where the closed shadow root is checked; the test-hook build is where
+      # anything inside it can be reached. This line was missing, and the first
+      # CI run that ever reached the Firefox job failed on `dist/firefox-e2e is
+      # missing` — invisible locally, where an earlier `pnpm test:e2e` had
+      # already left the directory behind.
+      - run: pnpm build:e2e
 
       # geckodriver installs the extension the way Mozilla supports for
       # unpacked builds; the run fails loudly if the add-on is absent, so a

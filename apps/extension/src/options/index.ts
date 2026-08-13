@@ -494,10 +494,13 @@ async function areaRows(): Promise<AreaRow[]> {
       return t('areaStateTrusted', String(result.entries.length))
     }),
     count(async () => {
-      const open = await openIncidents()
-      return open.length === 0
+      const { incidents, unreadable } = await openIncidents()
+      // A row that cannot see every incident says so rather than naming a
+      // number that is missing some of them.
+      if (unreadable > 0) throw new Error('recovery progress unreadable')
+      return incidents.length === 0
         ? t('areaStateNoIncidents')
-        : t('areaStateSteps', String(open.reduce((n, i) => n + i.open, 0)))
+        : t('areaStateSteps', String(incidents.reduce((n, i) => n + i.open, 0)))
     }),
     count(async () => {
       const entries = await (await openDb()).getAll('outbound_log')
@@ -531,20 +534,37 @@ async function count(read: () => Promise<string>): Promise<string | null> {
   }
 }
 
-/** Recovery checklists with steps still unticked. */
-async function openIncidents(): Promise<Array<{ kind: string; open: number }>> {
+/**
+ * Recovery checklists with steps still unticked, and how many could not be read.
+ *
+ * A single unparseable entry used to throw out of here and — because this is
+ * called from inside the attention band's own try — blank the **whole** band:
+ * eight areas reported unreadable because one settings row was corrupt.
+ */
+async function openIncidents(): Promise<{
+  incidents: Array<{ kind: string; open: number }>
+  unreadable: number
+}> {
   const db = await openDb()
   const settings = await db.getAll('settings')
   const incidents: Array<{ kind: string; open: number }> = []
+  let unreadable = 0
   for (const entry of settings) {
     if (!entry.key.startsWith('recovery:')) continue
     const kind = entry.key.slice('recovery:'.length)
-    const done: StepProgress[] =
-      typeof entry.value === 'string' ? (JSON.parse(entry.value) as StepProgress[]) : []
+    let done: StepProgress[] = []
+    try {
+      done = typeof entry.value === 'string' ? (JSON.parse(entry.value) as StepProgress[]) : []
+    } catch {
+      // Skipped and counted. Skipping quietly would undercount the open steps,
+      // and an undercount on this surface reads as calm.
+      unreadable += 1
+      continue
+    }
     const open = buildChecklist(kind, done).remaining
     if (open > 0) incidents.push({ kind, open })
   }
-  return incidents
+  return { incidents, unreadable }
 }
 
 /**
@@ -576,7 +596,7 @@ async function attentionItems(): Promise<AttentionItem[] | null> {
       href: optionsPageFor('queue'),
     }))
 
-    for (const incident of await openIncidents()) {
+    for (const incident of (await openIncidents()).incidents) {
       attention.push({
         severity: 'major',
         what: t('areaRecoveryOpen', String(incident.open)),

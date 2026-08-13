@@ -48,6 +48,7 @@ import { createVerifier, FEED_PUBLIC_KEY, updateFeed } from './feeds.js'
 import { syncFeed } from './feed-sync.js'
 import { useResolver } from '@okolos/i18n'
 import { reuseOf } from '@okolos/core-credential'
+import { optionsPageFor } from '../options/views.js'
 
 const FEED_ALARM = 'okolos:feeds'
 const RETENTION_ALARM = 'okolos:retention'
@@ -712,7 +713,7 @@ async function journalTrap(payload: { kind: string; signals: string }): Promise<
 async function openRecovery(payload: { kind: string }): Promise<{ ok: true }> {
   // The checklist itself lands with REQ-22; until then the entry point exists
   // and goes somewhere real rather than being a control that does nothing.
-  await platform.tabs.create(platform.runtime.getUrl(`options.html#recovery=${encodeURIComponent(payload.kind)}`))
+  await platform.tabs.create(platform.runtime.getUrl(optionsPageFor('recovery', payload.kind)))
   return { ok: true }
 }
 

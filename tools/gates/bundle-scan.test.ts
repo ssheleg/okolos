@@ -4,6 +4,8 @@ import { globSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { beforeAll, describe, expect, it } from 'vitest'
 
+import { routeFor } from '../../apps/extension/src/options/views.js'
+
 /**
  * The gates that read what actually ships.
  *
@@ -247,5 +249,61 @@ describe('the scanner reads code, not prose', () => {
 
   it('is not fooled by a comment either way', () => {
     expect(executable('// never use document.cookie here')).not.toContain('document.')
+  })
+})
+
+describe('every address in the shipped bundle is one the options page resolves', () => {
+  /**
+   * The source-side twin of this rule lives in `tools/options-routes.test.ts`.
+   * It is here as well because the source rule can only see addresses written
+   * as literals: a producer that assembles one — a template, a concatenation, a
+   * helper in another package — is invisible to it. The bundle is where every
+   * address has already become a string, whatever built it.
+   */
+  const ADDRESS = /options\.html(#[\w=%.-]*)/g
+
+  /**
+   * The four browser builds, and only those.
+   *
+   * `dist/` also holds `tsc -b`'s per-directory emit, which **keeps comments** —
+   * so the first version of this rule read `interstitial/appeal-link.js` and
+   * failed on `options.html#appeal`, an address that file's own doc comment
+   * names as the dead one it stopped using. A gate that reads prose reports the
+   * documentation of a fixed defect as the defect itself.
+   */
+  const BUNDLES = ['chrome', 'chrome-e2e', 'firefox', 'firefox-e2e'].flatMap((build) =>
+    filesIn(`apps/extension/dist/${build}/*.js`),
+  )
+
+  /**
+   * `hashFor('recovery', kind)` compiles to `"#recovery=" + encodeURIComponent(kind)`,
+   * so every bundle contains the constructor's literal half with nothing after
+   * it. That is the table building an address, not a producer opening a broken
+   * one.
+   */
+  const CONSTRUCTED = '#recovery='
+
+  it('finds bundles to read', () => {
+    expect(BUNDLES.length).toBeGreaterThan(3)
+  })
+
+  it('resolves every address the build actually contains', () => {
+    const unresolved: string[] = []
+    for (const file of BUNDLES) {
+      for (const [, hash] of readFileSync(file, 'utf8').matchAll(ADDRESS)) {
+        if ((hash as string) === CONSTRUCTED) continue
+        if (routeFor(hash as string).unrecognised !== undefined) {
+          unresolved.push(`${path.relative(root, file)} -> ${hash as string}`)
+        }
+      }
+    }
+    expect(unresolved, 'the built extension opens an address the page does not know').toEqual([])
+  })
+
+  it('the sweep can actually see an address — a blind scan would pass on anything', () => {
+    // Absence of data must never read as a pass: prove the regex finds a real
+    // address in the built output before trusting a clean result from it.
+    const found = BUNDLES.flatMap((file) => [...readFileSync(file, 'utf8').matchAll(ADDRESS)])
+    expect(found.length, 'no address found in any bundle — the scan is blind').toBeGreaterThan(0)
   })
 })

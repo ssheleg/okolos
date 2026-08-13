@@ -11,6 +11,100 @@
   "appName": {
     "message": "Okolos — a guard against hidden instructions"
   },
+  "areaAudit": {
+    "message": "What was sent"
+  },
+  "areaExtensions": {
+    "message": "Extensions"
+  },
+  "areaJournal": {
+    "message": "What changed"
+  },
+  "areaLeaks": {
+    "message": "Leaks"
+  },
+  "areaRecovery": {
+    "message": "Recovery"
+  },
+  "areaRecoveryOpen": {
+    "message": "Recovery unfinished, steps left: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "areaStateChanges": {
+    "message": "changes: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "areaStateJournalNever": {
+    "message": "never reviewed"
+  },
+  "areaStateJournalSince": {
+    "message": "since $WHEN$",
+    "placeholders": {
+      "when": {
+        "content": "$1"
+      }
+    }
+  },
+  "areaStateNoIncidents": {
+    "message": "no incidents"
+  },
+  "areaStateNothing": {
+    "message": "nothing waiting"
+  },
+  "areaStateOnDemand": {
+    "message": "checked on request"
+  },
+  "areaStateRetention": {
+    "message": "kept for days: $DAYS$",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "areaStateSent": {
+    "message": "requests sent: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "areaStateSteps": {
+    "message": "steps left: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "areaStateTrusted": {
+    "message": "sites: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "areaStateWaiting": {
+    "message": "waiting: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "areaTrusted": {
+    "message": "Trusted sites"
+  },
   "auditEmpty": {
     "message": "Nothing has been sent from this device."
   },
@@ -245,6 +339,17 @@
   },
   "contentNothingRestored": {
     "message": "Nothing could be restored. "
+  },
+  "dashboardBack": {
+    "message": "← Overview"
+  },
+  "dashboardBackWaiting": {
+    "message": "← Overview · needs you: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
   },
   "dataConfirmNo": {
     "message": "Keep my data"
@@ -921,6 +1026,75 @@
     "message": "The trusted list could not be read: $CAUSE$",
     "placeholders": {
       "cause": {
+        "content": "$1"
+      }
+    }
+  },
+  "overviewAreas": {
+    "message": "Areas"
+  },
+  "overviewAttention": {
+    "message": "Needs you: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "overviewCounting": {
+    "message": "Counting…"
+  },
+  "overviewLastChecked": {
+    "message": "Last checked: $WHEN$.",
+    "placeholders": {
+      "when": {
+        "content": "$1"
+      }
+    }
+  },
+  "overviewMore": {
+    "message": "…and $COUNT$ more",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "overviewNeverChecked": {
+    "message": "Nothing has been checked yet — which is not the same as clean."
+  },
+  "overviewNothing": {
+    "message": "Nothing needs you right now."
+  },
+  "overviewOrigin": {
+    "message": "$WHERE$ · $WHEN$",
+    "placeholders": {
+      "where": {
+        "content": "$1"
+      },
+      "when": {
+        "content": "$2"
+      }
+    }
+  },
+  "overviewStateUnread": {
+    "message": "state could not be read"
+  },
+  "overviewTitle": {
+    "message": "Overview"
+  },
+  "overviewUnread": {
+    "message": "Local data could not be read: $CAUSE$. That is a storage fault, not a statement that nothing needs you.",
+    "placeholders": {
+      "cause": {
+        "content": "$1"
+      }
+    }
+  },
+  "overviewUnrecognised": {
+    "message": "That link pointed at $HASH$, and there is no such area. The overview is open instead.",
+    "placeholders": {
+      "hash": {
         "content": "$1"
       }
     }

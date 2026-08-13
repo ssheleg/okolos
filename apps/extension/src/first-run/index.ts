@@ -3,6 +3,7 @@ import { t, useResolver } from '@okolos/i18n'
 import { detectPlatform } from '@okolos/platform'
 import { openDb } from '@okolos/storage'
 import '../pages.css'
+import { optionsPageFor } from '../options/views.js'
 
 /**
  * What the first run can honestly check.
@@ -88,9 +89,13 @@ async function paint(): Promise<void> {
     renderFirstRun(document, { checks: rows, findings }, {
       // Straight to the queue: the first interaction should end with something
       // to do, not a page to read.
-      onContinue: () => void platform.tabs.create(platform.runtime.getUrl('options.html#queue')),
+      onContinue: () => void platform.tabs.create(platform.runtime.getUrl(optionsPageFor('queue'))),
       onSkip: () => window.close(),
-      onOpenAudit: () => void platform.runtime.openOptionsPage(),
+      // `openOptionsPage()` carries no address, so it lands wherever the page
+      // opens by default — which used to be the self-audit panel by accident of
+      // ordering, and is now the overview. This link names the audit, so it
+      // must ask for the audit.
+      onOpenAudit: () => void platform.tabs.create(platform.runtime.getUrl(optionsPageFor('audit'))),
     }),
   )
 }

@@ -1,4 +1,13 @@
 export {
+  renderOverview,
+  ATTENTION_SHOWN,
+  type AreaId,
+  type AreaRow,
+  type AttentionItem,
+  type OverviewHandlers,
+  type OverviewState,
+} from './dashboard/overview.js'
+export {
   mountBanner,
   type BannerHandle,
   type BannerHandlers,

@@ -2,12 +2,21 @@
 
 # Screens — UI map
 
-Figma is disabled for now (see [foundation.md](foundation.md) → Design
-tooling), so the `Figma frame` column holds `-` until Figma is switched on
-before UI implementation. Most screens below are `designed` — specified, not
-built. Two are `built` and carry their code coverage: the banner (injection
-variant only; the other six variants land with their modules) and the
-self-audit panel.
+Figma is disabled by the 2026-08-04 decision (see
+[foundation.md](foundation.md) → Design tooling), so the `Figma frame` column
+holds `-` throughout and every wireframe in `wireframes/` is **generated from
+the renderers** by `tools/wireframes.mjs` and held current by
+`tools/wireframes.test.ts` — a screen that gains a control fails the build until
+its wireframe is regenerated. That inverts the usual order: here the record of
+intent is this file, and the wireframe is derived evidence rather than a mockup
+drawn ahead of the code.
+
+**Seventeen of eighteen screens are `built`.** SCR-15 is `designed` — the
+dashboard overview specified in
+[plans/2026-08-12-options-dashboard.md](plans/2026-08-12-options-dashboard.md)
+and not yet implemented. (The paragraph here previously said most screens were
+`designed` and exactly two were `built`; it was written before the build and
+never updated, which is the same drift this file exists to catch.)
 
 ## Index
 
@@ -27,6 +36,10 @@ self-audit panel.
 | SCR-12 | Settings | FLW-05, FLW-14 | - | built | packages/ui/src/settings/data-controls.ts:renderDataControls |
 | SCR-13 | Recovery checklist | FLW-06, FLW-07, FLW-16 | - | built | e2e/scn-025.spec.ts |
 | SCR-14 | Public domain status | FLW-04, FLW-15 | - | built | apps/proxy/src/router.test.ts |
+| SCR-15 | Dashboard overview | FLW-17 | - | designed | none yet — [plan](plans/2026-08-12-options-dashboard.md) |
+| SCR-16 | Trusted domains | FLW-05, FLW-14 | - | built | packages/ui/src/trusted/trusted.ts:renderTrusted |
+| SCR-17 | Product landing page | none yet (gap) | - | built | apps/proxy/src/landing.test.ts |
+| SCR-18 | Privacy page | none yet (gap) | - | built | tools/privacy-page.mjs, tools/docs.test.ts |
 
 ## Design system
 
@@ -44,6 +57,27 @@ self-audit panel.
   roles, and that **no stylesheet writes a colour or a length of its own**
 - **Component source:** none — `data-role` selectors over existing markup
 - **Assets:** `apps/extension/icons`, drawn by `tools/icons.mjs`
+
+## Web surfaces
+
+- **Web surfaces:** yes
+
+Three screens are public URLs served by the proxy worker: SCR-17 (`/`), SCR-18
+(`/privacy`) and SCR-14 (`/status`). Each carries the five-field
+`Web surface:` block below.
+
+The answer was recorded 2026-08-12, after the code had already given it: the
+landing page was designed for a human and a crawler at once in B-15 and is held
+by eleven rules in `apps/proxy/src/landing.test.ts`, four of them verified by
+planted defects. Recording it late is the drift this section exists to prevent —
+SCR-17 and SCR-18 shipped with no screen entry at all, which the project's own
+hard rule forbids.
+
+**The custom domain changes every `Route` below at once.** `canonical` and the
+`ld+json` block are derived from `url.origin` in
+`apps/proxy/src/router.ts:landingPage`, so they follow the origin by themselves — but two hosts then serve the
+same content with self-referencing canonicals. Adding the domain therefore
+includes a redirect from `*.workers.dev`, not just a CNAME.
 
 **Cross-screen rules (apply to every screen below):**
 
@@ -249,14 +283,14 @@ self-audit panel.
 ### SCR-12: Settings
 - **Used by:** FLW-05 (watchlist edit), FLW-14
 - **Purpose:** the few switches that change behaviour, plus data ownership
-- **Elements:** brand watchlist (add/edit/remove); trusted domains list (populated by the this-is-legitimate decisions taken on other screens, editable); quiet mode toggle; proxy on/off with a plain explanation of what each option reveals and to whom; retention period; **primary action: "Выгрузить все данные"**; "Удалить все данные" (разрушительное, подтверждается списком того, что удаляется)
+- **Elements:** brand watchlist (add/edit/remove); quiet mode toggle; proxy on/off with a plain explanation of what each option reveals and to whom; retention period; **primary action: "Выгрузить все данные"**; "Удалить все данные" (разрушительное, подтверждается списком того, что удаляется). **The trusted domains list moved to SCR-16** on 2026-08-12: the dashboard lists one area per view, the overview names "Доверенные домены" and "Ваши данные" separately, and reviewing what you trusted is a different job from exporting and wiping
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|
   | success | default | - | grouped settings |
   | error | export or wipe failed | - | inline failure with retry; state left unchanged |
 - **Wireframe:** wireframes/SCR-12.md
-- **Coverage:** packages/ui/src/settings/data-controls.ts:renderDataControls, packages/ui/src/trusted/trusted.ts:renderTrusted, e2e/scn-024.spec.ts (data controls and the trusted list built; watchlist, quiet mode and the proxy toggle land with their modules)
+- **Coverage:** packages/ui/src/settings/data-controls.ts:renderDataControls, e2e/scn-024.spec.ts (data controls built; watchlist, quiet mode and the proxy toggle land with their modules)
 - **Scenarios:** SCN-023, SCN-024
 - **Resources:** settings store, exporter, wipe routine
 - **Status:** built
@@ -294,4 +328,83 @@ self-audit panel.
 - **Coverage:** apps/proxy/src/router.ts:statusPage (verdict and appeal form in the markup), apps/proxy/src/router.ts:appeal + appealPage (accepts the form, answers as a page), apps/proxy/src/router.test.ts
 - **Scenarios:** SCN-026
 - **Resources:** worker status endpoint, feed metadata
+- **Web surface:**
+  - **Route:** `/status`, and `/status?domain=<domain>` for a named domain
+  - **Answers:** is this one domain listed, by which list, and how the owner disputes it
+  - **Indexable:** yes — `canonical` → `/status?domain=<domain>` per lookup, built in `apps/proxy/src/router.ts:statusPage`, so a shared link and the page agree
+  - **Without JS:** wholly — the verdict and the appeal form are both in the markup, because the owner arrives from an interstitial on a site that is down
+  - **Entity:** none. The page is a lookup result about someone else's domain, not a thing this product offers; a `SoftwareApplication` block here would describe the wrong subject
+- **Status:** built
+
+### SCR-15: Dashboard overview
+- **Used by:** FLW-17
+- **Purpose:** answer "what needs me, and where do I go" before any area is opened — the question the eight-panel stack made the user assemble by scrolling
+- **Elements:** attention band `"Требует внимания (N)"`, at most three rows, the rest counted as `"…ещё N"`, each row severity-by-icon-plus-text with what, where and when, linking into its area; area list of eight real links, each with a one-line state. **Primary action: the first row of the attention band**; with an empty band, `"Что делать дальше"`
+- **States:**
+  | State | Trigger | Figma frame | Behavior |
+  |-------|---------|-------------|----------|
+  | loading | page opened | - | shell and all eight rows paint at once, each state read as `"…"`, band reads `"считаем"`; the shell never waits on data |
+  | empty | nothing outstanding anywhere | - | `"Сейчас ничего не требует внимания"` plus when this was last checked; the area list still carries its states |
+  | error | the store is unreadable | - | names the failure, offers repair, and **no area row claims a state** |
+  | success | outstanding items exist | - | up to three ranked rows, then the eight areas |
+- **Behavior notes:** one ranking rule for the whole product — `packages/core-queue/src/rank.ts` orders the band, with each area's outstanding item mapped into the shape it already ranks; a second ranker would be a second definition of "worst". **A row whose count could not be read says `"состояние не прочитано"`, never `"пусто"`** — absence of data must never read as a pass, and eight cheap reads that can each fail all render into one reassuring word. Areas are addressed by hash, one view at a time; **an unknown hash opens the overview and names the hash**, because a silent fallback is how `options.html#journal` went nowhere for a release. Navigation is real links plus `hashchange`, so browser back and forward work without a router. The overview reads counts only, never a section's full data
+- **Coverage:** none yet — [plan](plans/2026-08-12-options-dashboard.md)
+- **Scenarios:** SCN-027, SCN-028, SCN-029, SCN-030
+- **Resources:** `packages/core-queue/src/rank.ts` (ranking), the counts each area can answer cheaply
+- **Status:** designed
+
+### SCR-16: Trusted domains
+- **Used by:** FLW-05, FLW-14
+- **Purpose:** review and take back the "this is legitimate" decisions made on other screens
+- **Elements:** the trusted list, each entry with when and why it was trusted; per-entry `"Убрать из доверенных"`. **Primary action: none** — this is a review surface whose only action is a reversal
+- **States:**
+  | State | Trigger | Figma frame | Behavior |
+  |-------|---------|-------------|----------|
+  | empty | nothing trusted yet | - | says nothing is trusted **and why the list would fill** — an empty state that only states emptiness leaves the user with nothing to do |
+  | success | entries exist | - | each with when and why, each reversible |
+  | error | store unreadable | - | names the read failure; never an empty list in its place |
+- **Behavior notes:** split out of SCR-12 on 2026-08-12 — the dashboard renders one area per view, and the overview names `"Доверенные домены"` and `"Ваши данные"` as separate rows. The renderer and its e2e already existed; only the address changes
+- **Coverage:** packages/ui/src/trusted/trusted.ts:renderTrusted, e2e/scn-024.spec.ts
+- **Scenarios:** SCN-024
+- **Resources:** trusted-domain store
+- **Status:** built
+
+### SCR-17: Product landing page
+- **Used by:** **no flow yet — coverage gap, recorded 2026-08-12.** The page serves JTBD-05 ("be protected without being watched", whose Forces in [foundation.md](foundation.md) name the pre-install decision directly), but no story and no flow cover the journey before installation. The chain starts at first run. Inventing a flow here to fill the column would be a flow traced to no story, so the gap is named instead and belongs to a `/ux-audit coverage` pass
+- **Purpose:** let someone who has never heard of this decide whether to install it — including by reading what it refuses to do
+- **Elements:** what the product is in one sentence; what it does; **what it does not do** (half the page); how to install; links to `/privacy` and `/status`. **Primary action: install**
+- **States:**
+  | State | Trigger | Figma frame | Behavior |
+  |-------|---------|-------------|----------|
+  | success | any request to `/` | - | the whole page, served as markup |
+- **Behavior notes:** a security tool that lists only its own powers describes a product nobody can check — so half the page is what it does not do. **No executable scripts at all**, and eleven rules in `apps/proxy/src/landing.test.ts` hold that, four of them verified by planted defects (a script appeared, the word "полностью" appeared, the does-not-do list was gutted, the structured block became invalid JSON)
+- **Web surface:**
+  - **Route:** `/`
+  - **Answers:** what Okolos is, what it does, and what it will not do
+  - **Indexable:** yes — `canonical` → the origin's `/`, emitted by `apps/proxy/src/router.ts:landingPage`
+  - **Without JS:** wholly — there is not one script on the page, by gate
+  - **Entity:** `schema.org/SoftwareApplication` in `application/ld+json`, repeating the page's own claims in machine form, built in `apps/proxy/src/router.ts:landingPage`
+- **Coverage:** apps/proxy/src/router.ts:landingPage, apps/proxy/src/landing.test.ts
+- **Scenarios:** none — a scenario needs a flow node to cover, and this screen has no flow (see `Used by`). The eleven rules in `landing.test.ts` are what hold it meanwhile, and they are gates rather than scenarios
+- **Resources:** worker root route
+- **Status:** built
+
+### SCR-18: Privacy page
+- **Used by:** **no flow yet — same gap as SCR-17.** It is linked from SCR-17, from the store listing and from the extension, and it is the document SCR-10 (self-audit) must agree with — but the pre-install journey that reaches it is not in the chain
+- **Purpose:** state what leaves the device, where to, why, and what is never stored — the document the store requires and the one the self-audit screen must agree with
+- **Elements:** the five outbound destinations with what each carries; what is stored on the device and for how long; the reuse-index paragraph; what does not exist (no analytics, no account, no ads); why the extension asks for every site
+- **States:**
+  | State | Trigger | Figma frame | Behavior |
+  |-------|---------|-------------|----------|
+  | success | any request to `/privacy` | - | the whole page, served as markup |
+- **Behavior notes:** generated from `docs/privacy.md` by `tools/privacy-page.mjs` into `apps/proxy/src/privacy.generated.ts`, so the served page and the repository document cannot disagree; `tools/docs.test.ts` checks the destination list, the retention period and the recipients against the sources. It must also agree with SCR-10 (self-audit), which shows the same outbound log from the device side
+- **Web surface:**
+  - **Route:** `/privacy`
+  - **Answers:** what this extension sends, to whom, when, and what it keeps
+  - **Indexable:** yes — **but the page carries no `canonical`** — `apps/proxy/src/router.ts:privacyPage` serves it without one, unlike `/` and `/status`. Harmless on a single host; the moment a custom domain is added, two hosts serve this page with nothing pointing at the preferred one. Fix belongs with the domain change
+  - **Without JS:** wholly — generated HTML, no scripts
+  - **Entity:** none yet. The natural one is `schema.org/PrivacyPolicy`; recorded here as a gap rather than claimed
+- **Coverage:** apps/proxy/src/router.ts:privacyPage, tools/privacy-page.mjs, tools/docs.test.ts
+- **Scenarios:** none — same reason as SCR-17. `tools/docs.test.ts` holds the page against its sources meanwhile
+- **Resources:** `docs/privacy.md` (the source), the outbound-log contract
 - **Status:** built

@@ -154,6 +154,7 @@ flowchart TD
   |--------|------------------|
   | SCR-03 In-page warning banner | success |
   | SCR-12 Settings | success |
+  | SCR-16 Trusted domains | success, empty |
 
 ### FLW-06: ClickFix — page copies a command
 - **Traces:** ST-007 (JTBD-02, JRN-03/#3)
@@ -412,6 +413,7 @@ flowchart TD
   | Screen | States used here |
   |--------|------------------|
   | SCR-12 Settings | success, error |
+  | SCR-16 Trusted domains | success, empty |
   | SCR-01 First-run check | success |
 
 ### FLW-15: Site owner checks and appeals a verdict
@@ -472,15 +474,25 @@ flowchart TD
   | SCR-13 Recovery checklist | loading, empty, success |
   | SCR-08 Leaks and repair | success |
 
-### FLW-17: Daily check-in — popup and what changed
+### FLW-17: Daily check-in — popup, overview, and what changed
 - **Traces:** ST-015, ST-017 (JTBD-02, JTBD-05, JRN-02/#6)
-- **Goal:** the returning user sees the state of the current page and what changed since last time, without a wall of old alerts
-- **Entry points:** toolbar icon; badge on a new finding
-- **Success exit:** the user knows the current page's verdict and has either acted on the top item or seen that nothing changed
+- **Goal:** the returning user sees the state of the current page and what needs
+  them across every area, without a wall of old alerts and without scrolling to
+  find out
+- **Entry points:** toolbar icon (popup); badge on a new finding; the
+  extension's own page opened directly (lands on the overview); **a deep link
+  from the popup or from a banner, which opens its area directly** —
+  `options.html#queue`, `#journal`, `#leaks`, `#extensions`, `#trusted`,
+  `#audit`, `#data`, `#recovery=<kind>`
+- **Success exit:** the user knows the current page's verdict, and has either
+  acted on the top item or seen that nothing needs them — with the count of what
+  does still visible on the way back
 - **Task analysis:**
-  1. See this page's verdict and today's count
-  2. Open what changed since last visit
-  3. Act on the top item, or close
+  1. See this page's verdict and today's count (popup)
+  2. Either act on the top item in place, or open the area that owns it
+  3. Coming to the page with no destination in mind: see what needs attention
+     across all areas, ranked, and pick one
+  4. Act there, then return — the return says how much is left
 - **Flow:**
 
 ```mermaid
@@ -488,17 +500,55 @@ flowchart TD
   A[Screen: Popup] -->|current page verdict| B{Anything new?}
   B -->|no| C[State: nothing new since last check + last-checked time]
   B -->|yes| D[Screen: Journal and weekly diff - only changes]
-  D -->|open item| E[Screen: Findings queue]
-  E -->|act| F[Handled item leaves the queue]
   A -->|what did you send| G[Screen: Self-audit]
+  A -->|top queued item| E[Screen: Findings queue]
   A -->|storage unreadable| A_err[State: error - local data problem + repair]
   A_err -->|repair| A
+
+  O[Screen: Dashboard overview] -->|no hash: page opened directly| O
+  O -->|nothing outstanding anywhere| O_empty[State: empty - nothing requires you + when last checked]
+  O -->|a count could not be read| O_part[State: that row says the state was not read, never 'empty']
+  O -->|store unreadable| O_err[State: error - names the failure + repair; no row claims a state]
+  O_err -->|repair| O
+
+  O -->|attention row or area row| E
+  O --> D
+  O --> L[Screen: Leaks and repair]
+  O --> X[Screen: Extensions watch]
+  O --> T[Screen: Trusted domains]
+  O --> G
+  O --> S[Screen: Settings]
+  O --> R[Screen: Recovery checklist]
+
+  D -->|back - carries the remaining count| O
+  E -->|act| F[Handled item leaves the queue]
+  E -->|back - carries the remaining count| O
+  L -->|back| O
+  X -->|back| O
+  T -->|back| O
+  G -->|back| O
+  S -->|back| O
+  R -->|back| O
+
+  D -->|open item| E
+  U[Unknown hash] -->|opens the overview and names the hash| O
 ```
 
 - **Screens traversed:**
   | Screen | States used here |
   |--------|------------------|
   | SCR-02 Popup | loading, empty, error, success |
+  | SCR-15 Dashboard overview | loading, empty, error, success |
   | SCR-11 Journal and weekly diff | empty, success |
   | SCR-07 Findings queue | success |
   | SCR-10 Self-audit | success |
+
+- **What changed here, 2026-08-12.** The diagram above already drew the journal,
+  the queue and the self-audit as separate screens with transitions between
+  them; the implementation stacked all eight areas on one page and made the
+  transitions scroll positions — of which exactly one was wired
+  (`SECTION_FOR_HASH` held `#queue`, while the popup produced `#journal` from
+  two call sites). So the deep-link edges and the overview node are not a new
+  design; they are this flow, finally built. The redesign, its findings and the
+  losing alternative are in
+  [plans/2026-08-12-options-dashboard.md](plans/2026-08-12-options-dashboard.md).

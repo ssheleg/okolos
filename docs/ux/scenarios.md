@@ -36,6 +36,10 @@ are specified once in [screens.md](screens.md).
 | SCN-024 | Export all local data | privacy | P-01 | ST-019, FLW-14 | implemented | 2026-08-04 PARTIAL |
 | SCN-025 | Recovery after running a pasted command | recovery | P-02 | ST-015, FLW-16 | implemented | 2026-08-05 PASS |
 | SCN-026 | Site owner checks and appeals a verdict | site-owner | P-03 | ST-016, FLW-15 | implemented | 2026-08-05 unit |
+| SCN-027 | Dashboard overview — what needs me, across areas | daily-use | P-01 | ST-015, FLW-17 | draft | - |
+| SCN-028 | A deep link opens its area; an unknown address says so | daily-use | P-01 | ST-015, FLW-17 | draft | - |
+| SCN-029 | Acting inside an area keeps the place, the focus and the count | daily-use | P-01 | ST-015, FLW-17 | draft | - |
+| SCN-030 | An unread count never renders as "nothing here" | daily-use | P-01 | ST-017, FLW-17 | draft | - |
 
 ## Personas
 
@@ -495,6 +499,85 @@ See [foundation.md](foundation.md) → Personas.
 - **Errors & recovery:** the ranking data is incomplete -> items are ordered by severity alone and the UI states the reduced ranking
 - **Status:** implemented
 - **Coverage:** packages/core-queue/src/rank.ts:buildQueue, packages/ui/src/popup/popup.ts:renderPopup, e2e/scn-020.spec.ts
+
+### SCN-027: Dashboard overview — what needs me, across areas
+- **Persona:** P-01
+- **Feature:** daily-use
+- **Traces:** ST-015, FLW-17 (JTBD-02, JTBD-06)
+- **Entry point:** the extension's own page opened with no hash — toolbar menu, the store's "options" link, or a bookmark
+- **Preconditions:** the local stores are readable
+- **Steps:**
+  1. User opens the page -> system paints the shell and all eight area rows at once, each state read shown as "…" and the band reading "считаем"; nothing waits on data
+  2. Reads land -> system fills the band with **at most three** ranked rows and counts the rest as "…ещё N", and fills each area row with its one-line state
+  3. User reads the top row -> it names what happened, where it came from and when, with severity as **icon plus text**
+  4. User activates the top row -> system opens the area that owns it
+- **Expected result:** the user learns what needs them without scrolling and without opening anything, and the first thing they can press is the worst thing there is
+- **Alt paths:** nothing outstanding anywhere -> the band says "Сейчас ничего не требует внимания" **and when this was last checked**, and the area rows still carry their states; with an empty band the primary action is "Что делать дальше"
+- **UI elements:** attention band with up to three rows and a remainder count, eight area rows as real links, primary action
+- **States covered:** loading, empty, success
+- **Errors & recovery:** the store cannot be opened at all -> the failure is named, repair is offered, and **no area row claims a state**; a partial failure is SCN-030
+- **Behaviour notes:** one ranking rule for the whole product — `packages/core-queue/src/rank.ts` orders the band, each area's outstanding item mapped into the shape it already ranks. **No counter of blocked threats, no protection score, no streak** — the band names things to do, and when there is nothing to do it says so instead of scoring the silence
+- **Status:** draft
+- **Coverage:** none yet — [plan](plans/2026-08-12-options-dashboard.md)
+
+### SCN-028: A deep link opens its area; an unknown address says so
+- **Persona:** P-01
+- **Feature:** daily-use
+- **Traces:** ST-015, FLW-17 (JTBD-02)
+- **Entry point:** "что изменилось" in the popup, a banner's "what was sent" link, a recovery link — any `options.html#…`
+- **Preconditions:** none
+- **Steps:**
+  1. User clicks "что изменилось" in the popup -> system opens the page **on the journal**, not on the overview and not at the top of a long page
+  2. User presses browser Back -> system returns them where they came from, because navigation is real links plus `hashchange` rather than a router
+  3. A link carries an address the page does not know -> system opens the overview **and names the address it did not understand**
+- **Expected result:** every address the product produces lands where it says it lands, and one that does not is visible rather than silent
+- **Alt paths:** `#recovery=<kind>` carries a value -> the recovery area opens for that incident kind; an unknown kind gets the broad checklist and is told so (SCN-025)
+- **UI elements:** the hash → view map; the "адрес не распознан" line on the overview
+- **States covered:** success, error
+- **Errors & recovery:** the area behind a valid address cannot read its data -> that area shows its own error state, and the address is still honoured; the user is not bounced to the overview for a read failure
+- **Behaviour notes:** this scenario exists because the defect existed. `apps/extension/src/popup/index.ts:onWhatChanged` and its sibling handler produced `options.html#journal` from two call sites while `SECTION_FOR_HASH` held only `#queue`, so the button opened a settings page with the journal four sections below — and no test could see it, because producer and consumer were never checked against each other. The gate that comes with this scenario greps the extension for every `options.html#…` producer and asserts each one resolves
+- **Status:** draft
+- **Coverage:** none yet — [plan](plans/2026-08-12-options-dashboard.md)
+
+### SCN-029: Acting inside an area keeps the place, the focus and the count
+- **Persona:** P-01
+- **Feature:** daily-use
+- **Traces:** ST-015, FLW-17 (JTBD-06)
+- **Entry point:** any area opened from the overview or by deep link
+- **Preconditions:** at least one actionable row in that area
+- **Steps:**
+  1. User presses an action on a row — "Готово", "Не сейчас", a recovery step's checkbox -> system puts **that row** into a pending state within the same frame, before the write returns
+  2. The write succeeds -> the row settles into its new state; **only this area repaints**, and the other seven are not read
+  3. Focus and selection return to the element the user was on, whichever element that is
+  4. User returns to the overview -> the back affordance reads "← Обзор · N требуют внимания", or "← Обзор" when N is 0
+- **Expected result:** a keyboard user can work down a list without being thrown to the top of the document, and a mouse user can see that their click registered before the result arrives
+- **Alt paths:** a burst of actions -> repaints stay serialised and collapse to the last state, so no repaint paints over a newer one
+- **UI elements:** per-row pending state, back affordance carrying the count
+- **States covered:** loading, success, error
+- **Errors & recovery:** the write fails -> the row returns to its previous state **with the failure named on the row**; pending is never reported as success
+- **Behaviour notes:** replaces two behaviours measured on 2026-08-12. Focus was restored for exactly one node — the address field, in `apps/extension/src/options/keep-focus.ts:keepingFocus` — so the recovery checkbox and the queue buttons blurred on every action; and one action cost two whole-document repaints with five section reads each. The address-field invariant of SCR-08 is unchanged: the live node is moved, never rebuilt, so a value and an in-progress IME composition still survive
+- **Status:** draft
+- **Coverage:** none yet — [plan](plans/2026-08-12-options-dashboard.md)
+
+### SCN-030: An unread count never renders as "nothing here"
+- **Persona:** P-01
+- **Feature:** daily-use
+- **Traces:** ST-017, FLW-17 (JTBD-05)
+- **Entry point:** the overview, when one of the eight cheap count reads fails
+- **Preconditions:** one area's count cannot be read; the rest can
+- **Steps:**
+  1. User opens the page -> seven rows fill with their states
+  2. The eighth read fails -> that row reads **"состояние не прочитано"** and offers the area anyway
+  3. User opens that area -> the area shows its own error state, with the failure named
+- **Expected result:** the user is never told an area is quiet because the product could not look
+- **Alt paths:** every read fails -> the whole overview goes to its error state (SCN-027) rather than eight identical unread rows
+- **UI elements:** the per-row unread state; the area's own error state
+- **States covered:** error
+- **Errors & recovery:** this scenario *is* the recovery path; there is no branch in which a failed read produces a reassuring word
+- **Behaviour notes:** this is the product's oldest rule applied to its newest surface — "absence of data must never read as a pass", standing instruction 3 in `docs/superpowers/retro.md`. The overview multiplies the risk by eight: eight cheap reads, each able to fail, all rendering into one word that comforts. A planted rejected read is part of the gate, not an afterthought
+- **Status:** draft
+- **Coverage:** none yet — [plan](plans/2026-08-12-options-dashboard.md)
+
 
 ## recovery
 

@@ -17,6 +17,11 @@ import {
   renderJournal,
   renderRecovery,
   renderSelfAudit,
+  renderOverview,
+  type AreaId,
+  type AreaRow,
+  type AttentionItem,
+  type OverviewHandlers,
   type PanelState,
 } from '@okolos/ui'
 import { exportAll, openDb, RETENTION_DAYS, wipeAll, type JournalRecord } from '@okolos/storage'
@@ -24,6 +29,7 @@ import { exportAll, openDb, RETENTION_DAYS, wipeAll, type JournalRecord } from '
 import { mapJournal } from '../popup/state.js'
 import { answered } from './answered.js'
 import { keepingFocus } from './keep-focus.js'
+import { optionsPageFor, routeFor, type Route } from './views.js'
 import '../pages.css'
 
 /**
@@ -333,8 +339,14 @@ async function trustedSection(): Promise<HTMLElement> {
   return container
 }
 
+/**
+ * Repaint whatever area is open, without changing which one it is.
+ *
+ * The leak check drives this: it moves through idle → checking → ready inside
+ * one area, and each step has to reach the screen.
+ */
 async function paintCurrent(): Promise<void> {
-  await paint(await load())
+  await reload()
 }
 
 async function load(): Promise<PanelState> {
@@ -396,9 +408,11 @@ async function readJournal(): Promise<{
  * carries which incident. Progress is kept in storage so closing the tab in the
  * middle of a bad afternoon does not lose it.
  */
-async function recoverySection(): Promise<HTMLElement> {
-  const kind = /#recovery=([^&]+)/.exec(location.hash)?.[1]
+async function recoverySection(kind: string): Promise<HTMLElement> {
   const container = document.createElement('div')
+  // An address with no incident never reaches here — `routeFor` calls it
+  // unrecognised and opens the overview — but the guard stays, because a
+  // checklist for no incident is a screen with nothing on it.
   if (!kind) return container
 
   let progress: StepProgress[] = []
@@ -435,8 +449,10 @@ async function recoverySection(): Promise<HTMLElement> {
         void (async () => {
           const db = await openDb()
           await db.delete('settings', `recovery:${kind}`)
+          // The incident is gone, so its address no longer names anything.
+          // Sending the page home is a navigation, and the hashchange listener
+          // repaints on the way.
           location.hash = ''
-          await reload()
         })()
       },
     }),
@@ -445,60 +461,269 @@ async function recoverySection(): Promise<HTMLElement> {
 }
 
 /**
+ * The eight rows of the overview, each with a state it can answer cheaply.
+ *
+ * Cheap is the whole design: a count, not a section's data. Every one of them
+ * is allowed to fail on its own and a failed one becomes `null` — which the
+ * renderer draws as "состояние не прочиталось" and never as "пусто". Eight
+ * reads that can each fail, all rendering into one reassuring word, is the
+ * oldest failure in this codebase with eight new chances to happen.
+ */
+async function areaRows(): Promise<AreaRow[]> {
+  const row = (id: AreaId, label: string, state: string | null): AreaRow => ({
+    id,
+    label,
+    href: optionsPageFor(id === 'recovery' ? 'overview' : id),
+    state,
+  })
+
+  const [findings, journal, extensions, trusted, recovery, audit] = await Promise.all([
+    count(async () => {
+      const items = toQueueItems(await (await openDb()).getAll('findings'))
+      return items.length === 0 ? t('areaStateNothing') : t('areaStateWaiting', String(items.length))
+    }),
+    count(async () => {
+      const { lastCheck } = await readJournal()
+      return lastCheck === null ? t('areaStateJournalNever') : t('areaStateJournalSince', lastCheck)
+    }),
+    count(async () => {
+      const result = await platform.runtime.send('extensions/state', {})
+      if (!result) throw new Error(t('errNoAnswer'))
+      if (!result.supported) return t('extensionsNotVisible')
+      return t('areaStateChanges', String(result.changes.length))
+    }),
+    count(async () => {
+      const result = answered(await platform.runtime.send('trust/list', {}), t('errTrustedList'))
+      return t('areaStateTrusted', String(result.entries.length))
+    }),
+    count(async () => {
+      const open = await openIncidents()
+      return open.length === 0
+        ? t('areaStateNoIncidents')
+        : t('areaStateSteps', String(open.reduce((n, i) => n + i.open, 0)))
+    }),
+    count(async () => {
+      const entries = await (await openDb()).getAll('outbound_log')
+      return t('areaStateSent', String(entries.length))
+    }),
+  ])
+
+  return [
+    row('queue', t('optionsQueueHeading'), findings),
+    row('journal', t('areaJournal'), journal),
+    row('leaks', t('areaLeaks'), t('areaStateOnDemand')),
+    row('extensions', t('areaExtensions'), extensions),
+    row('trusted', t('areaTrusted'), trusted),
+    row('recovery', t('areaRecovery'), recovery),
+    row('audit', t('areaAudit'), audit),
+    row('data', t('dataHeading'), t('areaStateRetention', String(RETENTION_DAYS.journal))),
+  ]
+}
+
+/**
+ * A count that is allowed to fail without taking the page with it.
+ *
+ * `null` means "not read". It is deliberately not the empty string and not a
+ * zero: both of those are answers, and this is the absence of one.
+ */
+async function count(read: () => Promise<string>): Promise<string | null> {
+  try {
+    return await read()
+  } catch {
+    return null
+  }
+}
+
+/** Recovery checklists with steps still unticked. */
+async function openIncidents(): Promise<Array<{ kind: string; open: number }>> {
+  const db = await openDb()
+  const settings = await db.getAll('settings')
+  const incidents: Array<{ kind: string; open: number }> = []
+  for (const entry of settings) {
+    if (!entry.key.startsWith('recovery:')) continue
+    const kind = entry.key.slice('recovery:'.length)
+    const done: StepProgress[] =
+      typeof entry.value === 'string' ? (JSON.parse(entry.value) as StepProgress[]) : []
+    const open = buildChecklist(kind, done).remaining
+    if (open > 0) incidents.push({ kind, open })
+  }
+  return incidents
+}
+
+/**
+ * What needs the user, ranked across areas — by the ranker the queue already
+ * uses, not by a second one written here.
+ *
+ * Three areas can hold something outstanding: findings, extension changes, and
+ * an unfinished recovery checklist. The rest cannot. Leaks are checked on
+ * request and hold nothing between checks; the journal, the trusted list, the
+ * outbound log and the data controls are records rather than work.
+ *
+ * Returns `null` when the whole read failed — which the overview shows as its
+ * error state. An empty array means the product looked and found nothing, and
+ * those two must never render the same way.
+ */
+async function attentionItems(): Promise<AttentionItem[] | null> {
+  try {
+    const items = toQueueItems(await (await openDb()).getAll('findings'))
+    const ranked = buildQueue(items, Math.max(items.length, 1))
+    // `summary` is the sentence the queue already shows; `where` is not on a
+    // queue item and is not invented here — a made-up origin is worse than an
+    // absent one, and the renderer draws the time alone when there is no place.
+    const attention: AttentionItem[] = ranked.shown.map((item) => ({
+      severity: item.severity,
+      what: item.summary,
+      where: null,
+      when: item.createdAt.slice(0, 10),
+      area: 'queue' as AreaId,
+      href: optionsPageFor('queue'),
+    }))
+
+    for (const incident of await openIncidents()) {
+      attention.push({
+        severity: 'major',
+        what: t('areaRecoveryOpen', String(incident.open)),
+        where: null,
+        when: t('areaStateOnDemand'),
+        area: 'recovery',
+        href: optionsPageFor('recovery', incident.kind),
+      })
+    }
+
+    overviewFailure = null
+    return attention
+  } catch (cause) {
+    overviewFailure = String(cause)
+    return null
+  }
+}
+
+/** When the product last looked, for the sentence beside an empty band. */
+async function lastCheckedAt(): Promise<string | null> {
+  try {
+    return (await readJournal()).lastCheck
+  } catch {
+    return null
+  }
+}
+
+/**
  * Repaints run one at a time, and a burst collapses to the last state.
  *
- * Each repaint awaits several database reads before it swaps the tree in, so
- * two started close together interleave: both build their sections, and
- * whichever finishes second wins the DOM. That alone loses whatever the first
- * one was about to show. With a long-lived node like the address field it is
- * worse — appending it to the second builder's container moves it out of the
- * first's, and if the first is the one that reaches `replaceChildren`, the
- * field is swapped in inside a container that no longer holds it and vanishes
- * from the page entirely.
+ * Two started close together interleave: both build their tree, and whichever
+ * finishes second wins the DOM, losing whatever the first was about to show.
+ * With the live address field it was worse — appending it to the second
+ * builder's container moves it out of the first's, and if the first is the one
+ * that reaches `replaceChildren`, the field is swapped in inside a container
+ * that no longer holds it and vanishes from the page.
  *
  * Serialising is the fix rather than a lock on the field, because the same
  * interleaving loses queue rows, journal entries and every other section for
- * exactly the same reason; the field is only where it was noticed.
+ * the same reason; the field is only where it was noticed.
  */
 let painting: Promise<void> = Promise.resolve()
-let pendingState: PanelState | null = null
+let pendingRoute: Route | null = null
 
-function paint(state: PanelState): Promise<void> {
-  pendingState = state
+function paint(route: Route): Promise<void> {
+  pendingRoute = route
   const run = async (): Promise<void> => {
-    const next = pendingState
-    pendingState = null
-    // Superseded while queued: a later call already carries the newer state,
-    // and painting an older one on the way past would be a visible flicker
-    // backwards.
-    if (next !== null) await renderPanel(next)
+    const next = pendingRoute
+    pendingRoute = null
+    // Superseded while queued: a later call carries the newer route, and
+    // painting an older one on the way past is a visible flicker backwards.
+    if (next !== null) await renderRoute(next)
   }
-  // Both arms, not `.then(run)`. A chain built on the fulfilled arm alone
-  // stops running the moment one paint rejects — a single failed database
-  // read would leave the page frozen on whatever it last drew, for the rest
-  // of the session, with no error and no way back.
+  // Both arms, not `.then(run)`. A chain built on the fulfilled arm alone stops
+  // the moment one paint rejects — a single failed read would freeze the page
+  // on whatever it last drew, for the rest of the session, with no error.
   painting = painting.then(run, run)
   return painting
 }
 
-async function renderPanel(state: PanelState): Promise<void> {
+/**
+ * One area at a time.
+ *
+ * The page used to build all eight sections on every repaint — five of them
+ * awaiting their own database read — and swap the lot in at the end. Ticking
+ * one recovery step re-read the journal, the queue, the extension inventory and
+ * the trusted list, twice, because `reload()` painted a loading state first.
+ *
+ * Now the address decides what is built, and nothing else is read.
+ */
+async function renderRoute(route: Route): Promise<void> {
   if (!root) return
 
-  // Built first, swapped in second. Each of these awaits a database read, so
-  // the tree below takes real time to assemble while the page is still live
-  // and the user is still typing — and every section is constructed from
-  // whatever the state was when its turn came.
-  const sections = [
-    renderSelfAudit(document, state, {
+  const body =
+    route.view === 'overview' ? await overviewSection(route) : await areaSection(route)
+
+  keepingFocus(root, document, () => {
+    root.replaceChildren(...(route.view === 'overview' ? [] : [backLink()]), body)
+
+    // Synchronously, with no await between: the field is out of the document
+    // for one statement rather than for the length of a database read.
+    root.querySelector('[data-role=address-slot]')?.replaceWith(addressField)
+  })
+}
+
+async function areaSection(route: Route): Promise<HTMLElement> {
+  switch (route.view) {
+    case 'queue':
+      return queueSection()
+    case 'journal':
+      return journalSection()
+    case 'leaks':
+      return leaksSection()
+    case 'extensions':
+      return extensionsSection()
+    case 'trusted':
+      return trustedSection()
+    case 'recovery':
+      return recoverySection(route.kind ?? '')
+    case 'audit':
+      return selfAuditSection()
+    case 'data':
+      return dataSection()
+    default:
+      return overviewSection(route)
+  }
+}
+
+/**
+ * Back to the overview, carrying how much is still waiting.
+ *
+ * The count is the whole reason this is not a bare arrow. The shape chosen for
+ * this page shows the overview only when you are on it, so without the number
+ * here a person acting inside one area has no idea whether anything else is
+ * outstanding until they go and look.
+ */
+function backLink(): HTMLElement {
+  const link = document.createElement('a')
+  link.setAttribute('data-role', 'back')
+  link.href = optionsPageFor('overview')
+  link.textContent =
+    outstanding === null || outstanding === 0
+      ? t('dashboardBack')
+      : t('dashboardBackWaiting', String(outstanding))
+  return link
+}
+
+/** What the last overview count said. `null` until one has been taken. */
+let outstanding: number | null = null
+
+async function selfAuditSection(): Promise<HTMLElement> {
+  const container = document.createElement('div')
+  container.append(
+    renderSelfAudit(document, await load(), {
       onExport: () => void download(),
       onRepair: () => void reload(),
     }),
-    await journalSection(),
-    await recoverySection(),
-    leaksSection(),
-    await queueSection(),
-    await extensionsSection(),
-    await trustedSection(),
+  )
+  return container
+}
+
+async function dataSection(): Promise<HTMLElement> {
+  const container = document.createElement('div')
+  container.append(
     renderDataControls(document, {
       onExport: download,
       onWipe: async () => {
@@ -507,51 +732,66 @@ async function renderPanel(state: PanelState): Promise<void> {
       },
       onWiped: () => void reload(),
     }),
-  ]
-
-  // Moving a node preserves its value. It does not preserve focus: removing an
-  // element from the document blurs it, and native typing then goes nowhere —
-  // the browser has no focused editable element to put it in. That is where a
-  // whole address typed during the settle disappeared to, and why every
-  // instrument aimed at it made the failure go away: each one added a round
-  // trip that let the last repaint finish before the typing started.
-  keepingFocus(addressField, () => {
-    root.replaceChildren(...sections)
-    // Synchronously, with no await between: the field is out of the document
-    // for one statement rather than for the length of a database read.
-    root.querySelector('[data-role=address-slot]')?.replaceWith(addressField)
-  })
-
-  revealSection()
+  )
+  return container
 }
 
 /**
- * The section the hash asked for, brought into view.
+ * The overview: what needs you, and where each area stands.
  *
- * This page is long and everything on it is always rendered. Sending someone
- * here with `#queue` and leaving them at the top means the primary action of
- * the first run — "See what to do first" — opens a settings page. The section
- * was on it the whole time, four screens down.
- *
- * Focus moves too, not just the scroll: someone arriving by keyboard is at the
- * top of the document otherwise, and the scroll they cannot see did nothing
- * for them.
+ * Every read here is a **count**, not a section's data. That is the difference
+ * between a page that opens and a page that assembles eight panels before it
+ * shows anything — and each count is allowed to fail on its own, because the
+ * alternative is one failure blanking the lot.
  */
-const SECTION_FOR_HASH: Readonly<Record<string, string>> = {
-  '#queue': '[data-role=queue-section]',
+async function overviewSection(route: Route): Promise<HTMLElement> {
+  const rows = await areaRows()
+  const attention = await attentionItems()
+
+  outstanding = attention === null ? null : attention.length
+
+  const container = document.createElement('div')
+  if (attention === null) {
+    container.append(
+      renderOverview(
+        document,
+        { kind: 'error', message: overviewFailure ?? t('errNoAnswer'), areas: rows },
+        overviewHandlers(),
+      ),
+    )
+    return container
+  }
+
+  container.append(
+    renderOverview(
+      document,
+      {
+        kind: 'ready',
+        attention,
+        areas: rows,
+        lastChecked: await lastCheckedAt(),
+        ...(route.unrecognised === undefined ? {} : { unrecognised: route.unrecognised }),
+      },
+      overviewHandlers(),
+    ),
+  )
+  return container
 }
 
-function revealSection(): void {
-  const selector = SECTION_FOR_HASH[location.hash]
-  if (selector === undefined) return
-
-  const section = root?.querySelector<HTMLElement>(selector)
-  if (!section) return
-
-  section.setAttribute('tabindex', '-1')
-  section.scrollIntoView({ block: 'start' })
-  section.focus({ preventScroll: true })
+function overviewHandlers(): OverviewHandlers {
+  return {
+    onOpen: () => {
+      // The row is a real link and the browser follows it; `hashchange` then
+      // paints the area. Nothing to do here, and nothing to preventDefault:
+      // taking the navigation away from the browser would take back and
+      // forward with it.
+    },
+    onRepair: () => void reload(),
+  }
 }
+
+/** Why the overview could not be built, when it could not. */
+let overviewFailure: string | null = null
 
 async function download(): Promise<void> {
   const db = await openDb()
@@ -565,8 +805,11 @@ async function download(): Promise<void> {
 }
 
 async function reload(): Promise<void> {
-  await paint({ kind: 'loading' })
-  await paint(await load())
+  await paint(routeFor(location.hash))
 }
+
+// Real links move the page; this is what turns that into a repaint. Back and
+// forward come free with it, which a router would have had to reimplement.
+window.addEventListener('hashchange', () => void reload())
 
 void reload()

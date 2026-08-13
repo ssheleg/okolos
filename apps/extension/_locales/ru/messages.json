@@ -11,6 +11,100 @@
   "appName": {
     "message": "Okolos — защита от скрытых инструкций"
   },
+  "areaAudit": {
+    "message": "Что отправлено"
+  },
+  "areaExtensions": {
+    "message": "Расширения"
+  },
+  "areaJournal": {
+    "message": "Что изменилось"
+  },
+  "areaLeaks": {
+    "message": "Утечки"
+  },
+  "areaRecovery": {
+    "message": "Восстановление"
+  },
+  "areaRecoveryOpen": {
+    "message": "Восстановление не закончено, шагов осталось: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "areaStateChanges": {
+    "message": "изменений: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "areaStateJournalNever": {
+    "message": "сверок ещё не было"
+  },
+  "areaStateJournalSince": {
+    "message": "с $WHEN$",
+    "placeholders": {
+      "when": {
+        "content": "$1"
+      }
+    }
+  },
+  "areaStateNoIncidents": {
+    "message": "инцидентов не было"
+  },
+  "areaStateNothing": {
+    "message": "ничего не ждёт"
+  },
+  "areaStateOnDemand": {
+    "message": "проверка по нажатию"
+  },
+  "areaStateRetention": {
+    "message": "хранится дней: $DAYS$",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "areaStateSent": {
+    "message": "отправок: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "areaStateSteps": {
+    "message": "незакрытых шагов: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "areaStateTrusted": {
+    "message": "сайтов: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "areaStateWaiting": {
+    "message": "ждут: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "areaTrusted": {
+    "message": "Доверенные сайты"
+  },
   "auditEmpty": {
     "message": "С этого устройства ничего не отправлялось."
   },
@@ -245,6 +339,17 @@
   },
   "contentNothingRestored": {
     "message": "Восстановить ничего не удалось. "
+  },
+  "dashboardBack": {
+    "message": "← Обзор"
+  },
+  "dashboardBackWaiting": {
+    "message": "← Обзор · вас требует: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
   },
   "dataConfirmNo": {
     "message": "Оставить данные"
@@ -921,6 +1026,75 @@
     "message": "Список доверенных не прочитался: $CAUSE$",
     "placeholders": {
       "cause": {
+        "content": "$1"
+      }
+    }
+  },
+  "overviewAreas": {
+    "message": "Разделы"
+  },
+  "overviewAttention": {
+    "message": "Требует внимания: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "overviewCounting": {
+    "message": "Считаем…"
+  },
+  "overviewLastChecked": {
+    "message": "Последняя проверка: $WHEN$.",
+    "placeholders": {
+      "when": {
+        "content": "$1"
+      }
+    }
+  },
+  "overviewMore": {
+    "message": "…ещё $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "overviewNeverChecked": {
+    "message": "Проверок ещё не было — это не то же самое, что «всё чисто»."
+  },
+  "overviewNothing": {
+    "message": "Сейчас ничего не требует вас."
+  },
+  "overviewOrigin": {
+    "message": "$WHERE$ · $WHEN$",
+    "placeholders": {
+      "where": {
+        "content": "$1"
+      },
+      "when": {
+        "content": "$2"
+      }
+    }
+  },
+  "overviewStateUnread": {
+    "message": "состояние не прочиталось"
+  },
+  "overviewTitle": {
+    "message": "Обзор"
+  },
+  "overviewUnread": {
+    "message": "Данные на устройстве не прочитались: $CAUSE$. Это неполадка хранилища, а не сообщение, что вас ничего не требует.",
+    "placeholders": {
+      "cause": {
+        "content": "$1"
+      }
+    }
+  },
+  "overviewUnrecognised": {
+    "message": "Ссылка вела по адресу $HASH$, а такого раздела нет. Открыт обзор.",
+    "placeholders": {
+      "hash": {
         "content": "$1"
       }
     }

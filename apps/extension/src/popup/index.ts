@@ -5,6 +5,19 @@ import { renderPopup, type PopupState } from '@okolos/ui'
 
 import { buildPopupState } from './state.js'
 import '../pages.css'
+import { optionsPageFor, type ViewId } from '../options/views.js'
+
+/**
+ * The popup footer's three links, and the area each one opens.
+ *
+ * A table rather than a conditional, because the conditional is what broke:
+ * one target was handled and the rest fell through to a fragment-less URL.
+ */
+const FOOTER_VIEW: Readonly<Record<'self-audit' | 'journal' | 'settings', ViewId>> = {
+  'self-audit': 'audit',
+  journal: 'journal',
+  settings: 'data',
+}
 
 /**
  * The popup: is this page fine, and is anything waiting for me.
@@ -87,9 +100,12 @@ function paint(state: PopupState): void {
         expanded = true
         void reload()
       },
-      onWhatChanged: () => void openPage('options.html#journal'),
-      onOpen: (target) =>
-        void openPage(target === 'journal' ? 'options.html#journal' : 'options.html'),
+      onWhatChanged: () => void openPage(optionsPageFor('journal')),
+      // Every footer link names its area. The old shape sent 'journal' to its
+      // address and dropped every other target into a fragment-less URL, so
+      // "Настройки" opened the self-audit panel — a link that did not go where
+      // it said, for as long as the page was one scrolling stack.
+      onOpen: (target) => void openPage(optionsPageFor(FOOTER_VIEW[target])),
       onRepair: () => void reload(),
     }),
   )

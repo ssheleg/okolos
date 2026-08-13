@@ -323,9 +323,18 @@ its owner** ([evidence/06](../evidence/06-competitors.md) §6.3).
 - **Figma:** disabled
 - **Figma file:** none
 - Decision 2026-08-04: the chain is built text-first with ASCII wireframes in
-  `wireframes/`. Figma is switched on before any interface code is written —
-  at that point every screen state gets a frame link in `screens.md` and the
-  linter starts enforcing them.
+  `wireframes/`.
+- **Corrected 2026-08-12.** This block used to continue "Figma is switched on
+  before any interface code is written — at that point every screen state gets a
+  frame link in `screens.md`". That did not happen: seventeen screens were built
+  with Figma off, and the sentence sat here through all of them describing an
+  intention as a rule. What actually happened, and what holds now: the wireframes
+  in `wireframes/` are **generated from the renderers** by `tools/wireframes.mjs`
+  and gated by `tools/wireframes.test.ts`, so they cannot drift from the code —
+  which is a stronger guarantee than a frame link, and a different one. `screens.md`
+  is the record of intent; the wireframe is derived evidence. Switching Figma on
+  is still open, and it is now a decision to make deliberately rather than a
+  promise already broken.
 
 ## Product mechanics
 

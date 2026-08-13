@@ -16,9 +16,15 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # No `version:` here on purpose. `pnpm/action-setup` refuses to run when
+      # a version is given both here and as `packageManager` in package.json,
+      # and it fails at setup — ten seconds in, before a single gate runs.
+      # `packageManager` has been in package.json since the first commit, so
+      # every CI run this repository has ever had failed that way: a hundred
+      # runs, a hundred failures, while the badge nobody looked at said the
+      # gates were running. The local pre-push hook covered for it — it runs
+      # the same gates and it is why the work was actually green.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - uses: actions/setup-node@v5
         with:
@@ -66,9 +72,15 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # No `version:` here on purpose. `pnpm/action-setup` refuses to run when
+      # a version is given both here and as `packageManager` in package.json,
+      # and it fails at setup — ten seconds in, before a single gate runs.
+      # `packageManager` has been in package.json since the first commit, so
+      # every CI run this repository has ever had failed that way: a hundred
+      # runs, a hundred failures, while the badge nobody looked at said the
+      # gates were running. The local pre-push hook covered for it — it runs
+      # the same gates and it is why the work was actually green.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - uses: actions/setup-node@v5
         with:
@@ -93,9 +105,15 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # No `version:` here on purpose. `pnpm/action-setup` refuses to run when
+      # a version is given both here and as `packageManager` in package.json,
+      # and it fails at setup — ten seconds in, before a single gate runs.
+      # `packageManager` has been in package.json since the first commit, so
+      # every CI run this repository has ever had failed that way: a hundred
+      # runs, a hundred failures, while the badge nobody looked at said the
+      # gates were running. The local pre-push hook covered for it — it runs
+      # the same gates and it is why the work was actually green.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - uses: actions/setup-node@v5
         with:

@@ -34,7 +34,8 @@
     "screenshots": "pnpm build && node tools/screenshots.mjs",
     "access": "node tools/access.mjs",
     "i18n:sweep": "node tools/i18n-sweep.mjs",
-    "feed:ingest": "node tools/ingest.mjs"
+    "feed:ingest": "node tools/ingest.mjs",
+    "feed:refresh": "node tools/ingest.mjs && node tools/publish-feed.mjs feeds/phishing.json"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",

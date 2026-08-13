@@ -48,15 +48,16 @@ jobs:
       # when the build is broken.
       - name: unit tests and bundle gates
         run: pnpm test
-        env:
-          # The pair test in `tools/feed-key.test.ts` signs an update with the
-          # private key and verifies it with the public one that ships in the
-          # extension. The private key is a secret and must not be in the
-          # repository, so CI is handed it here. Without it that one test fails
-          # by design and names the remedy: an unverifiable signing pair is a
-          # real problem for a product whose feed is signed, not a detail to
-          # skip past in green.
-          OKOLOS_FEED_KEY: ${{ secrets.OKOLOS_FEED_KEY }}
+        # No `OKOLOS_FEED_KEY` here, and that is the decision rather than an
+        # omission. ADR-0002: feeds are signed on the machine that holds the
+        # private key, and moving it into CI is the trade it refuses. An earlier
+        # pass wired the secret in so the pair test could run on the runner —
+        # which would have put the private half on GitHub to satisfy a gate.
+        #
+        # `tools/feed-key.test.ts` asks a different question here instead, and
+        # asserts rather than skips: on CI it proves the key is *absent*.
+        # `.githooks/pre-push` runs the whole suite locally, so the pair is
+        # checked by the only party that can, before every push.
 
       - name: upload builds
         uses: actions/upload-artifact@v4

@@ -1,8 +1,8 @@
 import { execFileSync } from 'node:child_process'
 import { Buffer } from 'node:buffer'
 import { createPublicKey, generateKeyPairSync, sign, verify } from 'node:crypto'
-import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { existsSync, readFileSync, writeFileSync, mkdtempSync } from 'node:fs'
+import { homedir, tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -60,7 +60,49 @@ describe('the key the extension ships', () => {
   })
 })
 
-describe('the signing tool and the shipped key are one pair', () => {
+/**
+ * Where the private half is, and is not.
+ *
+ * ADR-0002 says publication needs the machine that holds the key, and that
+ * moving it into CI is the thing not to do. So this file asks a different
+ * question depending on where it runs, and both questions are assertions —
+ * neither is a skip.
+ *
+ * On the machine: the pair matches. `.githooks/pre-push` runs the whole suite
+ * before every push, so the pair is checked by the only party that can check
+ * it, on every change that leaves here.
+ *
+ * On CI: the key is **absent**, and that absence is asserted rather than
+ * tolerated. A first attempt at this wired `secrets.OKOLOS_FEED_KEY` into the
+ * workflow so the pair test could run there — which would have put the private
+ * half on GitHub to satisfy a gate, the exact trade ADR-0002 refuses.
+ */
+const KEY_FILE = path.join(homedir(), '.okolos/feed-signing-key.pem')
+const hasKey = process.env.OKOLOS_FEED_KEY !== undefined || existsSync(KEY_FILE)
+const onCI = process.env.CI === 'true'
+
+describe.runIf(onCI)('the private half never reaches CI', () => {
+  it('is not in the environment or on the runner', () => {
+    // Not "we could not find it, so nothing was checked". This is the ADR-0002
+    // invariant stated as a test: the runner must not be able to sign.
+    expect(process.env.OKOLOS_FEED_KEY, 'the signing key was passed to CI').toBeUndefined()
+    expect(existsSync(KEY_FILE), 'a signing key exists on the runner').toBe(false)
+  })
+})
+
+describe('somebody able to check the pair actually did', () => {
+  it('is either CI without the key, or a machine with it', () => {
+    // The hole this closes: with neither branch true, both blocks below skip
+    // and the pair goes unchecked while the suite reports green. A machine that
+    // cannot verify the pair has to say so rather than pass over it.
+    expect(
+      onCI || hasKey,
+      `no signing key here and this is not CI, so the key pair went unchecked. Put a PKCS8 PEM at ${KEY_FILE} or set OKOLOS_FEED_KEY.`,
+    ).toBe(true)
+  })
+})
+
+describe.runIf(hasKey && !onCI)('the signing tool and the shipped key are one pair', () => {
   it('signs an update the shipped key verifies', () => {
     const signed = execFileSync(
       'node',

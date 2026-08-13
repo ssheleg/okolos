@@ -11,10 +11,9 @@ its wireframe is regenerated. That inverts the usual order: here the record of
 intent is this file, and the wireframe is derived evidence rather than a mockup
 drawn ahead of the code.
 
-**Seventeen of eighteen screens are `built`.** SCR-15 is `designed` — the
-dashboard overview specified in
-[plans/2026-08-12-options-dashboard.md](plans/2026-08-12-options-dashboard.md)
-and not yet implemented. (The paragraph here previously said most screens were
+**All eighteen screens are `built`.** SCR-15, the dashboard overview, was
+specified in [plans/2026-08-12-options-dashboard.md](plans/2026-08-12-options-dashboard.md)
+and shipped in the same pass. (The paragraph here previously said most screens were
 `designed` and exactly two were `built`; it was written before the build and
 never updated, which is the same drift this file exists to catch.)
 
@@ -36,8 +35,8 @@ never updated, which is the same drift this file exists to catch.)
 | SCR-12 | Settings | FLW-05, FLW-14 | - | built | packages/ui/src/settings/data-controls.ts:renderDataControls |
 | SCR-13 | Recovery checklist | FLW-06, FLW-07, FLW-16 | - | built | e2e/scn-025.spec.ts |
 | SCR-14 | Public domain status | FLW-04, FLW-15 | - | built | apps/proxy/src/router.test.ts |
-| SCR-15 | Dashboard overview | FLW-17 | - | designed | none yet — [plan](plans/2026-08-12-options-dashboard.md) |
-| SCR-16 | Trusted domains | FLW-05, FLW-14 | - | built | packages/ui/src/trusted/trusted.ts:renderTrusted |
+| SCR-15 | Dashboard overview | FLW-17 | - | built | packages/ui/src/dashboard/overview.ts:renderOverview, e2e/scn-027.spec.ts |
+| SCR-16 | Trusted domains | FLW-05, FLW-14 | - | built | packages/ui/src/trusted/trusted.ts:renderTrusted, e2e/scn-024.spec.ts |
 | SCR-17 | Product landing page | none yet (gap) | - | built | apps/proxy/src/landing.test.ts |
 | SCR-18 | Privacy page | none yet (gap) | - | built | tools/privacy-page.mjs, tools/docs.test.ts |
 
@@ -348,10 +347,11 @@ includes a redirect from `*.workers.dev`, not just a CNAME.
   | error | the store is unreadable | - | names the failure, offers repair, and **no area row claims a state** |
   | success | outstanding items exist | - | up to three ranked rows, then the eight areas |
 - **Behavior notes:** one ranking rule for the whole product — `packages/core-queue/src/rank.ts` orders the band, with each area's outstanding item mapped into the shape it already ranks; a second ranker would be a second definition of "worst". **A row whose count could not be read says `"состояние не прочитано"`, never `"пусто"`** — absence of data must never read as a pass, and eight cheap reads that can each fail all render into one reassuring word. Areas are addressed by hash, one view at a time; **an unknown hash opens the overview and names the hash**, because a silent fallback is how `options.html#journal` went nowhere for a release. Navigation is real links plus `hashchange`, so browser back and forward work without a router. The overview reads counts only, never a section's full data
-- **Coverage:** none yet — [plan](plans/2026-08-12-options-dashboard.md)
+- **Wireframe:** wireframes/SCR-15.md
+- **Coverage:** packages/ui/src/dashboard/overview.ts:renderOverview, apps/extension/src/options/views.ts:routeFor, apps/extension/src/options/keep-focus.ts:keepingFocus, e2e/scn-027.spec.ts
 - **Scenarios:** SCN-027, SCN-028, SCN-029, SCN-030
 - **Resources:** `packages/core-queue/src/rank.ts` (ranking), the counts each area can answer cheaply
-- **Status:** designed
+- **Status:** built
 
 ### SCR-16: Trusted domains
 - **Used by:** FLW-05, FLW-14
@@ -364,6 +364,7 @@ includes a redirect from `*.workers.dev`, not just a CNAME.
   | success | entries exist | - | each with when and why, each reversible |
   | error | store unreadable | - | names the read failure; never an empty list in its place |
 - **Behavior notes:** split out of SCR-12 on 2026-08-12 — the dashboard renders one area per view, and the overview names `"Доверенные домены"` and `"Ваши данные"` as separate rows. The renderer and its e2e already existed; only the address changes
+- **Wireframe:** wireframes/SCR-16.md
 - **Coverage:** packages/ui/src/trusted/trusted.ts:renderTrusted, e2e/scn-024.spec.ts
 - **Scenarios:** SCN-024
 - **Resources:** trusted-domain store

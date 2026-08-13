@@ -19,7 +19,7 @@ test('the screen reports the state of this browser rather than an empty list', a
   extensionId,
 }) => {
   const page = await context.newPage()
-  await page.goto(`chrome-extension://${extensionId}/options.html`)
+  await page.goto(`chrome-extension://${extensionId}/options.html#extensions`)
 
   const panel = page.locator('[data-role=extensions]')
   // `management` is in the manifest, so this is not a maybe: the screen must
@@ -35,7 +35,7 @@ test('the inventory lists what is installed, with what each may do', async ({
   extensionId,
 }) => {
   const page = await context.newPage()
-  await page.goto(`chrome-extension://${extensionId}/options.html`)
+  await page.goto(`chrome-extension://${extensionId}/options.html#extensions`)
 
   const panel = page.locator('[data-role=extensions]')
   await expect(panel).toHaveAttribute('data-state', 'ready')
@@ -55,7 +55,7 @@ test('SCN-018 — a package the user supplies is read on the device and reported
   // path the analyser has. It is also the one that proves the analyser is
   // wired at all: before this control existed, nothing in the product called it.
   const page = await context.newPage()
-  await page.goto(`chrome-extension://${extensionId}/options.html`)
+  await page.goto(`chrome-extension://${extensionId}/options.html#extensions`)
 
   await expect(page.locator('[data-role=analysis-note]')).toContainText(
     'nothing here can be analysed',

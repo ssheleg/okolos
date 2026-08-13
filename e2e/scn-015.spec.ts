@@ -166,7 +166,7 @@ test.beforeEach(async ({ context }) => {
 test('the panel says what will be sent before anything is', async ({ context, extensionId }) => {
   const page = await context.newPage()
   watchNavigation(page)
-  await page.goto(`chrome-extension://${extensionId}/options.html`)
+  await page.goto(`chrome-extension://${extensionId}/options.html#leaks`)
 
   // The second test that held the false claim steady. It asserted the word
   // "hashed" about a check that sends the address itself, and the unit test
@@ -188,7 +188,7 @@ test('a source that cannot run is named, and the total says it may be incomplete
   test.slow()
   const page = await context.newPage()
   watchNavigation(page)
-  await page.goto(`chrome-extension://${extensionId}/options.html`)
+  await page.goto(`chrome-extension://${extensionId}/options.html#leaks`)
 
   await fillAddress(page, 'someone@example.test')
   await page.locator('[data-role=leaks] [data-role=check]').click()
@@ -206,7 +206,7 @@ test('the credit for the data is on the page that shows it', async ({ context, e
   // appears; a README is not.
   const page = await context.newPage()
   watchNavigation(page)
-  await page.goto(`chrome-extension://${extensionId}/options.html`)
+  await page.goto(`chrome-extension://${extensionId}/options.html#leaks`)
 
   const attribution = page.locator('[data-role=leaks] [data-role=attribution]')
   await expect(attribution).toContainText('Have I Been Pwned')
@@ -226,7 +226,7 @@ test('a recent infection is separated from an old breach, and each carries its r
 
   const page = await context.newPage()
   watchNavigation(page)
-  await page.goto(`chrome-extension://${extensionId}/options.html`)
+  await page.goto(`chrome-extension://${extensionId}/options.html#leaks`)
 
   await fillAddress(page, 'someone@example.test')
   await page.locator('[data-role=leaks] [data-role=check]').click()
@@ -256,7 +256,7 @@ test('the address field survives a repaint instead of being rebuilt', async ({
   // value check while still dropping focus and the caret.
   const page = await context.newPage()
   watchNavigation(page)
-  await page.goto(`chrome-extension://${extensionId}/options.html`)
+  await page.goto(`chrome-extension://${extensionId}/options.html#leaks`)
 
   const field = page.locator('[data-role=address]')
   await expect(field).toHaveCount(1)
@@ -269,14 +269,16 @@ test('the address field survives a repaint instead of being rebuilt', async ({
     'someone@example.test',
   )
 
-  // The journal's history toggle calls the same full reload the leak check
-  // does — loading paint, database reads, second paint — with no network in
-  // it, so this asserts the swap without waiting on a source. A check would
-  // have worked too, but its "checking" state lasts a single frame against a
-  // stubbed source and its result depends on the network path this test is not
-  // about.
-  await page.locator('[data-role=journal] [data-role=history]').click()
-  await expect(page.locator('[data-role=journal] [data-role=history]')).toBeVisible()
+  // The check itself is the repaint now. It used to be the journal's history
+  // toggle — a full reload with no network in it — but the journal is a
+  // different area since the page started rendering one at a time, and a
+  // trigger that is not on this screen is not a trigger. The sources are
+  // stubbed at the top of this file, so idle → checking → ready is two paints
+  // and no real request.
+  await page.locator('[data-role=leaks] [data-role=check]').click()
+  await expect(page.locator('[data-role=leaks] [data-role=coverage]')).toBeVisible({
+    timeout: 15_000,
+  })
 
   await expect(page.locator('[data-role=address][data-identity=original]')).toHaveCount(1)
   await expect(field).toHaveValue('someone@example.test')
@@ -294,7 +296,7 @@ test('pressing Check now with nothing typed says so, instead of nothing', async 
   // about which of a dozen causes it was.
   const page = await context.newPage()
   watchNavigation(page)
-  await page.goto(`chrome-extension://${extensionId}/options.html`)
+  await page.goto(`chrome-extension://${extensionId}/options.html#leaks`)
 
   await page.locator('[data-role=leaks] [data-role=check]').click()
 
@@ -308,7 +310,7 @@ test('pressing Check now with nothing typed says so, instead of nothing', async 
 test('an address that is not one is refused by name', async ({ context, extensionId }) => {
   const page = await context.newPage()
   watchNavigation(page)
-  await page.goto(`chrome-extension://${extensionId}/options.html`)
+  await page.goto(`chrome-extension://${extensionId}/options.html#leaks`)
 
   await fillAddress(page, 'not-an-address')
 

@@ -158,8 +158,12 @@ describe('a screen record names the controls its renderer draws', () => {
 
   const normalise = (value: string): string => value.toLowerCase().replace(/[^a-z0-9]/g, '')
 
-  it('knows about every screen', () => {
-    expect(Object.keys(sources).length).toBe(14)
+  it('knows about every screen with a renderer', () => {
+    // Sixteen of eighteen. SCR-17 and SCR-18 are pages the worker serves whole
+    // — a landing page and a privacy document — so there is no renderer whose
+    // controls a record could be checked against, and pretending otherwise
+    // would mean inventing an Elements line nothing draws.
+    expect(Object.keys(sources).length).toBe(16)
   })
 
   for (const [id, meta] of Object.entries(sources)) {

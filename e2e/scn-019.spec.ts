@@ -19,7 +19,7 @@ test('a fresh install shows the one request it made, and what it was for', async
   extensionId,
 }) => {
   const page = await context.newPage()
-  await page.goto(`chrome-extension://${extensionId}/options.html`)
+  await page.goto(`chrome-extension://${extensionId}/options.html#audit`)
 
   await expect(page.getByText('What left this device')).toBeVisible()
 
@@ -39,7 +39,7 @@ test('the panel never shows an empty list in place of a failure', async ({
   extensionId,
 }) => {
   const page = await context.newPage()
-  await page.goto(`chrome-extension://${extensionId}/options.html`)
+  await page.goto(`chrome-extension://${extensionId}/options.html#audit`)
 
   // An entries table with no rows reads as "nothing was sent", which is a
   // claim the product may only make when it knows it. Either there are rows,

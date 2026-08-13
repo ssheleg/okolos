@@ -4,7 +4,7 @@ import { globSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { beforeAll, describe, expect, it } from 'vitest'
 
-import { routeFor } from '../../apps/extension/src/options/views.js'
+import { KNOWN_HASHES, routeFor } from '../../apps/extension/src/options/views.js'
 
 /**
  * The gates that read what actually ships.
@@ -272,7 +272,11 @@ describe('every address in the shipped bundle is one the options page resolves',
    * documentation of a fixed defect as the defect itself.
    */
   const BUNDLES = ['chrome', 'chrome-e2e', 'firefox', 'firefox-e2e'].flatMap((build) =>
-    filesIn(`apps/extension/dist/${build}/*.js`),
+    // `**`, not `*`: the build puts everything shared between pages into
+    // `dist/<build>/chunks/`, and the route table is shared by four of them.
+    // Reading only the entry files meant reading past the module this rule
+    // exists to check — which the "not blind" test below is what noticed.
+    filesIn(`apps/extension/dist/${build}/**/*.js`),
   )
 
   /**
@@ -300,10 +304,19 @@ describe('every address in the shipped bundle is one the options page resolves',
     expect(unresolved, 'the built extension opens an address the page does not know').toEqual([])
   })
 
-  it('the sweep can actually see an address — a blind scan would pass on anything', () => {
-    // Absence of data must never read as a pass: prove the regex finds a real
-    // address in the built output before trusting a clean result from it.
-    const found = BUNDLES.flatMap((file) => [...readFileSync(file, 'utf8').matchAll(ADDRESS)])
-    expect(found.length, 'no address found in any bundle — the scan is blind').toBeGreaterThan(0)
+  it('the sweep is not blind — the table it checks against really shipped', () => {
+    // This guard fired the moment the producers moved onto `optionsPageFor`,
+    // and it was right to. `optionsPageFor` compiles to `"options.html" +
+    // hashFor(view)`, so a whole address stopped existing as one literal
+    // anywhere in the build, and the rule above went from checking every
+    // address to checking none — while still passing.
+    //
+    // What the artefact can still prove is that the vocabulary shipped. A build
+    // whose table lost an entry would open the overview for that area, in
+    // silence, on every surface at once.
+    const text = BUNDLES.map((file) => readFileSync(file, 'utf8')).join('\n')
+    expect(text, 'no bundle mentions the options page at all').toContain('options.html')
+    const missing = KNOWN_HASHES.filter((hash) => !text.includes(hash))
+    expect(missing, 'the shipped build is missing addresses the table declares').toEqual([])
   })
 })

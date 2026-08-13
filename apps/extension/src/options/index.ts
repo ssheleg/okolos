@@ -28,7 +28,8 @@ import { exportAll, openDb, RETENTION_DAYS, wipeAll, type JournalRecord } from '
 
 import { mapJournal } from '../popup/state.js'
 import { answered } from './answered.js'
-import { keepingFocus } from './keep-focus.js'
+import { keepingFocus, markFocus } from './keep-focus.js'
+import { whilePending } from './pending.js'
 import { optionsPageFor, routeFor, type Route } from './views.js'
 import '../pages.css'
 
@@ -196,17 +197,15 @@ async function queueSection(): Promise<HTMLElement> {
           void reload()
         },
         onResolve: (id: string) => {
-          void (async () => {
+          void act(async () => {
             await platform.runtime.send('finding/resolve', { id })
-            await reload()
-          })()
+          })
         },
         onDefer: (id: string) => {
-          void (async () => {
+          void act(async () => {
             const until = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
             await platform.runtime.send('finding/defer', { id, until })
-            await reload()
-          })()
+          })
         },
       }),
     )
@@ -272,10 +271,9 @@ async function extensionsSection(): Promise<HTMLElement> {
         })()
       },
       onTrust: (id: string) => {
-        void (async () => {
+        void act(async () => {
           await platform.runtime.send('extensions/trust', { id })
-          await reload()
-        })()
+        })
       },
       onInspect: (file: File) => {
         void (async () => {
@@ -329,10 +327,9 @@ async function trustedSection(): Promise<HTMLElement> {
   container.append(
     renderTrusted(document, entries, {
       onRevoke: (domain: string) => {
-        void (async () => {
+        void act(async () => {
           await platform.runtime.send('trust/revoke', { domain })
-          await reload()
-        })()
+        })
       },
     }),
   )
@@ -656,6 +653,9 @@ async function renderRoute(route: Route): Promise<void> {
   const body =
     route.view === 'overview' ? await overviewSection(route) : await areaSection(route)
 
+  const arriving = route.view !== 'overview' && route.view !== lastView
+  lastView = route.view
+
   keepingFocus(root, document, () => {
     root.replaceChildren(...(route.view === 'overview' ? [] : [backLink()]), body)
 
@@ -663,7 +663,25 @@ async function renderRoute(route: Route): Promise<void> {
     // for one statement rather than for the length of a database read.
     root.querySelector('[data-role=address-slot]')?.replaceWith(addressField)
   })
+
+  // Arriving at an area puts focus on it, not on the back link above it.
+  //
+  // The stacked page did this by scrolling `#queue` into view, and SCN-002
+  // asserts it: the first run's primary action is "see what to do first", and
+  // someone arriving by keyboard otherwise starts on the way back out. Only on
+  // arrival — repainting after an action must leave focus where the user left
+  // it, which is what `keepingFocus` above is for.
+  if (arriving && markFocus(root, document) === null) {
+    const area = root.lastElementChild
+    if (area instanceof HTMLElement) {
+      area.setAttribute('tabindex', '-1')
+      area.focus({ preventScroll: true })
+    }
+  }
 }
+
+/** Which area was last painted, so arrival can be told from a repaint. */
+let lastView: Route['view'] | null = null
 
 async function areaSection(route: Route): Promise<HTMLElement> {
   switch (route.view) {
@@ -806,6 +824,27 @@ async function download(): Promise<void> {
 
 async function reload(): Promise<void> {
   await paint(routeFor(location.hash))
+}
+
+/**
+ * An action, with the pressed control marked until its result lands.
+ *
+ * The repaint is here rather than in each handler so no action can forget it,
+ * and the failure branch is here for the same reason: a write that fails must
+ * give the control back and say what happened, not leave a dead button.
+ */
+async function act(work: () => Promise<void>): Promise<void> {
+  if (!root) return
+  try {
+    await whilePending(document, root, work)
+  } catch (cause) {
+    // Reload anyway: the store may have changed before the failure, and a
+    // screen showing pre-failure state is its own wrong answer.
+    await reload()
+    window.alert(t('actionFailed', String(cause)))
+    return
+  }
+  await reload()
 }
 
 // Real links move the page; this is what turns that into a repaint. Back and

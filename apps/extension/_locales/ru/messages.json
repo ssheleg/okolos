@@ -2,6 +2,14 @@
   "actionDispute": {
     "message": "Это неверно"
   },
+  "actionFailed": {
+    "message": "Действие не выполнилось: $CAUSE$",
+    "placeholders": {
+      "cause": {
+        "content": "$1"
+      }
+    }
+  },
   "actionTitle": {
     "message": "Okolos"
   },
@@ -1122,7 +1130,7 @@
     "message": "первого запуска"
   },
   "popupJournal": {
-    "message": "Журнал"
+    "message": "Что изменилось"
   },
   "popupLocalUnread": {
     "message": "Локальные данные не прочитались: $CAUSE$",
@@ -1175,7 +1183,7 @@
     "message": "Что отправлено"
   },
   "popupSettings": {
-    "message": "Настройки"
+    "message": "Ваши данные"
   },
   "popupStorageNote": {
     "message": "Это неполадка хранилища. Это не утверждение, что страница в порядке."

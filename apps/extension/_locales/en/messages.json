@@ -2,6 +2,14 @@
   "actionDispute": {
     "message": "This is wrong"
   },
+  "actionFailed": {
+    "message": "The action did not go through: $CAUSE$",
+    "placeholders": {
+      "cause": {
+        "content": "$1"
+      }
+    }
+  },
   "actionTitle": {
     "message": "Okolos"
   },
@@ -1122,7 +1130,7 @@
     "message": "your first run"
   },
   "popupJournal": {
-    "message": "Journal"
+    "message": "What changed"
   },
   "popupLocalUnread": {
     "message": "Local data could not be read: $CAUSE$",
@@ -1175,7 +1183,7 @@
     "message": "What was sent"
   },
   "popupSettings": {
-    "message": "Settings"
+    "message": "Your data"
   },
   "popupStorageNote": {
     "message": "This is a storage problem. It is not a statement that this page is fine."

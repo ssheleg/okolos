@@ -122,7 +122,7 @@ test('SCN-021 — the journal shows what changed since the last check, not every
   extensionId,
 }) => {
   const page = await context.newPage()
-  await page.goto(`chrome-extension://${extensionId}/options.html`)
+  await page.goto(`chrome-extension://${extensionId}/options.html#journal`)
   await seed(page, {
     lastCheck: '2026-08-04T00:00:00.000Z',
     journal: [
@@ -157,7 +157,7 @@ test('SCN-021 — an empty diff names the moment it is empty since', async ({
   extensionId,
 }) => {
   const page = await context.newPage()
-  await page.goto(`chrome-extension://${extensionId}/options.html`)
+  await page.goto(`chrome-extension://${extensionId}/options.html#journal`)
   await seed(page, { lastCheck: '2026-08-04T00:00:00.000Z' })
   await page.reload()
 

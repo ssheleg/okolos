@@ -34,6 +34,8 @@ export const SCREENS = {
   'SCR-12': { title: 'Settings — data controls', source: 'packages/ui/src/settings/data-controls.ts' },
   'SCR-13': { title: 'Recovery checklist', source: 'packages/ui/src/recovery/recovery.ts' },
   'SCR-14': { title: 'Public domain status', source: 'apps/proxy/src/router.ts' },
+  'SCR-15': { title: 'Dashboard overview', source: 'packages/ui/src/dashboard/overview.ts' },
+  'SCR-16': { title: 'Trusted domains', source: 'packages/ui/src/trusted/trusted.ts' },
 }
 
 /** Every `data-role` the renderer can emit, in the order the source names them. */

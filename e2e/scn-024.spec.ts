@@ -36,7 +36,7 @@ test('an untouched profile says nothing is trusted, and why the list would fill'
   extensionId,
 }) => {
   const page = await context.newPage()
-  await page.goto(`chrome-extension://${extensionId}/options.html`)
+  await page.goto(`chrome-extension://${extensionId}/options.html#trusted`)
 
   await expect(page.locator('[data-role=trusted-empty]')).toContainText('have not marked any site')
   await expect(page.locator('[data-role=trusted-row]')).toHaveCount(0)
@@ -47,7 +47,7 @@ test('a trusted site is listed with when and why, and can be taken back', async 
   extensionId,
 }) => {
   const page = await context.newPage()
-  await page.goto(`chrome-extension://${extensionId}/options.html`)
+  await page.goto(`chrome-extension://${extensionId}/options.html#trusted`)
   await seedTrust(page, 'g00gle.com')
   await page.reload()
 

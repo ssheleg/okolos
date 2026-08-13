@@ -108,6 +108,9 @@ export default tseslint.config(
         process: 'readonly',
         URL: 'readonly',
         fetch: 'readonly',
+        // `fetch` without a deadline is a tool that can hang forever on a
+        // source that stopped answering, so the timeout signal belongs beside it.
+        AbortSignal: 'readonly',
         setTimeout: 'readonly',
         document: 'readonly',
         window: 'readonly',

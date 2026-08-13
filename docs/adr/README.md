@@ -18,3 +18,4 @@
 | [0007](0007-generate-what-would-drift.md) | Всё, что иначе разойдётся, — генерируется | `tools/wireframes.mjs`, `icons.mjs`, `tokens.mjs`, `privacy-page.mjs` |
 | [0008](0008-words-in-the-catalogue-mapping-in-code.md) | Слово живёт в каталоге, отображение — в коде | `tools/locales.test.ts`, `tools/copy.test.ts`, `tools/entry-resolver.test.ts` |
 | [0009](0009-the-page-watcher-observes-and-never-holds.md) | Наблюдатель страницы смотрит и никогда не задерживает | `apps/extension/src/page-watch/`, `tools/gates/bundle-scan.test.ts` |
+| [0010](0010-the-blocklist-is-about-hosts-so-the-sources-must-be.md) | Блок-лист про хосты, значит и источники должны быть про хосты | `tools/ingest.test.ts` |

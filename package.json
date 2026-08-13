@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "license": "AGPL-3.0-only",
-  "description": "Browser security for the age of AI agents — local-first, verifiable.",
+  "description": "Browser security for the age of AI agents \u2014 local-first, verifiable.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ssheleg/okolos.git"
@@ -33,7 +33,8 @@
     "package:check": "node tools/package.mjs --check",
     "screenshots": "pnpm build && node tools/screenshots.mjs",
     "access": "node tools/access.mjs",
-    "i18n:sweep": "node tools/i18n-sweep.mjs"
+    "i18n:sweep": "node tools/i18n-sweep.mjs",
+    "feed:ingest": "node tools/ingest.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",

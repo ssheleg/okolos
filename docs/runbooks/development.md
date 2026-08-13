@@ -97,6 +97,7 @@ pnpm screenshots             # docs/store/screenshots/*.png
 
 ```bash
 pnpm i18n:sweep              # сколько фраз код держит сам, минуя каталог
+pnpm feed:ingest             # собрать блок-лист из OpenPhish в feeds/phishing.json
 node tools/i18n-sweep.mjs --list   # каждая, с файлом и строкой
 ```
 

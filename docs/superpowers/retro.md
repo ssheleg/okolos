@@ -98,6 +98,12 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-13 (второй)** — инфраструктура: настоящий фид, матрица к правде,
+  B-20. 1568 юнит-тестов, 93 e2e в 24 файлах, 11 проверок Firefox. Фид в проде —
+  v5, 248 живых фишинг-хостов вместо четырёх `.test`. ADR-0010. **CI полностью
+  зелёный впервые в истории репозитория** — все три джоба. Пять рядов леджера
+  верификации закрыты прогоном, две новых заведены, B-19 закрыта решением не
+  делать. Вердикт REFINE.
 - **2026-08-13** — `docs/ux/plans/2026-08-12-options-dashboard.md`; стадии 0–10.
   Дашборд: один адрес — одна область, обзор с полосой внимания, восстановление
   фокуса для любого элемента, состояния ожидания. 1535 юнит-тестов, 88 e2e,
@@ -115,6 +121,73 @@ happens before adding.
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-13 — the feed source that would have taken down GitHub
+
+- **Symptom:** none, and that is the point. `docs/data-sources.md` lists URLhaus
+  as a free candidate and it is a good feed. Reading its download before wiring
+  it in showed the third line is a `dropbox.com` link.
+- **Surfaced at:** stage 5, before a line of ingest code existed, by opening the
+  source rather than the documentation about the source.
+- **Owned by:** the granularity mismatch. This extension blocks by **host**;
+  URLhaus lists **URLs** where malware is hosted. A malware URL on a shared host
+  is a fact about the URL and says nothing about the host.
+- **Root cause:** a feed's usefulness is not a property of the feed. It is a
+  property of the pair (feed, what you can do with an entry).
+- **Fix, by grade:** design — URLhaus is not ingested, recorded in ADR-0010 and
+  as a **test**, so a future pass adding it for the entry count has to delete
+  the line and read why. Measured for the record: 63,978 lines, 6,030 hosts, and
+  **11 of them services that cannot be blocked whole** — github.com,
+  drive.google.com, gitlab.com, raw.githubusercontent.com among them.
+- **Catches it next time:** the guard list, and the number beside it. A run that
+  starts refusing twenty hosts is a run where the source changed shape.
+
+### 2026-08-13 — a heuristic measured, and thrown away, before it shipped
+
+- **Symptom:** the guard list missed five shorteners on the first real run —
+  `g5.lu`, `goo.su`, `s4w.in`, `i.gal`, `vo.la`. A fixed list cannot keep up
+  with shorteners, so a signal was needed.
+- **The idea:** a host appearing with several distinct paths in one feed is a
+  shared host, not a campaign host. Plausible, cheap, and wrong.
+- **Measured before writing it:** `wells-fargo-ac06dd.previewship.net` appears
+  with **16** distinct paths and is one campaign on its own host; `g5.lu`, a
+  shortener, appears **once**. The signal is not weak — it points the wrong way.
+- **What shipped instead:** a two-label host under eight characters is refused.
+  Five of 253 fall under it, all five shorteners, against a median host length
+  of 22 — and the threshold comes from the **asymmetry of harm**, not from
+  accuracy: a wrong block breaks every link on a shortener for everyone who
+  installed this, a wrong pass harms one person who clicked one link.
+- **Catches it next time:** standing instruction 7, doing exactly its job. The
+  first heuristic was a claim about the data; twenty seconds of counting turned
+  it into a measurement, and the measurement killed it.
+
+### 2026-08-13 — I filed a human step for a trade a decision had already refused
+
+- **Symptom:** the previous run found the signing-pair test failing on CI for
+  want of a private key, wired `secrets.OKOLOS_FEED_KEY` into the workflow, and
+  filed "add the secret" as a human step. It read as obviously right.
+- **Surfaced at:** stage 2 of the next run, while planning the feed's refresh
+  schedule — which meant reading ADR-0002, which says in as many words:
+  *публикация требует машины с ключом — её нельзя запустить из CI без переноса
+  приватного ключа, и это сознательно.*
+- **Owned by:** the previous run's stage 7. The fix was aimed at a red gate, and
+  a red gate is a symptom; the decision about where the key may live was already
+  written down and was not consulted.
+- **Root cause:** turning a gate green is not the goal. The gate exists to
+  protect something, and here the something was the trust boundary the fix
+  widened.
+- **Fix, by grade:** design — the test asks a different question depending on
+  where it runs and **asserts in both cases**: on the machine, the pair matches;
+  on CI, the key is absent. The second is ADR-0002's invariant stated as a test
+  rather than assumed. A third rule covers the case where neither holds, because
+  two conditional blocks with no third would both skip and report green over an
+  unchecked pair.
+- **Catches it next time:** nothing mechanical, and that is worth being honest
+  about. **No standing instruction was added** — the list is at its cap of ten
+  and nothing in it has become a check, so adding would mean retiring something
+  still doing work. The generalisable form is already instruction 2 read one
+  level up: a decision record is part of the artefact, and "the gate is red" is
+  a source claim about what to do next.
 
 ### 2026-08-13 — a hundred CI runs, a hundred failures, and nobody had looked
 

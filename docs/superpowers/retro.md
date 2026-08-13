@@ -98,12 +98,112 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-13** — `docs/ux/plans/2026-08-12-options-dashboard.md`; стадии 0–10.
+  Дашборд: один адрес — одна область, обзор с полосой внимания, восстановление
+  фокуса для любого элемента, состояния ожидания. 1535 юнит-тестов, 88 e2e,
+  11 проверок Firefox, девять поверхностей в axe-свипе. Четыре новых гейта, три
+  из них с подтверждённым плантом. **CI впервые в истории репозитория дошёл до
+  ворот** — и нашёл три дефекта окружения. Пять рядов леджера верификации стоят
+  `never`, пять строк заведено на доску. Вердикт REFINE.
+- **Пропуск в штампах, 2026-08-05 … 2026-08-09.** Пять прогонов записаны ниже
+  как Entries и не проштампованы здесь. Восстанавливать их задним числом
+  нечестно — счётчики тех прогонов уже не измеришь, — но пропуск назван, чтобы
+  следующий читатель не принял этот раздел за полный список.
 - **2026-08-04** — P0–P5 brief; stages 0–10 (stage 8 blocked on a human step).
   Delivered the walking skeleton and its gates: 151 unit tests, 10 e2e specs,
   two loadable builds, 8 REQ DONE / 5 PARTIAL / 21 PLANNED, 3 new REQ rows from
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-13 — a hundred CI runs, a hundred failures, and nobody had looked
+
+- **Symptom:** the pipeline's stage 7 says the CI verdict is *read* before
+  anything is tagged. Reading it found the run red — and so was the one before
+  it, and the one before that. `gh run list --limit 100` returns 100 runs and
+  **100 failures**. Every job died in ten seconds at
+  `pnpm/action-setup`, which refuses to run when a version is given both as
+  `version: 11` in the workflow and as `packageManager: pnpm@11.10.0` in
+  package.json. `packageManager` has been there since the first commit, so CI
+  has never once executed a gate in this repository.
+- **Surfaced at:** stage 7 of the dashboard run, on the first push.
+- **Owned by:** the retrospective, of all places. A standing instruction —
+  "read the gate's output before pushing" — was **retired on 2026-08-09 as
+  having become a check**, and the check named was `.githooks/pre-push`. That
+  hook is real and it works: it runs the gates locally and refuses the push
+  when they fail. It is why the work actually was green. It is also why nobody
+  ever had a reason to open the CI tab. The instruction was retired against a
+  check that covered the developer's machine and not the pipeline, and the
+  wording of the retirement did not notice the difference.
+- **Root cause:** two sources for one version, and a local check standing in for
+  a remote one without anyone deciding that it should.
+- **Fix, by grade:** mechanical for the config — the workflow drops its
+  `version:` and lets `packageManager` be the single source. Then the pipeline
+  ran for the first time and found three more, each invisible on a machine that
+  has already built or signed something:
+  1. the icon gate compared **compressed** bytes, and `deflateSync` is not
+     byte-identical across zlib builds — the Linux runner reported the icon as
+     changed when not one pixel had moved. It compares inflated pixels now;
+  2. the Firefox job never ran `pnpm build:e2e`, so the test-hook build was
+     missing. Locally it was always there from an earlier run;
+  3. the feed-key pair test has no private key on CI. The workflow now passes
+     `secrets.OKOLOS_FEED_KEY`; until that secret exists the job stays red on
+     that one test, deliberately, because a signing pair nobody can verify is a
+     real problem for a product whose feed is signed. Filed as B-19.
+- **Catches it next time:** CI itself, now that it runs. Which is also why **no
+  standing instruction is added here.** An instruction saying "check that CI is
+  really running" would be retired by this list's own rule the moment the fix
+  landed — the fix *is* the check. The lesson that generalises is already
+  instruction 2, and it is worth reading with this in mind: *check the artefact,
+  not only the source* applies to a pipeline as much as to a bundle, and "it
+  passes on my machine" is a source claim.
+
+### 2026-08-13 — three gates went blind, and their own guards caught all three
+
+- **Symptom:** the artefact half of the new address gate reported clean three
+  times while reading nothing. First it globbed `dist/*/*.js` and swept up
+  `tsc`'s per-directory emit, which **keeps comments**, so it failed on
+  `options.html#appeal` — an address that a file's own doc comment names as the
+  dead one it stopped using. Then the producers moved onto `optionsPageFor`, and
+  a whole address stopped existing as one literal anywhere in the build, so the
+  rule checked every address and then checked none, still passing. Then the glob
+  missed `dist/<build>/chunks/`, where the route table actually ships.
+- **Surfaced at:** stage 5, three times, each time by the same companion test —
+  the one that asserts the sweep can see anything at all.
+- **Owned by:** the gate, each time. None of the three was a product defect.
+- **Root cause:** a scan is a claim about what it read, and the thing it reads
+  moves — a build layout, a bundler's inlining, a compiler's emit.
+- **Fix, by grade:** mechanical each time, and the third one changed what the
+  rule asserts rather than how it looks: with addresses no longer spellable by a
+  producer, what the artefact can still prove is that the **vocabulary shipped**,
+  so it checks that every address the table declares is present in the build.
+- **Catches it next time:** it already did, three times. Standing instruction 3
+  earns its place here — *absence of data must never read as a pass* — and the
+  cheapest form of it is one extra assertion per sweep: prove the sweep found
+  something before trusting that it found nothing wrong.
+
+### 2026-08-13 — the gate for this defect existed, and it had already missed it
+
+- **Symptom:** `tools/destinations.test.ts` was written for exactly this class —
+  "every place a button sends someone must exist when they get there" — after
+  three dead links, one of them `options.html#appeal`. It was in the suite,
+  green, while `onOpen('settings')` opened the self-audit panel.
+- **Surfaced at:** stage 5, when the gate's own "not blind" check failed after
+  the producers were rewritten.
+- **Owned by:** the gate's extraction method. It collected destinations by
+  scanning `getUrl('…')` **literals**, and the broken branch built its URL in a
+  conditional whose fall-through carried **no hash at all**. There was no hash
+  to check, so there was nothing to report.
+- **Root cause:** the gate checked "the hash a literal carries has a reader"
+  when the promise is "the destination a button reaches is the one it names".
+  The second is not a stricter version of the first; it is a different question.
+- **Fix, by grade:** structural — the addresses come from one table now, read by
+  `routeFor` and written by `hashFor`, so producer and consumer cannot disagree,
+  and `tools/options-routes.test.ts` additionally forbids spelling one by hand.
+  `destinations.test.ts` keeps the rule that is genuinely its own — the page
+  exists in the build — and reads the table for the rest.
+- **Catches it next time:** the round-trip assertion, and the ban on hand-written
+  addresses. Both verified by planted defects, each reddening its own rule.
 
 ### 2026-08-04 — a lint rule that existed in the file and not in the linter
 

@@ -17,7 +17,13 @@ happens before adding.
    gate red by breaking the build instead of the rule.
 2. **Check the artefact, not only the source.** ESLint reads the files it is
    pointed at, and flat config *replaces* rule options rather than merging them.
-   Every runtime promise gets a second check against the built bundle.
+   Every runtime promise gets a second check against the built bundle. **A gate
+   that reads the filesystem is checked with the filesystem in the state a
+   person's tools leave it**, not the state a fresh clone has: three gates read
+   the entries of a directory and used each as a path, so all three were one
+   Finder visit from a wrong verdict — and the one guarding the pre-push hook was
+   red on every developer machine and green on CI, where nobody had ever
+   clicked. Plant the mess before believing the green.
 3. **Absence of data must never read as a pass.** Assert that the measurement
    exists before comparing it to a ceiling; assert that the list was read before
    showing it as empty.
@@ -98,6 +104,15 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-19** — `4d77846`, B-26; стадии 0–10. Доковый гейт считал записи
+  каталога вместо каталогов, и класс оказался шире одного гейта: три экземпляра,
+  два латентных. Закрыто одним определением — `tools/tree.mjs` плюс собственный
+  тест. 1576 юнит-тестов в 108 файлах, 1 skipped; зелено и с `.DS_Store`,
+  подсаженным в пять читаемых каталогов, и без них. **CI зелёный целиком —
+  третий раз в истории репозитория**, все три джоба. Доска выросла на 35 рядов
+  (B-27…B-60) из аудита восемнадцати модулей. Постоянных инструкций по-прежнему
+  десять: ни одна не сработала на триггер снятия, новый урок дописан к второй, а
+  не занял одиннадцатую. Вердикт REFINE.
 - **2026-08-13 (второй)** — инфраструктура: настоящий фид, матрица к правде,
   B-20. 1568 юнит-тестов, 93 e2e в 24 файлах, 11 проверок Firefox. Фид в проде —
   v5, 248 живых фишинг-хостов вместо четырёх `.test`. ADR-0010. **CI полностью
@@ -121,6 +136,65 @@ happens before adding.
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-19 — the gate that graded the file manager, and the two beside it that were only lucky
+
+- **Symptom:** `pnpm test` red on this machine and green on CI, on the same
+  commit. One failure: `tools/docs.test.ts` asserting `| Пакетов | 20 |` against
+  a `facts.md` that said 19. The document was right. `readdirSync('packages')`
+  returned twenty entries because Finder had written a `.DS_Store`, and the gate
+  read entries as directories. `.gitignore` covers the file, which is why nobody
+  saw it in a diff and why CI never met it.
+- **Surfaced at:** stage 0 of an audit, as the first thing measured. It had been
+  red for six days.
+- **Owned by:** the gate. And specifically the gate that `.githooks/pre-push`
+  runs, so the only load-bearing check this project has was refusing every push
+  while printing `OKOLOS_SKIP_GATES=1` in its own refusal text — a check that
+  fails for a reason the reader cannot act on teaches the override, not the fix.
+  `ci.yml:22-26` records that CI itself was dead for a hundred runs and that this
+  hook is the reason the work was actually green; the hook was the second half of
+  that arrangement, and it had just broken.
+- **Root cause:** the entries of a directory are not its directories, and the
+  difference is written by a program nobody invoked. The corrected helper already
+  existed in the same file, on line 43, already used for this exact quantity
+  twenty lines below — so this was not a missing idea, it was two ways of
+  measuring one number living in one file.
+- **What made it worth an entry:** fixing the instance would have left the class.
+  A scan of all twenty-five gates found two more members, and both were *latent* —
+  passing because of where a person had happened to click. `locales.test.ts` lost
+  five of its ten checks the moment `_locales` held a dotfile, in the gate that
+  guards the message catalogue. `licensing.test.ts` failed to load at all, since
+  its throw happens while the module initialises, so none of its checks ran and
+  the file reported as one failure rather than thirty-two missing ones. Two more
+  readers are safe and for reasons worth writing down: `adr.test.ts` filters
+  `^\d{4}-`, and the manifest sweep drops non-existent paths — the second by
+  accident, from a filter added for packages without a `package.json`. A guard
+  that works for a reason nobody chose is a guard that leaves when its reason does.
+- **Fix, by grade:** structural — one definition, `tools/tree.mjs`, beside
+  `imports.mjs` for the same reason. `filesIn` takes its suffix as a required
+  argument, because a caller asking for "the files" without saying which will
+  accept `.DS_Store` as one.
+- **Catches it next time:** `tools/tree.test.ts`, on a fixture built for the
+  purpose rather than on this repository — reading the real tree would have made
+  the checks agree with whatever the tree holds today, which is the defect. Its
+  third check asserts the filter is *load-bearing* by comparing against the raw
+  listing, because the first two would also pass against no filtering at all on a
+  fixture that happened to hold only directories. Removing the filter fails three
+  of the seven. The suite is green with `.DS_Store` planted in five of these
+  directories and green without them.
+- **What the repository got right, and it is worth naming:** `coverage-shape`
+  refused the new module until a test sat beside it, by name, with the sentence
+  "write one, or exempt it with the reason". That gate fired within a minute of
+  the file existing. And the plant discipline paid twice: `facts.md` at eighteen
+  packages failed the exact test being repaired, and a key removed from the
+  Russian catalogue failed the parity rule — both plants landed on the rule they
+  were aimed at, which standing instruction 1 asks for in its second half
+  precisely because earlier plants had not.
+- **Left open, deliberately:** the class is closed by a shared helper, not by a
+  rule. Eight gates still read `readdirSync` directly and filter each in their own
+  way. This repository already keeps boundaries as lint rules — REQ-01 does exactly
+  this for `core-*` — so B-58 files that, rather than pretending a helper nobody is
+  obliged to use is a guarantee.
 
 ### 2026-08-13 — the feed source that would have taken down GitHub
 

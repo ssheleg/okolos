@@ -637,7 +637,14 @@ async function siteFacts(payload: { host: string }): Promise<{
     const firstSeen = typeof seen?.value === 'string' ? seen.value : null
 
     if (!firstSeen) {
-      await db.put('settings', { key: `seen:${payload.host}`, value: new Date().toISOString() })
+      // A date, not an instant. The hour at which someone signs in to a site is
+      // no business of a note that only answers "have I met this host before" —
+      // the reuse index made exactly this call one screen away, and this row was
+      // the one still keeping seconds.
+      await db.put('settings', {
+        key: `seen:${payload.host}`,
+        value: new Date().toISOString().slice(0, 10),
+      })
     }
 
     return { trusted: Boolean(trustedRow), firstSeen }

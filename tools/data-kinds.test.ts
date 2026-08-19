@@ -72,6 +72,38 @@ describe('the wipe names everything the wipe clears', () => {
     ).toContain('Object.values(DATA_KIND_KEY)')
   })
 
+  it('gives every kind a retention line on the privacy page', () => {
+    /**
+     * The wipe dialog and the privacy page are the two places the user is told
+     * what the product holds, and they now say it in the same nine words — so a
+     * store that gains a name in one and not the other is a gap this can see.
+     *
+     * The page had four lines where the database had nine stores, and the sweep
+     * touched three. `settings` was swept by nothing, which is how the "have I met
+     * this host" note became a permanent second-precision list of every site where
+     * a password field was focused — a browsing history, in a product that declined
+     * the `history` permission in order not to have one.
+     *
+     * A line is required, not a window. Four stores legitimately have no expiry;
+     * what they must not have is silence, because a store with neither a window nor
+     * a stated reason is the one nobody notices.
+     */
+    const privacy = readFileSync(path.join(root, 'docs/privacy.md'), 'utf8')
+    const table = /## Что хранится на устройстве и сколько([\s\S]*?)\n## /.exec(privacy)?.[1]
+    expect(table, 'the privacy page has no retention section to check').toBeDefined()
+
+    const messages = catalogue('ru')
+    for (const [store, key] of Object.entries(DATA_KIND_KEY)) {
+      const words = messages[key]?.message
+      expect(words, `ru has no message for ${key}`).toBeDefined()
+      expect(
+        table,
+        `the retention table says nothing about ${store} ("${words ?? ''}"). A store with ` +
+          `neither a window nor a stated reason is the one nobody notices.`,
+      ).toContain(words as string)
+    }
+  })
+
   it('describes a kind rather than repeating a store name', () => {
     // The point of the mapping is that the dialog speaks the user's language. A
     // message equal to its store name means someone wired the key through and

@@ -14,6 +14,18 @@ export const RETENTION_DAYS = {
   outbound_log: 90,
   /** Counted from the moment the user resolved it, not from when it appeared. */
   resolvedFinding: 30,
+  /**
+   * `seen:<host>` — the "have I met this host before" note the credential guard
+   * asks for.
+   *
+   * It had no window at all, so it grew into a permanent list of every site where
+   * the user has ever focused a password or card field, timestamped to the second.
+   * That is a browsing history, and the product refused the `history` permission
+   * precisely so as not to have one. A year is long because the question it answers
+   * is "is this site new to me", and a site visited eleven months ago is not new;
+   * it is finite because "never" is what turned a lookup into a log.
+   */
+  seenHost: 365,
 } as const
 
 /**

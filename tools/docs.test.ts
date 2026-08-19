@@ -445,10 +445,38 @@ describe('the brand pack states facts, and a fact is checkable', () => {
   })
 
   it('states the retention the code enforces', () => {
+    /**
+     * The old version of this check read the journal window out of the schema and
+     * required the phrase "дольше 90 дней" in the pack. The phrase was there and
+     * the claim behind it was false: three stores were swept out of nine, and
+     * `settings` — swept by nothing — had grown a permanent, second-precision list
+     * of every host where a password field was focused. A gate can confirm a
+     * sentence and still be confirming a lie, when the sentence is about the whole
+     * database and the gate reads one constant.
+     *
+     * So the claim changed shape, and this checks the shape it changed to: every
+     * window the code enforces is stated where the user reads it, and the privacy
+     * table has a line for each store rather than for the four somebody remembered.
+     */
     const schema = readFileSync(path.join(root, 'packages/storage/src/schema.ts'), 'utf8')
-    const days = /journal:\s*(\d+)/.exec(schema)?.[1]
-    expect(days, 'retention not found in the schema').toBeDefined()
-    expect(facts).toContain(`дольше ${days} дней`)
+    const privacy = readFileSync(path.join(root, 'docs/privacy.md'), 'utf8')
+
+    const windows = [...schema.matchAll(/^\s{2}(?:\/\*\*[\s\S]*?\*\/\s*)?(\w+): (\d+),/gm)].map(
+      (m) => Number(m[2]),
+    )
+    expect(windows.length, 'no retention windows found in the schema').toBeGreaterThan(2)
+
+    // Days, not the constant's name: the pack and the privacy page speak the
+    // user's language, and the code's field names are not it.
+    for (const days of new Set(windows)) {
+      expect(privacy, `no retention line mentions ${days} days`).toMatch(
+        new RegExp(`${days}\\s*(дней|дня|день|год)`),
+      )
+    }
+
+    expect(facts, 'the pack no longer points at where the windows are stated').toContain(
+      'docs/privacy.md',
+    )
   })
 
   it('lists every network purpose the audited path can carry, and no others', () => {

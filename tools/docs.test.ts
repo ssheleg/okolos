@@ -3,6 +3,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
+import { directoriesIn } from './tree.mjs'
 import { SCREENS } from './wireframes.mjs'
 
 /**
@@ -40,10 +41,7 @@ const PURPOSES: string[] = (() => {
   return [...block.matchAll(/'([a-z-]+)'/g)].map((m) => m[1] as string)
 })()
 
-const members = (dir: string): string[] =>
-  readdirSync(path.join(root, dir), { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
+const members = (dir: string): string[] => directoriesIn(path.join(root, dir))
 
 describe('the map covers the territory', () => {
   it('names every package', () => {
@@ -341,8 +339,17 @@ describe('the brand pack states facts, and a fact is checkable', () => {
   const facts = readFileSync(path.join(root, 'docs/brand/facts.md'), 'utf8')
 
   it('counts packages and apps as the tree actually has them', () => {
-    const packages = readdirSync(path.join(root, 'packages')).length
-    const apps = readdirSync(path.join(root, 'apps')).length
+    // `members` and not `readdirSync().length`: the entries of a directory are
+    // not its directories, and the difference is a file macOS writes without
+    // being asked. A stray `.DS_Store` made this gate read 20 packages and 3
+    // apps, so it was red on every machine whose Finder had opened the folder
+    // and green on CI, where none had — a verdict about the file manager
+    // wearing the authority of a verdict about the tree. `facts.md` documents
+    // `ls -d packages/*/ | wc -l`, which counts directories; this now measures
+    // the same thing, and the helper is the one lines 62-63 already use for
+    // this exact quantity.
+    const packages = members('packages').length
+    const apps = members('apps').length
     expect(facts).toContain(`| Пакетов | ${packages} |`)
     expect(facts).toContain(`| Приложений | ${apps} |`)
   })

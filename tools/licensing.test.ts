@@ -3,6 +3,8 @@ import { createRequire } from 'node:module'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
+import { directoriesIn } from './tree.mjs'
+
 /**
  * REQ-30 — the licence and the attributions this project owes.
  *
@@ -46,7 +48,7 @@ describe('attribution owed to data sources', () => {
    * obligation does not depend on which language the reader chose, so this
    * checks **every** locale rather than the default one.
    */
-  const catalogues = readdirSync(path.join(root, 'apps/extension/_locales')).map(
+  const catalogues = directoriesIn(path.join(root, 'apps/extension/_locales')).map(
     (locale) =>
       [locale, JSON.parse(read(`apps/extension/_locales/${locale}/messages.json`))] as const,
   ) as ReadonlyArray<readonly [string, Record<string, { message: string }>]>

@@ -17,12 +17,26 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
+import { directoriesIn } from './tree.mjs'
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const localesDir = path.join(root, 'apps/extension/_locales')
 
 type Catalogue = Record<string, { message: string }>
 
-const locales = readdirSync(localesDir)
+/**
+ * The locale directories, not the entries of `_locales`.
+ *
+ * Every use below joins the name with `messages.json`, so a name that is not a
+ * directory is a read of a path that cannot exist. A `.DS_Store` here failed
+ * five of this file's ten checks — in the gate that guards the message
+ * catalogue, and therefore the gate `package:check` leans on to prove the
+ * default locale answers every `__MSG__`. It was latent rather than absent:
+ * `_locales` simply had not been opened in Finder yet, which is not a property
+ * anyone should be relying on. `tree.mjs` carries the class and the two other
+ * gates it broke.
+ */
+const locales = directoriesIn(localesDir)
 const read = (locale: string): Catalogue =>
   JSON.parse(readFileSync(path.join(localesDir, locale, 'messages.json'), 'utf8')) as Catalogue
 

@@ -104,6 +104,11 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (третий)** — B-35; стадии 0–10. Локатор перестал называть первое
+  похожее и стал называть тот узел; санитайзер отказывается править неоднозначный.
+  1673 юнит-теста в 112 файлах, 96 e2e, семь плантов — три из них показали, что
+  фикстура была случайно однозначной. Постоянных инструкций десять, снятий нет.
+  Вердикт REFINE.
 - **2026-08-20 (второй)** — B-34, второй заход; стадии 0–10. Первый заход был закрыт
   преждевременно: реле работало при удачном порядке загрузки и молча теряло отчёт
   иначе. Нашёл CI. Обязательство отчитаться перенесено во фрейм, который жив; сдача
@@ -192,6 +197,42 @@ happens before adding.
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-20 — a fixture whose shapes differ cannot detect a selector that cannot tell shapes apart
+
+- **Symptom:** the tests for the new unique locator passed. Planting the *old* locator
+  back — tag names only, capped at five levels — left three of them passing too.
+- **Owned by:** the fixture. Eight paragraphs, and only the poisoned one contained a
+  `<span>`. So `html > body > div > p > span` matched exactly one element, and it
+  happened to be the right one. The assertion "resolves to exactly one element" was
+  true of the broken locator on that page.
+- **Why this is the entry rather than the locator fix:** the locator defect was
+  straightforward once seen — `nth-of-type` at every level, no cap, and an `id`
+  shortcut only for an id that provably names one element. What was worth recording is
+  that **a test can be about the right property and still be unable to observe it**,
+  because the input was accidentally free of the ambiguity the code is supposed to
+  handle. The suite had the same shape at scale: every `sanitize.test.ts` fixture used
+  an `id`, and the corpus carries hand-written `:nth-child(…)` selectors the collector
+  never produced — so nothing in the project had ever handed the executor an ambiguous
+  locator. Two years of green.
+- **The fix to the fixture is the interesting artefact:** eight *identical* shapes, and
+  the deep-nesting decoy moved to the same depth as the target. Sameness is the
+  property under test; a fixture that differs by accident is a fixture that answers a
+  different question. After the correction the historical locator fails five
+  assertions, removing `nth-of-type` fails three, and one plant that had failed nothing
+  fails its own test.
+- **The second guard, and why it is not belt-and-braces:** the executor refuses an
+  ambiguous locator rather than applying it to the first match. The two fail
+  differently and that is the whole reason both exist — a locator that stops being
+  unique, because the page mutated between the scan and the edit, should cost an edit
+  that did not happen and that the banner reports honestly, not an edit to whichever
+  element came first. There was no test for that case; there is now, and a plant proves
+  it.
+- **Standing instruction 1, read the other way round.** It says plant a defect before
+  calling a gate done. This run is the case where the plant passed and the *test* was
+  what needed fixing, not the gate. A plant that fails to go red is not always news
+  about the guard — sometimes it is news about the fixture, and the two are told apart
+  by asking what the input actually contains.
 
 ### 2026-08-20 — I closed it, CI reopened it, and the spec I could not run is why
 

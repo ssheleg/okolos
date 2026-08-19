@@ -366,6 +366,84 @@ describe('the brand pack states facts, and a fact is checkable', () => {
     expect(Number(row?.[1])).toBe(specs)
   })
 
+  it('leaves the volatile counts to the run that prints them', () => {
+    /**
+     * Three rows carry a command instead of a number, and this keeps them that
+     * way. The unit total went from 1309 to 1577 in eleven days while the
+     * document said 1309 — stale, and stale silently, because this gate read
+     * six of the table's eleven rows and the six it read were the six that
+     * agreed. `docs/README.md` already lives under this rule; the difference
+     * was that nobody had extended it to the pack the store copy is written
+     * from.
+     *
+     * Matched per row rather than over the file: a blanket "no numbers in
+     * facts.md" would forbid the structural counts this same describe block
+     * exists to check.
+     */
+    const volatile = [
+      { label: 'Юнит-тестов', command: 'pnpm test' },
+      { label: 'Проверок в Firefox', command: 'pnpm test:e2e:firefox' },
+    ]
+    for (const { label, command } of volatile) {
+      const row = new RegExp(`^\\| ${label} \\|([^|]*)\\|([^|]*)\\|`, 'm').exec(facts)
+      expect(row, `facts.md has no "${label}" row`).not.toBeNull()
+      expect(row?.[1], `"${label}" states a count; it must name the run instead`).not.toMatch(/\d/)
+      expect(row?.[2]).toContain(command)
+    }
+
+    // The e2e row is the mixed case and the reason this is not one loop: the
+    // file count is structural and gated below, the check count is volatile and
+    // moves with every added test. So the row may carry exactly one number.
+    const e2e = /^\| Спек e2e \|([^|]*)\|/m.exec(facts)
+    expect(e2e?.[1]?.match(/\d+/g) ?? [], 'the e2e row carries more than the file count').toHaveLength(
+      1,
+    )
+  })
+
+  it('counts scenarios and screens as their own documents have them', () => {
+    /**
+     * Both were understated, not overstated — 26 against 30 and 14 against 18 —
+     * which is the direction nobody checks, because a product claiming less than
+     * it has reads as modest rather than wrong. Counted from the headings, and
+     * the status counted separately: "30, все реализованы" is two claims, and a
+     * gate that checks one of them lets the other rot.
+     */
+    const scenarios = readFileSync(path.join(root, 'docs/ux/scenarios.md'), 'utf8')
+    const screens = readFileSync(path.join(root, 'docs/ux/screens.md'), 'utf8')
+
+    const scnTotal = (scenarios.match(/^### SCN-/gm) ?? []).length
+    const scnDone = (scenarios.match(/Status:\*\* implemented/g) ?? []).length
+    const scrTotal = (screens.match(/^### SCR-/gm) ?? []).length
+    const scrDone = (screens.match(/Status:\*\* built/g) ?? []).length
+
+    expect(scnTotal, 'no scenarios found to count').toBeGreaterThan(10)
+    expect(scrTotal, 'no screens found to count').toBeGreaterThan(10)
+    expect(scnDone, 'facts claims every scenario is implemented').toBe(scnTotal)
+    expect(scrDone, 'facts claims every screen is built').toBe(scrTotal)
+    expect(facts).toContain(`| Сценариев | ${scnTotal}, все реализованы |`)
+    expect(facts).toContain(`| Экранов | ${scrTotal}, все построены |`)
+  })
+
+  it('counts requirements, and the one closed by decision, from the brief', () => {
+    const brief = readFileSync(
+      path.join(root, 'docs/superpowers/briefs/2026-08-04-okolos-p0-p5.md'),
+      'utf8',
+    )
+    const rows = brief.match(/^\| REQ-\d+ \|.*$/gm) ?? []
+    const done = rows.filter((row) => row.includes('DONE')).length
+    const byDecision = rows.filter((row) => row.includes('ЗАКРЫТО РЕШЕНИЕМ')).length
+
+    expect(rows.length, 'no requirement rows found').toBeGreaterThan(30)
+    // Not `done + byDecision === rows.length` as the only check: that holds just
+    // as well when a row is silently neither, which is the state this sentence
+    // would then be describing wrongly.
+    expect(byDecision, 'the sentence names exactly one closed by decision').toBe(1)
+    expect(done + byDecision, 'a requirement row is neither DONE nor closed by decision').toBe(
+      rows.length,
+    )
+    expect(facts).toContain(`| Требований закрыто | ${done} из ${rows.length};`)
+  })
+
   it('states the retention the code enforces', () => {
     const schema = readFileSync(path.join(root, 'packages/storage/src/schema.ts'), 'utf8')
     const days = /journal:\s*(\d+)/.exec(schema)?.[1]

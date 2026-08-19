@@ -104,6 +104,12 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-19 (пятый)** — `4326dcf`, B-29; стадии 0–10. Выгрузка данных
+  перестала отдавать ключ, которым обратимо всё остальное в том же файле, и
+  перестала выдавать `{}` за двадцать мегабайт весов. 1598 юнит-тестов в 109
+  файлах, восемь плантов. Три дыры в работе этого же часа нашли планты и метагейт
+  репозитория, ни одной — чтение кода. Заведён B-62 лестничным обходом.
+  Постоянных инструкций десять, снятий нет. Вердикт REFINE.
 - **2026-08-19 (четвёртый)** — `e363710`, B-28; стадии 0–10. Первая задача этой
   серии, меняющая поведение продукта, а не его учёт: на Chrome 116–136 и Firefox
   128 расширение не блокировало ни одной страницы и сообщало об этом как о
@@ -157,6 +163,48 @@ happens before adding.
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-19 — three holes in one hour's work, and not one of them found by reading it
+
+- **Symptom:** the task was clear and the fix was small — stop exporting the HMAC
+  key beside the tags it reverses. What the hour actually produced was three
+  defects in the new work, each caught by a mechanism rather than by review.
+- **Surfaced at:** stages 5 and 6, within minutes of each piece existing.
+- **The three, in the order they were caught:**
+  1. The gate's first extractor took any `namespace:name` string literal and
+     reported `user:password-check` as a leaked credential. That is a
+     `triggeredBy` label for the audit log. A gate that calls a log label a
+     leaked password is a gate somebody mutes, and a muted gate is worse than an
+     absent one because it still reads as coverage. Rewritten to read the sites
+     that touch the settings store.
+  2. An **additive** plant — `vt:apiToken` added while leaving everything else in
+     place — passed green. The word list held `token`, and the pattern wanted a
+     `-`, `_` or `.` in front of it; camelCase gives neither. `apiKey` had been
+     matching only because `apikey` happened to be in the list as one word, so the
+     rule appeared to work for the reason it did not. This is why the plant has to
+     be additive: replacing a key fired the *reverse* check and looked like proof
+     of the forward one.
+  3. `tools/test-quality.test.ts` refused a new test for putting an assertion
+     behind an `if`. A branch not taken asserts nothing and passes, and the loop I
+     wrote would have been satisfied by a filter that stopped matching.
+- **What that says about the method, and it is the point of the entry:** the
+  defects were not in the hard part. The redaction was ten lines and correct on the
+  first try. All three were in the *checking* — the extractor, the pattern, the
+  test shape — which is where confidence comes from and therefore where a mistake
+  is most expensive. Reading the code found none of them; a plant, an additive
+  plant, and a metagate found one each.
+- **Fix, by grade:** structural for the export (policy in `schema.ts` beside
+  retention, values marked rather than dropped, the file naming what it withholds),
+  and structural for the gate (keys read from call sites, camel humps split before
+  the word test).
+- **The claim that was false and now is not:** `docs/privacy.md` promised that
+  without the key a tag is an HMAC of an unknown value and no dictionary attack
+  applies. True of the database, false of the file the export produced. The page
+  now says so, dated, rather than being quietly corrected — a privacy page that
+  edits away its own broken promise is a page that will break another one.
+- **Left open, filed rather than absorbed:** B-62. The wipe confirmation names five
+  kinds of data where `STORES` has nine, so the user agrees to five and nine go.
+  The direction is safe and it is still a confirmation that did not ask.
 
 ### 2026-08-19 — a supported browser that blocked nothing, and said the publisher was at fault
 

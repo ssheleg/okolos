@@ -104,6 +104,12 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-19 (седьмой)** — `9a58e66`, B-30; стадии 0–10. Подметалось три
+  хранилища из девяти; `settings` не подметалось ни разу, из-за чего продукт
+  накопил историю браузинга, от разрешения на которую отказался. Утверждение
+  бренд-пака про девяносто дней заменено на проверяемое. 1611 юнит-тестов в 110
+  файлах, пять плантов, один переделан. Постоянных инструкций десять, снятий нет.
+  Вердикт REFINE.
 - **2026-08-19 (шестой)** — `261dd7a`, B-62; стадии 0–10. Подтверждение стирания
   называет девять видов данных из девяти вместо пяти; полнота переехала в тип рядом
   с хранилищами, где она факт. 1605 юнит-тестов в 110 файлах, четыре планта.
@@ -168,6 +174,49 @@ happens before adding.
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-19 — a gate confirmed the sentence and the sentence was false
+
+- **Symptom:** `facts.md` said the product keeps nothing longer than ninety days,
+  and cited `RETENTION_DAYS = { journal: 90, outbound_log: 90 }`. Both constants
+  were real and enforced. The claim was still false: the sweep walked three stores
+  of nine, and `settings` was walked by nothing — so `seen:<host>` had become a
+  permanent, second-precision list of every site where a password or card field was
+  focused.
+- **Surfaced at:** the audit, and it had been true since the store existed.
+- **Owned by:** the gate's aim, not its correctness. It read one field out of the
+  schema and required that number to appear in the pack. Both halves passed. The
+  sentence, though, was about the whole database, and nothing compared it to the
+  whole database — so the check confirmed the citation while the claim above it went
+  unexamined. **A gate that verifies a claim's evidence has not verified the claim.**
+- **Why it is worth its own entry:** the previous entries in this file are about
+  checks that were absent, or blind, or written twice. This one was present, correct,
+  and pointed one level too low. That is harder to notice, because the report is
+  green for a true reason.
+- **Fix, by grade:** structural, and in three places rather than one. The sweep now
+  walks `settings` — a year for the host note, and it stores a date rather than an
+  instant, which is the call the reuse index made one screen away while this row kept
+  seconds. A deferral goes when its own deadline passes. And two settings are kept on
+  purpose with the reason written down, because `reuse:key` cannot expire without
+  orphaning every tag it made: the index would then answer "nowhere" about passwords
+  it had already seen, which is worse than answering "unknown".
+- **A record with no readable date was the one thing in the database with no expiry.**
+  `olderThan` read `Number.isFinite(at) && …`. Measured before the fix: after a
+  sweep the corrupt row was the survivor and the valid old one was gone.
+  `dueForSweep`, two functions below in the same file, had already decided the
+  opposite for the same reason — "an unreadable timestamp is not permission to skip"
+  — so the file disagreed with itself, in the direction of keeping data.
+- **What replaced the claim, and why replaced rather than repaired:** "every store
+  has a window or a written reason why it does not". Four stores legitimately have no
+  expiry. What they must not have is silence — a store with neither a window nor a
+  stated reason is the one nobody notices — so the privacy page now carries a line
+  per store, in the same nine words the wipe confirmation uses, and a gate requires
+  the line rather than the window.
+- **Fourth citation of standing instruction 1's second half.** A plant written with
+  `perl` scoped by line number never applied, and the gate went green for a reason
+  that had nothing to do with the hole. Four times in one session the question
+  "did the plant land?" has been the one that mattered, which is the argument for the
+  sentence staying in the list rather than being merged into the first half.
 
 ### 2026-08-19 — the list was written twice, so both copies agreed and neither was right
 

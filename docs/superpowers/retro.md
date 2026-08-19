@@ -104,6 +104,12 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (второй)** — B-34, второй заход; стадии 0–10. Первый заход был закрыт
+  преждевременно: реле работало при удачном порядке загрузки и молча теряло отчёт
+  иначе. Нашёл CI. Обязательство отчитаться перенесено во фрейм, который жив; сдача
+  записывается в журнал. 1665 юнит-тестов в 112 файлах, три полных прогона e2e по 96
+  из 96, плант воспроизводит гонку. Постоянных инструкций десять, снятий нет.
+  Вердикт REFINE.
 - **2026-08-20** — `a1bb30c`, B-34; стадии 0–10. Находка в подфрейме впервые доходит
   до страницы, которая его встраивает; реле идёт через фон, потому что прямой прыжок
   через окно страницы подделывается. В абстракцию добавлены отправитель и адресация
@@ -186,6 +192,44 @@ happens before adding.
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-20 — I closed it, CI reopened it, and the spec I could not run is why
+
+- **Symptom:** the previous run shipped a feature and an end-to-end spec it stated
+  plainly it had not executed. CI executed it: two of three assertions failed. The
+  banner never reached the embedding page.
+- **Surfaced at:** the first thing the next iteration did, because the previous one had
+  promised to read that verdict rather than assume it. Had it not been read, a closed
+  row would have claimed a working relay for as long as nobody opened an iframe.
+- **Owned by:** the shape of the fix, not the timing. The report went out once, inside
+  the answer to the frame's own scan. An embedded document can reach `document_idle` and
+  finish its whole cycle *before the embedding page's content script has started*, so
+  the report lands on a frame zero with no listener and `sendMessage` rejects into
+  silence. The receiver was not slow. It did not exist.
+- **The measurement that decided the fix, rather than a guess about it:** 135 ms when it
+  lands. With a 30-second ceiling the whole suite went green — which is precisely what
+  made a bigger timeout the wrong answer, and B-18 had already written that sentence
+  into this file: do not mask it with a retry. A retry that waits for something to be
+  *created* is a different thing from one that waits for something to *stop failing*,
+  and the distinction is the whole justification here.
+- **Fix, by grade:** structural, and it moved the obligation rather than adding patience.
+  The frame is alive and can wait, so the frame owns telling its parent: `frame/report`
+  answers whether anyone heard, and the frame asks again, bounded, and **gives up out
+  loud**. A silent give-up would have been the original defect by another road — found
+  something, told nobody.
+- **What made the diagnosis possible, and it was not reasoning:** the spec passed in
+  isolation and failed in the full suite. Running it alone proved nothing and would have
+  supported "flake". Running the whole suite reproduced it in one run out of one. The
+  reproduction condition was the finding.
+- **Evidence in both directions, because one is not enough for a race:** three
+  consecutive full runs at 96 of 96, and a plant setting the budget back to one attempt
+  fails the same assertion CI failed. A green run after a race fix is a coin landing
+  heads; the plant is what says the coin is weighted.
+- **A note on closing things.** The row was marked done in good faith with the untested
+  half named in the commit. That naming is what made this cheap to find and is worth
+  keeping. But a row closed with its verification outstanding is a row closed early, and
+  the honest form is the one now in the board: closed on the second attempt, with the
+  first attempt's failure written into it rather than tidied away.
 
 ### 2026-08-20 — the comment described the design, and the design was half built
 

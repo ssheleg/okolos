@@ -153,6 +153,7 @@ includes a redirect from `*.workers.dev`, not just a CNAME.
   | loading | opening details | - | skeleton, evidence arrives in one pass |
   | success | evidence available | - | text + technique + location + stage |
   | error | evidence lost (page mutated) | - | says the page changed, offers a re-scan |
+  | refused | restore pressed on a node the page has taken over | - | the panel stays and `[data-role=restore-note]` names which of the two happened; **every further press repeats the same sentence.** Until 2026-08-20 the second press answered "nothing to do" and the panel closed as after a success, because the executor dropped its holds whatever the outcome |
 - **Wireframe:** wireframes/SCR-04.md
 - **Coverage:** packages/ui/src/inspector/inspector.ts:mountInspector, e2e/scn-004-click.spec.ts, e2e/a11y-overlays.spec.ts (restore lands with the sanitizer, M5)
 - **Scenarios:** SCN-004, SCN-005

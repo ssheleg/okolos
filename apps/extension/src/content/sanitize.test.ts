@@ -215,3 +215,121 @@ describe('an ambiguous locator is refused, not applied to the first match', () =
     expect(document.querySelector('#only')?.textContent).toBe('')
   })
 })
+
+describe('a second pass over a page that moved under it', () => {
+  /**
+   * Three measured ways reversibility failed, all downstream of one line: the
+   * re-apply branch called `replaceChildren()` on whatever the locator found now,
+   * having captured whatever it found *then*.
+   *
+   * They are grouped because they are one defect wearing three faces — the module's
+   * own docstring says "the original is kept, not remembered", and a pass that
+   * empties a node it never captured has remembered nothing at all.
+   *
+   * The plan handed to the second pass is stale by construction: the content script
+   * calls `apply(planSanitisation(verdicts))` with verdicts from the previous scan
+   * of the previous DOM, so "the node this locator names is not the node we held" is
+   * the ordinary case on a page that rebuilds itself, not an exotic one.
+   */
+  const plan = (locator: string) => ({ targets: [{ locator, verdictId: 'v1' }] })
+  const PAGE_WROTE = 'the page put its own content here'
+
+  it('captures the page’s own node before emptying it, rather than destroying it', () => {
+    // Case A. The page replaced the node that answers this locator. The second pass
+    // emptied the *new* node while holding the *old* one's contents, so the page's
+    // content was gone with nothing anywhere able to put it back — and `restore()`
+    // then reported `gone: 1`, which reads as "the page took it out of our hands".
+    // The product destroyed it and named the page as the one who did.
+    document.body.innerHTML = `<div id="wrap"><div id="a">${INJECTION}</div></div>`
+    const sanitiser = new Sanitiser(document)
+    sanitiser.apply(plan('#a'))
+
+    const wrap = document.querySelector('#wrap') as HTMLElement
+    wrap.innerHTML = `<div id="a">${PAGE_WROTE}</div>`
+
+    sanitiser.apply(plan('#a'))
+    const result = sanitiser.restore()
+
+    expect(document.body.textContent, 'the page’s own content is unrecoverable').toContain(
+      PAGE_WROTE,
+    )
+    // One entry each, and both named: the node the page removed cannot come back,
+    // the node it created can. A single `gone: 1` would describe half of it.
+    expect(result).toEqual({ restored: 1, gone: 1, changed: 0 })
+  })
+
+  /**
+   * Case C, the sharpest of the three, split across two tests on purpose.
+   *
+   * The second pass threw away what the page had written, which left the node empty —
+   * so `restore()` saw a node that looked like ours, appended the held contents, and
+   * **put the injection back on the page** reporting `restored: 1`. The refusal in
+   * `restore` that exists to prevent exactly that is walked around by one rescan cycle.
+   *
+   * Both facts started as one test, and the count assertion — the cheap one — stood
+   * first, so a plant that restored the destructive re-apply failed on the count and
+   * never reached the splice. A test that dies on its weakest assertion cannot report
+   * on its strongest one, so the two live apart.
+   */
+  function rescanOverPageContent(): Sanitiser {
+    document.body.innerHTML = `<div id="a">${INJECTION}</div>`
+    const sanitiser = new Sanitiser(document)
+    sanitiser.apply(plan('#a'))
+    ;(document.querySelector('#a') as HTMLElement).textContent = PAGE_WROTE
+    return sanitiser
+  }
+
+  it('does not put the injection back after a rescan crossed a node the page rewrote', () => {
+    const sanitiser = rescanOverPageContent()
+    sanitiser.apply(plan('#a'))
+    const result = sanitiser.restore()
+
+    expect(document.body.textContent, 'the injection is back on the page').not.toContain(
+      'Ignore all previous',
+    )
+    expect(document.body.textContent, 'the page’s own content was discarded').toContain(PAGE_WROTE)
+    expect(result).toEqual({ restored: 0, gone: 0, changed: 1 })
+  })
+
+  it('does not count a node it refused to touch as neutralised', () => {
+    // The banner says "hidden instructions removed" when this is above zero, and
+    // this node still holds whatever the page wrote — nothing was removed from it.
+    const sanitiser = rescanOverPageContent()
+    expect(sanitiser.apply(plan('#a'))).toBe(0)
+  })
+
+  it('keeps saying what it could not put back, however many times it is asked', () => {
+    // Case B. `#held.clear()` ran whatever the outcome, so the second press of
+    // "Restore" answered `{0,0,0}` — and the caller reads `gone + changed === 0` as
+    // "finished" and closes the panel. The first press said honestly that it had
+    // refused; the second press retracted that and looked like success.
+    document.body.innerHTML = `<div id="a">${INJECTION}</div>`
+    const sanitiser = new Sanitiser(document)
+    sanitiser.apply(plan('#a'))
+    ;(document.querySelector('#a') as HTMLElement).textContent = PAGE_WROTE
+
+    expect(sanitiser.restore()).toEqual({ restored: 0, gone: 0, changed: 1 })
+    expect(sanitiser.restore(), 'the refusal was retracted on the second press').toEqual({
+      restored: 0,
+      gone: 0,
+      changed: 1,
+    })
+  })
+
+  it('stops counting what it has finished with', () => {
+    // The other half of the same rule: a hold that was resolved must not be
+    // reported twice. Keeping the refusals is not keeping everything.
+    document.body.innerHTML = `<div id="a">${INJECTION}</div><div id="b">${INJECTION}</div>`
+    const sanitiser = new Sanitiser(document)
+    sanitiser.apply({
+      targets: [
+        { locator: '#a', verdictId: 'v1' },
+        { locator: '#b', verdictId: 'v2' },
+      ],
+    })
+    ;(document.querySelector('#b') as HTMLElement).remove()
+
+    expect(sanitiser.restore()).toEqual({ restored: 1, gone: 1, changed: 0 })
+    expect(sanitiser.restore()).toEqual({ restored: 0, gone: 0, changed: 0 })
+  })
+})

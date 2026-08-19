@@ -13,6 +13,13 @@ import type { SanitisationPlan } from '@okolos/core-sanitizer'
  * The original is kept, not remembered. A cloned fragment goes into a private
  * map, so "restore" puts back the exact markup rather than an approximation of
  * it — including nested elements the injection happened to contain.
+ *
+ * Both rules are about the second pass more than the first. The content script calls
+ * `apply(planSanitisation(verdicts))` with verdicts from the previous scan of the
+ * previous DOM, so on a page that rebuilds itself the ordinary case is a plan whose
+ * locator now names a node this class has never seen. That is why the hold is keyed by
+ * the element and not by the locator: the locator is a question about the page and its
+ * answer changes, while the node whose contents we are holding does not.
  */
 
 const MARKER = 'data-okolos-neutralised'
@@ -33,7 +40,15 @@ interface Held {
 }
 
 export class Sanitiser {
-  readonly #held = new Map<string, Held>()
+  /**
+   * Keyed by the element, not by the locator that found it.
+   *
+   * Keyed by locator, a second pass over a rebuilt page emptied the node the locator
+   * names *now* while holding the contents of the node it named *then* — the page's
+   * own content destroyed with nothing anywhere able to put it back, and `restore`
+   * reporting `gone`, which reads as the page having taken it out of our hands.
+   */
+  readonly #held = new Map<Element, Held>()
 
   constructor(private readonly doc: Document) {}
 
@@ -45,15 +60,32 @@ export class Sanitiser {
       const element = this.#find(target.locator)
       if (!element) continue
 
-      // Already held: the page mutated and we re-ran. Keep the first capture,
-      // or a second pass would record the emptied version as the original.
-      if (!this.#held.has(target.locator)) {
-        const contents = this.doc.createDocumentFragment()
-        while (element.firstChild) contents.append(element.firstChild)
-        this.#held.set(target.locator, { element, contents })
-      } else {
-        element.replaceChildren()
+      if (this.#held.has(element)) {
+        // This exact node, emptied by us already, and the plan still names it.
+        if (element.firstChild !== null) {
+          /**
+           * The page has written into a node we emptied. Emptying it again would
+           * discard content we never captured — and it would leave the node looking
+           * like ours, so `restore` would append the held original beside nothing and
+           * **put the injection back on the page** reporting success. That refusal
+           * lives in `restore`, and clearing the node here is precisely what walks
+           * around it. So: not touched, and not counted as neutralised.
+           */
+          continue
+        }
+        // Still empty, so still neutralised — by us, right now, which is what the
+        // count means. The marker is re-asserted in case the page stripped it.
+        element.setAttribute(MARKER, target.verdictId)
+        applied += 1
+        continue
       }
+
+      // A node we have not held before — including the node the page put where a
+      // held one used to be. Capture, then empty. Never the other way round, and
+      // never one without the other.
+      const contents = this.doc.createDocumentFragment()
+      while (element.firstChild) contents.append(element.firstChild)
+      this.#held.set(element, { element, contents })
 
       element.setAttribute(MARKER, target.verdictId)
       applied += 1
@@ -77,29 +109,44 @@ export class Sanitiser {
     let gone = 0
     let changed = 0
 
-    for (const [, held] of this.#held) {
+    const finished: Element[] = []
+
+    for (const [key, held] of this.#held) {
       try {
         if (!held.element.isConnected) {
           gone += 1
+          finished.push(key)
           continue
         }
         if (held.element.firstChild !== null) {
           // The marker stays: this node is not back to normal, and saying it is
-          // would be the same lie one level down.
+          // would be the same lie one level down. The hold stays too — see below.
           changed += 1
           continue
         }
         held.element.append(held.contents)
         held.element.removeAttribute(MARKER)
         restored += 1
+        finished.push(key)
       } catch {
         // Throwing inside someone's page is never acceptable, whatever the
-        // reason.
+        // reason. Nothing further can be attempted on this one either.
         gone += 1
+        finished.push(key)
       }
     }
 
-    this.#held.clear()
+    /**
+     * Only what is finished with is dropped, and a refusal is not finished with.
+     *
+     * The map used to be cleared whatever the outcome, so a second press of
+     * "Restore" answered `{0,0,0}` — and the caller reads `gone + changed === 0` as
+     * done and closes the panel. The first press said honestly that it had refused;
+     * the second retracted that and looked like success. The refusal is a standing
+     * fact about the page: while the page's own content sits in that node, every
+     * press must say the same thing.
+     */
+    for (const key of finished) this.#held.delete(key)
     return { restored, gone, changed }
   }
 

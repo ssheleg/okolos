@@ -104,6 +104,13 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-19 (второй)** — `2464b0e`, B-27; стадии 0–10. Из пяти незакрытых
+  гейтом чисел бренд-пака неверны оказались три, а не четыре: два обвинения
+  выставил сам аудит, и оба — его ошибка измерения. Волатильные числа теперь
+  называют команду, структурные пересчитаны, и все одиннадцать строк таблицы
+  читаются гейтом вместо шести. 1579 юнит-тестов в 108 файлах. Четыре планта,
+  два из которых пришлось сначала доказать приземлившимися. Постоянных
+  инструкций десять, снятий нет; 1 и 7 получили по свежей ссылке. Вердикт REFINE.
 - **2026-08-19** — `4d77846`, B-26; стадии 0–10. Доковый гейт считал записи
   каталога вместо каталогов, и класс оказался шире одного гейта: три экземпляра,
   два латентных. Закрыто одним определением — `tools/tree.mjs` плюс собственный
@@ -136,6 +143,49 @@ happens before adding.
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-19 — the audit was wrong about two of the five numbers it accused
+
+- **Symptom:** a task filed as "four numbers in the brand pack have drifted"
+  turned out to be three. Two of the four accusations were the audit's own
+  measurement error, and both would have "fixed" a document that was already
+  right: a claimed 93 e2e checks reported as 85, and a claimed 11 Firefox checks
+  reported as 14.
+- **Surfaced at:** stage 0 of the run meant to apply the fix — the harvest
+  re-measured every number instead of trusting the row that asked for the work.
+- **Owned by:** the audit, and specifically the choice of instrument. Both wrong
+  numbers came from `grep`, and both failed in the way `grep` fails on this
+  question. `grep -cE '^\s*test\('` cannot see a test generated inside a loop,
+  and `e2e/a11y.spec.ts:42` generates eight of them; `npx playwright test --list`
+  answers `Total: 93 tests in 24 files`, because it is the tool that owns the
+  number. `grep -cE '\bcheck\('` in `tools/firefox-e2e.mjs` counted the
+  declaration on line 130 and the call on line 359 that only runs from a `catch`
+  — eleven invocations sit on the passing path, which is what the document said.
+- **Root cause:** standing instruction 7 already says a number produced by a tool
+  is a claim about the tool until it has been checked against the artefact. It had
+  been applied to diagnostics the project runs and not to the greps an audit
+  writes, which is the same sentence with the auditor inside it.
+- **Fix, by grade:** structural for the document, and a correction for the board.
+  The three real drifts were understatements — 1309 against 1577, 26 against 30,
+  14 against 18 — which is the direction nobody checks, since claiming less than
+  you have reads as modest. Volatile counts now name the run; structural counts
+  are gated; all eleven rows of the table are read where six were. The B-27 row
+  keeps the disproof in its own text rather than being quietly rewritten, because
+  a board that erases its wrong entries teaches nobody which way it errs.
+- **Catches it next time:** three gates, and the shape of them matters more than
+  the count. Scenarios and screens are checked together with their status,
+  because "30, все реализованы" is two claims and a gate that checks one lets the
+  other rot. Requirements are checked together with "exactly one closed by
+  decision", because `done + byDecision === rows` is also true when a row is
+  silently neither. And the volatile rows are matched per row rather than by
+  forbidding digits in the file, which would have outlawed the structural counts
+  the same block exists to check.
+- **The plant discipline earned its second half again.** Two of the four plants
+  reported the gate sound while never having applied: `sed '0,/re/'` is GNU form
+  and does nothing on macOS, silently. Both were re-run through `perl` and the
+  landing asserted — count before, count after — before the gate's verdict was
+  read. Standing instruction 1 says exactly this and it is now the third run to
+  need it, which is the argument for keeping the slot rather than pruning it.
 
 ### 2026-08-19 — the gate that graded the file manager, and the two beside it that were only lucky
 

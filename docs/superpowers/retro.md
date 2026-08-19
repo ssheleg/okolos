@@ -104,6 +104,12 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-19 (восьмой)** — `B-33`; стадии 0–10. У абстракции появился канал из
+  фона в контент-скрипт, которого в ней не было, — и вердикт по загрузке впервые
+  доходит до страницы. Гейт теперь решает канал по месту обработчика, а не по
+  наличию отправителя. 1638 юнит-тестов в 110 файлах, шесть плантов. Три ошибки в
+  работе этого часа нашли механизмы, ни одной — чтение. Постоянных инструкций
+  десять, снятий нет. Вердикт REFINE.
 - **2026-08-19 (седьмой)** — `9a58e66`, B-30; стадии 0–10. Подметалось три
   хранилища из девяти; `settings` не подметалось ни разу, из-за чего продукт
   накопил историю браузинга, от разрешения на которую отказался. Утверждение
@@ -174,6 +180,51 @@ happens before adding.
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-19 — a module with nine tests that could not run, and the gate that said it was fine
+
+- **Symptom:** no download has ever produced a banner. The verdict was computed,
+  journalled and sent; the listener existed; nothing arrived.
+- **Owned by:** the difference between two APIs that look interchangeable.
+  `runtime.sendMessage` from a background context reaches the extension's own pages
+  and never a content script. The abstraction had no way to reach one at all — `Tabs`
+  held `activeUrl` and `create` — so the only send available was the wrong one, and
+  nothing in the type system or the tests could say so.
+- **The gate that was green throughout, and why:** `tools/test-quality.test.ts`
+  required every message type to have a sender. `download/verdict` had one. Having a
+  sender and having a *reachable* sender are different facts, and the check knew only
+  the first. This is the second run in two days to find a check aimed one level too
+  low — the retention gate verified a constant and not the claim, this one verified a
+  call site and not the delivery. Both were correct. Both were green. **A check that
+  confirms the existence of a mechanism has not confirmed that the mechanism connects.**
+- **Fix, by grade:** structural. `tabs.sendToActive` in the platform, addressed to
+  the active tab because a `DownloadItem` carries no tab id; `false` rather than a
+  throw when there is nowhere to deliver; a journal line when the banner could not be
+  shown, because "not shown" and "not checked" are indistinguishable in a journal that
+  holds only verdicts. And the rule now derives the channel from where the handler
+  lives, so the class cannot recur for a different message type.
+- **Three mistakes in the hour's own work, and the pattern in them is mine, not the
+  code's.** The first discriminator counted any mention of a type in the content
+  script as a handler — and the content script both sends and handles, so ten types at
+  once demanded the wrong channel. That is the third over-matching extractor in three
+  runs: `user:password-check` read as a credential, `**/*` read as files, and now a
+  sender read as a handler. The shape is the same every time — a cheap pattern
+  standing in for a structural fact — and the answer that has worked every time is to
+  assert the discriminator itself, which is now done here.
+- **The metagate refused my `if/else` where both arms assert.** It cannot see that
+  both assert, and it is right to refuse the shape rather than special-case it;
+  choosing the channel first and asserting once is clearer about the claim anyway. A
+  rule that only fires on real violations is a rule that has to understand the code;
+  one that fires on a shape is one you can keep.
+- **A test that proved nothing, found by a plant.** The guard `if (!api.tabs.sendMessage)
+  return false` is unobservable without an assertion about it: remove it and the call
+  reaches `sendMessage(undefined)`, the inner `catch` turns the TypeError into `false`,
+  and the same result comes back. The test now asserts that no tab is even looked up on
+  an engine that could not be told — the guard's actual purpose.
+- **Fifth citation of standing instruction 1's second half**, and the sharpest yet: a
+  plant reported as landed by my own echo of the command rather than by reading the
+  file. `grep -c` on the file said otherwise. The instruction says confirm the plant
+  landed; the failure mode is trusting the thing that performed it.
 
 ### 2026-08-19 — a gate confirmed the sentence and the sentence was false
 

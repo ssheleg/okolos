@@ -104,6 +104,12 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20** — `a1bb30c`, B-34; стадии 0–10. Находка в подфрейме впервые доходит
+  до страницы, которая его встраивает; реле идёт через фон, потому что прямой прыжок
+  через окно страницы подделывается. В абстракцию добавлены отправитель и адресация
+  фрейма. 1653 юнит-теста в 111 файлах, семь плантов, `e2e/scn-031.spec.ts` — три
+  проверки, локально не гонялся. SCN-031 заведён. Постоянных инструкций десять,
+  снятий нет. Вердикт REFINE.
 - **2026-08-19 (восьмой)** — `B-33`; стадии 0–10. У абстракции появился канал из
   фона в контент-скрипт, которого в ней не было, — и вердикт по загрузке впервые
   доходит до страницы. Гейт теперь решает канал по месту обработчика, а не по
@@ -180,6 +186,51 @@ happens before adding.
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-20 — the comment described the design, and the design was half built
+
+- **Symptom:** a clean page embedding a poisoned advert produced no warning. The
+  injection inside the frame was found, neutralised and gated; nobody was told.
+- **Owned by:** a comment that outlived the plan it described. Three screens above
+  the code it said "subframes still collect and report; the top frame is the one that
+  speaks", and the code returned on `if (!isTopFrame)` immediately after neutralising.
+  Nothing was wrong with either half on its own. A reader checking whether frames were
+  handled would find the comment and stop.
+- **Why no test caught it:** the frame's *handling* is what the tests assert —
+  neutralised, gated, journalled — and all of it was true. The missing thing was a
+  report to a surface, and the surface was in a different frame from anything the unit
+  tests could see. This is the third seam in this series to hide in exactly that shape:
+  each side correct, the connection absent.
+- **Fix, by grade:** structural. The relay goes frame → background → top frame, and
+  through the background for a security reason rather than a convenience: a subframe
+  can reach the top with `window.top.postMessage`, and that message travels through
+  the page's own window — where the page can forge it, and the top frame cannot tell
+  an extension's report from a claim by the thing being reported.
+- **What the abstraction was missing, and what its absence had been costing:** the
+  adapter discarded the sender. That is *why* there was nowhere to send a frame's
+  finding — the background answered whoever asked without being able to tell a frame
+  from a page. A capability nobody could reach for is indistinguishable from a
+  capability nobody wanted, and the comment is what made it look like the latter.
+- **Three findings from the repository's own gates, none from me.** `sendToFrame`
+  first took the message type third while `sendToActive` takes it first, so the "has a
+  sender" rule could not see the new type at all: **an API whose argument order
+  defeats the project's own gate is the wrong argument order** — the gate was a better
+  reviewer of the signature than I was. The channel rule named one correct channel
+  when there were two, which is a rule that gets edited to shut up rather than to be
+  right. And `coverage-shape` demanded a test beside `verdict.ts` within a minute of
+  `SEVERITY_ORDER` moving there — the move itself being the B-62 lesson applied
+  without being asked: the background needed the same ranking, and copying four
+  numbers is how two copies come to agree with each other and nothing else.
+- **The plant that stayed green, and it was the real hole.** Removing the sender
+  pass-through — the single line the entire relay rests on — broke no test. Five now
+  cover it, including the one separating frame zero from no frame: had `frameId: 0`
+  arrived as absent, every top-frame scan would have looked like a subframe and each
+  page would have been sent a report about itself. **A new capability is exactly where
+  a plant is most likely to stay green, because the tests written beside it test what
+  it does and not that it is wired.**
+- **Said plainly rather than implied:** the end-to-end spec was written and not run
+  here — it needs a headed context. CI runs it, and its verdict is read at the top of
+  the next iteration rather than assumed by this one.
 
 ### 2026-08-19 — a module with nine tests that could not run, and the gate that said it was fine
 

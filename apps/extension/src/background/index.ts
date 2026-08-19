@@ -44,7 +44,7 @@ const platform = detectPlatform()
  */
 useResolver((key, substitutions) => platform.message(key, substitutions))
 import { spaceAwareWrite } from './audit-space.js'
-import { createVerifier, FEED_PUBLIC_KEY, updateFeed } from './feeds.js'
+import { canVerify, createVerifier, FEED_PUBLIC_KEY, updateFeed } from './feeds.js'
 import { syncFeed } from './feed-sync.js'
 import { useResolver } from '@okolos/i18n'
 import { reuseOf } from '@okolos/core-credential'
@@ -889,6 +889,29 @@ async function sweepIfDue(): Promise<void> {
 async function pullFeed(): Promise<void> {
   try {
     const db = await openDb()
+
+    /**
+     * Asked before the request, not after it.
+     *
+     * There is no point downloading a list this engine cannot check, and there is
+     * worse than no point in reporting the result as a signature failure — which
+     * is what happened, because `Verifier` returns a boolean and an engine
+     * without Ed25519 produces the same `false` as a forged signature. The
+     * manifests now declare versions where the primitive exists, so this branch
+     * should be unreachable in the field; it is here for the install that
+     * ignores them, and because a guard whose only proof is a manifest is a
+     * guard that stops holding the day someone loosens the manifest.
+     */
+    if (!(await canVerify(FEED_PUBLIC_KEY))) {
+      await db.put('journal', {
+        id: `feed:unverifiable:${new Date().toISOString()}`,
+        createdAt: new Date().toISOString(),
+        kind: 'error',
+        detail: { reason: 'feed-sync', explainKey: 'feedNoVerifier', explainArgs: [] },
+      })
+      return
+    }
+
     await syncFeed({
       audit: await auditDeps(),
       apply: async (signed) => {

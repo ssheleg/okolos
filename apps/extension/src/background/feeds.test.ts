@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { serialiseUpdate, type SignedUpdate } from '@okolos/core-feeds'
 import { closeDb, openDb } from '@okolos/storage'
 
-import { createVerifier, readFeed, updateFeed } from './feeds.js'
+import { canVerify, createVerifier, FEED_PUBLIC_KEY, readFeed, SIGNATURE_ALGORITHM, updateFeed } from './feeds.js'
 
 const NOW = '2026-08-05T12:00:00.000Z'
 
@@ -146,5 +146,43 @@ describe('deltas over the real path', () => {
     const stored = await readFeed(db, 'phishing')
     expect(stored?.entries).toEqual(['worse.test'])
     expect(stored?.version).toBe(2)
+  })
+})
+
+describe('whether this engine can check a signature at all', () => {
+  /**
+   * "Cannot check" and "did not check out" are different answers, and only one of
+   * them is about the publisher. `Verifier` returns a boolean, so it collapses
+   * them: an engine without Ed25519 produced the same `false` as a forged
+   * signature, `applyUpdate` reported `bad-signature`, and the journal told the
+   * reader the list had not been signed by the expected key. The manifests were
+   * inviting Chrome 116 and Firefox 128, where the algorithm does not exist, so
+   * that sentence was what the whole supported range below 137 and 129 got.
+   */
+  it('says yes on an engine that has the algorithm', async () => {
+    await expect(canVerify(FEED_PUBLIC_KEY)).resolves.toBe(true)
+  })
+
+  it('says no for a key it cannot import, rather than throwing at the caller', async () => {
+    // The caller is a background alarm; an exception here is an unhandled
+    // rejection nobody sees, and the point of asking is to be told.
+    await expect(canVerify('not base64 at all $$$')).resolves.toBe(false)
+  })
+
+  it('answers per key, not per process', async () => {
+    // The first version cached one boolean and ignored its argument, so this
+    // second question came back with the first question's answer. Ordered
+    // deliberately: good key first, so a shared cache would report the bad one
+    // as usable — the direction that would have shipped.
+    await expect(canVerify(FEED_PUBLIC_KEY)).resolves.toBe(true)
+    await expect(canVerify('%%% not a key %%%')).resolves.toBe(false)
+    await expect(canVerify(FEED_PUBLIC_KEY)).resolves.toBe(true)
+  })
+
+  it('names the algorithm where a gate can read it', () => {
+    // `tools/manifest.test.ts` matches this against the minimum browser versions
+    // the manifests declare. A rename that only this file knew about would put
+    // the two facts back out of step, which is the state that shipped.
+    expect(SIGNATURE_ALGORITHM).toBe('Ed25519')
   })
 })

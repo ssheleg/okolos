@@ -545,6 +545,9 @@
       }
     }
   },
+  "feedNoVerifier": {
+    "message": "This browser cannot check the blocking feed's signature, so no feed is loaded and nothing is blocked. Updating the browser turns it on."
+  },
   "firstRunCheckDownloads": {
     "message": "Download checks"
   },

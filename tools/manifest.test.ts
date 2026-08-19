@@ -80,6 +80,59 @@ describe('what the extension asks for', () => {
     expect(firefox.scripts).toEqual(['background.js'])
   })
 
+  it('declares minimum browsers that can run the crypto the feed check needs', () => {
+    /**
+     * The two facts that drifted apart, tied together so they cannot again.
+     *
+     * The design named `@noble/ed25519`, which runs on any engine. The
+     * implementation moved to WebCrypto, which does not. Nobody moved the
+     * manifests, so they went on inviting Chrome 116 and Firefox 128 — and on
+     * that whole range `importKey` rejects, every feed update is refused,
+     * `currentFeed()` stays null and the number of blocking rules is zero. The
+     * product installed, ran, showed no error, and blocked nothing.
+     *
+     * The floors come from caniuse's data for `SubtleCrypto.verify` with Ed25519
+     * (Chrome and Edge 137, Firefox 129, Safari 17.0), read 2026-08-19. The
+     * algorithm is read out of the source rather than repeated here, so swapping
+     * the primitive for one with a different floor fails this instead of shipping.
+     */
+    const FLOOR: Record<string, { chrome: number; firefox: number; source: string }> = {
+      Ed25519: {
+        chrome: 137,
+        firefox: 129,
+        source: 'caniuse mdn-api_subtlecrypto_verify_ed25519, read 2026-08-19',
+      },
+    }
+
+    const verifier = readFileSync(path.join(app, 'src/background/feeds.ts'), 'utf8')
+    const algorithm = /export const SIGNATURE_ALGORITHM = '([^']+)'/.exec(verifier)?.[1]
+    expect(algorithm, 'feeds.ts no longer names the signature algorithm').toBeDefined()
+    const floor = FLOOR[algorithm as string]
+    expect(
+      floor,
+      `feeds.ts signs with ${algorithm}, and no browser floor is recorded for it. ` +
+        `Add one with its source before shipping — a primitive whose support nobody ` +
+        `looked up is a primitive some declared browser cannot run.`,
+    ).toBeDefined()
+
+    const chromeFloor = Number(manifest('chrome').minimum_chrome_version)
+    const gecko = (
+      manifest('firefox').browser_specific_settings as { gecko: { strict_min_version: string } }
+    ).gecko
+    const firefoxFloor = Number.parseFloat(gecko.strict_min_version)
+
+    expect(Number.isFinite(chromeFloor), 'chrome manifest declares no usable minimum').toBe(true)
+    expect(Number.isFinite(firefoxFloor), 'firefox manifest declares no usable minimum').toBe(true)
+    expect(
+      chromeFloor,
+      `chrome invites ${chromeFloor}, where ${algorithm} does not exist (${floor?.source})`,
+    ).toBeGreaterThanOrEqual(floor?.chrome as number)
+    expect(
+      firefoxFloor,
+      `firefox invites ${firefoxFloor}, where ${algorithm} does not exist (${floor?.source})`,
+    ).toBeGreaterThanOrEqual(floor?.firefox as number)
+  })
+
   it('pins a Firefox extension id, so updates cannot be hijacked by a rebuild', () => {
     const settings = manifest('firefox').browser_specific_settings as {
       gecko: { id: string }

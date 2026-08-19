@@ -13,6 +13,67 @@ import type { OkolosDatabase } from '@okolos/storage'
 /** Ed25519 public key of the feed publisher, raw bytes, base64. */
 export const FEED_PUBLIC_KEY = 'JHUePa03XAoSeQcJjNljgDESMhBI/ZG03zoOfm/vapM='
 
+/**
+ * The primitive the verifier uses, named once so a gate can read it.
+ *
+ * `tools/manifest.test.ts` matches this against the minimum browser versions the
+ * manifests declare. The two drifted apart already: the design named
+ * `@noble/ed25519`, which runs anywhere; the implementation moved to WebCrypto,
+ * which needs Chrome 137 and Firefox 129; and the manifests kept saying 116 and
+ * 128. On that range every update was refused, `currentFeed()` stayed null, and
+ * the number of blocking rules was zero — the exact failure this module's own
+ * header describes as fixed, arrived at by a different road.
+ */
+export const SIGNATURE_ALGORITHM = 'Ed25519'
+
+/**
+ * Whether this engine can check a feed signature at all.
+ *
+ * Separate from the verifier, and asked before the fetch, because "cannot check"
+ * and "did not check out" are different answers and only one of them is about the
+ * publisher. `Verifier` returns a boolean, so it collapses them: an engine
+ * without Ed25519 produced `false`, `applyUpdate` reported `bad-signature`, and
+ * the journal told the reader the list had not been signed by the expected key.
+ * That is a check that never ran being reported as a check that failed, which is
+ * the one thing ADR-0004 exists to forbid.
+ *
+ * Probed with the real key, since a key this engine cannot import is the same
+ * unusable state as an algorithm it does not know. Cached, because the answer
+ * cannot change inside one worker lifetime — and cached *per key*, because a
+ * cache that ignores its own argument answers the second caller's question with
+ * the first caller's result. The first version of this held one boolean and did
+ * exactly that.
+ */
+const capable = new Map<string, Promise<boolean>>()
+
+export function canVerify(publicKeyBase64: string = FEED_PUBLIC_KEY): Promise<boolean> {
+  const cached = capable.get(publicKeyBase64)
+  if (cached) return cached
+  // `bytesOf` sits inside the async body, not in the expression that builds the
+  // promise: `atob` throws synchronously on anything that is not base64, and a
+  // synchronous throw here reaches the caller instead of becoming the "no" this
+  // function exists to give. The caller is a background alarm, so that throw
+  // would have landed in `pullFeed`'s outer catch as a `console.warn` — and the
+  // honest journal entry, the entire point of asking, would never be written.
+  // Its own test caught this before the first commit.
+  const probe = (async () => {
+    try {
+      await crypto.subtle.importKey(
+        'raw',
+        bytesOf(publicKeyBase64),
+        { name: SIGNATURE_ALGORITHM },
+        false,
+        ['verify'],
+      )
+      return true
+    } catch {
+      return false
+    }
+  })()
+  capable.set(publicKeyBase64, probe)
+  return probe
+}
+
 export function createVerifier(publicKeyBase64: string): Verifier {
   let imported: Promise<CryptoKey> | null = null
 
@@ -20,7 +81,7 @@ export function createVerifier(publicKeyBase64: string): Verifier {
     imported ??= crypto.subtle.importKey(
       'raw',
       bytesOf(publicKeyBase64),
-      { name: 'Ed25519' },
+      { name: SIGNATURE_ALGORITHM },
       false,
       ['verify'],
     )
@@ -30,14 +91,17 @@ export function createVerifier(publicKeyBase64: string): Verifier {
   return async (serialised, signature) => {
     try {
       return await crypto.subtle.verify(
-        { name: 'Ed25519' },
+        { name: SIGNATURE_ALGORITHM },
         await key(),
         bytesOf(signature),
         new TextEncoder().encode(serialised),
       )
     } catch {
-      // An unusable key, a malformed signature, a browser without Ed25519:
-      // every one of them means "not verified", and none of them means "fine".
+      // An unusable key or a malformed signature: both mean "not verified", and
+      // neither means "fine". The third case that used to land here — an engine
+      // that does not know the algorithm — is answered by `canVerify` before the
+      // fetch, because collapsing it into `false` made the journal accuse the
+      // publisher of not signing a list this browser simply could not read.
       return false
     }
   }

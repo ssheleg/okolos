@@ -118,12 +118,35 @@ for (const target of targets) {
   const manifest = await readFile(path.join(app, `manifest.${target}.json`), 'utf8')
   await writeFile(path.join(outDir, 'manifest.json'), manifest)
 
+  /**
+   * Copy the product, not the directory.
+   *
+   * `cp` with `recursive` takes everything, and everything includes what nobody
+   * wrote on purpose: macOS puts a `.DS_Store` into any folder its Finder has
+   * displayed. Both of these directories are hand-maintained, so both get
+   * displayed. The file was reaching `dist/<target>/_locales/` and going into
+   * the store archive — `unzip -l` found it — while `pnpm package:check` passed
+   * all eight checks, because it asks whether every file the manifest names is
+   * present and never whether the package holds a file nobody named.
+   *
+   * Dotfiles only, and the narrowness is the design. This filter drops what
+   * nobody wrote — a tool put it there and there is no one to tell. Anything a
+   * person wrote and misplaced (`icons/notes.txt`) is copied on purpose, so that
+   * `tools/gates/bundle-scan.test.ts` and `package.mjs` can refuse it out loud;
+   * silently dropping that would hide a mistake instead of reporting it. Both
+   * were shown red by exactly that file.
+   */
+  const product = (from) => !path.basename(from).startsWith('.')
+
   // The manifest names icon files; a package without them installs with a
   // placeholder and uploads as a broken listing.
-  await cp(path.join(app, 'icons'), path.join(outDir, 'icons'), { recursive: true })
+  await cp(path.join(app, 'icons'), path.join(outDir, 'icons'), { recursive: true, filter: product })
 
   // Without these the manifest's `__MSG_appName__` is what the browser shows.
-  await cp(path.join(app, '_locales'), path.join(outDir, '_locales'), { recursive: true })
+  await cp(path.join(app, '_locales'), path.join(outDir, '_locales'), {
+    recursive: true,
+    filter: product,
+  })
 
   console.log(`built ${target}${withTestHooks ? ' (test hooks)' : ''} → ${path.relative(root, outDir)}`)
 }

@@ -73,7 +73,13 @@ function referencedPaths(manifest) {
 }
 
 console.log('\n── build, so the archive is of something this command made')
-if (!checkOnly || !existsSync(dist)) {
+// Per target, not per `dist`. `dist` also holds `release/` and the two e2e
+// builds, so it exists long after a target directory has been deleted — and then
+// `--check` reported "chrome was not built" instead of building it, on a tree
+// where `pnpm build` would have taken three seconds. In CI this changes nothing:
+// the build step runs first and every target is already there.
+const built = TARGETS.every((target) => existsSync(path.join(dist, target)))
+if (!checkOnly || !built) {
   execFileSync('pnpm', ['build'], { cwd: root, stdio: 'inherit' })
 }
 
@@ -96,12 +102,46 @@ for (const target of TARGETS) {
   }
   ok('shadow roots are closed — no test hooks in this build')
 
-  const present = new Set(filesIn(dir))
+  const contents = filesIn(dir)
+  const present = new Set(contents)
   const missing = referencedPaths(manifest).filter((file) => !present.has(file))
   if (missing.length > 0) {
     die(`${target}'s manifest names files the package does not contain:\n     ${missing.join('\n     ')}`)
   }
   ok(`every file the manifest names is in the package (${present.size} files)`)
+
+  /**
+   * And the other direction, which is the one that was missing.
+   *
+   * The check above asks whether every file the manifest names is present. It
+   * cannot ask the reverse, and a release needs both: a `.DS_Store` written by
+   * Finder into `_locales` was copied into both builds and packaged into the
+   * archive — found with `unzip -l` — while all eight checks passed and reported
+   * a clean release.
+   *
+   * Closed by extension rather than by a list of names, because the next one
+   * will not be called `.DS_Store`: `Thumbs.db`, a stray `.map`, a `README.md`
+   * that wandered in. And no dotfile at any depth, since that is the shape of
+   * the thing a tool writes without being asked.
+   *
+   * Not a reachability walk, deliberately. Most of the package is named by an
+   * HTML `<script src>` or a JS import rather than by the manifest, so "named by
+   * the manifest" would reject the chunks and the stylesheet; the honest claim
+   * this can make is narrower and it is stated as such — nothing here is of a
+   * kind the product does not produce.
+   */
+  const SHIPPED = new Set(['.js', '.html', '.css', '.png', '.json'])
+  const foreign = contents.filter(
+    (file) =>
+      file.split('/').some((part) => part.startsWith('.')) || !SHIPPED.has(path.extname(file)),
+  )
+  if (foreign.length > 0) {
+    die(
+      `${target} contains files the product does not produce:\n     ${foreign.join('\n     ')}\n` +
+        `     Nothing outside ${[...SHIPPED].join(' ')} ships, and no dotfile at any depth.`,
+    )
+  }
+  ok(`nothing in the package that the product does not produce (${present.size} files)`)
 
   if (manifest.default_locale !== undefined) {
     const locale = `_locales/${manifest.default_locale}/messages.json`

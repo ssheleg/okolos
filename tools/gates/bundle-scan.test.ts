@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { globSync, readFileSync } from 'node:fs'
+import { globSync, readFileSync, statSync } from 'node:fs'
 
 import path from 'node:path'
 import { beforeAll, describe, expect, it } from 'vitest'
@@ -220,6 +220,45 @@ describe('what the shipped extension is made of', () => {
       )
       expect(content, `${browser} build must use a closed shadow root`).toContain('"closed"')
       expect(content, `${browser} build must not carry the test hook`).not.toContain('"open"')
+    }
+  })
+
+  it('ships nothing the product does not produce', () => {
+    /**
+     * The build copies `icons` and `_locales` wholesale, and wholesale includes
+     * what nobody wrote: macOS puts a `.DS_Store` into any folder its Finder has
+     * displayed, and both of those are hand-maintained. It was reaching
+     * `dist/<target>/_locales/` and going into the store archive — `unzip -l`
+     * found it — while `pnpm package:check` passed all eight checks, because it
+     * asks whether every file the manifest names is present and never whether
+     * the package holds a file nobody named.
+     *
+     * `package.mjs` refuses such an archive now, and that is the guard that
+     * matters at release. This is the one that catches it a week earlier: it runs
+     * inside `pnpm test`, so inside `pnpm gates` and inside the pre-push hook,
+     * where `package:check` does not.
+     */
+    const SHIPPED = new Set(['.js', '.html', '.css', '.png', '.json'])
+    for (const browser of ['chrome', 'firefox']) {
+      const base = path.join(root, `apps/extension/dist/${browser}`)
+      // `statSync` and not the extension alone: `**/*` matches directories too,
+      // and a directory has no extension — the first version of this check
+      // reported `chunks`, `assets`, `icons` and the three locale folders as
+      // foreign files. It was red for a reason that had nothing to do with the
+      // build, which is the failure mode a new gate is most likely to have and
+      // the reason to read what it names rather than trust that it fired.
+      const files = filesIn(`apps/extension/dist/${browser}/**/*`).filter((p) =>
+        statSync(p).isFile(),
+      )
+      expect(files.length, `${browser} build is empty`).toBeGreaterThan(10)
+      const foreign = files
+        .map((file) => path.relative(base, file))
+        .filter(
+          (file) =>
+            file.split(path.sep).some((part) => part.startsWith('.')) ||
+            !SHIPPED.has(path.extname(file)),
+        )
+      expect(foreign, `${browser} build carries files the product does not produce`).toEqual([])
     }
   })
 

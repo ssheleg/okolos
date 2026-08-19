@@ -112,13 +112,17 @@ describe('every message type is both served and sent', () => {
     .map((file) => readFileSync(path.join(root, file), 'utf8'))
     .join('\n')
 
+  const CONTENT_ENTRY = 'apps/extension/src/content/index.ts'
   const sources = [
     'apps/extension/src/background/index.ts',
     'apps/extension/src/offscreen/index.ts',
-    'apps/extension/src/content/index.ts',
+    CONTENT_ENTRY,
   ]
     .map((file) => readFileSync(path.join(root, file), 'utf8'))
     .join('\n')
+
+  /** Read on its own, because *where* a type is handled decides how it may be sent. */
+  const content = readFileSync(path.join(root, CONTENT_ENTRY), 'utf8')
 
   /**
    * Types whose only sender is a test, named here rather than excused by a
@@ -131,6 +135,23 @@ describe('every message type is both served and sent', () => {
 
   it('found the contract', () => {
     expect(types.length).toBeGreaterThan(10)
+  })
+
+  it('can still tell a content-script handler from a sender', () => {
+    /**
+     * The channel rule below reads `message.type === '…'` out of the content
+     * script to decide where a type is served. If that shape ever changes — a
+     * switch instead of an if, a destructured `type` — the regex stops matching,
+     * every type silently becomes "background-handled", and the rule goes on
+     * passing while checking nothing. So the one type that *is* handled there is
+     * named, and its absence fails here rather than quietly everywhere.
+     */
+    const handled = [...content.matchAll(/message\.type\s*[!=]==\s*'([a-z/-]+)'/g)].map(
+      (m) => m[1] as string,
+    )
+    expect(handled, 'the content script no longer handles anything this way').toContain(
+      'download/verdict',
+    )
   })
 
   it('every named exception is still a real endpoint', () => {
@@ -156,7 +177,50 @@ describe('every message type is both served and sent', () => {
         // The exception is applied here, where the test is or is not created,
         // rather than as an early return inside it — a test that exists and
         // returns is the shape this very file forbids.
-        expect(product).toMatch(new RegExp(`send\\(\\s*'${type.replace('/', '\\/')}'`))
+        expect(product).toMatch(new RegExp(`send\\w*\\(\\s*'${type.replace('/', '\\/')}'`))
+      })
+
+      it(`${type} is sent on the channel that reaches its handler`, () => {
+        /**
+         * Having a sender and having a *reachable* sender are different facts, and
+         * the second one is what `download/verdict` failed for a week: it was sent
+         * with `runtime.send` from the background, its only listener lived in
+         * `content/index.ts`, and `runtime.sendMessage` from a background context
+         * reaches the extension's own pages and never a content script. A module
+         * with nine tests could not run in the product, and the check above was
+         * green the whole time because a sender existed.
+         *
+         * So the channel is decided by where the handler is, and the two are
+         * compared. `tabs.sendToActive` is the only way into a content script;
+         * `runtime.send` is the way to the background and to extension pages.
+         */
+        /**
+         * Handled-here, not mentioned-here. The first version asked whether the
+         * type's name appeared in the content script and got ten false positives
+         * at once: the content script both sends and handles, so `page/candidates`
+         * — sent from the page, served by the background — looked content-handled.
+         * A discriminator that cannot tell a sender from a handler is no
+         * discriminator, and it is the third over-matching extractor this session,
+         * so the shape is asserted below rather than assumed.
+         */
+        const escaped = type.replace('/', '\\/')
+        const handledInContent = new RegExp(`message\\.type\\s*[!=]==\\s*'${escaped}'`).test(
+          content,
+        )
+        const pattern = (fn: string): RegExp => new RegExp(`${fn}\\(\\s*'${escaped}'`)
+
+        // One assertion, no branch. Written as `if (…) expect(…) else expect(…)` it
+        // asserted in both arms and was still refused by the rule at the top of
+        // this file — which cannot see that both arms assert, and is right to
+        // refuse the shape rather than special-case it. Choosing the channel first
+        // and asserting once is also simply clearer about what is being claimed.
+        const channel = handledInContent ? 'sendToActive' : 'send'
+        const why = handledInContent
+          ? `${type} is handled in the content script, so it must be sent with ` +
+            `tabs.sendToActive — runtime.send from the background never arrives there`
+          : `${type} is handled in a background or extension-page context, which ` +
+            `tabs.sendToActive does not address — send it with runtime.send`
+        expect(product, why).toMatch(pattern(channel))
       })
     }
   }

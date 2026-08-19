@@ -240,6 +240,39 @@ export function createPlatform(kind: Platform['kind'], api: WebExtensionApi): Pl
       async create(url: string): Promise<void> {
         await api.tabs.create({ url })
       },
+
+      async sendToActive<T extends RpcType>(type: T, payload: RpcMap[T]['req']): Promise<boolean> {
+        /**
+         * The active tab, because that is the page the person is looking at.
+         *
+         * A download carries no tab: `DownloadItem` has a `referrer` and no id, so
+         * there is nothing to address but the tab in front of the user — which is
+         * also the tab a download almost always starts from. The cases that miss
+         * are named in the caller and in SCN-012's known limit rather than papered
+         * over: a download begun in a background tab, or from a bookmark, or in a
+         * tab that has since navigated away.
+         *
+         * No deadline wrapper here, unlike `runtime.send`. That one waits for the
+         * background service to answer and a caller upstream is showing a spinner;
+         * this one is a notification whose only failure mode is "nobody was
+         * listening", and `sendMessage` to a tab without a content script rejects
+         * promptly on its own.
+         */
+        if (!api.tabs.sendMessage) return false
+        const [tab] = await api.tabs.query({ active: true, currentWindow: true })
+        if (typeof tab?.id !== 'number') return false
+
+        const envelope: Envelope<T> = { v: 1, type, payload }
+        try {
+          await api.tabs.sendMessage(tab.id, envelope)
+          return true
+        } catch {
+          // A tab with no content script — an extension page, a PDF viewer, a
+          // `chrome://` page — rejects. That is "no page to tell", not an error
+          // worth propagating into a download handler.
+          return false
+        }
+      },
     },
   }
 }

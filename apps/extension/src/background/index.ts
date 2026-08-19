@@ -824,16 +824,49 @@ platform.downloads.onCreated((item) => {
       })
     },
     announce: async (verdict) => {
-      // Best-effort: a download started from a page gets a banner there. One
-      // started from a bookmark has no page, and the journal is the record.
-      await platform.runtime
-        .send('download/verdict', {
+      /**
+       * `tabs.sendToActive`, not `runtime.send`, and the difference is the whole
+       * defect this replaces.
+       *
+       * From a background context `runtime.sendMessage` reaches the extension's own
+       * pages and never a content script. The listener for `download/verdict` lives
+       * in `content/index.ts`, so nothing ever arrived: `content/download.ts` — 76
+       * lines and nine tests — could not run in the product. REQ-19 promises a
+       * warning before the file is saved, and what the user got was a journal entry
+       * they had no reason to open.
+       *
+       * Still best-effort, and the misses are now named rather than implied: a
+       * download begun from a bookmark has no page, one begun in a background tab
+       * reaches the wrong page or none, and the journal remains the record in both
+       * cases. `false` says so; it does not throw, because a handler deciding
+       * whether to cancel a download has no use for an exception about a banner.
+       */
+      const told = await platform.tabs
+        .sendToActive('download/verdict', {
           action: verdict.action,
           headline: verdict.headline,
           reasons: verdict.reasons.join(' '),
           skipped: verdict.skipped.map((entry) => `${entry.check}: ${entry.why}`).join('; '),
         })
-        .catch(() => undefined)
+        .catch(() => false)
+
+      if (!told) {
+        // Recorded, because "the banner did not show" and "the check did not run"
+        // read identically in a journal that only holds the verdict. Written
+        // through the same store the verdict went to, so the two sit together.
+        try {
+          const db = await openDb()
+          const now = new Date().toISOString()
+          await db.put('journal', {
+            id: `download-unseen:${item.id}:${now}`,
+            createdAt: now,
+            kind: 'action',
+            detail: { explain: verdict.headline, outcome: 'unseen' },
+          })
+        } catch (cause) {
+          console.warn('okolos: could not journal an unseen download verdict', cause)
+        }
+      }
     },
   })
 })

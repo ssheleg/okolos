@@ -108,6 +108,22 @@ export interface Tabs {
   /** Origin and path only — the same rule the collector obeys. */
   activeUrl(): Promise<string | null>
   create(url: string): Promise<void>
+  /**
+   * Delivers a message to the content script in the tab the user is looking at,
+   * and reports whether it arrived.
+   *
+   * Separate from `runtime.send` because they reach different places, and that
+   * difference cost a whole feature: a background context's `runtime.sendMessage`
+   * reaches the extension's own pages and never a content script. The download
+   * verdict went out that way, the listener sat in `content/index.ts`, and no
+   * banner ever appeared — a module with nine tests, unreachable at runtime.
+   *
+   * Returns `false` rather than throwing when there is nowhere to deliver: a
+   * download begun from a bookmark has no page, and neither has one begun in a
+   * tab that has since navigated. The caller decides what to do about that; what
+   * it must not do is assume the message landed.
+   */
+  sendToActive<T extends RpcType>(type: T, payload: RpcMap[T]['req']): Promise<boolean>
 }
 
 /** The subset of the WebExtension API both browsers actually agree on. */
@@ -142,8 +158,18 @@ export interface WebExtensionApi {
     }
   }
   tabs: {
-    query(info: { active: true; currentWindow: true }): Promise<Array<{ url?: string }>>
+    query(info: { active: true; currentWindow: true }): Promise<Array<{ url?: string; id?: number }>>
     create(info: { url: string }): Promise<unknown> | void
+    /**
+     * The only way a background context reaches a content script.
+     *
+     * `runtime.sendMessage` from the background goes to the extension's own
+     * pages, never to a content script, and the download verdict was sent that
+     * way for a while: the listener existed in `content/index.ts` and nothing
+     * ever arrived. Optional here because a test double has no reason to carry
+     * it, which is also how `Tabs.sendToActive` can honestly answer "no page".
+     */
+    sendMessage?(tabId: number, message: unknown): Promise<unknown>
   }
   declarativeNetRequest?: {
     getDynamicRules(): Promise<Array<{ id: number }>>

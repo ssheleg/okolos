@@ -42,8 +42,12 @@ function fakeApi(overrides: ApiOverrides = {}): WebExtensionApi {
       onMessage: { addListener: vi.fn() },
     },
     tabs: {
-      query: async () => [{ url: 'https://example.test/a/b?token=secret#frag' }],
+      // An id as well as a url: a message to a content script is addressed to a
+      // tab, and the fixture that omitted the id was the reason nothing noticed
+      // there was no way to address one.
+      query: async () => [{ url: 'https://example.test/a/b?token=secret#frag', id: 7 }],
       create: vi.fn(async () => undefined),
+      sendMessage: vi.fn(async () => ({ ok: true })),
     },
   }
 
@@ -359,5 +363,93 @@ describe('a message that is never answered', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+})
+
+/** The shape the download handler actually sends, so the envelope test is about the envelope. */
+const DOWNLOAD_VERDICT = {
+  action: 'warn' as const,
+  headline: 'This file passed the checks that could be run',
+  reasons: 'the name hides a program behind a document extension',
+  skipped: 'hash: the file has not been written yet',
+}
+
+describe('reaching the content script', () => {
+  /**
+   * `runtime.sendMessage` from a background context reaches the extension's own
+   * pages and never a content script. The download verdict was sent that way, the
+   * listener sat in `content/index.ts`, and no banner ever appeared — a module
+   * with nine tests that could not run in the product. These check the channel
+   * that does reach it, and that it answers honestly when there is nothing to
+   * reach.
+   */
+  it('addresses the active tab and carries the same envelope as runtime.send', async () => {
+    const sendMessage = vi.fn(async () => ({ ok: true }))
+    const api = fakeApi({ tabs: { sendMessage } })
+    const platform = createPlatform('chrome', api)
+
+    await expect(platform.tabs.sendToActive('download/verdict', DOWNLOAD_VERDICT)).resolves.toBe(
+      true,
+    )
+    expect(sendMessage).toHaveBeenCalledWith(7, {
+      v: 1,
+      type: 'download/verdict',
+      payload: DOWNLOAD_VERDICT,
+    })
+  })
+
+  it('says no rather than throwing when the tab has no content script', async () => {
+    // An extension page, a PDF viewer, a `chrome://` page: `sendMessage` rejects.
+    // A download handler deciding whether to cancel has no use for an exception
+    // about a banner, and treating a rejection as success is how the caller would
+    // have gone on believing the user was told.
+    const api = fakeApi({
+      tabs: {
+        sendMessage: vi.fn(async () => {
+          throw new Error('Could not establish connection')
+        }),
+      },
+    })
+    await expect(
+      createPlatform('chrome', api).tabs.sendToActive('download/verdict', DOWNLOAD_VERDICT),
+    ).resolves.toBe(false)
+  })
+
+  it('says no when there is no active tab to address', async () => {
+    const api = fakeApi({ tabs: { query: async () => [] } })
+    await expect(
+      createPlatform('chrome', api).tabs.sendToActive('download/verdict', DOWNLOAD_VERDICT),
+    ).resolves.toBe(false)
+  })
+
+  it('says no when the tab has no id, rather than addressing undefined', async () => {
+    const api = fakeApi({
+      tabs: { query: async () => [{ url: 'https://example.test/' }] },
+    })
+    await expect(
+      createPlatform('chrome', api).tabs.sendToActive('download/verdict', DOWNLOAD_VERDICT),
+    ).resolves.toBe(false)
+  })
+
+  it('says no without asking for a tab, on an engine that cannot message one', async () => {
+    /**
+     * Declared optional in `WebExtensionApi`, so this is the shape a test double
+     * has — and it must answer "no page" rather than crashing the caller.
+     *
+     * The `query` assertion is the point, and it exists because a plant found the
+     * first version proving nothing: without the early return the call reaches
+     * `sendMessage(undefined)`, the inner `catch` turns the TypeError into `false`,
+     * and the test passed either way. A guard whose removal changes nothing
+     * observable is not a guard, so the observable thing is asserted — no tab is
+     * looked up on an engine that could not be told anyway.
+     */
+    const query = vi.fn(async () => [{ url: 'https://example.test/', id: 7 }])
+    const api = fakeApi({ tabs: { query } })
+    delete (api.tabs as { sendMessage?: unknown }).sendMessage
+
+    await expect(
+      createPlatform('chrome', api).tabs.sendToActive('download/verdict', DOWNLOAD_VERDICT),
+    ).resolves.toBe(false)
+    expect(query).not.toHaveBeenCalled()
   })
 })

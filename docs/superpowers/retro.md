@@ -14,7 +14,11 @@ happens before adding.
    broken one. A green nobody has watched fail is not evidence. And **confirm the plant actually landed,
    on the rule you meant to test** — two wrong citation formats survived a plant
    that never applied, and three plants against the page watcher all turned a
-   gate red by breaking the build instead of the rule.
+   gate red by breaking the build instead of the rule. **Order a test's
+   assertions so the plant's failure is the one that surfaces** — the cheap
+   assertion standing first is enough to hide the expensive one: a plant that
+   restored a destructive re-apply died on a counter and never reached the
+   assertion about the injection being spliced back onto the page.
 2. **Check the artefact, not only the source.** ESLint reads the files it is
    pointed at, and flat config *replaces* rule options rather than merging them.
    Every runtime promise gets a second check against the built bundle. **A gate
@@ -23,7 +27,11 @@ happens before adding.
    the entries of a directory and used each as a path, so all three were one
    Finder visit from a wrong verdict — and the one guarding the pre-push hook was
    red on every developer machine and green on CI, where nobody had ever
-   clicked. Plant the mess before believing the green.
+   clicked. Plant the mess before believing the green. **And an artefact check
+   that fails may be reporting a stale artefact rather than a broken fix** — the
+   compiled emit lags the source until the typecheck runs, so the three defects
+   of B-36 reproduced against `dist/` minutes after the source was green. Date
+   the artefact before drawing a conclusion from it.
 3. **Absence of data must never read as a pass.** Assert that the measurement
    exists before comparing it to a ceiling; assert that the list was read before
    showing it as empty.
@@ -104,6 +112,13 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (четвёртый)** — B-36; стадии 0–10. Обратимость санитайзера
+  восстановлена в трёх измеренных случаях: держатель ключуется элементом, захват
+  идёт перед опустошением, узел, в который написала страница, не опустошается, а
+  отказ повторяется при каждом нажатии вместо того, чтобы отзываться. 1678
+  юнит-тестов в 112 файлах, три планта — каждый лёг на своё правило, — и прогон
+  тех же трёх случаев против скомпилированного артефакта. Постоянных инструкций
+  десять, снятий нет; первая и вторая дополнены. Вердикт REFINE.
 - **2026-08-20 (третий)** — B-35; стадии 0–10. Локатор перестал называть первое
   похожее и стал называть тот узел; санитайзер отказывается править неоднозначный.
   1673 юнит-теста в 112 файлах, 96 e2e, семь плантов — три из них показали, что
@@ -197,6 +212,55 @@ happens before adding.
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-20 — the cheap assertion stood first, so the plant died before it reached the point
+
+**Symptom.** Case C of B-36 says a rescan crossing a node the page has rewritten
+must not splice the injection back onto the page. I wrote it as one test holding
+both facts: that a refused node is not counted as neutralised, and that the
+injection does not return. Then I planted the historical destructive re-apply —
+`element.replaceChildren()` in the branch that now refuses — and the test went
+red on `expected 1 to be +0`, the counter. It never evaluated the assertion about
+the injection. The plant had landed on exactly the rule I meant to test, and the
+test could not tell me so.
+
+**Stage it surfaced at.** 5, during the plant pass, on the second attempt — the
+first plant (`if (false)`) had removed the refusal without restoring the
+destruction, which failed on the same counter for a *different* reason and looked
+identical from the output.
+
+**Stage that owned it.** 5. The test was written in the same pass as the fix, and
+the assertion order was chosen by the order I happened to think of the facts.
+
+**Root cause.** `expect` throws. Every assertion after the first failure is
+unevaluated, so a test's assertions are not a set — they are a sequence, and the
+first one to fail is the only one that reports. Grouping a cheap invariant with an
+expensive one hands the reporting to the cheap one. In this case the counter is a
+banner detail; the splice is the product putting a prompt injection back into a
+page it had already removed it from. The weaker fact was speaking for the
+stronger one.
+
+**Fix, by grade.** Structural where it could be: case C split into two tests over
+a shared fixture builder, so each rule fails on its own and a plant names which one
+it broke. Verified by re-planting: the destructive re-apply now reddens both, the
+unconditional `clear()` reddens only case B, and locator keying reddens only case A.
+Standing instruction 1 amended — it already demanded that a plant land on the rule
+you meant to test, and this is the same demand one level in: the plant landed and
+the test still could not say it.
+
+**The check that catches it next time.** No new gate; this is a reading discipline
+and a gate for it would have to understand which of two assertions matters more.
+What is written down instead is the shape to look for: a test whose assertions
+belong to different rules is a test that can only report on the first one.
+
+**A second thing this run taught, and it is not about tests.** Case A had two
+independent causes, which only the plants separated. With locator keying restored
+but the destructive re-apply still fixed, the page's own content survives — only
+the report is wrong (`restored: 0` where it should be `1`). The destruction came
+entirely from `replaceChildren()` in the re-apply branch, shared with case C. Two
+defects reported as one, and a fix aimed at the keying alone would have left the
+page's content being destroyed while passing a test written from the audit's
+description.
 
 ### 2026-08-20 — a fixture whose shapes differ cannot detect a selector that cannot tell shapes apart
 

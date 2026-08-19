@@ -416,7 +416,7 @@ See [foundation.md](foundation.md) → Personas.
 - **Entry point:** settings screen
 - **Preconditions:** local data exists
 - **Steps:**
-  1. User clicks "Wipe all data" -> system asks for confirmation and lists exactly what will be deleted
+  1. User clicks "Wipe all data" -> system asks for confirmation and lists exactly what will be deleted — **one kind per store, nine of them.** The word "exactly" was here before the list was: the confirmation named five while `wipeAll` cleared nine, so `models`, `feeds`, `snapshots` and the password-reuse index went unmentioned and the user agreed to five while nine went. Safe in direction, and still a confirmation that had not asked. Completeness now lives in `DATA_KIND_KEY: Record<StoreName, string>`, so a new store fails the build until the dialog has words for it
   2. User confirms -> system deletes all local data
   3. User sees the result -> system returns the extension to its first-run state
 - **Expected result:** nothing of the user's remains locally, in one confirmed step

@@ -33,8 +33,33 @@ function handlers(overrides: Partial<DataControlsHandlers> = {}): DataControlsHa
   }
 }
 
-function mount(h = handlers()): { el: HTMLElement; h: DataControlsHandlers } {
-  const el = renderDataControls(document, h)
+/**
+ * A list this renderer is *given*, not the list it must be given.
+ *
+ * The renderer's promise is narrow on purpose: it names every kind handed to it and
+ * refuses an empty hand. Whether that hand holds all nine stores is a fact about
+ * the schema, which this package does not depend on — `tools/data-kinds.test.ts`
+ * checks it, and checking it here would have meant retyping the store list, which
+ * is exactly how the defect survived: the renderer held five of nine, its test held
+ * the same five, and two copies of a wrong list read as confirmation.
+ */
+const KINDS = [
+  'dataKindFindings',
+  'dataKindJournal',
+  'dataKindAudit',
+  'dataKindExceptions',
+  'dataKindSettings',
+  'dataKindSnapshots',
+  'dataKindModels',
+  'dataKindFeeds',
+  'dataKindReuse',
+] as const
+
+function mount(
+  h = handlers(),
+  kinds: readonly string[] = KINDS,
+): { el: HTMLElement; h: DataControlsHandlers } {
+  const el = renderDataControls(document, h, kinds)
   document.body.replaceChildren(el)
   return { el, h }
 }
@@ -59,18 +84,28 @@ describe('wiping asks once, and says what it will take', () => {
     const { el } = mount()
     el.querySelector<HTMLButtonElement>('[data-role=wipe]')?.click()
     const confirm = el.querySelector('[data-role=confirm]')?.textContent ?? ''
-    // The five categories, by key. Listing the English words here pinned the
-    // test to one language and to the exact nouns, neither of which is what
-    // this control promises: it promises to name everything it will delete.
-    for (const key of [
-      'dataKindFindings',
-      'dataKindJournal',
-      'dataKindAudit',
-      'dataKindExceptions',
-      'dataKindSettings',
-    ]) {
-      expect(confirm).toContain(message(key))
+    // Every kind, by key. Listing the words here pinned the test to one language
+    // and to the exact nouns, neither of which is what this control promises: it
+    // promises to name everything it will delete. And the list comes from the
+    // schema, because a list retyped in the test agrees with a wrong renderer.
+    for (const key of KINDS) {
+      expect(confirm, `the confirmation does not name ${key}`).toContain(message(key))
     }
+  })
+
+  it('draws one row per kind it was given, and no more', () => {
+    // Counted as well as contained: `toContain` on the joined text passes when the
+    // list is drawn twice, or when one row holds two kinds.
+    const { el } = mount()
+    el.querySelector<HTMLButtonElement>('[data-role=wipe]')?.click()
+    expect(el.querySelectorAll('[data-role=confirm] li')).toHaveLength(KINDS.length)
+  })
+
+  it('refuses to render a confirmation that names nothing', () => {
+    // An empty list would draw a dialog listing no data over a button that
+    // deletes all of it, which reads as "nothing will be deleted". Louder at the
+    // seam than wrong on the screen.
+    expect(() => renderDataControls(document, handlers(), [])).toThrow(/must name what it deletes/)
   })
 
   it('deletes only after the second, explicit confirmation', async () => {

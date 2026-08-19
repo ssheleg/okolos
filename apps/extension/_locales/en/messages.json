@@ -395,6 +395,18 @@
   "dataKindSettings": {
     "message": "settings"
   },
+  "dataKindSnapshots": {
+    "message": "snapshots of your installed extensions"
+  },
+  "dataKindModels": {
+    "message": "downloaded model weights"
+  },
+  "dataKindFeeds": {
+    "message": "the blocking feeds that were downloaded"
+  },
+  "dataKindReuse": {
+    "message": "the password-reuse index"
+  },
   "dataWipe": {
     "message": "Delete all data"
   },

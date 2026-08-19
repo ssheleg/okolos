@@ -22,16 +22,30 @@ export interface DataControlsHandlers {
   readonly onWiped: () => void
 }
 
-/** What the confirmation lists, in the user's words rather than store names. */
-const CATEGORY_KEY = [
-  'dataKindFindings',
-  'dataKindJournal',
-  'dataKindAudit',
-  'dataKindExceptions',
-  'dataKindSettings',
-] as const
+export function renderDataControls(
+  doc: Document,
+  handlers: DataControlsHandlers,
+  /**
+   * Catalogue keys for every kind of data the wipe clears, in the user's words
+   * rather than store names.
+   *
+   * Passed in rather than written here, and the reason is not tidiness: this list
+   * held five entries while the wipe cleared nine stores, so the confirmation
+   * named findings, journal, audit, exceptions and settings while `models`,
+   * `feeds`, `snapshots` and the password-reuse index went unmentioned. A
+   * renderer cannot tell whether a list it was given is all of them; the storage
+   * schema can, and `Record<StoreName, string>` there makes a new store fail the
+   * build until it has words.
+   */
+  dataKinds: readonly string[],
+): HTMLElement {
+  // An empty list would render a confirmation that names nothing, which reads as
+  // "nothing will be deleted" over a button that deletes everything. Refused
+  // loudly at the seam rather than shown quietly.
+  if (dataKinds.length === 0) {
+    throw new Error('renderDataControls: the wipe confirmation must name what it deletes')
+  }
 
-export function renderDataControls(doc: Document, handlers: DataControlsHandlers): HTMLElement {
   const section = doc.createElement('section')
   section.setAttribute('data-role', 'data-controls')
 
@@ -62,7 +76,7 @@ export function renderDataControls(doc: Document, handlers: DataControlsHandlers
     confirm.setAttribute('role', 'alertdialog')
 
     const list = doc.createElement('ul')
-    for (const key of CATEGORY_KEY) {
+    for (const key of dataKinds) {
       const item = doc.createElement('li')
       item.textContent = t(key)
       list.append(item)

@@ -24,7 +24,14 @@ import {
   type OverviewHandlers,
   type PanelState,
 } from '@okolos/ui'
-import { exportAll, openDb, RETENTION_DAYS, wipeAll, type JournalRecord } from '@okolos/storage'
+import {
+  DATA_KIND_KEY,
+  exportAll,
+  openDb,
+  RETENTION_DAYS,
+  wipeAll,
+  type JournalRecord,
+} from '@okolos/storage'
 
 import { mapJournal } from '../popup/state.js'
 import { answered } from './answered.js'
@@ -769,7 +776,12 @@ async function dataSection(): Promise<HTMLElement> {
         return wipeAll(db)
       },
       onWiped: () => void reload(),
-    }),
+    },
+    // Every store, from the schema that owns the list — not a subset written here.
+    // `DATA_KIND_KEY` is `Record<StoreName, string>`, so a store added later fails
+    // the build until the confirmation has words for it.
+    Object.values(DATA_KIND_KEY),
+    ),
   )
   return container
 }

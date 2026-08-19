@@ -1,5 +1,5 @@
 export { closeDb, openDb, type OkolosDatabase } from './db.js'
-export { exportAll, wipeAll, type WipeResult } from './export.js'
+export { EXPORT_NOTE, exportAll, wipeAll, type WipeResult } from './export.js'
 export {
   dueForSweep,
   pruneExpired,
@@ -7,10 +7,13 @@ export {
   SWEEP_INTERVAL_MS,
 } from './retention.js'
 export {
+  DATA_KIND_KEY,
   DB_NAME,
   DB_VERSION,
   RETENTION_DAYS,
   STORES,
+  WITHHELD_MARKER,
+  WITHHELD_SETTINGS,
   type ExceptionRecord,
   type FindingRecord,
   type JournalRecord,

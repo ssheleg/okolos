@@ -54,6 +54,36 @@ export const STORES = [
 
 export type StoreName = (typeof STORES)[number]
 
+/**
+ * One catalogue key per store, for the confirmation that asks before a wipe.
+ *
+ * `Record<StoreName, …>` and not an array, because the guarantee this needs is
+ * exhaustiveness and TypeScript can hold it: adding a store to `STORES` fails the
+ * build here until the confirmation has words for it. The wipe listed five kinds
+ * while `wipeAll` cleared nine — `models`, `feeds`, `snapshots` and `reuse` went
+ * unnamed, the last of them the index derived from the user's password that
+ * `docs/privacy.md` gives its own section to. The user agreed to five and nine
+ * went. Safe in direction and still a confirmation that did not ask, which is what
+ * REQ-32 is about: the question names what is about to go, because "are you sure?"
+ * tells the reader nothing they did not already know.
+ *
+ * It lives here rather than in `packages/ui` because completeness is a fact about
+ * the stores, and `ui` does not depend on this package — the renderer cannot know
+ * whether a list it was handed is all of them, so it is handed the whole list by
+ * something that can.
+ */
+export const DATA_KIND_KEY: Readonly<Record<StoreName, string>> = {
+  findings: 'dataKindFindings',
+  journal: 'dataKindJournal',
+  outbound_log: 'dataKindAudit',
+  exceptions: 'dataKindExceptions',
+  settings: 'dataKindSettings',
+  snapshots: 'dataKindSnapshots',
+  models: 'dataKindModels',
+  feeds: 'dataKindFeeds',
+  reuse: 'dataKindReuse',
+}
+
 export interface FindingRecord {
   id: string
   createdAt: string

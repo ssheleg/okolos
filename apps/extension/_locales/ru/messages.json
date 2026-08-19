@@ -395,6 +395,18 @@
   "dataKindSettings": {
     "message": "настройки"
   },
+  "dataKindSnapshots": {
+    "message": "снимки установленных расширений"
+  },
+  "dataKindModels": {
+    "message": "скачанные веса модели"
+  },
+  "dataKindFeeds": {
+    "message": "скачанные списки блокировок"
+  },
+  "dataKindReuse": {
+    "message": "индекс переиспользования паролей"
+  },
   "dataWipe": {
     "message": "Удалить все данные"
   },

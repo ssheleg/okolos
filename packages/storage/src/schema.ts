@@ -16,6 +16,30 @@ export const RETENTION_DAYS = {
   resolvedFinding: 30,
 } as const
 
+/**
+ * Settings whose value is withheld from the export.
+ *
+ * Not because they are private — everything in this database is — but because
+ * they are not *about* the user. They are what makes the rest of the file
+ * reversible, and shipping them beside the data they protect turns one honest
+ * button into the worst thing this product could hand someone.
+ *
+ * `reuse:key` is the HMAC key the reuse index is tagged with. Exported next to
+ * the `reuse` store, it lets anyone holding the file run a dictionary of common
+ * passwords against the tags and recover which password is used on which sites —
+ * the exact inference the index exists to make impossible for anyone but the
+ * device. `hibp:apiKey` is the user's own paid credential, which belongs to them
+ * and to nobody who is handed their log.
+ *
+ * The tags themselves are exported. They *are* about the user — "these three
+ * sites share a password" is the answer the feature gives — and without the key
+ * they say nothing more than that.
+ */
+export const WITHHELD_SETTINGS: ReadonlySet<string> = new Set(['reuse:key', 'hibp:apiKey'])
+
+/** What the export writes in place of a withheld value, so its absence is visible. */
+export const WITHHELD_MARKER = '[withheld: this value is what makes the rest reversible]'
+
 export const STORES = [
   'findings',
   'journal',

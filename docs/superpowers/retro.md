@@ -104,6 +104,14 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-19 (четвёртый)** — `e363710`, B-28; стадии 0–10. Первая задача этой
+  серии, меняющая поведение продукта, а не его учёт: на Chrome 116–136 и Firefox
+  128 расширение не блокировало ни одной страницы и сообщало об этом как о
+  неверной подписи издателя. Пороги подняты до примитива, отсутствие примитива
+  названо своим именем, связь держит гейт. ADR-0011. 1588 юнит-тестов в 108
+  файлах, шесть плантов. Два дефекта в свежем коде нашли его же тесты до первого
+  коммита. Один пуш на итерацию с этого раза — три предыдущих вердикта отменила
+  конкуренция. Постоянных инструкций десять, снятий нет. Вердикт REFINE.
 - **2026-08-19 (третий)** — `b675b40`, B-61; стадии 0–10. Архив магазина
   перестал нести файл, которого никто не писал, и появилась обратная проверка,
   которой у релизного гейта не было по построению. Релизных проверок 10 вместо 8,
@@ -149,6 +157,53 @@ happens before adding.
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-19 — a supported browser that blocked nothing, and said the publisher was at fault
+
+- **Symptom:** across Chrome 116–136 and Firefox 128 — the whole range the
+  manifests invited — every feed update was refused, no list was ever in force,
+  and the journal read "the update was not signed by the expected key". The
+  publisher had signed it correctly.
+- **Surfaced at:** the audit, from the manifest and the caniuse table rather than
+  from a run. Confirming it in an old browser was never done and the record says so.
+- **Owned by:** the seam between a crypto choice and a manifest field, which no
+  test looks at because neither side is wrong alone. `@noble/ed25519` was the
+  design's answer and runs anywhere; the implementation moved to
+  `crypto.subtle.verify` with Ed25519, which needs Chrome 137 and Firefox 129;
+  the manifests were never touched. Three artefacts, two of them consistent with
+  each other, and the third silently deciding the product does nothing.
+- **Root cause of the invisibility:** the tests generate an Ed25519 pair in Node,
+  where the algorithm exists. They measured the developer's machine and reported
+  it as the supported range — the same shape as a gate that reads a fresh clone
+  and calls it every machine.
+- **The worse half, and the one ADR-0004 already forbade:** `Verifier` returns a
+  boolean, so "this engine does not know the algorithm" and "this signature is
+  forged" arrive as the same value. `applyUpdate` maps that to `bad-signature`.
+  A check that never ran was reported as a check that failed, and the sentence
+  accused the one party that had done its job. `canVerify()` is now asked before
+  the request, so the product declines to download a list it cannot check and the
+  journal names the browser.
+- **Fix, by grade:** structural. Floors raised to the primitive;
+  `tools/manifest.test.ts` reads `SIGNATURE_ALGORITHM` from the source and refuses
+  a manifest that invites a browser without it; ADR-0011 records that
+  `@noble/ed25519` was weighed and refused, and why that refusal is reversible in
+  one direction only.
+- **Two defects in code written the same hour, both caught by its own tests before
+  the first commit.** `bytesOf` calls `atob`, which throws synchronously, so
+  `canVerify` threw at its caller rather than answering "no" — and the caller is a
+  background alarm, so the throw would have become a `console.warn` while the
+  honest journal entry, the whole reason for asking, was never written. And the
+  probe cached one boolean while accepting a key as an argument, answering the
+  second caller's question with the first caller's result. Neither was found by
+  reading the code; both were found by writing the assertion that says what it
+  should do. The second one was found *while composing the test*, before it ran,
+  which is the cheapest place a defect can be found and an argument for writing the
+  assertion first rather than after.
+- **A loop-level fix, applied rather than only recorded.** The previous entry noted
+  that two pushes per iteration let CI's `cancel-in-progress` discard the first
+  commit's verdict. Three consecutive verdicts were cancelled that way. From this
+  run the work and the retrospective are two commits and **one** push, so both
+  land in a single CI run against the final tree and both stay bisectable.
 
 ### 2026-08-19 — a new gate went red for a reason that had nothing to do with what it guards
 

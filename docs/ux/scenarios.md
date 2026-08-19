@@ -141,6 +141,7 @@ See [foundation.md](foundation.md) → Personas.
 - **Errors & recovery:** removal fails on a protected node -> system reports which nodes could not be neutralised and keeps warning; restore always returns the DOM to its pre-change state; **restoring will not put text back into a node the page has taken over.** If the element left the document there is nothing to restore, and if the page wrote into it while it was held, appending would splice the hidden instruction in beside the page's new content — a document neither party wrote, with the injection back in it. Both are counted and reported rather than performed **The panel stays open and says which of the two happened**, and the same sentence is written to the self-audit journal, because a control that fails quietly is one the user learns to distrust
 - **Status:** implemented
 - **Coverage:** packages/core-sanitizer/src/plan.ts:planSanitisation, apps/extension/src/content/sanitize.ts:Sanitiser, e2e/scn-005.spec.ts
+- **Behaviour notes:** the locator names one element and the executor refuses an ambiguous one; until 2026-08-20 a truncated tag-only path could point at an innocent twin
 
 ### SCN-010: Agent blocked from acting on a poisoned page
 - **Persona:** P-01

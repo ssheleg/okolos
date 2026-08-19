@@ -103,9 +103,26 @@ export class Sanitiser {
     return { restored, gone, changed }
   }
 
+  /**
+   * The one element the locator names, or nothing.
+   *
+   * `querySelector` returns the *first* match, and for a while the locators it was
+   * given were not unique: a truncated tag-only path like `html > body > div > p`
+   * matched the first paragraph on the page, so an injection in the seventh one had
+   * an innocent paragraph emptied in its place, was left where it was, and the wrong
+   * element carried the "neutralised" marker.
+   *
+   * The collector produces unique locators now. This refuses an ambiguous one anyway,
+   * because the two guards fail differently: a locator that stops being unique — a
+   * page that mutated between the scan and the edit, a collector change — should cost
+   * an edit that did not happen, which the banner reports honestly, rather than an
+   * edit to whichever element came first.
+   */
   #find(locator: string): Element | null {
     try {
-      return this.doc.querySelector(locator)
+      const matches = this.doc.querySelectorAll(locator)
+      if (matches.length !== 1) return null
+      return matches[0] ?? null
     } catch {
       // Locators come from a collector walking a hostile page; an unparseable
       // one is a fact about the page, not a reason to stop.

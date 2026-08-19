@@ -250,14 +250,69 @@ function charClassesOf(text: string): CharClass[] {
   return classes
 }
 
-/** Enough to point the user at the node without shipping its contents. */
+/**
+ * An id that can be trusted to name one element.
+ *
+ * Duplicate ids are invalid HTML and entirely ordinary on the pages this product
+ * reads; a hostile one can have as many as it likes. The shape check comes first so
+ * the selector below is always valid without escaping — an id the check rejects
+ * simply falls through to the positional path, which is correct rather than clever.
+ */
+const SAFE_ID = /^[A-Za-z][\w-]*$/
+
+function namesOneElement(node: Element, id: string): boolean {
+  if (!SAFE_ID.test(id)) return false
+  try {
+    return node.ownerDocument.querySelectorAll(`#${id}`).length === 1
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Where the node is, precisely enough that the executor edits *that* node.
+ *
+ * The first version joined tag names and stopped after five levels, so an injection
+ * in the seventh `div > p` of a page produced `html > body > div > p` — a selector
+ * matching the first paragraph on the page. `Sanitiser` resolves it with
+ * `querySelector`, which returns the first match, so the product emptied an innocent
+ * paragraph, left the injection in place, and marked the wrong element as
+ * neutralised. Every fixture in `sanitize.test.ts` used an `id`, and the corpus
+ * carries hand-written `:nth-child(…)` selectors that the collector never produced,
+ * so nothing in the suite ever saw an ambiguous locator.
+ *
+ * So: `nth-of-type` at every step and no depth cap, walking to the document element.
+ * An id short-circuits it, but only one that provably names a single element. The
+ * result is longer and it is shown to the user in the inspector — a locator that
+ * points at the wrong node is worse than an ugly one.
+ */
 function locatorFor(element: Element): string {
   const parts: string[] = []
   let node: Element | null = element
-  while (node && parts.length < 5) {
+
+  while (node) {
     const tag = node.tagName.toLowerCase()
-    parts.unshift(node.id ? `${tag}#${node.id}` : tag)
-    node = node.parentElement
+    const id = node.getAttribute('id')
+    if (id && namesOneElement(node, id)) {
+      parts.unshift(`${tag}#${id}`)
+      return parts.join(' > ')
+    }
+
+    const parent: Element | null = node.parentElement
+    if (!parent) {
+      // The document element: one of its kind by definition, so no index.
+      parts.unshift(tag)
+      break
+    }
+
+    let index = 0
+    for (const sibling of parent.children) {
+      if (sibling.tagName === node.tagName) index += 1
+      if (sibling === node) break
+    }
+    parts.unshift(`${tag}:nth-of-type(${index})`)
+    node = parent
   }
+
   return parts.join(' > ')
 }

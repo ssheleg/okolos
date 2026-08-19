@@ -178,3 +178,40 @@ describe('restoring into a page that did not stand still', () => {
     ).not.toBeNull()
   })
 })
+
+describe('an ambiguous locator is refused, not applied to the first match', () => {
+  /**
+   * `querySelector` returns the first match. While the collector produced locators
+   * that stopped after five tag names, `html > body > div > p` named the first
+   * paragraph on the page — so an injection in the seventh had an innocent paragraph
+   * emptied in its place, was left where it was, and the wrong element carried the
+   * marker.
+   *
+   * The collector produces unique locators now. This is the second guard, and the two
+   * fail differently: a locator that stops being unique — a page that mutated between
+   * the scan and the edit — should cost an edit that did not happen, which the banner
+   * reports honestly, rather than an edit to whichever element came first.
+   */
+  it('touches nothing when the locator names more than one element', () => {
+    document.body.innerHTML = '<div><p>first</p></div><div><p>second</p></div>'
+    const sanitiser = new Sanitiser(document)
+
+    const applied = sanitiser.apply({
+      targets: [{ locator: 'div > p', verdictId: 'v1' }],
+    })
+
+    expect(applied, 'an ambiguous locator was applied').toBe(0)
+    expect(document.body.textContent).toContain('first')
+    expect(document.body.textContent).toContain('second')
+    expect(document.querySelectorAll('[data-okolos-neutralised]')).toHaveLength(0)
+  })
+
+  it('still applies a locator that names exactly one', () => {
+    // Otherwise the check above is satisfied by a sanitiser that has stopped working.
+    document.body.innerHTML = '<div><p id="only">just this one</p></div>'
+    const sanitiser = new Sanitiser(document)
+
+    expect(sanitiser.apply({ targets: [{ locator: 'p#only', verdictId: 'v1' }] })).toBe(1)
+    expect(document.querySelector('#only')?.textContent).toBe('')
+  })
+})

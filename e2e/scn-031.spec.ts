@@ -43,8 +43,16 @@ test('tells the embedding page about a finding inside its frame', async ({ conte
   const page = await context.newPage()
   await page.goto('https://parent.test/')
 
-  // In the top document: `page.locator` searches the main frame only, so a count of
-  // one here is the relay arriving where the user can see it.
+  /**
+   * In the top document: `page.locator` searches the main frame only, so a count of
+   * one here is the report arriving where the user can see it.
+   *
+   * Ten seconds is not a guess about how slow this is — measured at 135 ms when it
+   * works. It is room for the case the first version of this lost: an embedded
+   * document can finish its whole cycle before the embedding page's content script
+   * has started, and the frame then retries for nine. This assertion failed in the
+   * full suite and passed in isolation, which is exactly the shape of that race.
+   */
   await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: 10_000 })
 })
 

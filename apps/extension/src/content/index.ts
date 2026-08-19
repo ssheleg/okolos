@@ -20,6 +20,7 @@ import type {
 
 import { AgentGate } from './agent-gate.js'
 import { createPacer } from './pace.js'
+import { reportToEmbeddingPage } from './report-frame.js'
 import { collect, DEFAULT_BUDGET } from './collect.js'
 import { warnIfLookalike } from './lookalike.js'
 import { watchCredentialFields } from './credential.js'
@@ -170,8 +171,30 @@ async function scan(): Promise<void> {
   unresolved = verdicts.map((verdict) => ({ id: verdict.id, summary: summarise(verdict) }))
   armPageWatch(unresolved.length > 0)
 
-  if (!isTopFrame) return
+  if (!isTopFrame) {
+    void tellEmbeddingPage(verdicts)
+    return
+  }
   show(worst(verdicts), verdicts.length, page.truncated, neutralised)
+}
+
+/**
+ * The frame's obligation, wired to the policy that lives in `report-frame.ts`.
+ *
+ * The policy is a separate module for the reason the pacer is: how many times and how
+ * far apart is a decision, and one nobody can call in a test is one nobody has checked.
+ */
+async function tellEmbeddingPage(verdicts: readonly Verdict[]): Promise<void> {
+  await reportToEmbeddingPage(
+    { origin: '', summary: summarise(worst(verdicts)).slice(0, 160), count: verdicts.length },
+    {
+      relay: (report) => platform.runtime.send('frame/report', report),
+      giveUp: async (explain) => {
+        await platform.runtime.send('page/note', { kind: 'frame-unreported', explain })
+      },
+      wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    },
+  )
 }
 
 function summarise(verdict: Verdict): string {

@@ -48,6 +48,25 @@ export interface RpcMap {
    * here because "something on this page" and "something in the frame from
    * ads.example" are different warnings.
    */
+  /**
+   * A subframe reporting its own finding, and being told whether it landed.
+   *
+   * The relay used to happen inside the answer to `page/candidates`, which made it
+   * fire exactly once — at the moment the frame asked. That loses the race the
+   * common case actually runs: a frame reaches `document_idle` and finishes its
+   * whole cycle before the embedding page's content script has started, so the
+   * report arrives at a frame zero with no listener yet, and `sendMessage` rejects
+   * into silence. Measured: 135 ms when the parent happens to be ready, never when
+   * it is not.
+   *
+   * So the obligation sits with the frame, which is alive and can wait, and the
+   * answer says whether there was anyone to tell. Retrying is not masking here —
+   * the receiver is not failing, it does not exist yet.
+   */
+  'frame/report': {
+    req: { origin: string; summary: string; count: number }
+    res: { delivered: boolean }
+  }
   'frame/finding': {
     req: { origin: string; summary: string; count: number }
     res: { ok: true }
@@ -141,7 +160,18 @@ export interface RpcMap {
    * could not finish existed only in the moment it happened — the page said
    * nothing, and nothing was written down either.
    */
-  'page/note': { req: { kind: 'restore'; explain: string }; res: { ok: true } }
+  /**
+   * Something the page has to say about itself, journalled rather than shown.
+   *
+   * `frame-unreported` is the give-up of a subframe that could not tell the page
+   * embedding it, after nine seconds of trying. A silent return there would hide the
+   * one case where the product found something and nobody was told — which is the
+   * whole defect the retry exists to fix, arriving by a different road.
+   */
+  'page/note': {
+    req: { kind: 'restore' | 'frame-unreported'; explain: string }
+    res: { ok: true }
+  }
   /** Rebuilds blocking rules from the feed in force. */
   'rules/refresh': { req: Record<string, never>; res: { installed: number; dropped: number } }
   'block/context': {

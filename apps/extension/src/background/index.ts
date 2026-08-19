@@ -11,7 +11,6 @@ import {
   openDb,
   pruneExpired,
 } from '@okolos/storage'
-import { worstOf } from '@okolos/contracts'
 import type {
   Envelope,
   GateDecision,
@@ -58,9 +57,16 @@ const INVENTORY_ALARM = 'okolos:inventory'
 platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>, from: RpcSender) => {
   switch (message.type) {
     case 'page/candidates':
-      // The sender travels with it, because a finding in a subframe has to be told
-      // to the page that embeds it and the frame cannot tell it itself.
-      return handleCandidates(message.payload as PageCandidates, from) as Promise<RpcMap[T]['res']>
+      return handleCandidates(message.payload as PageCandidates) as Promise<RpcMap[T]['res']>
+    case 'frame/report':
+      // The sender travels with it: a frame cannot address the page that embeds it,
+      // and it must not try — a `window.top.postMessage` hop goes through the page's
+      // own window, where the page can forge it and the top frame cannot tell an
+      // extension's report from a claim by the thing being reported.
+      return relayFrameFinding(
+        message.payload as { origin: string; summary: string; count: number },
+        from,
+      ) as Promise<RpcMap[T]['res']>
     case 'rules/refresh':
       return refreshBlockRules() as Promise<RpcMap[T]['res']>
     case 'block/context':
@@ -100,7 +106,7 @@ platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>, from: RpcSe
     case 'trust/add':
       return addTrusted(message.payload as { domain: string }) as Promise<RpcMap[T]['res']>
     case 'page/note':
-      return notePageEvent(message.payload as { kind: 'restore'; explain: string }) as Promise<
+      return notePageEvent(message.payload as { kind: 'restore' | 'frame-unreported'; explain: string }) as Promise<
         RpcMap[T]['res']
       >
     case 'gate/decision':
@@ -148,10 +154,7 @@ const inference = createInferenceHost({
 const prepared = inference.prepare().catch(() => 'no-host' as const)
 
 
-async function handleCandidates(
-  page: PageCandidates,
-  from: RpcSender = {},
-): Promise<{ verdicts: Verdict[] }> {
+async function handleCandidates(page: PageCandidates): Promise<{ verdicts: Verdict[] }> {
   const now = new Date().toISOString()
   const ctx = { now, newId: () => crypto.randomUUID() }
   const verdicts = detectHidden(page, ctx)
@@ -180,46 +183,31 @@ async function handleCandidates(
     }
   }
 
-  /**
-   * A finding in an embedded frame is told to the page that embeds it.
-   *
-   * The content script runs in every frame and only the top one shows a warning —
-   * a banner inside a subframe can be invisible, clipped, or drawn a dozen times
-   * across ad frames. Its own comment said "subframes still collect and report;
-   * the top frame is the one that speaks", and the reporting half did not exist:
-   * the frame neutralised the injection, armed the agent gate, and returned. A
-   * poisoned iframe was handled and never mentioned.
-   *
-   * Sent from here rather than frame-to-frame on purpose. A subframe could reach
-   * the top with `window.top.postMessage`, and that message would travel through
-   * the page's own window — where the page can forge it, and the top frame has no
-   * way to tell an extension's report from a claim by the thing being reported.
-   * The background is outside the page, so this hop is not forgeable.
-   */
-  if (verdicts.length > 0 && typeof from.tabId === 'number' && (from.frameId ?? 0) > 0) {
-    const first = worstOf(verdicts)
-    if (first) {
-      await platform.tabs
-        .sendToFrame(
-          'frame/finding',
-          {
-            origin: from.origin ?? '',
-            summary: summariseVerdict(first),
-            count: verdicts.length,
-          },
-          { tabId: from.tabId, frameId: 0 },
-        )
-        .catch(() => false)
-    }
-  }
-
   return { verdicts }
 }
 
-/** One sentence about a verdict, with no page text in it beyond the snippet. */
-function summariseVerdict(verdict: Verdict): string {
-  const snippet = verdict.evidence.find((item) => item.snippet)?.snippet
-  return snippet ? snippet.slice(0, 120) : ''
+/**
+ * Forwards a frame's finding to the page that embeds it, and says whether anyone
+ * was there to hear it.
+ *
+ * The frame retries on `delivered: false`, because the receiver is not failing — it
+ * does not exist yet. An embedded document can reach `document_idle` and finish its
+ * whole scan before the embedding page's content script has started, so a report
+ * sent once arrives at a frame zero with no listener and `sendMessage` rejects into
+ * silence. That is why this returns a fact instead of nothing.
+ */
+async function relayFrameFinding(
+  finding: { origin: string; summary: string; count: number },
+  from: RpcSender,
+): Promise<{ delivered: boolean }> {
+  if (typeof from.tabId !== 'number' || (from.frameId ?? 0) === 0) return { delivered: false }
+  const delivered = await platform.tabs
+    .sendToFrame('frame/finding', { ...finding, origin: from.origin ?? finding.origin }, {
+      tabId: from.tabId,
+      frameId: 0,
+    })
+    .catch(() => false)
+  return { delivered }
 }
 
 /**
@@ -381,7 +369,10 @@ async function allowBlocked(payload: { url: string }): Promise<{ url: string } |
  * defect this exists to close — a restore that could not finish now leaves a
  * record as well as a sentence on screen.
  */
-async function notePageEvent(payload: { kind: 'restore'; explain: string }): Promise<{ ok: true }> {
+async function notePageEvent(payload: {
+  kind: 'restore' | 'frame-unreported'
+  explain: string
+}): Promise<{ ok: true }> {
   try {
     const db = await openDb()
     await db.put('journal', {

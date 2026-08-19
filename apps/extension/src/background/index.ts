@@ -1,5 +1,5 @@
 import { classifyUndecided, detectHidden } from '@okolos/core-injection'
-import { detectPlatform } from '@okolos/platform'
+import { detectPlatform, type RpcSender } from '@okolos/platform'
 import { buildRules, matchUrl, type FeedSnapshot,
   displayFeedNameEn,
 } from '@okolos/core-feeds'
@@ -11,6 +11,7 @@ import {
   openDb,
   pruneExpired,
 } from '@okolos/storage'
+import { worstOf } from '@okolos/contracts'
 import type {
   Envelope,
   GateDecision,
@@ -54,10 +55,12 @@ const FEED_ALARM = 'okolos:feeds'
 const RETENTION_ALARM = 'okolos:retention'
 const INVENTORY_ALARM = 'okolos:inventory'
 
-platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>) => {
+platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>, from: RpcSender) => {
   switch (message.type) {
     case 'page/candidates':
-      return handleCandidates(message.payload as PageCandidates) as Promise<RpcMap[T]['res']>
+      // The sender travels with it, because a finding in a subframe has to be told
+      // to the page that embeds it and the frame cannot tell it itself.
+      return handleCandidates(message.payload as PageCandidates, from) as Promise<RpcMap[T]['res']>
     case 'rules/refresh':
       return refreshBlockRules() as Promise<RpcMap[T]['res']>
     case 'block/context':
@@ -145,7 +148,10 @@ const inference = createInferenceHost({
 const prepared = inference.prepare().catch(() => 'no-host' as const)
 
 
-async function handleCandidates(page: PageCandidates): Promise<{ verdicts: Verdict[] }> {
+async function handleCandidates(
+  page: PageCandidates,
+  from: RpcSender = {},
+): Promise<{ verdicts: Verdict[] }> {
   const now = new Date().toISOString()
   const ctx = { now, newId: () => crypto.randomUUID() }
   const verdicts = detectHidden(page, ctx)
@@ -174,7 +180,46 @@ async function handleCandidates(page: PageCandidates): Promise<{ verdicts: Verdi
     }
   }
 
+  /**
+   * A finding in an embedded frame is told to the page that embeds it.
+   *
+   * The content script runs in every frame and only the top one shows a warning —
+   * a banner inside a subframe can be invisible, clipped, or drawn a dozen times
+   * across ad frames. Its own comment said "subframes still collect and report;
+   * the top frame is the one that speaks", and the reporting half did not exist:
+   * the frame neutralised the injection, armed the agent gate, and returned. A
+   * poisoned iframe was handled and never mentioned.
+   *
+   * Sent from here rather than frame-to-frame on purpose. A subframe could reach
+   * the top with `window.top.postMessage`, and that message would travel through
+   * the page's own window — where the page can forge it, and the top frame has no
+   * way to tell an extension's report from a claim by the thing being reported.
+   * The background is outside the page, so this hop is not forgeable.
+   */
+  if (verdicts.length > 0 && typeof from.tabId === 'number' && (from.frameId ?? 0) > 0) {
+    const first = worstOf(verdicts)
+    if (first) {
+      await platform.tabs
+        .sendToFrame(
+          'frame/finding',
+          {
+            origin: from.origin ?? '',
+            summary: summariseVerdict(first),
+            count: verdicts.length,
+          },
+          { tabId: from.tabId, frameId: 0 },
+        )
+        .catch(() => false)
+    }
+  }
+
   return { verdicts }
+}
+
+/** One sentence about a verdict, with no page text in it beyond the snippet. */
+function summariseVerdict(verdict: Verdict): string {
+  const snippet = verdict.evidence.find((item) => item.snippet)?.snippet
+  return snippet ? snippet.slice(0, 120) : ''
 }
 
 /**

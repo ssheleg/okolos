@@ -40,6 +40,7 @@ are specified once in [screens.md](screens.md).
 | SCN-028 | A deep link opens its area; an unknown address says so | daily-use | P-01 | ST-015, FLW-17 | implemented | 2026-08-13 PASS |
 | SCN-029 | Acting inside an area keeps the place, the focus and the count | daily-use | P-01 | ST-015, FLW-17 | implemented | 2026-08-13 PASS |
 | SCN-030 | An unread count never renders as "nothing here" | daily-use | P-01 | ST-017, FLW-17 | implemented | 2026-08-13 PASS |
+| SCN-031 | A finding inside an embedded frame reaches the page that embeds it | ai-shield | P-01 | ST-001, FLW-02 | implemented | 2026-08-20 e2e |
 
 ## Personas
 
@@ -619,3 +620,22 @@ See [foundation.md](foundation.md) → Personas.
 - **Errors & recovery:** the status service is unavailable -> system says so plainly; it never implies the domain is clean when it could not check; **the same appeal sent twice is reported as already on file, with its reference, not as a failure** — the reference is a hash of the domain and the message and is the primary key, so a refreshed page used to be told nothing was saved about an appeal that was; and a host that is not a public domain (`..`, a single label) is refused at the door rather than stored and answered about
 - **Status:** implemented
 - **Coverage:** apps/proxy/src/router.ts:statusPage, apps/proxy/src/router.ts:appeal, apps/proxy/src/router.ts:appealPage, apps/proxy/src/router.test.ts — live at `/status`, verified against the deployed worker
+
+### SCN-031: A finding inside an embedded frame reaches the page that embeds it
+- **Persona:** P-01
+- **Feature:** ai-shield
+- **Traces:** ST-001, FLW-02 (JTBD-01)
+- **Entry point:** any page that embeds a frame from another origin
+- **Preconditions:** the embedded frame carries hidden text addressed to an assistant; the embedding page itself is clean
+- **Steps:**
+  1. User opens the page -> the content script scans in every frame, because injections hide in iframes too
+  2. The frame's finding comes back -> the frame neutralises it and arms the agent gate **in that frame**, and the background tells the top frame
+  3. The top frame shows one warning, naming the frame's **origin** -> "something on this page" and "something in the frame from ads.example" are different warnings, and only the second says where to look
+- **Expected result:** a poisoned frame is handled *and* mentioned; the user is not left with an injection silently neutralised inside an advert
+- **Alt paths:** the embedding page has its own finding and a banner is already up -> the frame's finding is left to the journal rather than drawn as a second overlay. Two warnings stacked on one page is how a warning stops being read, and folding the count in would need the top frame to know about frames it cannot see. **Recorded limit, not an oversight**; the case with no warning at all was the clean page embedding a poisoned frame
+- **UI elements:** the injection banner, headline naming the frame's origin; "Показать запись"
+- **States covered:** success
+- **Errors & recovery:** the frame navigated or the tab closed before the report arrived -> nothing is drawn and the journal holds the finding; a frame with no address of its own (`srcdoc`, `about:blank`) -> the banner says "встроенный фрейм без собственного адреса" rather than inventing a name
+- **Behaviour notes:** the report goes frame → background → top frame rather than frame → top frame directly, and that is a security choice rather than a convenience. A subframe can reach the top with `window.top.postMessage`, and that message travels through the page's own window — where the page can forge it, and the top frame has no way to tell an extension's report from a claim made by the thing being reported. The background sits outside the page, so this hop is not forgeable. **Until 2026-08-20 the reporting half did not exist at all:** `content/index.ts` returned on `if (!isTopFrame)` after neutralising and arming, while its own comment three screens up promised "subframes still collect and report; the top frame is the one that speaks"
+- **Status:** implemented
+- **Coverage:** apps/extension/src/background/index.ts:handleCandidates (the relay), packages/platform/src/adapter.ts:sendToFrame, apps/extension/src/content/index.ts:showFrameFinding, packages/contracts/src/verdict.ts:worstOf, e2e/scn-031.spec.ts

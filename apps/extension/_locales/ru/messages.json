@@ -1416,6 +1416,42 @@
       }
     }
   },
+  "warnFrameHeadline": {
+    "message": "Скрытые инструкции найдены во встроенном фрейме: $WHERE$",
+    "placeholders": {
+      "where": {
+        "content": "$1"
+      }
+    }
+  },
+  "warnFramePlain": {
+    "message": "Найденное обезврежено в самом фрейме, и действия ассистента там удерживаются. $SNIPPET$$MORE$",
+    "placeholders": {
+      "snippet": {
+        "content": "$1"
+      },
+      "more": {
+        "content": "$2"
+      }
+    }
+  },
+  "warnFrameMore": {
+    "message": " И ещё $COUNT$ в том же фрейме.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "warnFrameUnnamed": {
+    "message": "встроенный фрейм без собственного адреса"
+  },
+  "warnFrameSource": {
+    "message": "Найдено на этой странице, во встроенном фрейме"
+  },
+  "warnFrameJournal": {
+    "message": "Показать запись"
+  },
   "warnInjectionHeadline": {
     "message": "На этой странице есть инструкции, написанные для ассистента"
   },

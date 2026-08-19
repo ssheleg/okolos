@@ -106,7 +106,11 @@ describe('one adapter, both browsers', () => {
 
 describe('rpc survives what it does not understand', () => {
   it('answers unsupported for a malformed message instead of throwing', () => {
-    const listeners: Array<(m: unknown, s: unknown, r: (x: unknown) => void) => void> = []
+    // The sender is shaped now, not `unknown`: the adapter reads three fields out
+    // of it, and a listener typed loosely here would have hidden the day one of
+    // them was renamed.
+    type Sender = { tab?: { id?: number }; frameId?: number; url?: string; origin?: string }
+    const listeners: Array<(m: unknown, s: Sender, r: (x: unknown) => void) => void> = []
     const api = fakeApi({
       runtime: {
         onMessage: {
@@ -120,8 +124,8 @@ describe('rpc survives what it does not understand', () => {
     platform.runtime.onMessage(() => undefined)
 
     const answers: unknown[] = []
-    listeners[0]?.({ nonsense: true }, null, (response) => answers.push(response))
-    listeners[0]?.({ v: 2, type: 'page/candidates' }, null, (response) => answers.push(response))
+    listeners[0]?.({ nonsense: true }, {}, (response) => answers.push(response))
+    listeners[0]?.({ v: 2, type: 'page/candidates' }, {}, (response) => answers.push(response))
 
     expect(answers).toEqual([
       { v: 1, error: 'unsupported' },
@@ -451,5 +455,72 @@ describe('reaching the content script', () => {
       createPlatform('chrome', api).tabs.sendToActive('download/verdict', DOWNLOAD_VERDICT),
     ).resolves.toBe(false)
     expect(query).not.toHaveBeenCalled()
+  })
+})
+
+describe('who a message came from', () => {
+  /**
+   * The adapter used to drop the sender, and that is why a finding inside an iframe
+   * had nowhere to go: the background answered whoever asked without being able to
+   * tell a frame from a page, name its tab, or say where it was. Nothing tested the
+   * pass-through, so removing it again was invisible — found by planting exactly
+   * that.
+   */
+  type Sender = { tab?: { id?: number }; frameId?: number; url?: string; origin?: string }
+
+  function senderSeenBy(sender: Sender): Record<string, unknown> {
+    const listeners: Array<(m: unknown, s: Sender, r: (x: unknown) => void) => void> = []
+    const api = fakeApi({
+      runtime: {
+        onMessage: {
+          addListener: (cb) => {
+            listeners.push(cb)
+          },
+        },
+      },
+    })
+    let seen: Record<string, unknown> = { notCalled: true }
+    createPlatform('chrome', api).runtime.onMessage((_message, from) => {
+      seen = from as unknown as Record<string, unknown>
+      return Promise.resolve({ ok: true }) as never
+    })
+    listeners[0]?.({ v: 1, type: 'page/candidates', payload: {} }, sender, () => undefined)
+    return seen
+  }
+
+  it('hands the handler the tab, the frame and the origin', () => {
+    expect(
+      senderSeenBy({ tab: { id: 12 }, frameId: 3, url: 'https://ads.example.test/tag?id=9#x' }),
+    ).toEqual({ tabId: 12, frameId: 3, origin: 'https://ads.example.test' })
+  })
+
+  it('keeps the origin and not the address', () => {
+    // The frame's path is not ours to hold, and naming where a finding was is the
+    // entire reason the top frame is told at all.
+    const seen = senderSeenBy({ tab: { id: 1 }, frameId: 1, url: 'https://x.test/deep/path?q=1' })
+    expect(seen.origin).toBe('https://x.test')
+    expect(JSON.stringify(seen)).not.toContain('deep')
+  })
+
+  it('marks the top frame as frame zero, which is what tells a subframe apart', () => {
+    // The relay fires on `frameId > 0`. If zero arrived as absent, every top-frame
+    // scan would look like a subframe and the page would be told about itself.
+    expect(senderSeenBy({ tab: { id: 4 }, frameId: 0, url: 'https://top.test/' }).frameId).toBe(0)
+  })
+
+  it('omits what it was not given rather than passing undefined along', () => {
+    // An extension page has no tab. `{ tabId: undefined }` and `{}` behave the same
+    // in a `typeof` check and differently in `toEqual`, and the second is the one
+    // that says what the adapter knows.
+    expect(senderSeenBy({})).toEqual({})
+  })
+
+  it('survives a url it cannot parse, with no origin rather than a throw', () => {
+    // A throw here happens inside the browser's own listener, where nobody catches
+    // it and the message is simply never answered.
+    expect(senderSeenBy({ tab: { id: 2 }, frameId: 1, url: 'not a url' })).toEqual({
+      tabId: 2,
+      frameId: 1,
+    })
   })
 })

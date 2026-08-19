@@ -7,6 +7,30 @@
 export type Confidence = 'certain' | 'high' | 'medium' | 'low'
 export type Severity = 'critical' | 'major' | 'minor' | 'info'
 
+/**
+ * How severities compare, defined once beside the type they order.
+ *
+ * It lived as a private constant in the content script, which was fine while the
+ * content script was the only thing that ranked verdicts. The moment the background
+ * needed the same order — to name the worst finding in an embedded frame — the
+ * choice was to copy four numbers or to move them here. Copying is how the wipe
+ * confirmation came to name five of nine stores: two copies agree with each other
+ * and neither has to agree with anything else.
+ */
+export const SEVERITY_ORDER: Readonly<Record<Severity, number>> = {
+  critical: 3,
+  major: 2,
+  minor: 1,
+  info: 0,
+}
+
+/** The most severe verdict of a set, or `undefined` when there are none. */
+export function worstOf<T extends { readonly severity: Severity }>(
+  verdicts: readonly T[],
+): T | undefined {
+  return [...verdicts].sort((a, b) => SEVERITY_ORDER[b.severity] - SEVERITY_ORDER[a.severity])[0]
+}
+
 /** Which detection stage produced a piece of evidence. */
 export type Stage = 'diff' | 'rules' | 'model' | 'feed' | 'inventory' | 'corpus'
 

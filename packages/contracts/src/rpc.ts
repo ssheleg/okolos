@@ -37,6 +37,21 @@ export interface RpcMap {
   /** Records a page trap in the journal, so the diff can show it. */
   /** What this device knows about a host, for the credential guard. */
   /** Announced to whatever page is listening; the journal is the real record. */
+  /**
+   * A finding in an embedded frame, pushed to the page that embeds it.
+   *
+   * The content script runs in every frame because injections hide in iframes too,
+   * and only the top frame shows a warning — a banner inside a subframe can be
+   * invisible, clipped, or drawn a dozen times across ad frames. The reporting half
+   * of that arrangement did not exist: the subframe neutralised, armed the gate and
+   * returned, so a poisoned iframe was handled and never mentioned. The origin is
+   * here because "something on this page" and "something in the frame from
+   * ads.example" are different warnings.
+   */
+  'frame/finding': {
+    req: { origin: string; summary: string; count: number }
+    res: { ok: true }
+  }
   'download/verdict': {
     req: { action: string; headline: string; reasons: string; skipped: string }
     res: { ok: true }

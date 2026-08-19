@@ -75,8 +75,31 @@ export interface Alarms {
   onFired(handler: (name: string) => void): void
 }
 
+/**
+ * Who sent a message, in the only three facts a handler here has a use for.
+ *
+ * The adapter dropped the sender entirely, which is why a finding inside an
+ * iframe had nowhere to go: the background answered the frame that asked and had
+ * no way to know it was a frame, which tab it belonged to, or what to call it. The
+ * content script's own comment promised "subframes still collect and report; the
+ * top frame is the one that speaks", and the reporting half did not exist.
+ *
+ * Origin rather than the full url, and derived rather than trusted: the frame's
+ * address is not ours to log, and naming where a finding was is the whole point of
+ * telling the top frame at all.
+ */
+export interface RpcSender {
+  /** Absent when the message came from an extension page rather than a tab. */
+  readonly tabId?: number
+  /** `0` is the top frame. Anything above it is an embedded one. */
+  readonly frameId?: number
+  /** Origin only — no path, no query. Absent when it cannot be parsed. */
+  readonly origin?: string
+}
+
 export type RpcHandler = <T extends RpcType>(
   message: Envelope<T>,
+  sender: RpcSender,
 ) => Promise<RpcMap[T]['res']> | undefined
 
 export interface Runtime {
@@ -124,6 +147,19 @@ export interface Tabs {
    * it must not do is assume the message landed.
    */
   sendToActive<T extends RpcType>(type: T, payload: RpcMap[T]['req']): Promise<boolean>
+  /**
+   * Delivers to one frame of one tab, addressed rather than guessed.
+   *
+   * `sendToActive` finds the tab the user is looking at, which is right for a
+   * download and wrong for this: a finding inside an iframe belongs on the page
+   * that embeds it, and that page is identified by the sender, not by which window
+   * happens to be focused when the verdict comes back.
+   */
+  sendToFrame<T extends RpcType>(
+    type: T,
+    payload: RpcMap[T]['req'],
+    to: { tabId: number; frameId: number },
+  ): Promise<boolean>
 }
 
 /** The subset of the WebExtension API both browsers actually agree on. */
@@ -153,7 +189,15 @@ export interface WebExtensionApi {
     sendMessage(message: unknown): Promise<unknown>
     onMessage: {
       addListener(
-        cb: (message: unknown, sender: unknown, sendResponse: (response: unknown) => void) => boolean | void,
+        cb: (
+          message: unknown,
+          // Shaped rather than `unknown`: the adapter has to read three fields out
+          // of it, and typing them here is what makes a rename visible instead of
+          // silently producing `undefined`. `origin` is Chrome-only, so the adapter
+          // derives it from `url` and both are optional.
+          sender: { tab?: { id?: number }; frameId?: number; url?: string; origin?: string },
+          sendResponse: (response: unknown) => void,
+        ) => boolean | void,
       ): void
     }
   }
@@ -169,7 +213,11 @@ export interface WebExtensionApi {
      * ever arrived. Optional here because a test double has no reason to carry
      * it, which is also how `Tabs.sendToActive` can honestly answer "no page".
      */
-    sendMessage?(tabId: number, message: unknown): Promise<unknown>
+    sendMessage?(
+      tabId: number,
+      message: unknown,
+      options?: { frameId: number },
+    ): Promise<unknown>
   }
   declarativeNetRequest?: {
     getDynamicRules(): Promise<Array<{ id: number }>>

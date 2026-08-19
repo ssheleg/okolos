@@ -209,18 +209,31 @@ describe('every message type is both served and sent', () => {
         )
         const pattern = (fn: string): RegExp => new RegExp(`${fn}\\(\\s*'${escaped}'`)
 
-        // One assertion, no branch. Written as `if (…) expect(…) else expect(…)` it
-        // asserted in both arms and was still refused by the rule at the top of
-        // this file — which cannot see that both arms assert, and is right to
-        // refuse the shape rather than special-case it. Choosing the channel first
-        // and asserting once is also simply clearer about what is being claimed.
-        const channel = handledInContent ? 'sendToActive' : 'send'
+        /**
+         * One assertion, no branch. Written as `if (…) expect(…) else expect(…)` it
+         * asserted in both arms and was still refused by the rule at the top of this
+         * file — which cannot see that both arms assert, and is right to refuse the
+         * shape rather than special-case it.
+         *
+         * Two channels reach a content script, not one: `sendToActive` for the tab
+         * the user is looking at, `sendToFrame` for a named frame of a named tab. The
+         * first version of this rule allowed only the former and failed
+         * `frame/finding`, which is delivered by the latter — a rule that names one
+         * correct answer when there are two is a rule that will be edited to shut up
+         * rather than to be right.
+         */
+        const CONTENT_CHANNELS = ['sendToActive', 'sendToFrame']
+        const sentOn = (fn: string): boolean => pattern(fn).test(product)
+        const ok = handledInContent
+          ? CONTENT_CHANNELS.some(sentOn)
+          : sentOn('send') && !CONTENT_CHANNELS.some(sentOn)
         const why = handledInContent
           ? `${type} is handled in the content script, so it must be sent with ` +
-            `tabs.sendToActive — runtime.send from the background never arrives there`
-          : `${type} is handled in a background or extension-page context, which ` +
-            `tabs.sendToActive does not address — send it with runtime.send`
-        expect(product, why).toMatch(pattern(channel))
+            `tabs.${CONTENT_CHANNELS.join(' or tabs.')} — runtime.send from the ` +
+            `background never arrives there`
+          : `${type} is handled in a background or extension-page context, which the ` +
+            `tabs channels do not address — send it with runtime.send`
+        expect(ok, why).toBe(true)
       })
     }
   }

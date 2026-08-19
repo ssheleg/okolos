@@ -10,10 +10,10 @@ import {
   type GateHandle,
   type InspectorHandle,
 } from '@okolos/ui'
+import { worstOf } from '@okolos/contracts'
 import type {
   AgentAction,
   GateChoice,
-  Severity,
   UnresolvedFinding,
   Verdict,
 } from '@okolos/contracts'
@@ -35,7 +35,6 @@ import { Sanitiser } from './sanitize.js'
  * that misses a finding, so every path fails open.
  */
 
-const SEVERITY_ORDER: Record<Severity, number> = { critical: 3, major: 2, minor: 1, info: 0 }
 
 
 const platform = detectPlatform()
@@ -61,6 +60,15 @@ useResolver((key, substitutions) => platform.message(key, substitutions))
  * banner mounted inside a subframe can be invisible, clipped, or duplicated
  * across a dozen ad frames. Subframes still collect and report; the top frame
  * is the one that speaks.
+ *
+ * **The reporting half was missing until 2026-08-20**, and this comment described
+ * it anyway: the subframe neutralised, armed the gate and returned on
+ * `if (!isTopFrame)`, so a poisoned iframe was handled and never mentioned. The
+ * report now goes frame → background → top frame, and through the background on
+ * purpose — a subframe could reach the top with `window.top.postMessage`, and that
+ * message travels through the page's own window, where the page can forge it and
+ * the top frame cannot tell an extension's report from a claim by the thing being
+ * reported. See SCN-031.
  */
 const isTopFrame = window.top === window
 
@@ -174,9 +182,45 @@ function summarise(verdict: Verdict): string {
 }
 
 function worst(verdicts: readonly Verdict[]): Verdict {
-  return [...verdicts].sort(
-    (a, b) => SEVERITY_ORDER[b.severity] - SEVERITY_ORDER[a.severity],
-  )[0] as Verdict
+  // `worstOf` from the contract, not a local copy of the order: the background
+  // needs the same ranking to name the worst finding in an embedded frame, and two
+  // copies of four numbers agree with each other rather than with anything else.
+  return worstOf(verdicts) as Verdict
+}
+
+/**
+ * The warning for a finding the top frame never saw.
+ *
+ * Named by origin, because "something on this page" and "something in the frame
+ * from ads.example" are different warnings and only the second one tells the reader
+ * where to look. An empty origin — a `srcdoc` or `about:blank` frame, whose address
+ * is not the frame's own — says "an embedded frame" instead of pretending to a name.
+ */
+function showFrameFinding(finding: { origin: string; summary: string; count: number }): void {
+  const where = finding.origin === '' ? t('warnFrameUnnamed') : finding.origin
+  const more = finding.count > 1 ? t('warnFrameMore', String(finding.count - 1)) : ''
+
+  banner = mountBanner(
+    document,
+    {
+      variant: 'injection',
+      severity: 'major',
+      headline: t('warnFrameHeadline', where),
+      detail: t('warnFramePlain', finding.summary, more),
+      sourceLine: t('warnFrameSource'),
+      primaryLabel: t('warnFrameJournal'),
+    },
+    {
+      onPrimary: openFrameJournal,
+      onRetry: openFrameJournal,
+      onDispute: resolveEverything,
+      onDismiss: resolveEverything,
+    },
+  )
+}
+
+function openFrameJournal(): void {
+  void platform.runtime.send('recovery/open', { kind: 'journal' }).catch(() => undefined)
 }
 
 function show(verdict: Verdict, total: number, partialScan: boolean, neutralised: number): void {
@@ -544,14 +588,35 @@ if (isTopFrame) {
  */
 if (isTopFrame) {
   platform.runtime.onMessage((message) => {
-    if (message.type !== 'download/verdict') return undefined
-    showDownloadVerdict(message.payload as never, {
-      doc: document,
-      openJournal: () => {
-        void platform.runtime.send('recovery/open', { kind: 'journal' }).catch(() => undefined)
-      },
-    })
-    return Promise.resolve({ ok: true }) as never
+    if (message.type === 'download/verdict') {
+      showDownloadVerdict(message.payload as never, {
+        doc: document,
+        openJournal: () => {
+          void platform.runtime.send('recovery/open', { kind: 'journal' }).catch(() => undefined)
+        },
+      })
+      return Promise.resolve({ ok: true }) as never
+    }
+
+    /**
+     * A finding in an embedded frame, reported by the background because the frame
+     * cannot report it itself without going through the page's own window — where
+     * the page could forge it.
+     *
+     * **Recorded limit:** if this page already has a banner up for its own finding,
+     * the frame's is left to the journal rather than drawn as a second overlay. Two
+     * warnings stacked on one page is how a warning stops being read, and folding
+     * the count in would need the top frame to know about frames it cannot see. The
+     * common case — a clean page embedding a poisoned frame — is the one that had no
+     * warning at all until now.
+     */
+    if (message.type === 'frame/finding') {
+      const finding = message.payload as { origin: string; summary: string; count: number }
+      if (!banner) showFrameFinding(finding)
+      return Promise.resolve({ ok: true }) as never
+    }
+
+    return undefined
   })
 }
 

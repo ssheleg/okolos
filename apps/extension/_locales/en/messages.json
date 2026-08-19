@@ -1416,6 +1416,42 @@
       }
     }
   },
+  "warnFrameHeadline": {
+    "message": "Hidden instructions found in an embedded frame: $WHERE$",
+    "placeholders": {
+      "where": {
+        "content": "$1"
+      }
+    }
+  },
+  "warnFramePlain": {
+    "message": "What was found is neutralised inside the frame, and an assistant acting there is held. $SNIPPET$$MORE$",
+    "placeholders": {
+      "snippet": {
+        "content": "$1"
+      },
+      "more": {
+        "content": "$2"
+      }
+    }
+  },
+  "warnFrameMore": {
+    "message": " And $COUNT$ more in the same frame.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "warnFrameUnnamed": {
+    "message": "an embedded frame with no address of its own"
+  },
+  "warnFrameSource": {
+    "message": "Found on this page, in an embedded frame"
+  },
+  "warnFrameJournal": {
+    "message": "Show the record"
+  },
   "warnInjectionHeadline": {
     "message": "This page carries instructions written for an AI assistant"
   },

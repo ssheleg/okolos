@@ -1,6 +1,11 @@
 import { isEnvelope, type Envelope, type RpcMap, type RpcType } from '@okolos/contracts'
 
-import type { Platform, RpcHandler, WebExtensionApi } from './types.js'
+import type {
+  Platform,
+  RpcHandler,
+  RpcSender,
+  WebExtensionApi,
+} from './types.js'
 
 /**
  * Strips a URL down to origin and path.
@@ -119,7 +124,7 @@ export function createPlatform(kind: Platform['kind'], api: WebExtensionApi): Pl
       },
 
       onMessage(handler: RpcHandler): void {
-        api.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+        api.runtime.onMessage.addListener((message, sender, sendResponse) => {
           // An unknown type or a future version is answered and survived. A
           // receiver that throws here turns a version skew into a broken page.
           if (!isEnvelope(message)) {
@@ -127,7 +132,30 @@ export function createPlatform(kind: Platform['kind'], api: WebExtensionApi): Pl
             return true
           }
 
-          const result = handler(message)
+          /**
+           * The sender, narrowed to three facts and no more.
+           *
+           * It used to be discarded, and that is why a finding inside an iframe had
+           * nowhere to go: the background answered whoever asked without being able
+           * to tell a frame from a page. `origin` is derived from the url rather
+           * than taken from `sender.origin`, which only Chrome sets — and derived
+           * to an origin rather than kept whole, because the frame's path is not
+           * ours to hold.
+           */
+          const origin = ((): string | undefined => {
+            try {
+              return sender.url ? new URL(sender.url).origin : undefined
+            } catch {
+              return undefined
+            }
+          })()
+          const from: RpcSender = {
+            ...(typeof sender.tab?.id === 'number' ? { tabId: sender.tab.id } : {}),
+            ...(typeof sender.frameId === 'number' ? { frameId: sender.frameId } : {}),
+            ...(origin ? { origin } : {}),
+          }
+
+          const result = handler(message, from)
           if (!result) {
             sendResponse({ v: 1, error: 'unsupported' })
             return true
@@ -239,6 +267,34 @@ export function createPlatform(kind: Platform['kind'], api: WebExtensionApi): Pl
 
       async create(url: string): Promise<void> {
         await api.tabs.create({ url })
+      },
+
+      async sendToFrame<T extends RpcType>(
+        type: T,
+        payload: RpcMap[T]['req'],
+        to: { tabId: number; frameId: number },
+      ): Promise<boolean> {
+        /**
+         * Addressed, not guessed. A finding inside an iframe belongs on the page
+         * that embeds it, and that page is named by the sender rather than by
+         * whichever window happens to be focused when the verdict comes back.
+         *
+         * Type first and destination last, matching `sendToActive` — the first
+         * version took `(tabId, frameId, type, payload)` and `tools/test-quality`
+         * could not find the sender for `frame/finding` at all, because every rule
+         * about who sends what reads the type from the first argument. An API whose
+         * argument order defeats the project's own gate is the wrong argument order.
+         */
+        if (!api.tabs.sendMessage) return false
+        const envelope: Envelope<T> = { v: 1, type, payload }
+        try {
+          await api.tabs.sendMessage(to.tabId, envelope, { frameId: to.frameId })
+          return true
+        } catch {
+          // The frame navigated, the tab closed, or nothing is listening there.
+          // "Nobody to tell" is not an error for the caller to handle.
+          return false
+        }
       },
 
       async sendToActive<T extends RpcType>(type: T, payload: RpcMap[T]['req']): Promise<boolean> {

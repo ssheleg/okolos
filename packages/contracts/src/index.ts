@@ -11,6 +11,8 @@ export type {
   VerdictCategory,
 } from './verdict.js'
 
+export { SEVERITY_ORDER, worstOf } from './verdict.js'
+
 export type {
   CarrierKind,
   CharClass,

@@ -76,3 +76,22 @@ export async function serve(context: BrowserContext, html: string): Promise<void
     route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: html }),
   )
 }
+
+/**
+ * Several origins, each with its own document.
+ *
+ * `serve` answers every path with one body, which is right for a single page and
+ * useless for a frame: an embedded document has to come from a different origin for
+ * the browser to give it its own frame id, and that id is what tells a subframe from
+ * the top one. Keyed by host so a test reads as "this page embeds that one".
+ */
+export async function serveHosts(
+  context: BrowserContext,
+  bodies: Readonly<Record<string, string>>,
+): Promise<void> {
+  for (const [host, html] of Object.entries(bodies)) {
+    await context.route(`https://${host}/**`, (route) =>
+      route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: html }),
+    )
+  }
+}

@@ -12,6 +12,7 @@ export type {
   KeyValueStore,
   Platform,
   RpcHandler,
+  RpcSender,
   Runtime,
   Tabs,
   WebExtensionApi,

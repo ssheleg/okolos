@@ -104,6 +104,11 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-19 (шестой)** — `261dd7a`, B-62; стадии 0–10. Подтверждение стирания
+  называет девять видов данных из девяти вместо пяти; полнота переехала в тип рядом
+  с хранилищами, где она факт. 1605 юнит-тестов в 110 файлах, четыре планта.
+  356 ключей в каждом каталоге. Постоянных инструкций десять, снятий нет.
+  Вердикт REFINE.
 - **2026-08-19 (пятый)** — `4326dcf`, B-29; стадии 0–10. Выгрузка данных
   перестала отдавать ключ, которым обратимо всё остальное в том же файле, и
   перестала выдавать `{}` за двадцать мегабайт весов. 1598 юнит-тестов в 109
@@ -163,6 +168,43 @@ happens before adding.
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-19 — the list was written twice, so both copies agreed and neither was right
+
+- **Symptom:** the wipe confirmation named five kinds of data. `wipeAll` clears
+  nine stores. The four it never mentioned included the password-reuse index, which
+  `docs/privacy.md` devotes a section to.
+- **Surfaced at:** the ladder walk of the previous task, not by anyone reading the
+  dialog. Two screens away from where the previous fix was.
+- **Owned by:** the shape, not the count. The five keys were in the renderer and the
+  same five were in the renderer's own test. A test that repeats its subject's data
+  proves the two agree; it cannot notice that both are wrong. This is standing
+  instruction 8 — a test that agrees with the code proves they agree and nothing
+  else — arriving in a form the instruction does not name: not a wrong assertion,
+  a duplicated input.
+- **Root cause of the duplication:** the renderer needed the list and could not
+  reach the schema, because `packages/ui` does not depend on `@okolos/storage`. The
+  cheap answer was to retype it, and the cheap answer is what happened. Copying
+  across a layer boundary is what a boundary makes tempting.
+- **Fix, by grade:** structural, and specifically by moving the guarantee to whoever
+  can hold it. `Record<StoreName, string>` beside `STORES` fails `tsc` when a store
+  has no words — a type is a better guard than a test because it fires before anyone
+  runs anything. The renderer takes the list as an argument, since it cannot know
+  whether what it was handed is all of them, and throws on an empty one: a dialog
+  naming no data above a button that deletes all of it reads as "nothing will be
+  deleted".
+- **Where the check went, and why not beside either side:** `tools/`. Giving `ui` a
+  dependency on `storage` to satisfy a test would open the production import too.
+  From `tools/` the gate compares three artefacts nobody edits together by accident —
+  `STORES`, both shipped catalogues, and the single line at the call site. That last
+  one matters: the type cannot see a subset passed as an array literal, which is the
+  only remaining way to get this wrong, and a plant proved the gate sees it.
+- **A note on the word that was already there.** SCN-023 step 1 said the system
+  "lists exactly what will be deleted" before the list was complete. The scenario was
+  not wrong about the intent and was wrong about the product, and for a while it read
+  as coverage. It now carries the correction with the count, rather than being edited
+  into agreement — a scenario file that quietly starts matching the code stops being
+  a source of truth and becomes a mirror.
 
 ### 2026-08-19 — three holes in one hour's work, and not one of them found by reading it
 

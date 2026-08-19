@@ -104,6 +104,12 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-19 (третий)** — `b675b40`, B-61; стадии 0–10. Архив магазина
+  перестал нести файл, которого никто не писал, и появилась обратная проверка,
+  которой у релизного гейта не было по построению. Релизных проверок 10 вместо 8,
+  1580 юнит-тестов в 108 файлах. Два планта, оба по настоящему пути отказа —
+  первый вариант планта (в `dist`) не доказывал ничего, потому что гейт
+  пересобирает. Постоянных инструкций десять, снятий нет. Вердикт REFINE.
 - **2026-08-19 (второй)** — `2464b0e`, B-27; стадии 0–10. Из пяти незакрытых
   гейтом чисел бренд-пака неверны оказались три, а не четыре: два обвинения
   выставил сам аудит, и оба — его ошибка измерения. Волатильные числа теперь
@@ -143,6 +149,51 @@ happens before adding.
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-19 — a new gate went red for a reason that had nothing to do with what it guards
+
+- **Symptom:** the gate written to catch foreign files in the shipped build fired
+  on its first run, naming six of them. `find` over the same directories found
+  none.
+- **Surfaced at:** stage 6, in the minute after the gate existed.
+- **Owned by:** the gate. `globSync('**/*')` matches directories as well as files,
+  and a directory has no extension — so `chunks`, `assets`, `icons` and the three
+  locale folders all failed a rule about file extensions. Fixed with `statSync`,
+  and the reason is in the comment so the next reader does not re-derive it.
+- **Why it is worth an entry rather than a line:** a red new gate is the most
+  persuasive thing a run produces, and it is also the least trustworthy. Six named
+  files were enough to believe the build was dirty; reading what it named took ten
+  seconds and the build was clean. Standing instruction 7 is about numbers from a
+  tool; this is the same sentence about a *verdict* from a tool, and the discipline
+  it asks for is identical — read what it says, not that it spoke.
+- **The plant had to move, and where it moved to is the finding.** Planting a
+  dotfile into `dist` proved nothing: the gate's `beforeAll` runs `pnpm build`, and
+  `build.mjs` starts by removing the target directory, so the plant was gone before
+  the assertion ran — and the gate reported green, which reads as "the gate does
+  not work" when it actually means "the plant does not". The real failure path is a
+  file in the *source* that the build then copies, and a plant there turned both
+  guards red by name. A plant has to travel the path the defect travels; anywhere
+  else it measures the harness.
+- **A division of labour, decided rather than defaulted:** `build.mjs` silently
+  drops dotfiles, because a tool put them there and there is nobody to inform. It
+  does *not* drop `icons/notes.txt`, so the gates can refuse that out loud — a
+  build that quietly discards what a person misplaced hides the mistake instead of
+  reporting it. The filter and the gates are narrow and wide on purpose, and both
+  were planted with the same file to prove which catches which.
+- **Two smaller ones, both found by using the thing rather than reading it:**
+  `--check` measured build freshness against `dist`, which also holds `release/`
+  and the two e2e builds and therefore outlives any target inside it — so it
+  answered "chrome was not built" on a tree where building takes three seconds.
+  And the reverse check is closed by extension rather than by a list of names,
+  because the next stray file will not be called `.DS_Store`: `Thumbs.db`, a
+  `.map`, a `README.md` were all caught by that shape.
+- **A property of the loop this session is running, recorded once so it is not
+  rediscovered:** each iteration lands the work in one commit and the
+  retrospective in a second, because the stamp names the commit and therefore
+  cannot precede it. CI's concurrency group has `cancel-in-progress`, so the first
+  commit's verdict is cancelled by the second push. Nothing is unverified — the
+  second commit's tree contains the first's — but a verdict can no longer be
+  bisected to the code commit alone, and that is the trade rather than an accident.
 
 ### 2026-08-19 — the audit was wrong about two of the five numbers it accused
 

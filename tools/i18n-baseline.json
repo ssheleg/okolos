@@ -14,8 +14,7 @@
     "packages/core-feeds/src/display.ts": 1,
     "packages/core-gate/src/decide.ts": 2,
     "packages/core-injection/src/stage1.ts": 1,
-    "packages/core-recovery/src/checklist.ts": 18,
-    "packages/core-recovery/src/portable.ts": 6,
     "packages/storage/src/export.ts": 4
-  }
+  },
+  "paidSoFar": "core-recovery closed 2026-08-20: 18 step sentences and 6 portable lines moved to _locales. The package keeps the id, the order and `elsewhere` — the facts it actually decides — and `packages/ui/src/recovery/recovery.ts` maps id to key through two `*_KEY` tables, which is the shape the locale gate reads: a computed key would make all eighteen messages look dead to it. The assertions about the words moved to the surface's test rather than being deleted with the words."
 }

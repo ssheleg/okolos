@@ -29,11 +29,63 @@ function pastDeadline(iso: unknown, nowMs: number): boolean {
   return at <= nowMs
 }
 
+/**
+ * Whether enough time has passed since `lastAt` for the work to be owed again.
+ *
+ * An MV3 service worker starts many times a day — it wakes for every message a
+ * content script sends, which is nearly every page — and `alarms.create`
+ * replaces an alarm of the same name, so an alarm re-created on every start can
+ * be reset before it ever fires. Any periodic job therefore needs a timestamp in
+ * storage rather than a timer in memory or an alarm alone.
+ *
+ * Written once and used twice: the retention sweep had these four cases and the
+ * feed pull had none of them, so the feed ran on every single wake-up. Four edge
+ * cases duplicated across two callers are four edge cases that will disagree.
+ */
+export function dueAgain(
+  lastAt: string | null | undefined,
+  nowMs: number,
+  intervalMs: number,
+): boolean {
+  // Never done is always owed.
+  if (!lastAt) return true
+  const at = Date.parse(lastAt)
+  // An unreadable timestamp is not permission to skip: doing the work twice
+  // costs a little, and skipping it silently costs the promise the work keeps.
+  if (!Number.isFinite(at)) return true
+  // A clock that moved backwards — a corrected system time, a restored profile —
+  // would otherwise postpone the work indefinitely.
+  if (at > nowMs) return true
+  return nowMs - at >= intervalMs
+}
+
 /** How long a sweep may be skipped before the next startup owes one. */
 export const SWEEP_INTERVAL_MS = 12 * 60 * 60 * 1000
 
 /** Where the last sweep's timestamp lives, so the decision survives a restart. */
 export const LAST_SWEEP_KEY = 'retention:lastSweptAt'
+
+/**
+ * How long the feed pull may be skipped. Six hours, which is the alarm's own
+ * period and the cadence REQ-13 records.
+ *
+ * Without it, `void pullFeed()` ran on **every worker start** — and the worker
+ * starts on nearly every page, because a content script messages it. Instead of
+ * four requests a day the product made one per page, each writing a row to
+ * `outbound_log` because the audit entry is mandatory *before* a request goes
+ * out. So the self-audit panel — the screen whose whole subject is "here is what
+ * left this device" — filled with `feed-update` and buried everything else.
+ */
+export const FEED_INTERVAL_MS = 6 * 60 * 60 * 1000
+
+/**
+ * Where the feed's last **attempt** is recorded — attempt, not success.
+ *
+ * A failed pull that left no mark would be retried on the next wake-up, which is
+ * the flood again, with the added property that it only happens when something
+ * is already wrong.
+ */
+export const LAST_FEED_KEY = 'feed:lastAttemptedAt'
 
 /**
  * Whether a sweep is owed.
@@ -48,15 +100,12 @@ export const LAST_SWEEP_KEY = 'retention:lastSweptAt'
  * question at each start is only whether enough time has passed.
  */
 export function dueForSweep(lastSweptAt: string | null | undefined, nowMs: number): boolean {
-  if (!lastSweptAt) return true
-  const at = Date.parse(lastSweptAt)
-  // An unreadable timestamp is not permission to skip: sweeping twice costs a
-  // few deletes, and skipping keeps data past the window the user was promised.
-  if (!Number.isFinite(at)) return true
-  // A clock that moved backwards (a corrected system time, a restored profile)
-  // would otherwise postpone the sweep indefinitely.
-  if (at > nowMs) return true
-  return nowMs - at >= SWEEP_INTERVAL_MS
+  return dueAgain(lastSweptAt, nowMs, SWEEP_INTERVAL_MS)
+}
+
+/** Whether a feed pull is owed. The same four cases, by construction. */
+export function dueForFeed(lastAttemptedAt: string | null | undefined, nowMs: number): boolean {
+  return dueAgain(lastAttemptedAt, nowMs, FEED_INTERVAL_MS)
 }
 
 /**

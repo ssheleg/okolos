@@ -9,8 +9,12 @@ export {
 } from './db.js'
 export { EXPORT_NOTE, exportAll, wipeAll, type WipeResult } from './export.js'
 export {
+  dueAgain,
+  dueForFeed,
   dueForSweep,
   pruneExpired,
+  FEED_INTERVAL_MS,
+  LAST_FEED_KEY,
   LAST_SWEEP_KEY,
   SWEEP_INTERVAL_MS,
 } from './retention.js'

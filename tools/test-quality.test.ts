@@ -339,3 +339,88 @@ describe('silence is not an empty list', () => {
     expect(existsSync(path.join(root, 'apps/extension/src/options/answered.test.ts'))).toBe(true)
   })
 })
+
+describe('a periodic job asks whether it is owed', () => {
+  /**
+   * An MV3 service worker starts many times a day — it wakes for every message a
+   * content script sends, which is nearly every page — and `alarms.create`
+   * replaces an alarm of the same name, so an alarm re-created at start can be
+   * reset before it ever fires. Every periodic job therefore needs a timestamp in
+   * storage, and a job called unconditionally at start is a job that runs per
+   * page.
+   *
+   * The retention sweep had that timestamp. The feed pull did not, and made one
+   * request per page for as long as it shipped — each writing a row to
+   * `outbound_log`, because the audit entry is mandatory before a request leaves.
+   * This reads the background's source and requires every start-time job to
+   * consult a due-check, because the shape is the defect and the shape is what a
+   * reader misses.
+   */
+  const source = readFileSync(path.join(root, 'apps/extension/src/background/index.ts'), 'utf8')
+
+  /** The jobs started at load, and the due-check each must consult. */
+  const PERIODIC: ReadonlyArray<readonly [string, string]> = [
+    ['pullFeed', 'dueForFeed'],
+    ['sweepIfDue', 'dueForSweep'],
+  ]
+
+  it('is reading the background that actually starts them', () => {
+    // An empty read would make every assertion below pass on nothing.
+    expect(source).toContain('platform.alarms.create')
+    expect(source.length).toBeGreaterThan(5000)
+  })
+
+  /**
+   * Whether `body` **acts on** the check rather than merely naming it.
+   *
+   * The first version of this asked whether the function's text contained the
+   * check's name, and a plant of `void dueForFeed` — which does nothing at all —
+   * kept it green. That is the same weak discriminator this file has caught
+   * before, when a type merely *mentioned* in the content script counted as a
+   * type *handled* there.
+   *
+   * So the pattern is the shape that matters: the check negated in a condition
+   * whose body returns. Narrow enough to reject a mention, and asserted against
+   * both a passing and a failing snippet below — a matcher nobody has watched
+   * fail is a matcher that matches anything.
+   */
+  const guardsWith = (body: string, check: string): boolean =>
+    new RegExp(`if\\s*\\(\\s*!${check}\\(([\\s\\S]{0,400}?)\\)\\s*\\)\\s*\\{?[\\s\\S]{0,80}?\\breturn\\b`).test(body)
+
+  const bodyOf = (job: string): string => {
+    const from = source.indexOf(`async function ${job}(`)
+    const body = source.slice(from)
+    const end = body.indexOf('\n}\n')
+    return body.slice(0, end === -1 ? body.length : end)
+  }
+
+  it('rejects a mention that does nothing, which is how this check first passed', () => {
+    // The discriminator, checked against the plant that defeated its predecessor.
+    expect(guardsWith('void dueForFeed', 'dueForFeed'), 'a bare mention counts as a guard').toBe(
+      false,
+    )
+    expect(guardsWith('const x = dueForFeed(a, b)', 'dueForFeed')).toBe(false)
+    expect(guardsWith('if (!dueForFeed(last, Date.now())) {\n  return\n}', 'dueForFeed')).toBe(true)
+    expect(guardsWith('if (!dueForFeed(last, now)) return', 'dueForFeed')).toBe(true)
+  })
+
+  for (const [job, check] of PERIODIC) {
+    it(`${job} refuses to work unless ${check} says it is owed`, () => {
+      expect(guardsWith(bodyOf(job), check), `${job} does not act on ${check}`).toBe(true)
+    })
+  }
+
+  it('records the feed’s attempt before the request, not after it', () => {
+    /**
+     * After would mean a pull that throws leaves no mark, and the next wake-up
+     * tries again immediately — the flood, arriving only when something is
+     * already wrong. The order is the rule, so the order is what is checked.
+     */
+    const body = source.slice(source.indexOf('async function pullFeed('))
+    const marked = body.indexOf('LAST_FEED_KEY, value:')
+    const sent = body.indexOf('await syncFeed(')
+    expect(marked, 'the attempt is never recorded').toBeGreaterThan(0)
+    expect(sent).toBeGreaterThan(0)
+    expect(marked, 'the attempt is recorded after the request').toBeLessThan(sent)
+  })
+})

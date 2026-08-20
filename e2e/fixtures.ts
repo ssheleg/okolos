@@ -34,13 +34,21 @@ export const test = base.extend<{ context: BrowserContext; extensionId: string }
     /**
      * No test reaches the internet.
      *
-     * The extension pulls its blocking feed from the production worker at every
-     * service-worker boot, and nothing here stopped it. That made the suite
-     * depend on a deployed service being up and on what it currently serves —
-     * and it caused the SCN-007 flake directly: a test would seed a feed naming
-     * `fixture.test`, install the rules, and then lose the race to the real
-     * feed landing and replacing them with four production domains. The page it
-     * expected to be blocked then loaded, roughly one run in seventy.
+     * The extension pulls its blocking feed from the production worker, and
+     * nothing here stopped it. That made the suite depend on a deployed service
+     * being up and on what it currently serves — and it caused the SCN-007 flake
+     * directly: a test would seed a feed naming `fixture.test`, install the
+     * rules, and then lose the race to the real feed landing and replacing them
+     * with four production domains. The page it expected to be blocked then
+     * loaded, roughly one run in seventy.
+     *
+     * **"At every service-worker boot" was the accurate description until
+     * 2026-08-20, and it was also a product defect.** The pull had no due-check,
+     * and an MV3 worker boots on nearly every page; the feed now records its last
+     * attempt and skips a pull inside six hours (B-54). This block stays exactly
+     * as it is: a test's fresh profile has no timestamp, so the first boot in each
+     * test still pulls, which is the race this closes — and a suite that reaches
+     * the internet is wrong for reasons that have nothing to do with cadence.
      *
      * Registered first, so any route a test adds later takes precedence — that
      * is how a spec stubs the one destination it is actually about.

@@ -5,9 +5,11 @@ import { buildRules, matchUrl, type FeedSnapshot,
 } from '@okolos/core-feeds'
 import { createOnnxRuntime, MODEL } from '@okolos/model'
 import {
-  createModelCache,
-  dueForSweep,
+  LAST_FEED_KEY,
   LAST_SWEEP_KEY,
+  createModelCache,
+  dueForFeed,
+  dueForSweep,
   openDb,
   pruneExpired,
 } from '@okolos/storage'
@@ -991,6 +993,31 @@ async function pullFeed(): Promise<void> {
     const db = await openDb()
 
     /**
+     * Is a pull owed at all.
+     *
+     * This was missing, and the comment at the call site — "six hours, and once
+     * at start: a worker that restarts often would otherwise keep resetting a
+     * longer alarm, which is how retention came to never run" — names the exact
+     * reason it had to be here. The retention sweep got the timestamp; the feed
+     * got the "once at start" and nothing else. And the worker starts on nearly
+     * every page, because a content script sends it a message.
+     *
+     * So instead of four requests a day the product made one per page, each
+     * writing a row to `outbound_log` — the audit entry is mandatory *before* a
+     * request leaves — and the self-audit panel, whose whole subject is what left
+     * this device, filled with `feed-update`.
+     *
+     * The attempt is recorded **before** the sync rather than after it: a pull
+     * that throws would otherwise leave no mark, and the next wake-up would try
+     * again immediately. The flood, but only when something is already wrong.
+     */
+    const lastAttempt = await db.get('settings', LAST_FEED_KEY)
+    if (!dueForFeed(typeof lastAttempt?.value === 'string' ? lastAttempt.value : null, Date.now())) {
+      return
+    }
+    await db.put('settings', { key: LAST_FEED_KEY, value: new Date().toISOString() })
+
+    /**
      * Asked before the request, not after it.
      *
      * There is no point downloading a list this engine cannot check, and there is
@@ -1035,8 +1062,15 @@ async function pullFeed(): Promise<void> {
   }
 }
 
-// Six hours, and once at start: a worker that restarts often would otherwise
-// keep resetting a longer alarm, which is how retention came to never run.
+/**
+ * Six hours, and once at start — and "once at start" now means "if one is owed".
+ *
+ * The alarm alone cannot be trusted: `alarms.create` replaces an alarm of the
+ * same name and this line runs on every worker start, so a six-hour alarm on a
+ * browser in daily use is reset before it fires. That is why the start-time call
+ * exists. What it lacked was the other half — the worker starts on nearly every
+ * page, so an unconditional pull at start *is* a pull per page.
+ */
 void pullFeed()
 void platform.alarms.create(FEED_ALARM, 60 * 6)
 

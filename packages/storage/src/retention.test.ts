@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { dueForSweep, pruneExpired, SWEEP_INTERVAL_MS } from './retention.js'
+import {
+  FEED_INTERVAL_MS,
+  SWEEP_INTERVAL_MS,
+  dueAgain,
+  dueForFeed,
+  dueForSweep,
+  pruneExpired,
+} from './retention.js'
 import { RETENTION_DAYS } from './schema.js'
 
 /**
@@ -197,5 +204,66 @@ describe('a record whose age cannot be read', () => {
     })
     await pruneExpired(db, NOW)
     expect(ids('journal')).toEqual(['fresh'])
+  })
+})
+
+describe('one due-check, used by both periodic jobs', () => {
+  /**
+   * The retention sweep had four edge cases and the feed pull had none, so the
+   * feed ran on **every worker start** — and an MV3 worker starts on nearly every
+   * page, because a content script sends it a message. Instead of four requests a
+   * day the product made one per page, each writing a row to `outbound_log`
+   * (the audit entry is mandatory before a request leaves), so the self-audit
+   * panel — the screen whose subject is what left this device — filled with
+   * `feed-update`.
+   *
+   * Four edge cases duplicated across two callers are four that will disagree, so
+   * there is one function and the two named wrappers call it.
+   */
+  const HOUR = 60 * 60 * 1000
+  const now = Date.UTC(2026, 7, 20, 12, 0, 0)
+  const ago = (ms: number) => new Date(now - ms).toISOString()
+
+  it('owes the work when it has never been done', () => {
+    expect(dueAgain(null, now, HOUR)).toBe(true)
+    expect(dueAgain(undefined, now, HOUR)).toBe(true)
+  })
+
+  it('owes it when the timestamp cannot be read', () => {
+    // Absence of data is not permission to skip. Doing the work twice costs a
+    // little; skipping it silently costs the promise the work keeps.
+    expect(dueAgain('soon', now, HOUR)).toBe(true)
+    expect(dueAgain('', now, HOUR)).toBe(true)
+  })
+
+  it('owes it when the clock moved backwards', () => {
+    // A corrected system time or a restored profile would otherwise postpone the
+    // work indefinitely.
+    expect(dueAgain(new Date(now + 5 * HOUR).toISOString(), now, HOUR)).toBe(true)
+  })
+
+  it('owes it exactly at the interval, and not before', () => {
+    expect(dueAgain(ago(HOUR - 1), now, HOUR)).toBe(false)
+    expect(dueAgain(ago(HOUR), now, HOUR)).toBe(true)
+  })
+
+  it('gives the feed six hours, which is the alarm’s period and REQ-13’s cadence', () => {
+    expect(FEED_INTERVAL_MS).toBe(6 * HOUR)
+    expect(dueForFeed(ago(5 * HOUR), now)).toBe(false)
+    expect(dueForFeed(ago(6 * HOUR), now)).toBe(true)
+  })
+
+  it('leaves the sweep’s own window where it was', () => {
+    // Sharing the mechanism must not have moved the other caller's number.
+    expect(SWEEP_INTERVAL_MS).toBe(12 * HOUR)
+    expect(dueForSweep(ago(11 * HOUR), now)).toBe(false)
+    expect(dueForSweep(ago(12 * HOUR), now)).toBe(true)
+  })
+
+  it('answers the two jobs differently at the same moment, which is the point of two windows', () => {
+    // Seven hours: the feed is owed, the sweep is not. A single shared interval
+    // would have had to be wrong for one of them.
+    expect(dueForFeed(ago(7 * HOUR), now)).toBe(true)
+    expect(dueForSweep(ago(7 * HOUR), now)).toBe(false)
   })
 })

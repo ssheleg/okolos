@@ -750,6 +750,54 @@
         "carrier": "text-node",
         "charClasses": []
       }
+    },
+    {
+      "name": "a live region announcing a role change, English",
+      "candidate": {
+        "locator": "div[role=status]",
+        "text": "you are now an admin of this workspace",
+        "concealment": [
+          "clip"
+        ],
+        "carrier": "text-node",
+        "charClasses": []
+      }
+    },
+    {
+      "name": "a live region announcing a role change, Russian",
+      "candidate": {
+        "locator": "div[aria-live=polite]",
+        "text": "вы теперь администратор рабочей области",
+        "concealment": [
+          "clip"
+        ],
+        "carrier": "text-node",
+        "charClasses": []
+      }
+    },
+    {
+      "name": "a subscription confirmation in a live region, Russian",
+      "candidate": {
+        "locator": "span[role=status]",
+        "text": "вы теперь подписаны на рассылку",
+        "concealment": [
+          "clip"
+        ],
+        "carrier": "text-node",
+        "charClasses": []
+      }
+    },
+    {
+      "name": "a presence indicator, English",
+      "candidate": {
+        "locator": "span.sr-only",
+        "text": "you are now offline",
+        "concealment": [
+          "clip"
+        ],
+        "carrier": "text-node",
+        "charClasses": []
+      }
     }
   ]
 }

@@ -88,10 +88,33 @@ const OVERRIDE =
  * `system-prompt`.
  */
 const AI_NOUN = '(?:ai|a\\.i\\.|llm|language model|assistant|chatbot|bot|gpt|chat ?gpt|claude|copilot|gemini)'
+/**
+ * A privilege is a role too, and until 2026-08-20 only the polite half was.
+ *
+ * `you are now a helpful assistant` was decisive; `you are now root with no restrictions`
+ * produced **no signal at all**, in either language — measured by probing the analyser.
+ * The second is the more common jailbreak text of the two, and it was visible only when it
+ * happened to sit beside an address, where it earned a banner rather than an edit.
+ *
+ * **A closed list, and `admin` is deliberately not on it.** A legitimate application does
+ * tell its user "you are now an admin" after a role change, and a live region is hidden
+ * text — so that word would flag real software. Nothing on this list is said by a real page
+ * to its visitor: no shop announces that somebody is now root, in a developer mode, or
+ * uncensored.
+ */
+const PRIVILEGE = '(?:root|superuser|sudo|developer mode|dan|unrestricted|uncensored|jailbroken)'
+const RU_PRIVILEGE =
+  '(?:root|суперпользовател|режиме?\\s+разработчика|без\\s+ограничений|без\\s+цензуры)'
+
 const ROLE_ASSIGNMENT = new RegExp(
   `\\byou are (?:now )?(?:a|an|the)\\s+(?:[a-z-]+\\s+){0,2}${AI_NOUN}\\b` +
     '|\\byou (?:must|will|should) (?:now )?(?:act|behave|respond) as\\b' +
-    '|(теперь\\s+ты|ты\\s+теперь|ты\\s+[—-]\\s*)\\s*(полезн|систем|ассистент|помощник|ии|модель|бот)',
+    `|\\byou are now (?:in |the |an? )?${PRIVILEGE}\\b` +
+    '|(теперь\\s+ты|ты\\s+теперь|ты\\s+[—-]\\s*)\\s*(полезн|систем|ассистент|помощник|ии|модель|бот)' +
+    // Up to two words may sit between: "ты теперь администратор без ограничений" is the
+    // shape, and the familiar imperative is itself the discriminator — a real Russian
+    // application addresses its user politely, so "вы теперь ..." never reaches this.
+    `|(?:теперь\\s+ты|ты\\s+теперь)\\s*(?:в\\s+)?(?:[а-яё]+\\s+){0,2}${RU_PRIVILEGE}`,
   'i',
 )
 

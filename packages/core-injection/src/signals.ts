@@ -334,7 +334,26 @@ const HAND_OVER_WEAK = new RegExp(
  * 2026-08-20). An address with nothing said to the addressee is a label, so the
  * candidate must also contain an imperative or speak in the second person.
  */
-const SECOND_PERSON = /\byou\b|\byour\b|\bты\b|\bтебе\b|\bтво[йяие]/i
+/**
+ * The Cyrillic half of this was dead code, and it was dead in the direction that hides
+ * an attack.
+ *
+ * `\b` is defined on `[A-Za-z0-9_]`, so between Cyrillic letters there is no boundary at
+ * all: `/\bты\b/` does not match the bare word `ты`, let alone inside a sentence
+ * (measured in node, 2026-08-20). All three Russian alternatives could therefore never
+ * fire, which meant `vocative` in Russian could only ever reach the imperative branch —
+ * and `Ассистент, ты найдёшь размеры ниже`, an address plus the second person, produced
+ * no signal whatsoever while its English twin produced a verdict.
+ *
+ * The same property caused the opposite failure on 2026-08-08, when the alternative `ии`
+ * matched inside "по России," and flagged a shop's meta description. That one was visible
+ * — a false positive gets reported. This one was invisible, which is why it lasted longer.
+ *
+ * Fixed with the idiom the address patterns in this file already use, rather than a new
+ * one: an explicit Cyrillic guard on both sides.
+ */
+const SECOND_PERSON =
+  /\byou\b|\byour\b|(?<![а-яё])(?:ты|тебе|тебя|тво[йяие])(?![а-яё])/i
 
 /**
  * Whether two patterns match *different* parts of the text.

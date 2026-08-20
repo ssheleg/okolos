@@ -3,6 +3,7 @@ import type { HiddenTextCandidate, PageCandidates } from '@okolos/contracts'
 
 import positives from '../../../corpora/injections/positives.json' with { type: 'json' }
 import negatives from '../../../corpora/injections/negatives.json' with { type: 'json' }
+import suspicions from '../../../corpora/injections/suspicions.json' with { type: 'json' }
 import { SIGNAL_NAMES } from './signals.js'
 import { detectHidden, TIERS } from './stage1.js'
 
@@ -25,6 +26,7 @@ function page(candidates: HiddenTextCandidate[], truncated = false): PageCandida
 
 const positiveCases = positives.cases as Case[]
 const negativeCases = negatives.cases as Case[]
+const suspicionCases = suspicions.cases as Case[]
 
 describe('recall on the injection corpus', () => {
   const missed: string[] = []
@@ -75,6 +77,59 @@ describe('the corpus that certifies these numbers', () => {
     ] as const) {
       const found = cases.filter((c) => detectHidden(page([c.candidate]), ctx).length > 0)
       expect(found.length / cases.length, `recall on the ${label} cases`).toBeGreaterThanOrEqual(0.9)
+    }
+  })
+})
+
+/**
+ * The band between the two poles, and the reason it needs its own file.
+ *
+ * The other two halves of this corpus are absolutes: every positive must be edited, every
+ * negative must be silent. ADR-0012 created a third answer — one corroborating signal is a
+ * suspicion, so the product says it and leaves the page alone — and nothing in the corpus
+ * ever exercised it. Measured 2026-08-20: replacing `confidence` with a constant `high`,
+ * which cancels the whole two-tier rule, left all positives found and all negatives silent
+ * and reddened exactly one hand-made unit test. The product's most delicate judgement was
+ * certified by two invented inputs.
+ *
+ * These cases assert the verdict, not merely its existence: **one** verdict, `medium`, and
+ * an action of `inform`. Asserting only "something was found" would pass just as well
+ * against a build that edits the page.
+ */
+describe('the band that informs without editing', () => {
+  it('carries both languages, because a band certified in one is uncertified in the other', () => {
+    const cyrillic = suspicionCases.filter((c) => /[а-яё]/i.test(JSON.stringify(c)))
+    expect(cyrillic.length).toBeGreaterThanOrEqual(3)
+    expect(suspicionCases.length - cyrillic.length).toBeGreaterThanOrEqual(3)
+  })
+
+  it('is looking at real cases, so an empty file cannot pass as a covered band', () => {
+    expect(suspicionCases.length).toBeGreaterThanOrEqual(6)
+  })
+
+  for (const c of suspicionCases) {
+    it(`informs without editing on: ${c.name}`, () => {
+      const verdicts = detectHidden(page([c.candidate]), ctx)
+      expect(verdicts).toHaveLength(1)
+      expect(verdicts[0]?.confidence, 'a suspicion must not read as certainty').toBe('medium')
+      expect(verdicts[0]?.action, 'one corroborating signal does not license an edit').toBe(
+        'inform',
+      )
+    })
+  }
+
+  it('names one signal, never two — two would be a verdict rather than a suspicion', () => {
+    for (const c of suspicionCases) {
+      const verdict = detectHidden(page([c.candidate]), ctx)[0]
+      // The signals live in the evidence's `detail`, comma-joined — the shape the
+      // inspector renders. Read from there rather than from a field of my own invention:
+      // a first version read `e.signals`, which does not exist, so every case reported
+      // zero signals and the assertion would have passed for the wrong reason had it
+      // been written the other way round.
+      const signals = (verdict?.evidence ?? [])
+        .flatMap((e) => String(e.detail.signals ?? '').split(','))
+        .filter(Boolean)
+      expect(new Set(signals).size, `${c.name} carries ${signals.join(', ')}`).toBe(1)
     }
   })
 })

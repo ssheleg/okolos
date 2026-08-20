@@ -1,7 +1,7 @@
 import { t } from '@okolos/i18n'
 
 import { OVERLAY_TOKENS } from '../overlay-tokens.js'
-import { shadowMode } from '../shadow.js'
+import { createOverlayHost } from '../host.js'
 
 /**
  * SCR-06 — the agent action gate.
@@ -39,9 +39,7 @@ export interface GateHandle {
 }
 
 export function mountGate(doc: Document, props: GateProps, handlers: GateHandlers): GateHandle {
-  const host = doc.createElement('okolos-gate')
-  host.setAttribute('data-okolos', 'gate')
-  const root = host.attachShadow({ mode: shadowMode() })
+  const { host, root } = createOverlayHost(doc, 'gate')
   root.append(styles(doc), scrim(doc), dialog(doc, props, handlers))
   doc.body.append(host)
 

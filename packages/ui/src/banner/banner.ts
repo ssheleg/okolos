@@ -1,7 +1,7 @@
 import { t } from '@okolos/i18n'
 
-import { shadowMode } from '../shadow.js'
 import { OVERLAY_TOKENS } from '../overlay-tokens.js'
+import { createOverlayHost } from '../host.js'
 import type { Severity, VerdictCategory } from '@okolos/contracts'
 
 /**
@@ -91,9 +91,7 @@ export function mountBanner(
   props: BannerProps,
   handlers: BannerHandlers,
 ): BannerHandle {
-  const host = doc.createElement('okolos-banner')
-  host.setAttribute('data-okolos', 'banner')
-  const root = host.attachShadow({ mode: shadowMode() })
+  const { host, root } = createOverlayHost(doc, 'banner')
   root.append(styles(doc), panel(doc, props, handlers))
   doc.body.append(host)
 

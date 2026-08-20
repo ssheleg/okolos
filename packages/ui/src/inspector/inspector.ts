@@ -1,7 +1,7 @@
 import { t } from '@okolos/i18n'
 
 import { OVERLAY_TOKENS } from '../overlay-tokens.js'
-import { shadowMode } from '../shadow.js'
+import { createOverlayHost } from '../host.js'
 import type { Confidence, Evidence } from '@okolos/contracts'
 
 /**
@@ -102,9 +102,7 @@ export function mountInspector(
   props: InspectorProps,
   handlers: InspectorHandlers,
 ): InspectorHandle {
-  const host = doc.createElement('okolos-inspector')
-  host.setAttribute('data-okolos', 'inspector')
-  const root = host.attachShadow({ mode: shadowMode() })
+  const { host, root } = createOverlayHost(doc, 'inspector')
   root.append(styles(doc), panel(doc, props, handlers))
   doc.body.append(host)
 

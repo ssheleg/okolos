@@ -70,3 +70,4 @@ export {
   type WipeOutcome,
 } from './settings/data-controls.js'
 export { shadowMode } from './shadow.js'
+export { createOverlayHost, type OverlayHost } from './host.js'

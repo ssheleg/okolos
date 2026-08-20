@@ -112,6 +112,12 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (пятнадцатый)** — B-47; стадии 0–10. Наблюдателя страницы больше
+  нельзя выключить со страницы: `disarm` убран, а решение «стоит ли записывать»
+  переехало в фон и опирается на origin отправителя. Аутентификация канала на этой
+  платформе недостижима, и это записано как часть решения. 1964 юнит-теста в 122
+  файлах, шесть плантов — пять легли, один нашёл тест, отменявший собственную
+  атаку. Постоянных инструкций десять, снятий нет. Вердикт REFINE.
 - **2026-08-20 (четырнадцатый)** — B-46, плюс долг: `e2e (chromium)` упал на
   `3c37391` на одной проверке из 119, и бюджет монтирования получил одно
   определение вместо десяти секунд в тринадцати файлах. Блок-лист перестал
@@ -281,6 +287,58 @@ happens before adding.
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-20 — the docstring said noise, and the code sold silence
+
+**Symptom.** The page watcher's module opens by listing its own limits, and one
+of them reads: "the channel is `window.postMessage`, which the page can also post
+on … it cannot remove the real ones, and the cost of a forged journal line is
+noise, not silence." Twelve lines from the bottom of the same file was a `disarm`
+message, accepted from `event.source === win` — which is exactly what the page's
+own `window.postMessage` satisfies. **One line of page script and the watcher was
+quiet for the rest of the page's life**, in the one mechanism whose entire value
+is that a record exists.
+
+**Stage it surfaced at.** 0, from a filed row.
+
+**Stage that owned it.** 3. The limit was written as a property of the channel —
+"the page can add, not remove" — and it is a property of the channel *plus the
+messages defined on it*. Adding a second message changed the property, and the
+sentence describing it was three screens up and read as settled.
+
+**Root cause.** An off switch on a channel the watched party can post to is an
+off switch the watched party owns. And it cannot be fixed by authentication:
+the MAIN world *is* the page's world, the isolated world and the page share one
+window, and nothing in MAIN can tell their messages apart. That is not a gap to
+close; it is the platform, and the design has to be built on top of it.
+
+**Fix, by grade.** Structural: there is no disarm. Arming is one-way and
+idempotent, so a page can turn the watcher **on** — which is the noise the
+docstring admits to — and has nothing to say about turning it off. The decision
+that used to be the off switch moved to the background, where the page has no
+vote: is there an unresolved finding for this origin, asked of the extension's own
+database, with the origin taken from the **sender** rather than from the payload.
+A page can put any host in a message it forges; it cannot forge where the message
+came from. So a forged report from a clean page now writes nothing at all, which
+is better than the noise ADR-0009 had settled for.
+
+**Two of my own tests were wrong, and a plant found the first.** Re-adding the
+disarm branch reddened nothing, because the test that was named for exactly that
+attack sent the disarm and then `{ source: ARM, armed: false }` — which **re-armed
+the watcher**. A test whose later steps undo the attack it is testing measures its
+own tail. Split into one case per window.
+
+The second passed by reaching nothing: it delivered a message "from another
+window" with `win.dispatchEvent`, which the fake window does not have. Nothing was
+delivered and the assertion that nothing happened held. The fake grew a
+`deliver(data, source)` and, beside it, a check that delivery through that helper
+arrives at all — because the failure mode of a test helper is silence.
+
+**What is still readable, and why it is not a leak.** The page learns from ARM
+that it has a finding. It already knows: the banner's host element sits in the
+page's own DOM and `[data-okolos]` finds it. ADR-0001 closes reading the warning's
+contents, not the fact of its presence, and that distinction is now written where
+someone will look for it.
 
 ### 2026-08-20 — two plants stayed green, and they were not the same news
 

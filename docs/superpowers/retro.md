@@ -112,6 +112,13 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (десятый)** — B-42; стадии 0–10. Стирание и выгрузка перестали
+  терять отказ, и `e2e/scn-023` — гейт, который REQ-32 называл с 4 августа, —
+  написан. По дороге: дефект в собственной правке, найденный собственным тестом;
+  извлекатель вайрфреймов, потерявший роль; шесть ролей дашборда, не
+  перечисленных никогда; и два e2e-харнесса, читающих разные каталоги сборки. 1852
+  юнит-теста в 117 файлах, пять плантов легли, один остался зелёным и снял
+  ненесущую ветку. Постоянных инструкций десять, снятий нет. Вердикт REFINE.
 - **2026-08-20 (девятый)** — B-39; стадии 0–10. Четвёртая внутристраничная
   поверхность приведена к режиму трёх остальных и записана как SCR-19. По дороге:
   пять изобретённых имён токенов (контраст 1.22 на главной кнопке), три
@@ -247,6 +254,90 @@ happens before adding.
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-20 — the requirement named its gate, and the gate was a filename
+
+**Symptom.** REQ-32's row in the acceptance table read `e2e SCN-023` in its
+Evidence column. `e2e/scn-023.spec.ts` did not exist and never had. The
+requirement was reported closed on unit tests; the scenario's own Coverage line
+said plainly "no end-to-end run yet, since asserting a real wipe needs a profile
+seeded with data first", and the row above it said the opposite by naming a file.
+
+**Stage it surfaced at.** 0. An audit found it by looking for the file.
+
+**Stage that owned it.** 8. A requirement's evidence is a thing that exists or a
+thing that does not, and writing the name of the test you intend to write is how a
+plan becomes a claim. The seeding that "needs a profile with data first" took
+twenty lines by the route `e2e/scn-024.spec.ts` had already been using for two
+weeks.
+
+**Root cause.** Two records of the same fact maintained in different places, and
+the honest one was not the one people read. This is the third shape of it this
+session: the wipe confirmation naming five stores of nine, the write-only
+`scope: 'extension'` row, and now an evidence column naming a file.
+
+**Fix, by grade.** The file, written: three checks over a profile seeded into all
+nine stores — the confirmation names one kind per store, the wipe empties every
+store, cancelling changes nothing, the first click asks. The acceptance row now
+says the gate did not exist until today rather than quietly gaining one.
+
+**And the defect this run introduced, found by this run's own test.** The refusal
+note removed the old line before its `await` and appended the new one after, so
+three clicks on a failing export produced three identical lines: all three removed
+nothing, all three waited, all three appended. Written and caught inside ten
+minutes, which is the argument for writing the test that supplies a rejecting
+promise rather than the test that supplies a resolving one — none of the eight
+tests on this screen had ever rejected anything, and the branch that mattered was
+the one nobody had expressed.
+
+**The plant that stayed green, again, and what it removed.** I had written `note()`
+to reuse an existing element and set its text. Planting that away — remove and
+append instead — changed nothing observable, because both halves now happen after
+the await and that is the whole rule. The branch went, and the docstring says what
+the rule actually is: not "reuse the element" but "do both after you know the
+answer". Third time this session a plant has reported dead defence, and the shape
+is always the same — a second guard written after a measurement, without asking
+whether the first one still had work.
+
+### 2026-08-20 — an extractor is taught shapes, and says nothing about the rest
+
+**Symptom.** SCR-12's wireframe lost `wipe-failed` and never gained
+`export-failed`, while the screen emitted both. `pnpm wireframes` regenerated it
+and the file went from true to confidently wrong. The test that guards the
+wireframes stayed green throughout, because it compares the file to the
+extractor's output — never either of them to the screen.
+
+**Stage it surfaced at.** 6, when the wireframe gate failed for the *other*
+reason (the file was stale relative to the generator) and I read the diff instead
+of just regenerating.
+
+**Stage that owned it.** 5, mine, in this run: I moved two roles into a local
+helper `note(role, …)`, and `tools/wireframes.mjs` matches `text(doc, 'role'` and
+five other shapes it was taught.
+
+**Root cause.** An extractor over source text reports the shapes it knows and
+says nothing about the ones it does not — the fourth time this session, after
+`user:password-check` read as a leaked credential, a mentioned type read as a
+handled one, and `SECRET_WORDS` missing camelCase. Its silence is
+indistinguishable from a correct answer.
+
+**Fix, by grade.** The shape taught, and then a cross-check that does not depend
+on the extractor knowing anything: **every role a screen's own tests reach for
+must appear in its wireframe.** Two artefacts maintained by different hands for
+different reasons, so where they disagree one of them is wrong. It immediately
+found six roles on the dashboard — `attention-counting`, `attention-error`,
+`attention-empty`, `attention-checked`, `attention-more`,
+`overview-unrecognised` — emitted through a helper called `line`, listed in no
+wireframe, ever.
+
+**Where the cross-check is deliberately weak, and why that is the safe direction.**
+It skips test lines mentioning `toBeNull`, because a test may name a role in order
+to assert it is *absent* — SCR-01 asserts there is no bare spinner. That heuristic
+loses a comparison rather than inventing one. And it walks one hop of local
+imports, because a screen composes components: the popup renders the queue, so
+`[data-role=item]` is addressable there and reading `popup.ts` will never say so.
+The generator does not walk that hop, so "Elements" in a generated file means
+something narrower than a reader assumes — filed as B-71 rather than settled here.
 
 ### 2026-08-20 — the fourth surface returned an element, so nobody saw it was one
 

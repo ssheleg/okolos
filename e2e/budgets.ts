@@ -23,11 +23,22 @@
  * not failing, the work simply takes time, and the failures above were the wait
  * being shorter than the work.
  *
- * Kept under the per-test timeout in `playwright.config.ts` (30 s) so a blown
- * budget fails with the assertion's own message rather than as a timeout with
- * none.
+ * **It must also be longer than the product's own deadline, and it was shorter.**
+ * `RPC_TIMEOUT_MS` is 30 s: that is how long the extension itself allows a worker to
+ * answer before calling the call failed. At 20 s this budget gave up **ten seconds
+ * before the product would have** — so a worker that was merely slow produced
+ * "44 × locator resolved to 0 elements" and no way to tell that from a product
+ * failure. That is exactly the shape of the `scn-010` failure on `d91426b`: 20.6 s,
+ * one test out of five in its file, with `workers: 1` and no parallelism to blame.
+ *
+ * The order below is asserted by `tools/budgets.test.ts`, because three numbers in
+ * three files drift into an inversion the moment one of them is tuned alone:
+ *
+ *     RPC_TIMEOUT_MS  <  SURFACE_MOUNT_MS  and  WORKER_REGISTER_MS + SURFACE_MOUNT_MS  <  test timeout
+ *
+ * A failure then means the product failed, not that the test stopped watching.
  */
-export const SURFACE_MOUNT_MS = 20_000
+export const SURFACE_MOUNT_MS = 35_000
 
 /**
  * How long the `extensionId` fixture waits for the service worker to register.

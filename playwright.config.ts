@@ -11,7 +11,17 @@ import { defineConfig } from '@playwright/test'
  */
 export default defineConfig({
   testDir: 'e2e',
-  timeout: 30_000,
+  /**
+   * Longer than the two waits a single test can stack.
+   *
+   * It was 30 s — the same number as the extension's own `RPC_TIMEOUT_MS`, so
+   * Playwright killed the test at the instant the product's deadline expired and
+   * neither side got to report anything. A test can spend `WORKER_REGISTER_MS`
+   * waiting for the worker and then `SURFACE_MOUNT_MS` waiting for the surface;
+   * this is above their sum, so whichever of them runs out fails with its own
+   * sentence instead of as a timeout with none.
+   */
+  timeout: 75_000,
   fullyParallel: false,
   workers: 1,
   reporter: [['list']],

@@ -1,5 +1,5 @@
 import { expect, serve, test } from './fixtures.js'
-import { SURFACE_MOUNT_MS } from './budgets.js'
+import { expectBanner } from './surfaces.js'
 
 /**
  * SCN-003 — a page carries instructions written for an AI, and the user is
@@ -35,7 +35,7 @@ test('warns when hidden text is addressing an assistant', async ({ context }) =>
   const page = await context.newPage()
   await page.goto('https://fixture.test/')
 
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectBanner(page, context)
 })
 
 test('stays silent on a page whose hidden text is ordinary', async ({ context }) => {
@@ -53,7 +53,7 @@ test('the page cannot read or remove the warning', async ({ context }) => {
   await serve(context, INJECTED)
   const page = await context.newPage()
   await page.goto('https://fixture.test/')
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectBanner(page, context)
 
   const reachable = await page.evaluate(() => {
     const host = document.querySelector('okolos-banner')

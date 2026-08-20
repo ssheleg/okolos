@@ -1,5 +1,6 @@
 import { expect, serve, test } from './hooks.js'
 import { SURFACE_MOUNT_MS } from './budgets.js'
+import { expectBanner } from './surfaces.js'
 
 /**
  * SCN-010 — an agent tries to act on a poisoned page.
@@ -35,7 +36,7 @@ test('a scripted submit is held, and the page names both the action and the find
   await serve(context, PAGE)
   const page = await context.newPage()
   await page.goto('https://fixture.test/')
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectBanner(page, context)
 
   await page.evaluate(AGENT_CLICK)
 
@@ -52,7 +53,7 @@ test('Block cancels the action — the page stays where it was', async ({ contex
   await serve(context, PAGE)
   const page = await context.newPage()
   await page.goto('https://fixture.test/')
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectBanner(page, context)
 
   await page.evaluate(AGENT_CLICK)
   await page.locator('okolos-gate [data-role=block]').click()
@@ -70,7 +71,7 @@ test('Allow once lets that one action through', async ({ context }) => {
   )
   const page = await context.newPage()
   await page.goto('https://fixture.test/')
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectBanner(page, context)
 
   await page.evaluate(AGENT_CLICK)
   await page.locator('okolos-gate [data-role=allow]').click()
@@ -82,7 +83,7 @@ test('the evidence is one click away from the decision', async ({ context }) => 
   await serve(context, PAGE)
   const page = await context.newPage()
   await page.goto('https://fixture.test/')
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectBanner(page, context)
 
   await page.evaluate(AGENT_CLICK)
   await page.locator('okolos-gate [data-role=show]').click()
@@ -116,7 +117,7 @@ test('a click injected into a driven browser is held, trusted or not', async ({ 
   )
   const page = await context.newPage()
   await page.goto('https://fixture.test/')
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectBanner(page, context)
 
   // The browser admits it: this is the fact the gate now reads.
   expect(await page.evaluate(() => navigator.webdriver)).toBe(true)

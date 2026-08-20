@@ -2,6 +2,7 @@ import AxeBuilder from '@axe-core/playwright'
 import { SURFACE_MOUNT_MS } from './budgets.js'
 
 import { expect, serve, test } from './hooks.js'
+import { expectBanner } from './surfaces.js'
 
 /**
  * REQ-29 for the three surfaces that render over somebody else's page.
@@ -117,7 +118,7 @@ test('SCR-03 — the warning banner survives a page built to ruin it', async ({ 
   await serve(context, INJECTED)
   const page = await context.newPage()
   await page.goto('https://fixture.test/')
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectBanner(page, context)
 
   const results = await auditOverlay(page, 'okolos-banner')
   assertScanned(results, 'the banner')
@@ -178,7 +179,7 @@ test('SCR-06 — the agent gate, the one surface a user meets mid-decision', asy
   await serve(context, WITH_FORM)
   const page = await context.newPage()
   await page.goto('https://fixture.test/')
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectBanner(page, context)
 
   await page.evaluate(() => {
     document.querySelector<HTMLButtonElement>('#pay button')?.click()
@@ -198,7 +199,7 @@ test('the hostile CSS lands on the page and not on the overlay', async ({ contex
   await serve(context, INJECTED)
   const page = await context.newPage()
   await page.goto('https://fixture.test/')
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectBanner(page, context)
 
   const measured = await page.evaluate(() => {
     const read = (el: Element | null | undefined) => {

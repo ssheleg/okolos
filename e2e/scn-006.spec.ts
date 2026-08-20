@@ -1,5 +1,5 @@
 import { expect, test } from './hooks.js'
-import { SURFACE_MOUNT_MS } from './budgets.js'
+import { expectBanner } from './surfaces.js'
 
 /**
  * SCN-006 — an address that imitates a known one is shown next to the name it
@@ -21,7 +21,7 @@ test('a lookalike address is flagged on the page it is about', async ({ context 
   const page = await context.newPage()
   await page.goto('https://g00gle.com/signin')
 
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectBanner(page, context)
   await expect(page.locator('okolos-banner [data-role=headline]')).toContainText('only looks like')
 })
 
@@ -32,7 +32,7 @@ test('the comparison shows both spellings side by side', async ({ context }) => 
 
   const page = await context.newPage()
   await page.goto('https://g00gle.com/signin')
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectBanner(page, context)
 
   await page.locator('okolos-banner [data-role=primary]').click()
   // Inside its own shadow root since 2026-08-20 — Playwright's CSS engine

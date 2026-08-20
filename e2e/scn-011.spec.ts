@@ -1,5 +1,6 @@
 import { expect, serve, test } from './hooks.js'
 import { SURFACE_MOUNT_MS } from './budgets.js'
+import { expectBanner } from './surfaces.js'
 
 /**
  * SCN-011 — a pause before a password on a site this device does not know.
@@ -24,7 +25,7 @@ test('focusing the password field explains what is and is not known', async ({ c
   await page.goto('https://fixture.test/login')
 
   await page.locator('#pass').focus()
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectBanner(page, context)
 
   const detail = page.locator('okolos-banner [data-role=detail]')
   // First ever visit: there is no earlier one to count from, and the warning

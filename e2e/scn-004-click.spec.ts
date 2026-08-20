@@ -1,5 +1,6 @@
 import { expect, serve, test } from './hooks.js'
 import { SURFACE_MOUNT_MS } from './budgets.js'
+import { expectBanner } from './surfaces.js'
 
 /**
  * SCN-004, the half that could not be tested before: the user clicks "Show me"
@@ -48,7 +49,7 @@ test('disputing the verdict clears both surfaces', async ({ context }) => {
   await serve(context, INJECTED)
   const page = await context.newPage()
   await page.goto('https://fixture.test/')
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectBanner(page, context)
 
   await page.locator('okolos-banner [data-role=dispute]').click()
   await expect(page.locator('okolos-banner')).toHaveCount(0)

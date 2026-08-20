@@ -121,6 +121,19 @@ jobs:
       - name: every scenario, against the built extension
         run: xvfb-run --auto-servernum pnpm test:e2e
 
+      # The answer to the last two CI-only e2e failures was sitting on the runner
+      # and being thrown away. `playwright.config.ts` keeps a trace on failure —
+      # network, console, DOM snapshots per step — and without this the log's
+      # "44 × locator resolved to 0 elements" is all anyone gets, which is how the
+      # same class got guessed at twice. Failure-only, so a green run uploads nothing.
+      - name: the trace of whatever failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-traces
+          path: test-results/
+          retention-days: 14
+
   e2e-firefox:
     name: e2e (firefox)
     runs-on: ubuntu-latest

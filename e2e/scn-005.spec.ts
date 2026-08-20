@@ -1,5 +1,5 @@
 import { expect, serve, test } from './hooks.js'
-import { SURFACE_MOUNT_MS } from './budgets.js'
+import { expectBanner } from './surfaces.js'
 
 /**
  * SCN-005 — the instruction is removed before an assistant can read it, and the
@@ -24,7 +24,7 @@ test('the hidden instruction is gone from the page an assistant would read', asy
   await serve(context, PAGE)
   const page = await context.newPage()
   await page.goto('https://fixture.test/')
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectBanner(page, context)
 
   // What an assistant sees is the DOM, so that is what must be clean.
   const text = await page.evaluate(() => document.body.innerText + document.body.textContent)
@@ -36,7 +36,7 @@ test('the element survives — only its contents go', async ({ context }) => {
   await serve(context, PAGE)
   const page = await context.newPage()
   await page.goto('https://fixture.test/')
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectBanner(page, context)
 
   // Pages hold references to their own nodes; deleting one breaks scripts that
   // had nothing to do with the injection.
@@ -48,7 +48,7 @@ test('restore puts the page back exactly', async ({ context }) => {
   await serve(context, PAGE)
   const page = await context.newPage()
   await page.goto('https://fixture.test/')
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectBanner(page, context)
 
   await page.locator('okolos-banner [data-role=primary]').click()
   await page.locator('okolos-inspector [data-role=restore]').click()

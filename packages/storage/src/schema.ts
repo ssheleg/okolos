@@ -49,8 +49,16 @@ export const RETENTION_DAYS = {
  */
 export const WITHHELD_SETTINGS: ReadonlySet<string> = new Set(['reuse:key', 'hibp:apiKey'])
 
-/** What the export writes in place of a withheld value, so its absence is visible. */
-export const WITHHELD_MARKER = '[withheld: this value is what makes the rest reversible]'
+/**
+ * The token every withheld value is marked with, whatever language the note is in.
+ *
+ * It used to be the whole sentence — `'[withheld: this value is what makes the rest
+ * reversible]'` — written in a package with two dependencies and no catalogue, into the
+ * file a person downloads (B-75). The words are the caller's now; this stays so that
+ * "is anything withheld from this file" is answerable by search, in any locale, by a
+ * reader and by a test.
+ */
+export const WITHHELD_MARKER = '[withheld]'
 
 export const STORES = [
   'findings',

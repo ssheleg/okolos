@@ -2,7 +2,7 @@
 import 'fake-indexeddb/auto'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { DB_NAME, STORES } from './schema.js'
+import { DB_NAME, STORES, WITHHELD_MARKER } from './schema.js'
 import { closeDb, openDb, resetStorage, StorageUnavailable, storedVersion } from './db.js'
 import { exportAll, wipeAll } from './export.js'
 import { pruneExpired } from './retention.js'
@@ -82,7 +82,10 @@ describe('export and wipe', () => {
     const db = await openDb()
     await db.put('settings', { key: 'quietMode', value: false })
 
-    const dump = JSON.parse(await exportAll(db)) as Record<string, unknown[]>
+    const dump = JSON.parse(await exportAll(db, {
+      marker: () => WITHHELD_MARKER,
+      note: () => 'nothing withheld here',
+    })) as Record<string, unknown[]>
 
     for (const store of STORES) expect(dump[store]).toBeDefined()
     expect(dump.settings).toEqual([{ key: 'quietMode', value: false }])

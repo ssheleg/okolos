@@ -77,13 +77,18 @@ describe('an update that does not verify', () => {
     // turn protection off without saying so.
     const outcome = refusal(await applyUpdate(CURRENT, snapshot(), bad))
     expect(outcome.kept).toBe(CURRENT)
-    expect(outcome.explain).toContain('7')
+    // What survives is `kept`, not a sentence mentioning its version. The sentence is
+    // written where the catalogue is, and asserted in `background/feed-words.test.ts`.
+    expect(outcome.reason).toBe('bad-signature')
   })
 
-  it('says plainly when there is nothing to fall back to', async () => {
+  it('reports nothing to fall back to as a null, not as prose about it', async () => {
+    // The distinction that used to live in two English sentences chosen here: with
+    // nothing kept there is no version to name, so the surface picks a different message
+    // rather than substituting an empty string into the usual one.
     const outcome = refusal(await applyUpdate(null, snapshot(), bad))
     expect(outcome.kept).toBeNull()
-    expect(outcome.explain).toMatch(/no earlier copy/i)
+    expect(outcome.reason).toBe('bad-signature')
   })
 
   it('checks the signature before anything else about the body', async () => {

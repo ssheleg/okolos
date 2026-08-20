@@ -32,12 +32,22 @@ export interface FeedName {
    * a field to know the key is asked for at all.
    */
   readonly messageKey: string
-  /** The English name, for the worker, which has no catalogue. */
+  /**
+   * The English name, for `apps/proxy` — a Cloudflare worker with no `_locales`.
+   *
+   * It said "for the worker", and the browser extension's service worker read that as
+   * itself: it has had a catalogue and an installed resolver since B-51, and two of its
+   * sentences were pulling an English list name into Russian prose (fixed 2026-08-20).
+   * The only caller that genuinely cannot translate is the one serving public pages.
+   */
   readonly en: string
 }
 
 /** The lists this project publishes itself. Everything else belongs to someone. */
 export const OUR_FEEDS: Readonly<Record<string, FeedName>> = {
+  // i18n-exempt: `en` is the name `apps/proxy` prints on its public pages, and that
+  // worker has no `_locales` to look in; every surface inside the extension reads
+  // `messageKey` instead. See the field's own note.
   phishing: { messageKey: 'feedNamePhishing', en: 'Okolos phishing list' },
 }
 
@@ -48,8 +58,9 @@ export const isOurFeed = (identifier: string): boolean =>
 /**
  * The name to show a person.
  *
- * `translate` is the catalogue lookup; pass the extension's `t`. The worker has
- * no catalogue and calls `displayFeedNameEn` instead.
+ * `translate` is the catalogue lookup; pass the extension's `t`. Everything inside the
+ * extension uses this, the service worker included. `displayFeedNameEn` is for
+ * `apps/proxy`, which serves public pages and has no catalogue to look in.
  *
  * An identifier we do not publish is returned unchanged, because it is already
  * a name — see the note above.

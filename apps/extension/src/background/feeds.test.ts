@@ -119,7 +119,10 @@ describe('what survives a refusal', () => {
     const journal = await db.getAll('journal')
     expect(journal).toHaveLength(1)
     expect(journal[0]).toMatchObject({ kind: 'error' })
-    expect(String(journal[0]?.detail?.explain)).toMatch(/not signed by the expected key/i)
+    // The key and its arguments, resolved when somebody reads the journal (B-75). The
+    // sentence itself is asserted in `feed-words.test.ts`, against the shipped catalogue.
+    expect(journal[0]?.detail?.explainKey).toBe('feedRefusedSignatureNoFallback')
+    expect(journal[0]?.detail?.reason).toBe('bad-signature')
   })
 })
 

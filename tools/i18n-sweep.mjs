@@ -247,9 +247,22 @@ if (refusals > 0) {
   )
   process.exit(1)
 }
+/**
+ * The closing line says what this tool can support, and no more.
+ *
+ * With the ledger empty it used to claim "every user-facing sentence is in the
+ * catalogue". It cannot know that. Two classes of sentence defeat its own anchor — a
+ * first word ending in a colon, and a quote nested inside a template substitution — and
+ * both were found by reading, after this tool had reported the files clean (B-76). Four
+ * live strings were sitting in them at the time.
+ *
+ * So: "nothing I can see", with the name of the row that says what I cannot. When B-76
+ * lands, this line becomes the stronger claim, because then it will be true.
+ */
 console.log(
   recorded === 0
-    ? '\n  OK — every user-facing sentence is in the catalogue.\n'
+    ? '\n  OK — nothing the sweep can see is outside the catalogue.\n' +
+        '  Two classes it cannot see are open as B-76; this is not "every sentence".\n'
     : `\n  OK — nothing new, and the ${recorded} recorded still owe a translation (B-75).\n` +
         '  This is not "every sentence is in the catalogue": it is "the debt did not grow".\n',
 )

@@ -591,6 +591,28 @@
   "errTrustedList": {
     "message": "список доверенных"
   },
+  "exportNothingWithheld": {
+    "message": "Из этого файла ничего не изъято."
+  },
+  "exportWithheldBytes": {
+    "message": "байтов: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "exportWithheldNote": {
+    "message": "Изъято из этого файла: $WHAT$. Ключ, которым остальное в этом файле читается, — не факт о вас: выгруженный рядом с данными, которые он защищает, он позволил бы тому, у кого файл окажется, восстановить, о чём эти данные. Веса модели названы размером, а не вложены: это загрузка, а не то, что продукт о вас узнал.",
+    "placeholders": {
+      "what": {
+        "content": "$1"
+      }
+    }
+  },
+  "exportWithheldSecret": {
+    "message": "это значение делает остальное обратимым"
+  },
   "extensionsAlreadyOff": {
     "message": "Уже отключено."
   },
@@ -762,11 +784,93 @@
   "feedNotVerified": {
     "message": "подпись не сошлась"
   },
+  "feedNowAtVersion": {
+    "message": "Список «$NAME$» теперь на версии $VERSION$.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "version": {
+        "content": "$2"
+      }
+    }
+  },
   "feedRefused": {
     "message": "Обновление списка блокировок отклонено: $WHY$. Остаётся тот, что уже действует.",
     "placeholders": {
       "why": {
         "content": "$1"
+      }
+    }
+  },
+  "feedRefusedNoCurrent": {
+    "message": "Разницу нельзя применить: полного списка «$NAME$», к которому её применять, нет.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "feedRefusedNotNewer": {
+    "message": "Версия $VERSION$ не новее версии $CURRENT$, которая уже в силе.",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      },
+      "current": {
+        "content": "$2"
+      }
+    }
+  },
+  "feedRefusedSignature": {
+    "message": "Обновление списка «$NAME$» подписано не тем ключом. В силе остаётся версия $KEPT$.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "kept": {
+        "content": "$2"
+      }
+    }
+  },
+  "feedRefusedSignatureNoFallback": {
+    "message": "Обновление списка «$NAME$» подписано не тем ключом, и вернуться к прежней копии не к чему.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "feedRefusedVersion": {
+    "message": "В обновлении списка «$NAME$» на месте номера версии стоит $FOUND$, поэтому оно не применено.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "found": {
+        "content": "$2"
+      }
+    }
+  },
+  "feedRefusedWrongBase": {
+    "message": "Эта разница построена от версии $BASE$, а в силе версия $CURRENT$.",
+    "placeholders": {
+      "base": {
+        "content": "$1"
+      },
+      "current": {
+        "content": "$2"
+      }
+    }
+  },
+  "feedRefusedWrongFeed": {
+    "message": "Это обновление для списка «$NAME$», а не для «$CURRENT$».",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "current": {
+        "content": "$2"
       }
     }
   },
@@ -1113,6 +1217,20 @@
   },
   "journalTitle": {
     "message": "Что изменилось с прошлого раза"
+  },
+  "leakSourceNoKey": {
+    "message": "Для этого источника не настроен ключ доступа."
+  },
+  "leakSourceTimedOut": {
+    "message": "$NAME$ не ответил за $SECONDS$ с.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "seconds": {
+        "content": "$2"
+      }
+    }
   },
   "leaksAttribution": {
     "message": "Данные об утечках — Have I Been Pwned, по лицензии CC BY 4.0."

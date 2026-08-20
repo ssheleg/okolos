@@ -7,7 +7,14 @@ export {
   type OkolosDatabase,
   type StorageProblem,
 } from './db.js'
-export { EXPORT_NOTE, exportAll, wipeAll, type WipeResult } from './export.js'
+export {
+  EXPORT_NOTE,
+  exportAll,
+  wipeAll,
+  type ExportWords,
+  type Withheld,
+  type WipeResult,
+} from './export.js'
 export {
   dueAgain,
   dueForFeed,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { EXPORT_NOTE, exportAll, wipeAll } from './export.js'
+import { EXPORT_NOTE, exportAll, wipeAll, type ExportWords, type Withheld } from './export.js'
 import { STORES, WITHHELD_MARKER, WITHHELD_SETTINGS } from './schema.js'
 
 /**
@@ -27,6 +27,32 @@ function fakeDb(overrides: { failOn?: readonly string[] } = {}) {
   }
 }
 
+/**
+ * A stand-in for the surface's words, and it records rather than renders.
+ *
+ * The package's promise is that nothing is dropped in silence: every omission is marked
+ * in place and every omission reaches the note. That is what this double lets the tests
+ * assert. What the note *says* — the "why", which is the part a person reads — is the
+ * surface's promise, and `apps/extension/src/options/export-words.test.ts` holds it
+ * against the shipped catalogue.
+ */
+function words(): ExportWords & { readonly seen: Withheld[][]; readonly marked: Withheld[] } {
+  const seen: Withheld[][] = []
+  const marked: Withheld[] = []
+  return {
+    seen,
+    marked,
+    marker: (item) => {
+      marked.push(item)
+      return `${WITHHELD_MARKER} ${item.path}${item.bytes === undefined ? '' : ` ${item.bytes}`}`
+    },
+    note: (withheld) => {
+      seen.push([...withheld])
+      return withheld.length === 0 ? 'NOTHING WITHHELD' : `WITHHELD: ${withheld.map((i) => i.path).join(', ')}`
+    },
+  }
+}
+
 describe('taking everything out', () => {
   it('includes every store the schema declares, not a chosen few', async () => {
     // A store added later and forgotten here is data the user cannot export
@@ -39,7 +65,7 @@ describe('taking everything out', () => {
     // and the note below asserts the extra key separately rather than being
     // waved through by a loosened comparison.
     const { db } = fakeDb()
-    const dump = JSON.parse(await exportAll(db)) as Record<string, unknown>
+    const dump = JSON.parse(await exportAll(db, words())) as Record<string, unknown>
     for (const store of STORES) {
       expect(Object.keys(dump), `${store} is missing from the export`).toContain(store)
     }
@@ -49,7 +75,7 @@ describe('taking everything out', () => {
 
   it('produces something a person can read', async () => {
     const { db } = fakeDb()
-    expect(await exportAll(db)).toContain('\n')
+    expect(await exportAll(db, words())).toContain('\n')
   })
 })
 
@@ -87,7 +113,7 @@ describe('what the file must not carry out', () => {
   }
 
   it('carries neither secret, by value, anywhere in the file', async () => {
-    const json = await exportAll(dbWithSecrets())
+    const json = await exportAll(dbWithSecrets(), words())
     expect(json, 'the device key reached the export').not.toContain(SECRET_KEY)
     expect(json, "the user's HIBP credential reached the export").not.toContain(SECRET_TOKEN)
   })
@@ -96,7 +122,7 @@ describe('what the file must not carry out', () => {
     // Withholding these would be the other failure: the whole answer the feature
     // gives is "these sites share a password", and without the key a tag says
     // nothing more than that.
-    const json = await exportAll(dbWithSecrets())
+    const json = await exportAll(dbWithSecrets(), words())
     expect(json).toContain('bank.test')
     expect(json).toContain('a1b2c3')
   })
@@ -104,7 +130,7 @@ describe('what the file must not carry out', () => {
   it('leaves a marker where a value was taken out, rather than dropping the row', async () => {
     // A file that silently omits something is a file whose completeness nobody
     // can check — including the person it is about.
-    const dump = JSON.parse(await exportAll(dbWithSecrets())) as {
+    const dump = JSON.parse(await exportAll(dbWithSecrets(), words())) as {
       settings: Array<{ key: string; value: string }>
     }
     const keys = dump.settings.map((row) => row.key)
@@ -116,25 +142,41 @@ describe('what the file must not carry out', () => {
     // what `tools/test-quality.test.ts` refuses — and it caught this one.
     const withheldRows = dump.settings.filter((row) => WITHHELD_SETTINGS.has(row.key))
     expect(withheldRows).toHaveLength(WITHHELD_SETTINGS.size)
-    expect(withheldRows.map((row) => row.value)).toEqual(
-      withheldRows.map(() => WITHHELD_MARKER),
-    )
+    // Every one carries the marker, whatever the surface writes after it. The token is
+    // fixed across locales precisely so this question — "is anything withheld here" —
+    // is answerable by search, by a reader and by this line.
+    for (const row of withheldRows) expect(row.value).toContain(WITHHELD_MARKER)
   })
 
-  it('says in the file what was withheld and why', async () => {
-    const dump = JSON.parse(await exportAll(dbWithSecrets())) as Record<string, string>
-    const note = dump[EXPORT_NOTE]
-    expect(note).toContain('reuse:key')
-    expect(note).toContain('hibp:apiKey')
-    expect(note, 'the note states what was taken and not why').toMatch(/recover|protect/)
+  it('hands the note every omission, so none can be left out of it', async () => {
+    /**
+     * The "why" moved to the surface that has a catalogue (B-75) and is asserted there,
+     * against the shipped messages. What stays here is the half this package can break:
+     * a value withheld from the file and left out of the note is an omission nobody can
+     * see, which is the defect the note exists for.
+     */
+    const w = words()
+    const dump = JSON.parse(await exportAll(dbWithSecrets(), w)) as Record<string, string>
+
+    expect(w.seen).toHaveLength(1)
+    const paths = (w.seen[0] ?? []).map((item) => item.path)
+    for (const secret of WITHHELD_SETTINGS) expect(paths).toContain(`settings/${secret}`)
+    expect(paths).toContain('models/bytes')
+    // Marked in place and reported in the note — the same set, not two overlapping ones.
+    expect(w.marked.map((item) => item.path).sort()).toEqual([...paths].sort())
+    expect(dump[EXPORT_NOTE]).toBeDefined()
   })
 
   it('states the model weights by size instead of rendering them as {}', async () => {
     // `JSON.stringify` turns an ArrayBuffer into `{}`, so the previous version
     // claimed to hold everything while writing two characters for twenty
     // megabytes — an omission shaped exactly like data.
-    const json = await exportAll(dbWithSecrets())
-    expect(json).toContain('20971520 bytes')
+    const w = words()
+    const json = await exportAll(dbWithSecrets(), w)
+    // The size travels as a number to whoever writes the words; "20971520 bytes" was a
+    // unit chosen inside a package with no catalogue.
+    expect(w.marked.find((item) => item.path === 'models/bytes')?.bytes).toBe(20971520)
+    expect(json).toContain('20971520')
     expect(json, 'an ArrayBuffer still serialised as an empty object').not.toMatch(
       /"bytes":\s*\{\s*\}/,
     )
@@ -144,8 +186,13 @@ describe('what the file must not carry out', () => {
     // Otherwise the note becomes decoration: present on every file, therefore
     // read on none.
     const { db } = fakeDb()
-    const dump = JSON.parse(await exportAll(db)) as Record<string, string>
-    expect(dump[EXPORT_NOTE]).toBe('Nothing was withheld from this file.')
+    const w = words()
+    const dump = JSON.parse(await exportAll(db, w)) as Record<string, string>
+    // Called with an empty list rather than not called: "nothing was withheld" is a
+    // statement the file has to make, and a note absent on a clean export is a note the
+    // reader learns to skip on every export.
+    expect(w.seen).toEqual([[]])
+    expect(dump[EXPORT_NOTE]).toBe('NOTHING WITHHELD')
   })
 })
 

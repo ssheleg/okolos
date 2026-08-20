@@ -3,6 +3,28 @@ import type { AuditEntry } from '@okolos/contracts'
 
 import { CAVALIER, hibp, lookupLeaks, type LeakSource } from './leaks.js'
 
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fromCatalogue, useResolver, type Catalogue } from '@okolos/i18n'
+
+/**
+ * The shipped Russian catalogue. Two sentences here — a source with no key, and one that
+ * ran out of time — travel in the same field a person can be shown, and were written in
+ * English in this file until 2026-08-20 (B-75). A fake catalogue would let a missing key
+ * pass as a message.
+ */
+const CATALOGUE = JSON.parse(
+  readFileSync(path.resolve(import.meta.dirname, '../../_locales/ru/messages.json'), 'utf8'),
+) as Catalogue
+
+useResolver(fromCatalogue(CATALOGUE))
+
+const message = (key: string): string => {
+  const entry = CATALOGUE[key]
+  if (!entry) throw new Error(`the shipped catalogue has no key "${key}"`)
+  return entry.message
+}
+
 function deps(response: () => Promise<Response>) {
   const audit: AuditEntry[] = []
   return {
@@ -33,7 +55,7 @@ describe('a source that cannot run', () => {
 
     expect(inventory.sources[0]).toMatchObject({
       answered: false,
-      why: 'no API key is configured for this source',
+      why: message('leakSourceNoKey'),
     })
     expect(inventory.complete).toBe(false)
   })
@@ -107,7 +129,11 @@ describe('a source that never answers', () => {
     const inventory = await lookupLeaks('a@b.test', [hangs], d, 20)
 
     expect(inventory.sources[0]).toMatchObject({ answered: false })
-    expect(inventory.sources[0]?.why).toMatch(/did not answer/i)
+    // The catalogue's sentence with the name and the seconds substituted, not a phrase
+    // written here: `[leakSourceTimedOut]` in that field is what a missing key looks like.
+    expect(inventory.sources[0]?.why).toContain('Silent Source')
+    expect(inventory.sources[0]?.why).not.toMatch(/^\[/)
+    expect(inventory.sources[0]?.why).not.toMatch(/\$[A-Z]+\$/)
   })
 
   it('does not take the sources that did answer with it', async () => {

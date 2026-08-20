@@ -4,6 +4,7 @@ import { diffSince } from '@okolos/core-queue'
 import { t, useResolver } from '@okolos/i18n'
 import { detectPlatform } from '@okolos/platform'
 import { buildQueue } from '@okolos/core-queue'
+import { EXPORT_WORDS } from './export-words.js'
 import { toQueueItems } from '../popup/state.js'
 import {
   renderDataControls,
@@ -935,7 +936,7 @@ let overviewFailure: string | null = null
 
 async function download(): Promise<void> {
   const db = await openDb()
-  const json = await exportAll(db)
+  const json = await exportAll(db, EXPORT_WORDS)
   const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }))
   const link = document.createElement('a')
   link.href = url

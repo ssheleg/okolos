@@ -4,6 +4,8 @@ export {
   type FeedDelta,
   type FeedSnapshot,
   type FeedUpdate,
+  type Refusal,
+  type RefusalReason,
   type SignedUpdate,
   type UpdateOutcome,
   type Verifier,

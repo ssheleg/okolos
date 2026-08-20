@@ -1,3 +1,4 @@
+import { t } from '@okolos/i18n'
 import { mergeLeaks, type Leak, type LeakInventory, type SourceStatus } from '@okolos/core-leaks'
 import { request, type RequestDeps } from '@okolos/net'
 
@@ -69,7 +70,10 @@ export const CAVALIER: LeakSource = {
 export function hibp(apiKey: string | null): LeakSource {
   return {
     name: 'Have I Been Pwned',
-    unavailable: apiKey ? null : 'no API key is configured for this source',
+    // Not caught by the sweep — a capital letter inside the run defeats its anchor, the
+    // same family of blind spot as B-76 — and it travels in the same field as the
+    // timeout above, which a person can be shown.
+    unavailable: apiKey ? null : t('leakSourceNoKey'),
     async lookup(address, deps) {
       const response = await request(
         {
@@ -138,7 +142,7 @@ export async function lookupLeaks(
       const leaks = await withDeadline(
         source.lookup(address, deps),
         timeoutMs,
-        `${source.name} did not answer within ${Math.round(timeoutMs / 1000)} seconds`,
+        t('leakSourceTimedOut', source.name, String(Math.round(timeoutMs / 1000))),
       )
       statuses.push({ name: source.name, answered: true, leaks })
     } catch (cause) {

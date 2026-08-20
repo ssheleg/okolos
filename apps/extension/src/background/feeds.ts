@@ -1,3 +1,4 @@
+import { feedAccepted, feedRefusal } from './feed-words.js'
 import { applyUpdate, type FeedSnapshot, type SignedUpdate, type Verifier } from '@okolos/core-feeds'
 import type { OkolosDatabase } from '@okolos/storage'
 
@@ -123,7 +124,15 @@ export async function readFeed(db: OkolosDatabase, name: string): Promise<FeedSn
 export interface FeedUpdateResult {
   readonly inForce: FeedSnapshot | null
   readonly accepted: boolean
-  readonly explain: string
+  /**
+   * A catalogue key and its arguments, not a sentence.
+   *
+   * The journal keeps this and `summarise` resolves it when somebody reads it, so a
+   * reader who switches language sees their own words on old rows (B-75). A sentence
+   * stored here would freeze the language in force when the feed happened to update.
+   */
+  readonly explainKey: string
+  readonly explainArgs: readonly string[]
 }
 
 /**
@@ -142,13 +151,14 @@ export async function updateFeed(
   const outcome = await applyUpdate(current, signed, verify)
 
   if (!outcome.accepted) {
+    const explained = feedRefusal(outcome, outcome.kept)
     await db.put('journal', {
       id: `feed:${name}:${now()}`,
       createdAt: now(),
       kind: 'error',
-      detail: { explain: outcome.explain, reason: outcome.reason, feed: name },
+      detail: { ...explained, reason: outcome.reason, feed: name },
     })
-    return { inForce: outcome.kept, accepted: false, explain: outcome.explain }
+    return { inForce: outcome.kept, accepted: false, ...explained }
   }
 
   await db.put('feeds', {
@@ -162,6 +172,6 @@ export async function updateFeed(
   return {
     inForce: outcome.snapshot,
     accepted: true,
-    explain: `${name} is now at version ${outcome.snapshot.version}.`,
+    ...feedAccepted(name, outcome.snapshot.version),
   }
 }

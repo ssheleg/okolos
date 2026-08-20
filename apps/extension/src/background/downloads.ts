@@ -1,7 +1,7 @@
 
 import { t } from '@okolos/i18n'
 import { judgeDownload, type CheckOutcome, type DownloadVerdict } from '@okolos/core-download'
-import { matchUrl, type FeedSnapshot, displayFeedNameEn } from '@okolos/core-feeds'
+import { matchUrl, type FeedSnapshot, displayFeedName } from '@okolos/core-feeds'
 
 /**
  * Judging a download at the only moment it can be stopped.
@@ -54,7 +54,14 @@ export async function handleDownload(item: DownloadItem, deps: DownloadDeps): Pr
       ? {
           ran: true,
           passed: false,
-          detail: t('downloadListedBy', displayFeedNameEn(feed.name) ?? feed.name, feed.updatedAt.slice(0, 10)),
+          // `displayFeedName`, not `…En`: this sentence comes out of the catalogue, and
+          // an English list name substituted into a Russian one was the defect that
+          // calling the other function "for the worker" made easy to miss (B-75).
+          detail: t(
+            'downloadListedBy',
+            displayFeedName(feed.name, t) ?? feed.name,
+            feed.updatedAt.slice(0, 10),
+          ),
         }
       : { ran: true, passed: true }
     : { ran: false, why: t('downloadFeedUnread') }

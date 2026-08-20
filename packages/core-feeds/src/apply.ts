@@ -58,15 +58,38 @@ export type RefusalReason =
   | 'not-newer'
   | 'wrong-feed'
 
+/**
+ * A refusal, in the values a sentence about it needs.
+ *
+ * Each reason arrived with `explain` beside it: one finished English sentence, composed
+ * in a package with no catalogue, journalled and shown (B-75). The reason was already
+ * the code and the sentence restated it, so the sentence is gone rather than moved —
+ * `feedRefusal` in `apps/extension/src/background/feed-words.ts` writes the words.
+ *
+ * A union rather than a bag of optional fields: `wrong-base` without the two versions
+ * it compared is a sentence with a hole in it, and the compiler should say so.
+ */
+export type Refusal =
+  /** Signed by something else. `kept` says whether anything survives to fall back on. */
+  | { readonly reason: 'bad-signature'; readonly feed: string }
+  /** Something that is not a version number where one belongs. */
+  | { readonly reason: 'bad-version'; readonly feed: string; readonly found: string }
+  /** An update for one feed offered as another's. */
+  | { readonly reason: 'wrong-feed'; readonly feed: string; readonly current: string }
+  /** A correctly signed old update, replayed. */
+  | { readonly reason: 'not-newer'; readonly version: number; readonly current: number }
+  /** A delta with nothing to apply it to. */
+  | { readonly reason: 'no-current'; readonly feed: string }
+  /** A delta built against a version that is not the one in force. */
+  | { readonly reason: 'wrong-base'; readonly base: number; readonly current: number }
+
 export type UpdateOutcome =
   | { readonly accepted: true; readonly snapshot: FeedSnapshot }
-  | {
+  | ({
       readonly accepted: false
-      readonly reason: RefusalReason
       /** What remains in force. Null only when there was never a good snapshot. */
       readonly kept: FeedSnapshot | null
-      readonly explain: string
-    }
+    } & Refusal)
 
 /**
  * The exact bytes the publisher signed.
@@ -110,20 +133,16 @@ export async function applyUpdate(
   signed: SignedUpdate,
   verify: Verifier,
 ): Promise<UpdateOutcome> {
-  const refuse = (reason: RefusalReason, explain: string): UpdateOutcome => ({
+  const refuse = (refusal: Refusal): UpdateOutcome => ({
     accepted: false,
-    reason,
     kept: current,
-    explain,
+    ...refusal,
   })
 
   if (!(await verify(serialiseUpdate(signed.update), signed.signature))) {
-    return refuse(
-      'bad-signature',
-      current
-        ? `The ${signed.update.body.name} update was not signed by the expected key; version ${current.version} stays in force.`
-        : `The ${signed.update.body.name} update was not signed by the expected key, and there is no earlier copy to fall back to.`,
-    )
+    // Whether anything survives to fall back on is `kept`, which every refusal carries;
+    // it used to be a second sentence chosen here.
+    return refuse({ reason: 'bad-signature', feed: signed.update.body.name })
   }
 
   // Before any comparison, because the comparison is what fails. `version <=
@@ -132,17 +151,19 @@ export async function applyUpdate(
   // check, including a replay of an entry that was fixed. The guard cannot
   // recover on its own, because the guard is what broke.
   if (!isUsableVersion(signed.update.body.version)) {
-    return refuse(
-      'bad-version',
-      `The ${signed.update.body.name} update carries ${String(signed.update.body.version)} where a version number belongs, so it was not applied.`,
-    )
+    return refuse({
+      reason: 'bad-version',
+      feed: signed.update.body.name,
+      found: String(signed.update.body.version),
+    })
   }
 
   if (current && current.name !== signed.update.body.name) {
-    return refuse(
-      'wrong-feed',
-      `That update is for ${signed.update.body.name}, not ${current.name}.`,
-    )
+    return refuse({
+      reason: 'wrong-feed',
+      feed: signed.update.body.name,
+      current: current.name,
+    })
   }
 
   // A stored version that is not usable means an earlier build let one in.
@@ -152,10 +173,11 @@ export async function applyUpdate(
   if (current && isUsableVersion(current.version) && signed.update.body.version <= current.version) {
     // A correctly signed old update, replayed, is how a fixed entry gets
     // un-fixed. The signature being valid is exactly why this check exists.
-    return refuse(
-      'not-newer',
-      `Version ${signed.update.body.version} is not newer than the ${current.version} already in force.`,
-    )
+    return refuse({
+      reason: 'not-newer',
+      version: signed.update.body.version,
+      current: current.version,
+    })
   }
 
   if (signed.update.kind === 'snapshot') {
@@ -164,17 +186,11 @@ export async function applyUpdate(
 
   const delta = signed.update.body
   if (!current) {
-    return refuse(
-      'no-current',
-      `A delta cannot be applied without a full ${delta.name} feed to apply it to.`,
-    )
+    return refuse({ reason: 'no-current', feed: delta.name })
   }
 
   if (delta.base !== current.version) {
-    return refuse(
-      'wrong-base',
-      `That delta was built against version ${delta.base}, but ${current.version} is in force.`,
-    )
+    return refuse({ reason: 'wrong-base', base: delta.base, current: current.version })
   }
 
   const removed = new Set(delta.removed)

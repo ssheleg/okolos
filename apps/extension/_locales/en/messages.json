@@ -591,6 +591,28 @@
   "errTrustedList": {
     "message": "the trusted list"
   },
+  "exportNothingWithheld": {
+    "message": "Nothing was withheld from this file."
+  },
+  "exportWithheldBytes": {
+    "message": "$COUNT$ bytes",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "exportWithheldNote": {
+    "message": "Withheld from this file: $WHAT$. A key that makes the rest of this file readable is not a fact about you — exported beside the data it protects it would let whoever holds this file recover what the data is for. Model weights are named by size rather than included: they are a download, not something the product learned about you.",
+    "placeholders": {
+      "what": {
+        "content": "$1"
+      }
+    }
+  },
+  "exportWithheldSecret": {
+    "message": "this value is what makes the rest reversible"
+  },
   "extensionsAlreadyOff": {
     "message": "Already off."
   },
@@ -762,11 +784,93 @@
   "feedNotVerified": {
     "message": "it did not verify"
   },
+  "feedNowAtVersion": {
+    "message": "$NAME$ is now at version $VERSION$.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "version": {
+        "content": "$2"
+      }
+    }
+  },
   "feedRefused": {
     "message": "A blocking-feed update was refused: $WHY$. The list already in force stays.",
     "placeholders": {
       "why": {
         "content": "$1"
+      }
+    }
+  },
+  "feedRefusedNoCurrent": {
+    "message": "A delta cannot be applied without a full $NAME$ feed to apply it to.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "feedRefusedNotNewer": {
+    "message": "Version $VERSION$ is not newer than the $CURRENT$ already in force.",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      },
+      "current": {
+        "content": "$2"
+      }
+    }
+  },
+  "feedRefusedSignature": {
+    "message": "The $NAME$ update was not signed by the expected key; version $KEPT$ stays in force.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "kept": {
+        "content": "$2"
+      }
+    }
+  },
+  "feedRefusedSignatureNoFallback": {
+    "message": "The $NAME$ update was not signed by the expected key, and there is no earlier copy to fall back to.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "feedRefusedVersion": {
+    "message": "The $NAME$ update carries $FOUND$ where a version number belongs, so it was not applied.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "found": {
+        "content": "$2"
+      }
+    }
+  },
+  "feedRefusedWrongBase": {
+    "message": "That delta was built against version $BASE$, but $CURRENT$ is in force.",
+    "placeholders": {
+      "base": {
+        "content": "$1"
+      },
+      "current": {
+        "content": "$2"
+      }
+    }
+  },
+  "feedRefusedWrongFeed": {
+    "message": "That update is for $NAME$, not $CURRENT$.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "current": {
+        "content": "$2"
       }
     }
   },
@@ -1113,6 +1217,20 @@
   },
   "journalTitle": {
     "message": "What changed since last time"
+  },
+  "leakSourceNoKey": {
+    "message": "No API key is configured for this source."
+  },
+  "leakSourceTimedOut": {
+    "message": "$NAME$ did not answer within $SECONDS$ seconds.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "seconds": {
+        "content": "$2"
+      }
+    }
   },
   "leaksAttribution": {
     "message": "Breach data from Have I Been Pwned, used under CC BY 4.0."

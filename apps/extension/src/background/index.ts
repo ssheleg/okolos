@@ -1,7 +1,7 @@
 import { classifyUndecided, detectHidden } from '@okolos/core-injection'
 import { detectPlatform, type RpcSender } from '@okolos/platform'
 import { buildRules, matchUrl, type FeedSnapshot,
-  displayFeedNameEn,
+  displayFeedName,
 } from '@okolos/core-feeds'
 import { createOnnxRuntime, MODEL } from '@okolos/model'
 import {
@@ -315,7 +315,7 @@ export async function refreshBlockRules(): Promise<{ installed: number; dropped:
       kind: 'error',
       detail: {
         explainKey: 'logRulesTruncated',
-        explainArgs: [displayFeedNameEn(feed.name) ?? feed.name, String(set.dropped)],
+        explainArgs: [displayFeedName(feed.name, t) ?? feed.name, String(set.dropped)],
         feed: feed.name,
       },
     })
@@ -1083,7 +1083,11 @@ async function pullFeed(): Promise<void> {
         const result = await updateFeed(db, signed, createVerifier(FEED_PUBLIC_KEY), () =>
           new Date().toISOString(),
         )
-        return result.accepted ? { accepted: true } : { accepted: false, reason: result.explain }
+        // Resolved here because it becomes an argument inside another message, and a
+        // message cannot carry a key. Same freeze as any stored argument — see B-77.
+        return result.accepted
+          ? { accepted: true }
+          : { accepted: false, reason: t(result.explainKey, ...result.explainArgs) }
       },
       refresh: () => refreshBlockRules(),
       note: async (explainKey, ...explainArgs) => {

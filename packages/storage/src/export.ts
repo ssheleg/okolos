@@ -1,5 +1,5 @@
 import type { OkolosDatabase } from './db.js'
-import { STORES, WITHHELD_MARKER, WITHHELD_SETTINGS, type StoreName } from './schema.js'
+import { STORES, WITHHELD_SETTINGS, type StoreName } from './schema.js'
 
 export interface WipeResult {
   readonly ok: boolean
@@ -8,6 +8,30 @@ export interface WipeResult {
 
 /** The top-level key that states what the file does not contain. */
 export const EXPORT_NOTE = '_withheld'
+
+/** One value this file does not carry, and — for model weights — how big it was. */
+export interface Withheld {
+  /** Store and field, as the database names them. Not translated: it is a path. */
+  readonly path: string
+  /** Size of the omitted buffer, when the omission is a size rather than a secret. */
+  readonly bytes?: number
+}
+
+/**
+ * The words this file needs, supplied by whoever asked for it.
+ *
+ * The note and the marker are read by a person — this is the file they download — and
+ * they were written here in English until 2026-08-20 (B-75), in a package whose
+ * dependencies are `@okolos/contracts` and `idb`. Injected rather than imported: the
+ * one caller is the options page, which already has the catalogue, and a storage layer
+ * that reaches for a locale is a storage layer with an opinion about who is reading.
+ */
+export interface ExportWords {
+  /** Stands where a withheld value was, so its absence is visible in the file. */
+  readonly marker: (item: Withheld) => string
+  /** States what the file does not contain, and why. Given every withheld value. */
+  readonly note: (withheld: readonly Withheld[]) => string
+}
 
 /**
  * Everything the product holds about you, minus the two things that are not
@@ -33,9 +57,9 @@ export const EXPORT_NOTE = '_withheld'
  * data. The byte count is the useful part; the bytes are a download, not a
  * fact about the user.
  */
-export async function exportAll(db: OkolosDatabase): Promise<string> {
+export async function exportAll(db: OkolosDatabase, words: ExportWords): Promise<string> {
   const dump: Record<string, unknown> = {}
-  const withheld: string[] = []
+  const withheld: Withheld[] = []
 
   for (const store of STORES) {
     const rows = await db.getAll(store)
@@ -44,8 +68,9 @@ export async function exportAll(db: OkolosDatabase): Promise<string> {
       dump[store] = rows.map((row) => {
         const entry = row as { key?: unknown; value?: unknown }
         if (typeof entry.key !== 'string' || !WITHHELD_SETTINGS.has(entry.key)) return row
-        withheld.push(`settings/${entry.key}`)
-        return { ...entry, value: WITHHELD_MARKER }
+        const item = { path: `settings/${entry.key}` }
+        withheld.push(item)
+        return { ...entry, value: words.marker(item) }
       })
       continue
     }
@@ -54,8 +79,9 @@ export async function exportAll(db: OkolosDatabase): Promise<string> {
       dump[store] = rows.map((row) => {
         const entry = row as { bytes?: unknown }
         if (!(entry.bytes instanceof ArrayBuffer)) return row
-        withheld.push(`models/bytes (${entry.bytes.byteLength} bytes)`)
-        return { ...entry, bytes: `${WITHHELD_MARKER} — ${entry.bytes.byteLength} bytes` }
+        const item = { path: 'models/bytes', bytes: entry.bytes.byteLength }
+        withheld.push(item)
+        return { ...entry, bytes: words.marker(item) }
       })
       continue
     }
@@ -63,14 +89,7 @@ export async function exportAll(db: OkolosDatabase): Promise<string> {
     dump[store] = rows
   }
 
-  dump[EXPORT_NOTE] =
-    withheld.length === 0
-      ? 'Nothing was withheld from this file.'
-      : `Withheld from this file: ${withheld.join(', ')}. ` +
-        `A key that makes the rest of this file readable is not a fact about you — ` +
-        `exported beside the data it protects it would let whoever holds this file ` +
-        `recover what the data is for. Model weights are named by size rather than ` +
-        `included: they are a download, not something the product learned about you.`
+  dump[EXPORT_NOTE] = words.note(withheld)
 
   return JSON.stringify(dump, null, 2)
 }

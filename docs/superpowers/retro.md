@@ -112,6 +112,16 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (пятый)** — B-31; стадии 0–10. Одна регрессия найдена e2e после
+  того, как юнит-набор был зелёным: платёжная форма опустошалась, потому что
+  `transfer` — и цель, и глагол передачи. Детектор инъекций перестал
+  рапортовать письменности и подписи интерфейса: присутствие невидимого символа
+  больше не находка, находка — размещение (`chars.ts`); три шаблона сужены до того,
+  что они утверждают; уверенность двухуровневая (ADR-0012), и уровень — свойство
+  того, как сигнал сработал. 1742 юнит-теста в 113 файлах, корпус 36/54 против
+  31/34, девять плантов — восемь легли, девятый доказал недостижимую защиту.
+  Постоянных инструкций десять, снятий нет, добавления **сознательно не сделано**
+  (потолок держит). Вердикт REFINE.
 - **2026-08-20 (четвёртый)** — B-36; стадии 0–10. Обратимость санитайзера
   восстановлена в трёх измеренных случаях: держатель ключуется элементом, захват
   идёт перед опустошением, узел, в который написала страница, не опустошается, а
@@ -212,6 +222,123 @@ happens before adding.
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-20 — twenty new negatives, all phrases, and the failure needed one word
+
+**Symptom.** With the detector's unit suite green at 162 and twenty freshly
+measured false positives closed, `e2e/scn-010.spec.ts` failed four of five: no
+banner on the fixture within ten seconds. The cause was not the banner. The
+fixture's form carries `aria-label="Transfer"`, and `transfer` sits in the list
+of credential-adjacent nouns *and* in the list of hand-over verbs — so a single
+word satisfied both halves of a rule that was supposed to need two things. The
+verdict was `sanitize`, the executor emptied the form, the submit button ceased
+to exist, and there was nothing left for an agent gate to hold.
+
+**Stage it surfaced at.** 6, in the browser, after stage 5 had signed off on a
+package suite of 162 tests including every string I had measured that hour.
+
+**Stage that owned it.** 5. I wrote the rule as "a credential noun and a
+hand-over verb", tested it with phrases, and never asked whether the two could be
+the same token.
+
+**Root cause.** Two lists written for two purposes and populated from the same
+vocabulary. Money words are simultaneously the thing an attacker wants and the
+verb for taking it — `transfer`, `wire`, `pay`, `перевод`, `оплата` — and nothing
+in the rule said the matches had to be different parts of the text. It was a
+conjunction in name and a single membership test in effect.
+
+**Why the twenty negatives missed it.** Every one of them is a phrase, because
+every one came from a measurement of sentences: form labels, help texts, cookie
+notices, specification rows. The population I sampled had the shape of the
+population I was thinking about. An `aria-label` that is one word is the most
+ordinary thing on a payment page and it was not in my head, so it was not in my
+corpus — and the fixture that had it was written for a different scenario
+entirely, eleven days earlier, by someone not thinking about this rule at all.
+
+**Fix, by grade.** Structural: the noun and the verb must match different spans,
+and all matches of each are considered rather than the first, so "Transfer money
+and send the password" still reads as an instruction. Behavioural: three
+single-word labels in the clean corpus, and a test block named for the failure.
+
+**The check that catches it next time.** The corpus, plus the observation that
+made this findable: **the end-to-end fixtures are a corpus nobody curated for
+this rule**, which is exactly what makes them able to disagree with it. A suite
+that only runs the examples its author thought of measures the author.
+
+### 2026-08-20 — the comment described a guard that lived in another rule
+
+**Symptom.** `signals.ts` carried this sentence above its imperative pattern:
+"Anchoring matters: 'We use cookies' must not read as a command to use them." The
+anchoring is real and it works — inside `IMPERATIVE`. The rule that actually
+flagged that string was `TOOL_INVOCATION`, which never consulted `IMPERATIVE` and
+had no anchoring of its own. Measured 2026-08-20 against the built detector: `We
+use cookies to improve search` produced `tool-invocation`, `high` confidence and
+`sanitize` — the cookie notice of any page on the web, with a paragraph emptied.
+
+**Stage it surfaced at.** 0, in the harvest, and only because I ran the strings
+rather than read the file. The audit that filed B-31 listed twelve false
+positives; the measurement found fourteen of sixteen, and this was one of the two
+the audit had missed. The other was `You are the owner of this account`.
+
+**Stage that owned it.** 5, whenever the two rules were last edited apart. The
+comment was true when written, about the pattern it sat above; a later rule about
+the same words was added below it and inherited the reassurance without the
+mechanism.
+
+**Root cause.** A docstring that names a protection is read as evidence of it. The
+project's own doctrine says a claim without proof is not documentation — and it
+says so about documents, where a reviewer expects to check. A comment two lines
+above a regular expression is where nobody checks, and the string it promised to
+handle was never once run through the rule that handles it.
+
+**Fix, by grade.** Structural: the anchoring is now one shared `SENTENCE_HEAD`
+used by `IMPERATIVE`, `TOOL_INVOCATION` and both hand-over patterns, so the
+protection the comment describes is the protection the rules apply. Behavioural:
+all fourteen measured strings are tests in `signals.test.ts` beside the name of
+the rule that flagged them, and twenty of them are negatives in the corpus. The
+corpus is what makes the next such comment cheap to disprove — it certifies
+actions now, not just findings.
+
+**The check that catches it next time.** `packages/core-injection/src/signals.test.ts`
+holds the strings; the corpus gate requires zero verdicts across every clean case
+and `sanitize` across every attack. A comment claiming a case is handled now has
+somewhere to be wrong out loud.
+
+### 2026-08-20 — a plant stayed green because the guard could not be reached
+
+**Symptom.** `chars.ts` had two defences against reporting a writing system as an
+attack: an exemption for characters adjacent to an emoji or to a joining script,
+and a rule that a zero-width character only splits a word when both neighbours
+are letters of a space-separated script. I planted the removal of the first —
+`joins()` forced to `false` — and the suite stayed green at 155.
+
+**Stage it surfaced at.** 5, in the plant pass, on the first of nine plants.
+
+**Stage that owned it.** 5. I wrote both guards in the same sitting, the second
+one after a measurement showed the first was not enough, and never went back to
+ask whether the second had made the first redundant.
+
+**Root cause.** It had. An emoji is not a letter of any script in
+`SPACED_LETTER`, and neither is a Persian or Devanagari one, so every case the
+exemption existed for was already excluded one line further down. The plant was
+not a weak test and not a wrong fixture — it was a correct report that the code
+under it could not run.
+
+**Fix, by grade.** The unreachable guard is deleted, and the reasoning that
+replaced it is written where it now lives: the list of scripts *is* the exemption.
+In its place a plant that does bite — widening `SPACED_LETTER` to Arabic and
+Devanagari — reddens four checks, two of them the test that pins the limit those
+scripts create. The limit itself is now stated in SCN-003 and in ADR-0012 rather
+than being an accident of a list.
+
+**Why this is worth an entry rather than an instruction.** Standing instruction 1
+already says to plant and to confirm the plant landed. What this run adds is a
+third reading of a green plant, after "the guard is weak" and "the fixture cannot
+see it": **the guard is unreachable because another one already covers it** — and
+that is the worst of the three, because a defence that cannot fire still reads as
+a defence to whoever widens the rule beside it. The list is capped at ten and
+nothing in it has hit a retirement trigger this run, so this stays an entry. A
+cap that only ever bends is not a cap.
 
 ### 2026-08-20 — the cheap assertion stood first, so the plant died before it reached the point
 

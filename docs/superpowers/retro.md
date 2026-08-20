@@ -112,6 +112,17 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (тридцать девятый)** — B-75, часть четвёртая; стадии 0–10. `core-gate` и
+  `core-extensions`: потолок долга 19 → 11. Форма оказалась не «перенести слова», а «слов
+  не должно было быть» — `explain` дублировал код `reason`, который уже был кодом. Слова
+  живут за вторым путём экспорта `@okolos/ui/words`, потому что их читают две поверхности,
+  а тянуть граф UI в воркер ради таблицы поиска — не та цена. По дороге найдены два
+  содержательных дефекта (нечитаемый файл читался как чистый отчёт; плотность hex врала в
+  пять раз на коротких файлах) и два слепых пятна свипа — заведены как B-76. Гейт
+  достижимости и гейт качества тестов поймали мою же правку, оба по делу. 2185 юнит-тестов
+  в 136 файлах, 126 e2e. Девять плантов, восемь легли; девятая не легла и стоила больше
+  остальных — перепутанный ключ проходил все проверки файла. Постоянных инструкций десять,
+  снятий нет. Вердикт REFINE.
 - **2026-08-20 (тридцать восьмой)** — B-75, часть третья; стадии 0–10. `core-credential`
   отдал слова поверхности: потолок долга 29 → 19. Нашлась строка того же класса, которую
   свип не видит по устройству — `toLocaleString('en')` внутри пакета. Тест поверхности
@@ -2064,6 +2075,69 @@ description.
   keeping. But a row closed with its verification outstanding is a row closed early, and
   the honest form is the one now in the board: closed on the second attempt, with the
   first attempt's failure written into it rather than tidied away.
+
+### 2026-08-20 — the second source of one truth was the words, and the code was already there
+
+**Symptom.** `core-gate` was on the B-75 list with two sentences, and the plan was the
+established shape: the package returns a code, the surface words it. Reading it first
+showed the code was *already there* — `GateReason`, seven values, one per sentence — and
+`explain` was a second rendering of it in English. Four more sentences in the same file
+were invisible to the sweep because their first word ends in a colon (`'Blocked: …'`),
+which breaks its three-word anchor: the tool reported two of six.
+
+**Stage it surfaced at.** 2 — reading the consumer before designing the refactor. It
+would not have surfaced at 5: wrapping both flagged sentences in keys was a change that
+compiles, passes and leaves a duplicated code plus four English sentences behind.
+
+**Stage that owned it.** 0, the harvest. The debt ledger's own number was the premise the
+plan was built on, and the number is what the *tool* can see. Standing instruction #7
+says a number from a tool is a claim about the tool; the ledger was read as a claim about
+the tree.
+
+**Root cause.** A ceiling that is exact-match against a measurement makes the
+measurement look total. Nothing in the file said "these are the ones I can find", so the
+count read as the file's whole debt.
+
+**Fix, by grade.** *Structural:* the sentence is gone rather than moved — `describes`
+carries the action, `detail` the browser's own words, `reason` stays the single code.
+*Structural:* `InventoryChange` became a discriminated union, so a kind without its
+values fails to compile instead of rendering a sentence with a hole in it. *Process:* the
+two blind spots are B-76, ahead of the rest of B-75 — a ceiling whose measurer is partly
+blind cannot support the claim "zero, file deleted", which is B-75's own done condition.
+
+**The check that catches it next time.** B-76 requires a plant per class. Until it lands,
+the baseline's `paidSoFar` names both classes with the example that defeats the anchor, so
+the next reader of that number sees what it does not include.
+
+### 2026-08-20 — the plant that passed every check was the one worth having
+
+**Symptom.** Nine plants this run. Eight failed as intended. The ninth — `timeout`
+pointing at `gateReasonUserBlocked`, two reasons sharing one key — passed **all** of the
+file's checks: the key exists, the message resolves, no placeholder survives, the sentence
+names the action, and the union-cover test compares the reason side of the table. A user
+whose held action timed out would have read "вы остановили X": a true sentence about an
+event that did not happen.
+
+**Stage it surfaced at.** 5, and only because the plant was run. Every assertion I had
+written was about *one* mapping being valid; none was about the mapping being a bijection.
+
+**Stage that owned it.** 5. The table was written and tested in the same sitting, which is
+exactly the condition standing instruction #8 describes: the tests agreed with the code
+because they were derived from it.
+
+**Root cause.** Checks over a `Record<Code, Key>` naturally iterate the codes. The failure
+mode lives on the other side — two codes, one key — and iterating keys is the check nobody
+writes because the type system already guarantees the side you can see.
+
+**Fix, by grade.** *Structural:* distinctness asserted on both sides — the keys, and the
+resolved sentences, because two keys whose messages are identical is the same lie one step
+further away. Applied to `CHANGE_EXPLAIN_KEY` in the same change, where the same plant
+(`removed` → the installed sentence) then landed immediately.
+
+**The check that catches it next time.** `gate-words.test.ts` and `words.test.ts` both
+carry "gives each code its own key, and its own sentence". Any future `*_KEY` table gets
+that test as the third of the three it needs (has a key, the catalogue answers it, the
+mapping is one-to-one).
 
 ### 2026-08-20 — the comment described the design, and the design was half built
 

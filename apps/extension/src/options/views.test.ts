@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+
 import { describe, expect, it } from 'vitest'
 
 import { ALL_VIEWS, hashFor, KNOWN_HASHES, optionsPageFor, routeFor, VIEW_FOR_HASH } from './views.js'
@@ -117,5 +120,53 @@ describe('the producing half and the reading half are one table', () => {
     expect(optionsPageFor('recovery', 'entered-password')).toBe(
       'options.html#recovery=entered-password',
     )
+  })
+})
+
+describe('the address is decoded once, and here', () => {
+  /**
+   * One decode, one owner.
+   *
+   * `routeFor` decodes and deliberately keeps a broken escape raw, so the checklist
+   * can report an unknown kind instead of the page dying. `recoverySection` then
+   * decoded a **second** time: `#recovery=%E0%A4%A` threw `URIError`,
+   * `root.replaceChildren` was never reached, and the options page was completely
+   * blank with an unhandled rejection in the console. Measured 2026-08-20.
+   *
+   * The quiet half of a double decode is worse than the loud one: on a value that
+   * decodes cleanly it answers about a string the address never named. `%2520`
+   * becomes `%20` and then a space.
+   */
+  it('hands out a value nobody needs to decode again', () => {
+    const route = routeFor('#recovery=ran%20a%20command')
+    expect(route).toEqual({ view: 'recovery', kind: 'ran a command' })
+    // Decoding this again would be a no-op here and a lie on `%2520`, which is why
+    // the rule is "once", not "until it stops changing".
+    expect(routeFor('#recovery=a%2520b')).toEqual({ view: 'recovery', kind: 'a%20b' })
+  })
+
+  it('keeps a broken escape rather than throwing, and says nothing about it', () => {
+    // The raw value is what the link actually said. The checklist reports it as an
+    // unknown kind; nothing here is allowed to throw over it.
+    expect(() => routeFor('#recovery=%E0%A4%A')).not.toThrow()
+    expect(routeFor('#recovery=%E0%A4%A')).toEqual({ view: 'recovery', kind: '%E0%A4%A' })
+  })
+
+  it('is the only place in the options entry that decodes', () => {
+    /**
+     * Read from the file, because this is a rule about where a call may live and a
+     * unit test cannot observe the absence of one. The entry point renders; the
+     * routing module owns the address. A second decode anywhere downstream re-creates
+     * exactly the blank page above.
+     */
+    const entry = readFileSync(
+      path.join(import.meta.dirname, 'index.ts'),
+      'utf8',
+    )
+      .split('\n')
+      // Its own explanation names the call; a comment is not a call.
+      .filter((line) => !/^\s*(\*|\/\/)/.test(line.trim()) && !line.trim().startsWith('*'))
+      .join('\n')
+    expect(entry).not.toContain('decodeURIComponent')
   })
 })

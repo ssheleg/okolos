@@ -433,7 +433,19 @@ async function recoverySection(kind: string): Promise<HTMLElement> {
   }
 
   container.append(
-    renderRecovery(document, buildChecklist(decodeURIComponent(kind), progress), {
+    /**
+     * `kind` arrives decoded. Decoding it again was two defects in one call.
+     *
+     * `routeFor` decodes once and **deliberately keeps a broken escape raw** — there
+     * is a test for that — so a second `decodeURIComponent` on the raw value threw a
+     * `URIError` out of here, `root.replaceChildren` was never reached, and
+     * `options.html#recovery=%E0%A4%A` was a completely blank page with an unhandled
+     * rejection in the console. Measured 2026-08-20.
+     *
+     * The quiet half: on a value that decodes cleanly, decoding twice answers about a
+     * string the address never named — `%2520` becomes `%20` and then a space.
+     */
+    renderRecovery(document, buildChecklist(kind, progress), {
       onToggle: (stepId, done) => {
         void (async () => {
           const next = done

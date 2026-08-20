@@ -617,9 +617,10 @@ See [foundation.md](foundation.md) → Personas.
 - **Alt paths:** a step must be done on another device -> system shows what to do there and preserves progress; user is unsure what happened -> system offers the "not sure" path with the broadest safe checklist
 - **UI elements:** incident type picker, ordered steps with reasons, per-step done control, "continue on another device", archive
 - **States covered:** loading, empty, success
-- **Errors & recovery:** playbook data missing -> system shows the broadest safe checklist and says that is what it is showing
+- **Errors & recovery:** playbook data missing -> system shows the broadest safe checklist and says that is what it is showing; **an address this product never produces -> the same broad list, and the page renders** — until 2026-08-20 two such addresses left it completely blank, which is the worst possible failure for the one screen a person opens while something is already going wrong
+- **Known limit — an incident name is read from the address, so the address can say anything.** Two kinds of nonsense were fatal and are now ordinary. A broken percent escape (`#recovery=%E0%A4%A`): `routeFor` decodes once and deliberately keeps a malformed value raw so the checklist can report it, and the options entry decoded a **second** time, threw `URIError`, and never reached `replaceChildren`. A name inherited from `Object.prototype` (`#recovery=constructor`, `__proto__`, `toString`): `kind in INCIDENTS` walks the prototype chain, so the lookup returned a function and rendering died on it. Both measured 2026-08-20. The rules that replace them: the address is decoded **once**, by the routing module and nowhere else, and membership is `Object.hasOwn`
 - **Status:** implemented
-- **Coverage:** packages/core-recovery/src/checklist.ts:buildChecklist, packages/ui/src/recovery/recovery.ts:renderRecovery, e2e/scn-025.spec.ts
+- **Coverage:** packages/core-recovery/src/checklist.ts:buildChecklist, packages/ui/src/recovery/recovery.ts:renderRecovery, e2e/scn-025.spec.ts (including a broken escape and three inherited names), packages/core-recovery/src/checklist.test.ts (eight inherited names, and every real incident still named), apps/extension/src/options/views.test.ts (decoded once, and the entry point holds no second decode)
 
 ### SCN-032: The local store was written by a newer build
 - **Persona:** P-01

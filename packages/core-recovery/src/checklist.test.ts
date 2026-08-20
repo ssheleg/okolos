@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildChecklist, INCIDENTS } from './checklist.js'
+import { INCIDENTS, buildChecklist } from './checklist.js'
 
 describe('the order is the product', () => {
   it('puts disconnecting first after a pasted command', () => {
@@ -72,5 +72,43 @@ describe('when we do not know what happened', () => {
 
   it('is not generic when the incident was named', () => {
     expect(buildChecklist('pasted-command').generic).toBe(false)
+  })
+
+  it('treats a name off the prototype as a name nobody defined', () => {
+    /**
+     * `kind in INCIDENTS` walks the prototype chain, so `'constructor' in INCIDENTS`
+     * is **true** — the lookup then returned `Object`, and `steps.some(...)` on a
+     * function threw. `#recovery=constructor` was a blank options page (measured), on
+     * the one screen a person reaches while something is going wrong.
+     *
+     * Every inherited name, not just the famous one: a reader who sees only
+     * `constructor` fixes `constructor`.
+     */
+    for (const inherited of [
+      'constructor',
+      '__proto__',
+      'toString',
+      'valueOf',
+      'hasOwnProperty',
+      'isPrototypeOf',
+      'propertyIsEnumerable',
+      'toLocaleString',
+    ]) {
+      const list = buildChecklist(inherited)
+      expect(list.kind, `${inherited} was accepted as an incident`).toBe('not-sure')
+      expect(list.generic, `${inherited} did not report the fallback`).toBe(true)
+      expect(Array.isArray(list.steps), `${inherited} produced steps that are not a list`).toBe(
+        true,
+      )
+      expect(list.steps.length).toBeGreaterThan(3)
+    }
+  })
+
+  it('still names every incident it really has', () => {
+    // The other side of the same guard: narrowing the lookup must not start
+    // refusing the real names, which is how a fix for one address breaks all of them.
+    for (const kind of Object.keys(INCIDENTS)) {
+      expect(buildChecklist(kind).generic, `${kind} fell back to the generic list`).toBe(false)
+    }
   })
 })

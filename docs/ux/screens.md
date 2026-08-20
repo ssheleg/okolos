@@ -307,7 +307,8 @@ includes a redirect from `*.workers.dev`, not just a CNAME.
   | loading | building the checklist | - | brief; steps are local |
   | empty | no incident selected | - | the picker, nothing else |
   | success | checklist active | - | one current step highlighted, rest visible |
-- **Behavior notes:** no time estimates, no reassurance copy, no scare copy; progress survives a browser restart
+  | success (broad) | the incident name is not one we have a playbook for — including an address this product never produces | - | the "not sure" list, with the fallback stated on screen rather than implied |
+- **Behavior notes:** no time estimates, no reassurance copy, no scare copy; progress survives a browser restart. **A malformed address renders the broad list, it does not render nothing** — `#recovery=%E0%A4%A` (a broken escape) and `#recovery=constructor` (a name off `Object.prototype`) each left this screen completely blank until 2026-08-20, which is the worst place in the product for a blank screen
 - **Wireframe:** wireframes/SCR-13.md
 - **Coverage:** packages/ui/src/recovery/recovery.ts:renderRecovery, packages/core-recovery/src/checklist.ts:buildChecklist, packages/core-recovery/src/portable.ts:toPortable, e2e/scn-025.spec.ts
 - **Scenarios:** SCN-025

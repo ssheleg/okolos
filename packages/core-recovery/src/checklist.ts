@@ -109,7 +109,14 @@ export function buildChecklist(
   kind: string,
   progress: readonly StepProgress[] = [],
 ): Checklist {
-  const known = kind in INCIDENTS
+  /**
+   * `Object.hasOwn`, not `in`: the `in` operator walks the prototype chain, so
+   * `'constructor' in INCIDENTS` was **true** and the lookup returned `Object`.
+   * `steps.some(...)` on a function threw, and `#recovery=constructor` rendered a
+   * blank options page — on the one screen a person reaches while something is
+   * already going wrong. Measured 2026-08-20.
+   */
+  const known = Object.hasOwn(INCIDENTS, kind)
   const resolved: IncidentKind = known ? (kind as IncidentKind) : 'not-sure'
   const steps = INCIDENTS[resolved]
   const done = progress.map((entry) => entry.stepId).filter((id) => steps.some((step) => step.id === id))

@@ -112,6 +112,13 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (шестой)** — B-32; стадии 0–10. Детектор двойников перестал
+  предупреждать о настоящих брендах: появилось понятие публичного суффикса, и
+  правило «бренд стоит не там» сказано один раз вместо двух неточных
+  формулировок. Ложных срабатываний 21 из 34 → 0 из 34, поймано 11 атак из 12.
+  1806 юнит-тестов в 115 файлах, пять плантов — все легли. Три предела названы в
+  SCN-006, две задачи на восстановление покрытия заведены. Постоянных инструкций
+  десять, снятий нет. Вердикт REFINE.
 - **2026-08-20 (пятый)** — B-31; стадии 0–10. Одна регрессия найдена e2e после
   того, как юнит-набор был зелёным: платёжная форма опустошалась, потому что
   `transfer` — и цель, и глагол передачи. Детектор инъекций перестал
@@ -222,6 +229,57 @@ happens before adding.
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-20 — the same rule written twice, and both copies loose
+
+**Symptom.** `wearsBrandAsLabel` had two branches: the watched name as a run of
+labels "anywhere but at the end", and the brand's first label appearing in
+"everything but the last label". Measured against thirty-four hosts that are the
+real thing, the detector flagged twenty-one — including `amazon.co.uk` (the brand
+looking like a subdomain of `co`), `amazon.com.br` (the run `amazon.com` does sit
+in front of `br`), every Russian government site (`pfr.gov.ru` and `nalog.gov.ru`
+share the second-to-last label `gov`, so each was a homograph of the tax service),
+and three of the largest mail providers on the web, because the watchlist contains
+`mail.ru` and `mail` is what everyone calls a subdomain.
+
+**Stage it surfaced at.** 0, in the harvest — but only after running the hosts.
+The audit that filed the row listed twelve cases and the measurement found
+twenty-one; the government domains, `telegram.me`, `vk.ru` and `ozon.by` were not
+among the twelve.
+
+**Stage that owned it.** 2. Both branches are approximations of one sentence —
+the brand appears among the labels the registrant put in front of **their own
+domain** — and neither could be stated without knowing where the registrant's
+domain begins. The module never had that notion, so the sentence was written twice
+in terms of label positions, and label positions are wrong for every two-label
+suffix on the web.
+
+**Root cause.** A missing concept, not a wrong condition. "The second-to-last
+label" is the registrant's label exactly when the public suffix is one label long,
+and the code treated a special case as the general one. Every downstream rule
+inherited it: the homograph branch compared `co` to `amazon`, the ending branch
+compared `gov` to `gov`.
+
+**Fix, by grade.** Structural: `suffix.ts` names the concept —
+`publicSuffixOf`, `registrableDomain`, `labelsAbove` — and the two branches
+collapsed into one statement over `labelsAbove`. Behavioural where the concept
+cannot decide: a brand's own country domain is indistinguishable from a squatter's
+gTLD without ownership data, so the ending rule keeps only the **mistyped** ending
+(one edit), and that limit is written into SCN-006 with the nine hosts it costs.
+
+**The leak worth naming separately.** Tightening the ending rule was not enough,
+because the homograph branch below it fired on the same hosts for a different
+stated reason: identical labels have the same skeleton. A rule that has just
+deliberately let a host pass leaks through the looser rule beside it, and the
+plant that proves it (`if (true)` in place of the identical-label guard) reddens
+eighteen checks. Two rules over the same input need to agree about what they are
+each *not* saying.
+
+**The check that catches it next time.** `real-hosts.test.ts`: thirty-four hosts
+that are the real thing, each with the reason it is real, plus one assertion over
+the whole sample so a rule cannot be repaired by moving the failure to another
+host. There was no such file — every case in `check.test.ts` was written from the
+attack outward and the innocent population was four hosts.
 
 ### 2026-08-20 — twenty new negatives, all phrases, and the failure needed one word
 

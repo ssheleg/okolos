@@ -1,5 +1,6 @@
 import { mixesScripts, skeleton } from './confusables.js'
 import { toUnicodeHost } from './punycode.js'
+import { labelsAbove, publicSuffixOf, registrableLabel } from './suffix.js'
 
 /**
  * Is this host pretending to be one the user cares about?
@@ -41,7 +42,7 @@ export function checkLookalike(
     if (decoded === target || decoded.endsWith(`.${target}`)) return null
   }
 
-  const label = registrable(decoded)
+  const label = registrableLabel(decoded)
 
   // Before any similarity test, because this one is not about similarity: the
   // name is exactly right and standing in the wrong place. `paypal.com.evil.test`
@@ -59,21 +60,32 @@ export function checkLookalike(
   for (const watched of watchlist) {
     const target = watched.trim().toLowerCase()
     if (target === '') continue
-    const targetLabel = registrable(target)
+    const targetLabel = registrableLabel(target)
 
     // Checked first because it is the more specific answer: the name is
     // identical and only the ending differs, which "homograph" would not say.
-    if (sameSecondLevel(decoded, target)) {
+    if (endingIsOneEditAway(decoded, target)) {
       return { kind: 'tld-swap', visited, decoded, resembles: target, distance: 0 }
     }
 
     if (skeleton(label) === skeleton(targetLabel)) {
-      return {
-        kind: mixesScripts(label) ? 'mixed-script' : 'homograph',
-        visited,
-        decoded,
-        resembles: target,
-        distance: 0,
+      /**
+       * A homograph is a name whose *characters* differ while looking the same.
+       * When the labels are the identical string, nothing looks like anything —
+       * the only difference is the ending, and that case has just been judged
+       * above on the one ground the device can judge it: whether the ending is a
+       * plausible mistyping. Falling through to here reported `google.de` as a
+       * homograph of `google.com` after the ending rule had deliberately let it
+       * pass, which is how a tightened rule leaks out of a looser one beside it.
+       */
+      if (label !== targetLabel) {
+        return {
+          kind: mixesScripts(label) ? 'mixed-script' : 'homograph',
+          visited,
+          decoded,
+          resembles: target,
+          distance: 0,
+        }
       }
     }
 
@@ -122,32 +134,80 @@ function hostnameOnly(raw: string): string {
  * crying wolf.
  */
 function wearsBrandAsLabel(decoded: string, target: string): boolean {
-  const labels = decoded.split('.').filter(Boolean)
-  const targetLabels = target.split('.').filter(Boolean)
-  if (labels.length <= targetLabels.length) return false
+  /**
+   * One rule, stated once: the brand appears among the labels the registrant put
+   * **in front of their own domain**. Everything the function used to get wrong
+   * came from stating it twice and stating it loosely.
+   *
+   * "Anywhere but the last label" made `amazon.co.uk` hand up `amazon` as a
+   * subdomain of `co` — the brand on its own site, reported as impersonating
+   * itself. "The full name anywhere but the end" made `amazon.com.br` and
+   * `microsoft.com.au` into impersonations, because the run `amazon.com` does sit
+   * in front of `br` — and `br` is a registry's label, not a registrant's, so
+   * nobody is standing in front of anybody. Above the registrable domain there is
+   * nothing at all in either host, which is what "this is the real company"
+   * looks like from here.
+   */
+  const above = labelsAbove(decoded)
+  if (above.length === 0) return false
 
-  // The full watched name as a run of labels, anywhere but at the end — the
-  // end is the genuine site, already excluded above.
-  for (let at = 0; at + targetLabels.length < labels.length; at += 1) {
-    if (targetLabels.every((part, i) => labels[at + i] === part)) return true
+  // The full watched name as a run of those labels: `paypal.com.evil.test`.
+  const targetLabels = target.split('.').filter(Boolean)
+  for (let at = 0; at + targetLabels.length <= above.length; at += 1) {
+    if (targetLabels.every((part, i) => above[at + i] === part)) return true
   }
 
-  // Or its own name standing alone as a label: `paypal.evil.test`.
-  const brand = targetLabels[0]
-  return brand !== undefined && labels.slice(0, -1).includes(brand)
+  /**
+   * Or its own name standing alone among them: `paypal.evil.test`.
+   *
+   * Restricted to brand labels that are names rather than service words. Read
+   * without that, `mail.ru` made `mail.yahoo.com`, `mail.proton.me` and
+   * `mail.qq.com` into impersonations — three of the largest mail providers on
+   * the web.
+   */
+  const brand = registrableLabel(target)
+  if (brand === '' || GENERIC_LABELS.has(brand)) return false
+  return above.includes(brand)
 }
 
-/** The label that matters: `login.pаypal.com` -> `pаypal`. */
-function registrable(host: string): string {
-  const parts = host.split('.').filter(Boolean)
-  return parts.length >= 2 ? (parts[parts.length - 2] as string) : (parts[0] ?? '')
-}
+/**
+ * Watched names whose own first label names a service, not a brand.
+ *
+ * Kept as a list of two rather than a rule, because it is a list of two: of the
+ * fifty watched names, `mail.ru` and `office.com` are the ones whose brand label
+ * is a word the whole web uses for a subdomain. A length threshold was the
+ * alternative and it is worse — it would have silently dropped `vtb`, `mkb`,
+ * `mos`, `ozon` and `cdek`, five names this product exists to protect, to catch
+ * two it can name.
+ *
+ * The full watched name is still matched as a run of labels, so `mail.ru.evil.test`
+ * is caught; what is given up is `mail.evil.test`, and that is the trade a mail
+ * provider's subdomain buys.
+ */
+const GENERIC_LABELS: ReadonlySet<string> = new Set(['mail', 'office'])
 
-function sameSecondLevel(host: string, target: string): boolean {
-  const a = host.split('.').filter(Boolean)
-  const b = target.split('.').filter(Boolean)
-  if (a.length < 2 || b.length < 2) return false
-  return a[a.length - 2] === b[b.length - 2] && a[a.length - 1] !== b[b.length - 1]
+/**
+ * The same name under an ending one edit away from the brand's.
+ *
+ * The rule used to be "same second-to-last label, different last label", and a
+ * brand's own country domain satisfies it exactly: `google.de`, `yandex.com`,
+ * `github.io`, `stripe.dev`, `discord.gg`, `sberbank.com`, `telegram.me`,
+ * `vk.ru`, `ozon.by` were all reported as swapped endings, and every one of them
+ * is the real company. Nothing on the device can tell a brand's ccTLD from a
+ * squatter's TLD — ownership is not a fact a content script has.
+ *
+ * What it can tell is a **mistyped** ending from a different market. `.co` and
+ * `.cm` are one edit from `.com` and are the classic squats; `.de`, `.io`,
+ * `.dev`, `.gg`, `.me`, `.ru`, `.by` are three, two, three, three, three, three
+ * and two. So the ending must be one edit from the brand's, which keeps
+ * `paypal.co` and `amazon.co` and gives up the rest — named as a limit rather
+ * than paid for with a warning on `google.de`.
+ */
+function endingIsOneEditAway(host: string, target: string): boolean {
+  const here = publicSuffixOf(host)
+  const there = publicSuffixOf(target)
+  if (here === '' || there === '' || here === there) return false
+  return registrableLabel(host) === registrableLabel(target) && editDistance(here, there) === 1
 }
 
 /** Damerau-Levenshtein: a swapped pair of letters is one mistake, not two. */

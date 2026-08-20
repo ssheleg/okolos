@@ -104,11 +104,33 @@ describe('what it does catch', () => {
     expect(checkLookalike('gogole.com', WATCHLIST)).toMatchObject({ resembles: 'google.com' })
   })
 
-  it('the same name under a different ending', () => {
-    expect(checkLookalike('paypal.security', WATCHLIST)).toMatchObject({
+  it('the same name under an ending one edit from the brand’s', () => {
+    // `.co` and `.cm` are the classic squats on `.com`, and one edit is what
+    // separates them from a different market.
+    expect(checkLookalike('paypal.co', WATCHLIST)).toMatchObject({
       kind: 'tld-swap',
       resembles: 'paypal.com',
     })
+    expect(checkLookalike('paypal.cm', WATCHLIST)).toMatchObject({ kind: 'tld-swap' })
+    expect(checkLookalike('microsoft.co', WATCHLIST)).toMatchObject({ kind: 'tld-swap' })
+  })
+
+  it('says nothing about the same name under an unrelated ending, and this is the cost', () => {
+    /**
+     * `paypal.security` was asserted here as a swapped ending until 2026-08-20,
+     * and the rule that caught it — same label, any different ending — reported
+     * nine genuine hosts in a thirty-four-host sample: `google.de`, `yandex.com`,
+     * `github.io`, `stripe.dev`, `discord.gg`, `sberbank.com`, `telegram.me`,
+     * `vk.ru`, `ozon.by`. Every one is the real company on its own domain.
+     *
+     * Nothing on the device separates a brand's country domain from a squatter's
+     * gTLD: ownership is not a fact a content script has. So the coverage is
+     * given up and written down here, rather than paid for with a warning on
+     * `google.de` — which is how a user learns to dismiss the next one. Recovering
+     * it needs data that can decide, and that is B-67.
+     */
+    expect(checkLookalike('paypal.security', WATCHLIST)).toBeNull()
+    expect(checkLookalike('paypal.support', WATCHLIST)).toBeNull()
   })
 
   it('a lookalike used as a subdomain of something else', () => {

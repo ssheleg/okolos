@@ -705,8 +705,18 @@ if (isTopFrame) {
 }
 
 /**
- * The password pause, top frame only: a login form in a subframe is warned
- * about by the frame it is in, and two banners for one field is one too many.
+ * The password pause, top frame only — and nothing watches a login form in a frame.
+ *
+ * This comment used to say a subframe's form "is warned about by the frame it is in",
+ * which the very condition below prevents: the content script runs in every frame, and in
+ * a subframe `isTopFrame` is false, so this block is skipped there too. An OAuth or
+ * payment form in an iframe — the ordinary shape, not the exotic one — is watched by
+ * nobody (B-79).
+ *
+ * The restriction itself is not wrong: this mounts a banner, and a banner inside a small
+ * frame is clipped or invisible, which is exactly why the injection relay exists. What is
+ * missing is that channel for a credential finding, and that is a feature rather than a
+ * condition to delete.
  */
 if (isTopFrame) {
   watchCredentialFields({
@@ -780,6 +790,10 @@ function reuseLine(verdict: { reusedOn: string[]; reuseUnknown: boolean }): stri
  * five of them. The check is deliberately after submission: warning someone
  * before they have finished typing interrupts a login they were going to
  * complete anyway.
+ *
+ * **Top frame only, and a password submitted from an iframe is therefore never checked**
+ * — same gap as the pause above, same reason: this claims a banner slot, and a slot
+ * inside a frame nobody can see is not a warning (B-79).
  */
 if (isTopFrame) {
   document.addEventListener(

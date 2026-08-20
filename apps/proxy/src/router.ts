@@ -5,7 +5,7 @@
  * read, nothing about a request is stored except what an appeal explicitly
  * contains. A domain lookup is answered and forgotten.
  */
-import { displayFeedNameEn, isOurFeed, OUR_FEEDS } from '@okolos/core-feeds'
+import { displayFeedNameRu, isOurFeed, OUR_FEEDS } from '@okolos/core-feeds'
 
 import { PRIVACY_HTML } from './privacy.generated.js'
 
@@ -401,7 +401,9 @@ ${body}
   // The list's name, never its identifier. This page is the one a site owner
   // reads when their domain has been blocked, and `phishing` is a database key
   // dressed up as a reason.
-  const named = escapeHtml(displayFeedNameEn(row.feed) ?? row.feed)
+  // Russian, because this page is `lang="ru"` and every other word on it is. It printed
+  // the English name until 2026-08-20 — to a site owner reading Russian (B-24).
+  const named = escapeHtml(displayFeedNameRu(row.feed) ?? row.feed)
   return shell(
     `${domain} — числится`,
     `<p data-role="verdict"><strong>${escapeHtml(domain)}</strong> <strong>числится</strong> в списке <strong>${named}</strong>, запись от ${escapeHtml(row.entry_date)}.</p>` +
@@ -464,8 +466,15 @@ async function domainStatus(domain: string | null, env: Env): Promise<Response> 
     // The identifier stays: this is an API, and a caller keying off a display
     // name would break the first time the name is improved.
     feed: row.feed,
-    /** The same list, as a person should read it. */
-    feedName: displayFeedNameEn(row.feed),
+    /**
+     * The same list, as a person should read it — and in the language the page is in.
+     *
+     * It was the English name while `/status` is `lang="ru"` throughout, so the API and
+     * the page disagreed about what one list is called (B-24). There is no English
+     * public page to be consistent with; a second field would be a language nothing here
+     * ever shows.
+     */
+    feedName: displayFeedNameRu(row.feed),
     entryDate: row.entry_date,
     // Most listings are not ours, and saying so is the difference between an
     // owner fixing the problem and an owner arguing with the wrong party.

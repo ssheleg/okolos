@@ -91,6 +91,37 @@ describe('the second class B-76 was filed for: a quote nested in a substitution'
   })
 })
 
+describe('a sentence in the language the product ships in', () => {
+  it('reads Cyrillic prose, which the anchor could not see at all', () => {
+    /**
+     * `[A-Za-z]` and `\w` — which is `[A-Za-z0-9_]` in JavaScript — meant a Russian
+     * sentence hard-coded in a package was invisible here. That is the same defect as an
+     * English one mirrored: it ships **untranslated to the English catalogue's readers**.
+     * Widening it on 2026-08-20 found nothing in the tree, so the class was uncovered
+     * rather than dirty (B-24 found the gap; the row itself was about a name).
+     */
+    expect(sentencesIn(`const x = 'Проверка страницы не завершилась совсем'`)).toEqual([
+      'Проверка страницы не завершилась совсем',
+    ])
+  })
+
+  it('leaves a name alone, because a name is not copy', () => {
+    // `'Список Okolos: фишинг'` has no run of lowercase words, and that is the right
+    // answer: names are held to `docs/brand/terminology.md` by their own gate, and a
+    // product that refused every proper noun in its code would be unusable.
+    expect(sentencesIn(`  phishing: { ru: 'Список Okolos: фишинг' },`)).toEqual([])
+  })
+
+  it('does not start reading identifiers because of the wider class', () => {
+    for (const line of [
+      `const kind = 'not-sure'`,
+      `el.setAttribute('data-role', 'pick-list')`,
+    ]) {
+      expect(sentencesIn(line), line).toEqual([])
+    }
+  })
+})
+
 describe('what is deliberately not a surface', () => {
   it('skips the arguments of a console call', () => {
     // Twenty of these surfaced when the colon class was let in. They are lines for

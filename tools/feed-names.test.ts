@@ -9,7 +9,8 @@
  * Three things have to agree, and the failure mode of each is silence:
  *
  *   1. the worker publishes the identifiers `OUR_FEEDS` claims;
- *   2. the English name in `OUR_FEEDS` is the English name in the catalogue;
+ *   2. the Russian literal in `OUR_FEEDS` is the Russian name in the catalogue **and**
+ *      the one the brand pack fixes;
  *   3. no surface interpolates a raw feed identifier into copy.
  */
 
@@ -45,14 +46,41 @@ describe('the lists this project names', () => {
     expect(missing, 'a list whose name has no message shows its identifier').toEqual([])
   })
 
-  it('says the same thing in English in both places', () => {
-    // The worker has no catalogue and reads `en` from the table directly. Two
-    // homes for one sentence drift, and this is the join that catches it.
-    const en = catalogue('en')
+  it('says the same thing in Russian in both places', () => {
+    /**
+     * The worker has no catalogue and reads `ru` from the table directly. Two homes for
+     * one name drift, and this is the join that catches it.
+     *
+     * It used to check `en`, which was the name the *proxy* printed onto `lang="ru"`
+     * pages — so the gate agreed with the code and not with the reader (B-24). The
+     * English literal is gone: the extension resolves English through the catalogue,
+     * where it already lived.
+     */
+    const ru = catalogue('ru')
     const disagreements = Object.entries(OUR_FEEDS)
-      .filter(([, name]) => en[name.messageKey]?.message !== name.en)
-      .map(([id, name]) => `${id}: table says "${name.en}", catalogue says "${en[name.messageKey]?.message}"`)
+      .filter(([, name]) => ru[name.messageKey]?.message !== name.ru)
+      .map(([id, name]) => `${id}: table says "${name.ru}", catalogue says "${ru[name.messageKey]?.message}"`)
     expect(disagreements).toEqual([])
+  })
+
+  it('says what the brand pack says, which is the source neither of them is', () => {
+    /**
+     * The row's own condition: the gate must check the brand pack rather than the
+     * current string. `docs/brand/terminology.md` fixes one name per concept per
+     * language — a table and a catalogue agreeing with each other while both drift from
+     * it is exactly the shape that let an English name onto a Russian page.
+     */
+    const table = read('docs/brand/terminology.md')
+    const rows = [...table.matchAll(/^\| `(\w+)` \| ([^|]+) \|/gm)].map((found) => ({
+      id: (found[1] as string).trim(),
+      ru: (found[2] as string).trim(),
+    }))
+    expect(rows.length, 'the terminology table did not parse — this check proves nothing').toBeGreaterThan(0)
+
+    const wrong = rows
+      .filter((row) => OUR_FEEDS[row.id] !== undefined && OUR_FEEDS[row.id]?.ru !== row.ru)
+      .map((row) => `${row.id}: code says "${OUR_FEEDS[row.id]?.ru}", the brand pack says "${row.ru}"`)
+    expect(wrong).toEqual([])
   })
 
   it('is the same set the worker will serve', () => {

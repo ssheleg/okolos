@@ -13,7 +13,18 @@
  */
 
 /**
- * One word, optionally with an interpolation glued to it.
+ * One word — Latin or Cyrillic — optionally with an interpolation glued to it.
+ *
+ * Cyrillic joined on 2026-08-20. The anchor read `[A-Za-z]` and `\w`, which is
+ * `[A-Za-z0-9_]` in JavaScript, so a Russian sentence hard-coded in a package was
+ * invisible to this gate — and a Russian sentence in code ships **untranslated to the
+ * English catalogue's readers**, which is the same defect as an English one mirrored.
+ * Widening it found nothing in the tree, which is the answer worth having: the class was
+ * uncovered rather than dirty.
+ *
+ * A short name is still not matched — `'Список Okolos: фишинг'` has no run of lowercase
+ * words — and that is right. A name is not copy in the sense this gate is about, and
+ * `tools/feed-names.test.ts` holds names to `docs/brand/terminology.md`.
  *
  * The apostrophe may only appear *inside* a word — `don't`, never `installed'`. Allowing
  * it at the end let a match walk out of one string literal and into the next: the union
@@ -22,8 +33,8 @@
  * spanning two quotes. Found by running the widened pattern over the tree, which is the
  * only way this class of defect ever shows up.
  */
-export const WORD = String.raw`[A-Za-z](?:[\w-]|'(?=[A-Za-z]))*(?:\$\{[^}]*\})?`
-export const LOWER = String.raw`[a-z](?:[\w-]|'(?=[A-Za-z]))*(?:\$\{[^}]*\})?`
+export const WORD = String.raw`[A-Za-zА-ЯЁа-яё](?:[\wА-ЯЁа-яё-]|'(?=[A-Za-z]))*(?:\$\{[^}]*\})?`
+export const LOWER = String.raw`[a-zа-яё](?:[\wА-ЯЁа-яё-]|'(?=[A-Za-z]))*(?:\$\{[^}]*\})?`
 
 /**
  * What may sit between the quote and the first word.

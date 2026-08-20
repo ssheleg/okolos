@@ -14,7 +14,7 @@ export { matchUrl, normaliseEntry, type FeedMatch } from './lookup.js'
 export { buildRules, RULE_LIMIT, type BlockRule, type RuleSet } from './rules.js'
 export {
   displayFeedName,
-  displayFeedNameEn,
+  displayFeedNameRu,
   isOurFeed,
   OUR_FEEDS,
   type FeedName,

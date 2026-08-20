@@ -33,22 +33,20 @@ export interface FeedName {
    */
   readonly messageKey: string
   /**
-   * The English name, for `apps/proxy` — a Cloudflare worker with no `_locales`.
+   * The Russian name, for the same reason and the same reader.
    *
-   * It said "for the worker", and the browser extension's service worker read that as
-   * itself: it has had a catalogue and an installed resolver since B-51, and two of its
-   * sentences were pulling an English list name into Russian prose (fixed 2026-08-20).
-   * The only caller that genuinely cannot translate is the one serving public pages.
+   * `apps/proxy` serves `lang="ru"` pages with entirely Russian text, and it printed the
+   * English name into them: «числится в списке **Okolos phishing list**» to a site owner
+   * reading Russian (B-24). The extension resolves this through the catalogue; the worker
+   * has none, so the literal lives here — beside the English one, where both are visible
+   * at once and `docs/brand/terminology.md` can be checked against them.
    */
-  readonly en: string
+  readonly ru: string
 }
 
 /** The lists this project publishes itself. Everything else belongs to someone. */
 export const OUR_FEEDS: Readonly<Record<string, FeedName>> = {
-  // i18n-exempt: `en` is the name `apps/proxy` prints on its public pages, and that
-  // worker has no `_locales` to look in; every surface inside the extension reads
-  // `messageKey` instead. See the field's own note.
-  phishing: { messageKey: 'feedNamePhishing', en: 'Okolos phishing list' },
+  phishing: { messageKey: 'feedNamePhishing', ru: 'Список Okolos: фишинг' },
 }
 
 /** Is this identifier one of ours, and therefore ours to name? */
@@ -59,8 +57,14 @@ export const isOurFeed = (identifier: string): boolean =>
  * The name to show a person.
  *
  * `translate` is the catalogue lookup; pass the extension's `t`. Everything inside the
- * extension uses this, the service worker included. `displayFeedNameEn` is for
- * `apps/proxy`, which serves public pages and has no catalogue to look in.
+ * extension uses this, the service worker included. `displayFeedNameRu` is for
+ * `apps/proxy`, which serves public pages in Russian and has no catalogue to look in.
+ *
+ * There was a `displayFeedNameEn` beside it, and an `en` literal in the table, until
+ * 2026-08-20. The proxy was its only caller and it was printing English into `lang="ru"`
+ * pages (B-24); the English name the extension shows comes from the English catalogue,
+ * where it already lived. Two copies of one name, and the unused one was the one being
+ * printed.
  *
  * An identifier we do not publish is returned unchanged, because it is already
  * a name — see the note above.
@@ -75,7 +79,13 @@ export function displayFeedName(
 }
 
 /** The same decision, for a surface with no catalogue. */
-export function displayFeedNameEn(identifier: string | null | undefined): string | null {
+/**
+ * The name for a Russian-language page, for the same caller and the same reason.
+ *
+ * A list somebody else publishes is returned unchanged: `OpenPhish` and `URLhaus` call
+ * themselves that in every language, and translating a name is inventing a fact.
+ */
+export function displayFeedNameRu(identifier: string | null | undefined): string | null {
   if (identifier === null || identifier === undefined || identifier === '') return null
-  return OUR_FEEDS[identifier]?.en ?? identifier
+  return OUR_FEEDS[identifier]?.ru ?? identifier
 }

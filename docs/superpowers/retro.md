@@ -112,6 +112,14 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (пятьдесят четвёртый)** — B-24; стадии 0–10. Русское имя списка у проекта
+  было, английское — вторым литералом, дублировавшим запись английского каталога, и на
+  `lang="ru"` страницу уезжало именно оно. Починка оказалась удалением: лишняя копия ушла,
+  `displayFeedNameEn` остался без вызовов и удалён тоже. Оба гейта переведены с литерала на
+  `docs/brand/terminology.md`. Заодно найден класс, невидимый свипу вообще — кириллица;
+  расширение нашло в дереве ноль, то есть класс был непокрытый, а не грязный. 2307
+  юнит-тестов в 142 файлах. Пять плантов, легли все. `git checkout` четвёртый раз за сессию
+  съел мои же несохранённые тесты. Постоянных инструкций десять, снятий нет. Вердикт REFINE.
 - **2026-08-20 (пятьдесят третий)** — B-40; стадии 0–10. Шесть килобайт разметки ослепляли
   сбор: обход комментариев выбирал общий бюджет узлов до того, как начинался обход
   элементов. Пропуск пустых комментариев закрыл половину — и атака переехала этажом ниже,
@@ -2203,6 +2211,58 @@ description.
   keeping. But a row closed with its verification outstanding is a row closed early, and
   the honest form is the one now in the board: closed on the second attempt, with the
   first attempt's failure written into it rather than tidied away.
+
+### 2026-08-20 — two copies of one name, and the unused copy was the one that shipped
+
+**Symptom.** The public status page — `lang="ru"`, every other word Russian — told a site
+owner their domain was «числится в списке **Okolos phishing list**». The project has had
+the Russian name all along, in `docs/brand/terminology.md` and in the extension's
+catalogue.
+
+**Stage it surfaced at.** 0, following the row; but the shape only became clear while
+fixing it.
+
+**Stage that owned it.** 5 of the run that added `apps/proxy`. The worker has no
+`_locales`, so it needs a literal — and the literal added was the English one, beside a
+`messageKey` that already resolved to the same English string through the catalogue. Two
+homes for one name, of which the extension used one and the proxy the other.
+
+**Root cause.** A caller that cannot use the normal mechanism gets a private copy, and the
+copy is written in whatever language the author was thinking in. Nothing forced the copy to
+be the language of the page that would print it, because nothing named which page that was.
+
+**Fix, by grade.** *Structural:* the table holds `ru` only — the literal the catalogue-less
+worker needs — and `displayFeedNameEn` is deleted, having lost its last caller. English
+comes from the English catalogue, where it already was. *Check:* both gates read
+`terminology.md` instead of quoting the current string, with a plant proving the parse
+fails loudly rather than matching nothing.
+
+**The check that catches it next time.** When a component cannot reach the catalogue, the
+literal it gets is chosen by the language of the surface it prints on — and that surface is
+named in the same commit, or the choice is left to whoever is typing.
+
+### 2026-08-20 — the gate could not read the language the product ships in
+
+**Symptom.** Removing the English literal made an `i18n-exempt` marker report "marks
+nothing": the sweep no longer saw anything to exempt. The Russian literal replacing it was
+invisible — the anchor reads `[A-Za-z]` and `\w`, which in JavaScript is `[A-Za-z0-9_]`.
+
+**Why it matters, and it is not symmetry for its own sake.** A Russian sentence hard-coded
+in a package ships **untranslated to the English catalogue's readers**. That is the same
+defect this gate exists for, mirrored — and the gate could not see it in the language the
+product's default locale is written in.
+
+**Stage it surfaced at.** 6, as a stale-marker refusal rather than as a finding. The gate
+told me something had changed; what it meant took a measurement.
+
+**Fix, by grade.** *Structural:* the word class reads Cyrillic. *Measured:* widening found
+**zero** new hits, which is the answer worth having — the class was uncovered rather than
+dirty, and now it is covered. *Deliberately unchanged:* a short name still does not match,
+because a name is not copy in this sense and names have their own gate. A check that
+refused every proper noun in code would be unusable, which is how checks get skipped.
+
+**The check that catches it next time.** `i18n-pattern.test.ts` carries a Cyrillic case
+beside the Latin ones, and a case proving a name is still left alone.
 
 ### 2026-08-20 — the diagnosis fired, and stopped one link short
 

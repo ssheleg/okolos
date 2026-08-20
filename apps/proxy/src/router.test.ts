@@ -1,6 +1,26 @@
 import { describe, expect, it } from 'vitest'
 
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+
 import { handle, normaliseDomain, type Env } from './router.js'
+
+/**
+ * The name the brand pack fixes for a list, read from the pack itself.
+ *
+ * Not a literal in this file: a test that quotes the current string agrees with the code
+ * and not with the reader, which is how `Okolos phishing list` stayed on a `lang="ru"`
+ * page while `docs/brand/terminology.md` said otherwise (B-24).
+ */
+function brandName(id: string): string {
+  const table = readFileSync(
+    path.resolve(import.meta.dirname, '../../../docs/brand/terminology.md'),
+    'utf8',
+  )
+  const found = new RegExp(`^\\| \`${id}\`  *\\| ([^|]+) \\|`, 'm').exec(table)
+  if (!found) throw new Error(`the brand pack names no list "${id}"`)
+  return (found[1] as string).trim()
+}
 
 type Row = { feed: string; entry_date: string }
 
@@ -64,7 +84,10 @@ describe('a domain that is listed', () => {
     )
     await expect(response.json()).resolves.toMatchObject({
       feed: 'phishing',
-      feedName: 'Okolos phishing list',
+      // The name in the language of the page beside it. Asserted against the brand pack
+      // rather than against a literal: `tools/feed-names.test.ts` holds `OUR_FEEDS` to
+      // `docs/brand/terminology.md`, and this reads the same table (B-24).
+      feedName: brandName('phishing'),
     })
   })
 
@@ -87,7 +110,14 @@ describe('a domain that is listed', () => {
       env({ listing: { feed: 'phishing', entry_date: '2026-08-01' } }),
     )
     const html = await response.text()
-    expect(html).toContain('Okolos phishing list')
+    /**
+     * In Russian, because the page is `lang="ru"` and every other word on it is. It said
+     * `Okolos phishing list` until 2026-08-20 — to a site owner reading Russian — and
+     * this assertion said so too, agreeing with the code rather than with the brand pack
+     * that fixes one name per language (B-24).
+     */
+    expect(html).toContain(brandName('phishing'))
+    expect(html, 'the English name is still on a Russian page').not.toContain('phishing list')
     expect(html, 'the raw identifier is still on the page').not.toMatch(
       /listed<\/strong> by <strong>phishing/,
     )

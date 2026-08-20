@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { displayFeedName, displayFeedNameEn, isOurFeed, OUR_FEEDS } from './display.js'
+import { displayFeedName, displayFeedNameRu, isOurFeed, OUR_FEEDS } from './display.js'
 
 /** Stands in for the extension's catalogue lookup. */
 const translate = (key: string): string => `«${key}»`
@@ -8,7 +8,7 @@ const translate = (key: string): string => `«${key}»`
 describe('naming a list', () => {
   it('gives our own list a name instead of its identifier', () => {
     expect(displayFeedName('phishing', translate)).toBe('«feedNamePhishing»')
-    expect(displayFeedNameEn('phishing')).toBe('Okolos phishing list')
+    expect(displayFeedNameRu('phishing')).toBe('Список Okolos: фишинг')
   })
 
   it('leaves a third-party list called what it calls itself', () => {
@@ -16,14 +16,14 @@ describe('naming a list', () => {
     // be renaming somebody else's list.
     for (const other of ['OpenPhish', 'PhishTank', 'URLhaus', 'Hudson Rock']) {
       expect(displayFeedName(other, translate)).toBe(other)
-      expect(displayFeedNameEn(other)).toBe(other)
+      expect(displayFeedNameRu(other)).toBe(other)
     }
   })
 
   it('says nothing rather than something empty when there is no list', () => {
     for (const nothing of [null, undefined, '']) {
       expect(displayFeedName(nothing, translate)).toBeNull()
-      expect(displayFeedNameEn(nothing)).toBeNull()
+      expect(displayFeedNameRu(nothing)).toBeNull()
     }
   })
 
@@ -35,13 +35,19 @@ describe('naming a list', () => {
     expect(isOurFeed('constructor')).toBe(false)
   })
 
-  it('carries a key and an English name for every list it claims', () => {
+  it('carries a key and a Russian name for every list it claims', () => {
+    /**
+     * The key is how every surface inside the extension names it; the literal is for
+     * `apps/proxy`, which has no catalogue. There used to be an English literal here too,
+     * and it was the one being printed onto `lang="ru"` pages while the extension read
+     * the catalogue (B-24). Two copies of a name, and the unused copy shipped.
+     */
     const entries = Object.entries(OUR_FEEDS)
     expect(entries.length).toBeGreaterThan(0)
     for (const [id, name] of entries) {
       expect(name.messageKey, `${id} has no catalogue key`).toMatch(/^feedName[A-Z]/)
-      expect(name.en.length, `${id} has no English name`).toBeGreaterThan(3)
-      expect(name.en, `${id} shows its own identifier as a name`).not.toBe(id)
+      expect(name.ru.length, `${id} has no Russian name`).toBeGreaterThan(3)
+      expect(name.ru, `${id} shows its own identifier as a name`).not.toBe(id)
     }
   })
 })

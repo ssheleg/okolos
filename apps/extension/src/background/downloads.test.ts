@@ -120,3 +120,54 @@ describe('what the file name gives away', () => {
     expect(d.cancel).not.toHaveBeenCalled()
   })
 })
+
+describe('a redirect, which is how a malicious file is usually served', () => {
+  /**
+   * The matrix promised the reputation check ran on `finalUrl`; the code read `url`.
+   * A link a page carries is a shortener nobody lists, and the host it lands on is the
+   * one in the feed — so checking one address was checking whichever address happened
+   * to be there (B-57).
+   */
+  it('cancels when the landing address is listed and the link is not', async () => {
+    const d = deps()
+    const verdict = await handleDownload(
+      item({ url: 'https://short.test/x', finalUrl: 'https://malware.test/payload.exe' }),
+      d,
+    )
+    expect(verdict.action).toBe('block')
+    expect(d.cancel).toHaveBeenCalledWith(1)
+  })
+
+  it('cancels when the link is listed and the landing address is not', async () => {
+    // The other direction, because a redirect away from a listed host does not clear it.
+    const d = deps()
+    const verdict = await handleDownload(
+      item({ url: 'https://malware.test/payload.exe', finalUrl: 'https://cdn.test/file' }),
+      d,
+    )
+    expect(verdict.action).toBe('block')
+  })
+
+  it('leaves an ordinary redirect alone', async () => {
+    /**
+     * The side that keeps this usable: a redirect through a CDN is what most large
+     * downloads look like, and a check that treated a second address as suspicious in
+     * itself would fire on most of the web.
+     */
+    const d = deps()
+    const verdict = await handleDownload(
+      item({ url: 'https://files.test/report.pdf', finalUrl: 'https://cdn.files.test/report.pdf' }),
+      d,
+    )
+    expect(verdict.action).not.toBe('block')
+    expect(d.cancel).not.toHaveBeenCalled()
+  })
+
+  it('still checks the one address when there is no second one', async () => {
+    // Firefox has no `finalUrl`, so the absent field must not turn the check off.
+    const d = deps()
+    const verdict = await handleDownload(item({ url: 'https://malware.test/payload.exe' }), d)
+    expect(verdict.action).toBe('block')
+  })
+})
+

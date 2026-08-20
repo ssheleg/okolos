@@ -50,7 +50,15 @@ export interface Extensions {
 /** Downloads, where the only moment to intervene is before the bytes land. */
 export interface Downloads {
   /** Fires as an item is created, before it is written. */
-  onCreated(handler: (item: { id: number; url: string; filename: string; mime: string | null }) => void): void
+  onCreated(
+    handler: (item: {
+      id: number
+      url: string
+      finalUrl?: string
+      filename: string
+      mime: string | null
+    }) => void,
+  ): void
   cancel(id: number): Promise<void>
   /** True when this browser exposes the API at all. */
   available(): boolean
@@ -254,7 +262,21 @@ export interface WebExtensionApi {
   downloads?: {
     onCreated: {
       addListener(
-        cb: (item: { id: number; url: string; filename?: string; mime?: string }) => void,
+        cb: (item: {
+          id: number
+          url: string
+          /**
+           * Where the download actually came from, after redirects.
+           *
+           * The matrix promised the reputation check ran on this and the code read
+           * `url` — the address the link carried, before any hop. A short link to a
+           * malicious host was therefore checked against the short link (B-57).
+           * Optional because Firefox's `DownloadItem` has no such field.
+           */
+          finalUrl?: string
+          filename?: string
+          mime?: string
+        }) => void,
       ): void
     }
     cancel(id: number): Promise<void>

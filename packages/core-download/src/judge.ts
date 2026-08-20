@@ -85,11 +85,40 @@ function hasDoubleExtension(filename: string): boolean {
   return decoy.test(parts[parts.length - 2] as string) && EXECUTABLE.test(filename)
 }
 
-function mimeDisagrees(filename: string, mimeType: string | null): boolean {
-  if (!mimeType) return false
-  const looksExecutable = EXECUTABLE.test(filename)
+/** Types that carry code, whatever the name in front of them says. */
+const EXECUTABLE_MIME =
+  /^application\/(x-msdownload|x-msdos-program|x-executable|x-mach-binary|vnd\.microsoft\.portable-executable|x-sh|x-shellscript|java-archive|x-apple-diskimage)$|^application\/octet-stream$/i
+
+/** Names a person reads as a document. */
+const DOCUMENT_NAME =
+  /\.(pdf|docx?|rtf|odt|xlsx?|ods|pptx?|odp|txt|csv|xml|json|jpe?g|png|gif|bmp|webp|svg|mp3|mp4|avi|mov|html?|eml|msg|log)$/i
+
+/**
+ * The name and the type telling different stories — in either direction.
+ *
+ * It fired one way round only: a name that looks executable while the server calls it a
+ * document. **The commoner shape is the other one** — `invoice.pdf` served as
+ * `application/x-msdownload` — and it passed silently until 2026-08-20 (B-57). Both are
+ * the same lie told from opposite ends.
+ *
+ * Which end is returned rather than a boolean, because the sentence differs and it
+ * matters: "the name hides a program" sends a reader to look at the filename, "the
+ * server is sending a program under a document's name" sends them to look at the site.
+ */
+export type MimeDisagreement = 'name-hides-a-program' | 'type-is-a-program' | null
+
+function mimeDisagrees(filename: string, mimeType: string | null): MimeDisagreement {
+  if (!mimeType) return null
   const claimsDocument = /^(text\/|image\/|application\/pdf)/i.test(mimeType)
-  return looksExecutable && claimsDocument
+  if (EXECUTABLE.test(filename) && claimsDocument) return 'name-hides-a-program'
+  /**
+   * `application/octet-stream` is in the executable list and is also what a great many
+   * servers send for anything they cannot classify — so it counts only against a name
+   * that reads as a document. A `.zip` served as `octet-stream` is ordinary; an
+   * `invoice.pdf` served that way is a file whose two halves disagree.
+   */
+  if (EXECUTABLE_MIME.test(mimeType) && DOCUMENT_NAME.test(filename)) return 'type-is-a-program'
+  return null
 }
 
 export function judgeDownload(evidence: DownloadEvidence): DownloadVerdict {
@@ -125,8 +154,14 @@ export function judgeDownload(evidence: DownloadEvidence): DownloadVerdict {
   if (hasDoubleExtension(evidence.filename)) {
     shape.push(`The name "${evidence.filename}" hides a program behind a document extension.`)
   }
-  if (mimeDisagrees(evidence.filename, evidence.mimeType)) {
+  const disagreement = mimeDisagrees(evidence.filename, evidence.mimeType)
+  if (disagreement === 'name-hides-a-program') {
     shape.push(`The server called this ${evidence.mimeType}, but the name says it is a program.`)
+  }
+  if (disagreement === 'type-is-a-program') {
+    shape.push(
+      `The name "${evidence.filename}" reads as a document, but the server is sending a program under it (${evidence.mimeType}).`,
+    )
   }
   if (shape.length === 0 && EXECUTABLE.test(evidence.filename) && skipped.length > 0) {
     shape.push('This is a program, and not every check could be run on it.')

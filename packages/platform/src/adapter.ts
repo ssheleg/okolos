@@ -239,6 +239,12 @@ export function createPlatform(kind: Platform['kind'], api: WebExtensionApi): Pl
           handler({
             id: item.id,
             url: item.url,
+            // Both addresses travel: the link the page carried and where it landed.
+            // A short link to a malicious host is innocent at the first and not at
+            // the second, and the check used to see only the first (B-57).
+            ...(item.finalUrl !== undefined && item.finalUrl !== item.url
+              ? { finalUrl: item.finalUrl }
+              : {}),
             filename: (item.filename ?? '').split(/[\\/]/).pop() ?? '',
             mime: item.mime ?? null,
           })

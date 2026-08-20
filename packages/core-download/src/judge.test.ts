@@ -176,3 +176,59 @@ describe('the shapes this list is a claim about', () => {
     }
   })
 })
+
+describe('a name and a type that disagree, in both directions', () => {
+  /**
+   * The check fired one way round only: a name that looks executable while the server
+   * calls it a document. The commoner shape is the other one — `invoice.pdf` served as
+   * `application/x-msdownload` — and it passed silently until 2026-08-20 (B-57).
+   *
+   * Both are the same lie told from opposite ends, and the sentence has to say which
+   * end, because "the name hides a program" and "the server is sending a program under
+   * a document's name" send a reader to look at different things.
+   */
+  it('flags a program dressed as a document by its name', () => {
+    const verdict = judgeDownload({
+      url: 'https://files.example.test/invoice.exe',
+      filename: 'invoice.pdf.exe',
+      mimeType: 'application/pdf',
+      checks: { feed: PASS, 'file-type': PASS, hash: PASS },
+    })
+    expect(verdict.reasons.join(' ')).toMatch(/hides a program|program under/i)
+  })
+
+  it('flags a program dressed as a document by its type', () => {
+    // The name is innocent and the wire says otherwise. Nothing looked at this.
+    const verdict = judgeDownload({
+      url: 'https://files.example.test/invoice.pdf',
+      filename: 'invoice.pdf',
+      mimeType: 'application/x-msdownload',
+      checks: { feed: PASS, 'file-type': PASS, hash: PASS },
+    })
+    expect(verdict.reasons.join(' ')).toMatch(/program under a document|x-msdownload/i)
+  })
+
+  it('says nothing when the name and the type agree', () => {
+    /**
+     * The other side of the guard, and the reason it is narrow: a document served as a
+     * document, and a program served as a program, are both ordinary. A check that
+     * flagged either would fire on most of the web.
+     */
+    for (const [filename, mimeType] of [
+      ['report.pdf', 'application/pdf'],
+      ['installer.exe', 'application/x-msdownload'],
+      ['photo.jpg', 'image/jpeg'],
+      ['archive.zip', 'application/zip'],
+    ] as const) {
+      const verdict = judgeDownload({
+        url: `https://files.example.test/${filename}`,
+        filename,
+        mimeType,
+        checks: { feed: PASS, 'file-type': PASS, hash: PASS },
+      })
+      expect(verdict.reasons.join(' '), `${filename} as ${mimeType}`).not.toMatch(
+        /hides a program|program under/i,
+      )
+    }
+  })
+})

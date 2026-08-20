@@ -16,6 +16,15 @@ import { matchUrl, type FeedSnapshot, displayFeedNameEn } from '@okolos/core-fee
 export interface DownloadItem {
   readonly id: number
   readonly url: string
+  /**
+   * Where it actually came from, after redirects — absent when the browser has no such
+   * field or the two are the same.
+   *
+   * The matrix promised the reputation check ran on `finalUrl` and the code read `url`:
+   * a short link to a malicious host was checked against the short link, which is
+   * listed nowhere (B-57).
+   */
+  readonly finalUrl?: string
   readonly filename: string
   readonly mime: string | null
 }
@@ -30,8 +39,18 @@ export interface DownloadDeps {
 export async function handleDownload(item: DownloadItem, deps: DownloadDeps): Promise<DownloadVerdict> {
   const feed = await deps.feed().catch(() => null)
 
+  /**
+   * Both addresses are checked, and either one listed is enough.
+   *
+   * A redirect is the ordinary way a malicious file is served: the link a page carries
+   * is a shortener nobody lists, and the host it lands on is the one in the feed.
+   * Checking one address was checking whichever address happened to be there.
+   */
+  const listed = feed !== null && [item.url, item.finalUrl].some((where) =>
+    where === undefined ? false : matchUrl(where, feed),
+  )
   const feedCheck: CheckOutcome = feed
-    ? matchUrl(item.url, feed)
+    ? listed
       ? {
           ran: true,
           passed: false,

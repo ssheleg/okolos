@@ -65,7 +65,18 @@ function keysAsked(): Set<string> {
     for (const p of filesUnder(dir, '.ts')) {
       if (!p.endsWith('.test.ts')) {
         const text = readFileSync(p, 'utf8')
-        for (const m of text.matchAll(/\bt\(\s*'([a-zA-Z0-9_.]+)'/g)) keys.add(m[1] as string)
+        /**
+         * A quoted key as the first argument of a message-composing call.
+         *
+         * `t` resolves one now; `explained` builds the key-and-arguments pair a journal
+         * row stores and `summarise` resolves later (B-77). Both take the key as a
+         * quoted literal in the same position, and reading only `t` made three live
+         * messages — `feedNowAtVersion`, `logRulesTruncated` and one more — look
+         * translated-and-never-shown the moment their writers moved to `explained`.
+         */
+        for (const m of text.matchAll(/\b(?:t|explained)\(\s*'([a-zA-Z0-9_.]+)'/g)) {
+          keys.add(m[1] as string)
+        }
         for (const block of text.matchAll(/const \w+_KEY(?::[^=]*)? = \{([\s\S]*?)\n\}/g)) {
           for (const m of (block[1] as string).matchAll(/:\s*'([a-zA-Z0-9_.]+)'/g)) {
             keys.add(m[1] as string)

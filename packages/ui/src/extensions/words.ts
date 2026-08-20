@@ -1,5 +1,5 @@
 import type { InventoryChange, PackageFinding, PackageReport } from '@okolos/core-extensions'
-import { t } from '@okolos/i18n'
+import { explained, t, type ExplainArg, type Explained } from '@okolos/i18n'
 
 /**
  * Wording the facts `core-extensions` reports.
@@ -33,23 +33,21 @@ export const CHANGE_EXPLAIN_KEY: Record<InventoryChange['kind'], string> = {
  * and host names inside them are not translated — they are what the manifest says, and
  * a person checking the extension's own listing has to find the same words.
  */
-export function changeExplain(change: InventoryChange): {
-  readonly explainKey: string
-  readonly explainArgs: readonly string[]
-} {
+export function changeExplain(change: InventoryChange): Explained {
   const explainKey = CHANGE_EXPLAIN_KEY[change.kind]
   switch (change.kind) {
     case 'publisher-changed':
-      return {
-        explainKey,
-        explainArgs: [change.name, party(change.publisher), party(change.previousPublisher)],
-      }
+      return explained(explainKey, [
+        change.name,
+        party(change.publisher),
+        party(change.previousPublisher),
+      ])
     case 'permission-added':
-      return { explainKey, explainArgs: [change.name, change.permissions.join(', ')] }
+      return explained(explainKey, [change.name, change.permissions.join(', ')])
     case 'host-access-widened':
-      return { explainKey, explainArgs: [change.name, change.hosts.join(', ')] }
+      return explained(explainKey, [change.name, change.hosts.join(', ')])
     default:
-      return { explainKey, explainArgs: [change.name] }
+      return explained(explainKey, [change.name])
   }
 }
 
@@ -62,11 +60,14 @@ export function changeSentence(change: InventoryChange): string {
 /**
  * A store that names no publisher.
  *
- * `null` travels from the package because "unnamed" is a fact about the listing, and
- * the words for it are a fact about the reader.
+ * `null` travels from the package because "unnamed" is a fact about the listing, and the
+ * words for it are a fact about the reader. Returned as a `{ messageKey }` argument rather than
+ * as a resolved string, so a reader who switches language sees "an unnamed party" in
+ * their own words on a row written months earlier (B-77). A publisher who *is* named
+ * stays a string: their name is theirs, and translating it would invent a fact.
  */
-function party(name: string | null): string {
-  return name ?? t('extensionsUnnamedParty')
+function party(name: string | null): ExplainArg {
+  return name ?? { messageKey: 'extensionsUnnamedParty' }
 }
 
 /**

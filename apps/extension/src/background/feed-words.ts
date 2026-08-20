@@ -1,6 +1,6 @@
 import type { Refusal } from '@okolos/core-feeds'
-import { displayFeedName, type FeedSnapshot } from '@okolos/core-feeds'
-import { t } from '@okolos/i18n'
+import { displayFeedName, OUR_FEEDS, type FeedSnapshot } from '@okolos/core-feeds'
+import { explained, t, type ExplainArg, type Explained } from '@okolos/i18n'
 
 /**
  * The words for a feed update that was refused, or one that landed.
@@ -49,10 +49,7 @@ function keyFor(reason: Refusal['reason']): string {
   return key
 }
 
-export function feedRefusal(
-  refusal: Refusal,
-  kept: FeedSnapshot | null,
-): { readonly explainKey: string; readonly explainArgs: readonly string[] } {
+export function feedRefusal(refusal: Refusal, kept: FeedSnapshot | null): Explained {
   const explainKey = keyFor(refusal.reason)
   switch (refusal.reason) {
     case 'bad-signature':
@@ -66,27 +63,24 @@ export function feedRefusal(
        * two English sentences itself; it reports `kept` and the choice is made here.
        */
       return kept === null
-        ? { explainKey: 'feedRefusedSignatureNoFallback', explainArgs: [name(refusal.feed)] }
-        : { explainKey, explainArgs: [name(refusal.feed), String(kept.version)] }
+        ? explained('feedRefusedSignatureNoFallback', [feedArg(refusal.feed)])
+        : explained(explainKey, [feedArg(refusal.feed), String(kept.version)])
     case 'bad-version':
-      return { explainKey, explainArgs: [name(refusal.feed), refusal.found] }
+      return explained(explainKey, [feedArg(refusal.feed), refusal.found])
     case 'wrong-feed':
-      return { explainKey, explainArgs: [name(refusal.feed), name(refusal.current)] }
+      return explained(explainKey, [feedArg(refusal.feed), feedArg(refusal.current)])
     case 'not-newer':
-      return { explainKey, explainArgs: [String(refusal.version), String(refusal.current)] }
+      return explained(explainKey, [String(refusal.version), String(refusal.current)])
     case 'no-current':
-      return { explainKey, explainArgs: [name(refusal.feed)] }
+      return explained(explainKey, [feedArg(refusal.feed)])
     case 'wrong-base':
-      return { explainKey, explainArgs: [String(refusal.base), String(refusal.current)] }
+      return explained(explainKey, [String(refusal.base), String(refusal.current)])
   }
 }
 
 /** A feed that landed, said in the same shape so the journal reads one way. */
-export function feedAccepted(
-  feed: string,
-  version: number,
-): { readonly explainKey: string; readonly explainArgs: readonly string[] } {
-  return { explainKey: 'feedNowAtVersion', explainArgs: [name(feed), String(version)] }
+export function feedAccepted(feed: string, version: number): Explained {
+  return explained('feedNowAtVersion', [feedArg(feed), String(version)])
 }
 
 /**
@@ -97,4 +91,15 @@ export function feedAccepted(
  * and substituting an English list name into a Russian sentence was the defect that
  * naming the other function "for the worker" made easy to miss.
  */
-const name = (identifier: string): string => displayFeedName(identifier, t) ?? identifier
+/**
+ * A list we publish is named by a message; anything else is already a name.
+ *
+ * Returned as an argument rather than as a string, so the journal can resolve it again
+ * for a reader who switched language (B-77). `phishing` has a message; a feed somebody
+ * else publishes has only the name they gave it, and inventing a translation of that
+ * would be inventing a fact.
+ */
+export const feedArg = (identifier: string): ExplainArg => {
+  const known = OUR_FEEDS[identifier]
+  return known ? { messageKey: known.messageKey } : (displayFeedName(identifier, t) ?? identifier)
+}

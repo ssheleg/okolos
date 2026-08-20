@@ -148,6 +148,18 @@ test('"I own this site" opens the public status page for the domain that was blo
   await page.locator('[data-role=owner]').click()
   const status = await opened
 
+  /**
+   * The page event fires when the tab is *created*, not when it has navigated.
+   *
+   * Reading `url()` straight after it is a race, and it lost once in a full-suite run
+   * (2026-08-20): `/` instead of `/status`, green on its own and green on a re-run,
+   * because the gap only widens when everything else is competing for the worker. The
+   * assertions below are about which address this opens, so waiting for that address is
+   * what the test was always trying to say — and a tab that never gets there fails here
+   * with the URL it stopped at, rather than three lines later with a mystery.
+   */
+  await status.waitForURL(/\/status\?/)
+
   const url = new URL(status.url())
   expect(url.pathname).toBe('/status')
   expect(url.searchParams.get('domain')).toBe('fixture.test')

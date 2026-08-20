@@ -1,5 +1,5 @@
 
-import { t } from '@okolos/i18n'
+import { explained, type Explained } from '@okolos/i18n'
 import { request, type RequestDeps } from '@okolos/net'
 import type { SignedUpdate } from '@okolos/core-feeds'
 
@@ -25,8 +25,16 @@ export const FEED_URL = `${PROXY_ORIGIN}/feeds/phishing`
 
 export interface FeedSyncDeps {
   readonly audit: RequestDeps
-  /** Applies a verified update and reports what happened. */
-  readonly apply: (signed: SignedUpdate) => Promise<{ accepted: boolean; reason?: string }>
+  /**
+   * Applies a verified update and reports what happened, as a key and its arguments.
+   *
+   * `reason?: string` here used to be a finished sentence, which then went into
+   * `feedRefused` as a substitution — a sentence inside a sentence, resolved on the day
+   * of the write. Two faults in one: it read badly ("Обновление отклонено: Обновление
+   * подписано не тем ключом…"), and it froze the language of the inner half (B-77).
+   * The refusal now carries its own key, and this journals that.
+   */
+  readonly apply: (signed: SignedUpdate) => Promise<{ accepted: boolean } & Partial<Explained>>
   /** Rebuilds blocking rules from whatever is now in force. */
   readonly refresh: () => Promise<unknown>
   /**
@@ -35,7 +43,7 @@ export interface FeedSyncDeps {
    * record written in whichever language was active that day has stopped
    * being one record.
    */
-  readonly note: (explainKey: string, ...explainArgs: string[]) => Promise<void>
+  readonly note: (explained: Explained) => Promise<void>
 }
 
 /**
@@ -77,12 +85,12 @@ export async function syncFeed(deps: FeedSyncDeps): Promise<FeedSyncResult> {
       deps.audit,
     )
     if (!response.ok) {
-      await deps.note(NOTE_KEY.status, String(response.status))
+      await deps.note(explained(NOTE_KEY.status, [String(response.status)]))
       return { fetched: false, accepted: false, why: `status ${response.status}` }
     }
     signed = (await response.json()) as SignedUpdate
   } catch (cause) {
-    await deps.note(NOTE_KEY.failed, String(cause))
+    await deps.note(explained(NOTE_KEY.failed, [String(cause)]))
     return { fetched: false, accepted: false, why: String(cause) }
   }
 
@@ -91,8 +99,21 @@ export async function syncFeed(deps: FeedSyncDeps): Promise<FeedSyncResult> {
     // A refused update is the guard working, and the user should be able to
     // read that it happened — a signature that stopped verifying is exactly
     // the event worth seeing in a journal.
-    await deps.note(NOTE_KEY.refused, outcome.reason ?? t('feedNotVerified'))
-    return { fetched: true, accepted: false, why: outcome.reason ?? 'refused' }
+    /**
+     * The refusal's own key, not a sentence wrapped in `feedRefused`. Each refusal
+     * message already says what stays in force, which is the only thing the wrapper
+     * added — and nesting one sentence inside another froze the inner one's language.
+     */
+    await deps.note(
+      outcome.explainKey === undefined
+        ? explained(NOTE_KEY.refused, [{ messageKey: 'feedNotVerified' }])
+        : {
+            explainKey: outcome.explainKey,
+            explainArgs: outcome.explainArgs ?? [],
+            explainArgKeys: outcome.explainArgKeys ?? [],
+          },
+    )
+    return { fetched: true, accepted: false, why: outcome.explainKey ?? 'refused' }
   }
 
   await deps.refresh()

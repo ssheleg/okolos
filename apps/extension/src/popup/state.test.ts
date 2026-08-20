@@ -15,6 +15,13 @@ const CATALOGUE = JSON.parse(
 
 useResolver(fromCatalogue(CATALOGUE))
 
+/** The shipped message for a key, or a failure that names the key. */
+const message = (key: string): string => {
+  const entry = CATALOGUE[key]
+  if (!entry) throw new Error(`the shipped catalogue has no key "${key}"`)
+  return entry.message
+}
+
 
 const URL_A = 'https://example.test/article'
 
@@ -258,5 +265,39 @@ describe('what a journal record says, and in whose language', () => {
     expect(summaryOf({ explainKey: 'journalRetention', explainArgs: [90] })).not.toContain(
       'undefined',
     )
+  })
+
+  it('re-resolves an argument that is a message of ours, not only the sentence', () => {
+    /**
+     * The end of the chain, and nothing covered it until a plant walked straight past
+     * three green tests: `resolveArgs` was proved to work in `@okolos/i18n`, and nothing
+     * proved this function calls it.
+     *
+     * The row below is what the worker writes when a feed update is refused: the feed's
+     * name is *our* message and the version is data. Read under a different catalogue,
+     * the name must come back in the reader's words while the version is passed through
+     * — otherwise the reader gets their own sentence with one word of the writer's day
+     * inside it (B-77).
+     */
+    const summary = summaryOf({
+      explainKey: 'feedRefusedSignature',
+      explainArgs: ['A NAME FROM ANOTHER DAY', '7'],
+      explainArgKeys: ['feedNamePhishing', null],
+    })
+
+    expect(summary).not.toContain('A NAME FROM ANOTHER DAY')
+    expect(summary).toContain(message('feedNamePhishing'))
+    expect(summary).toContain('7')
+  })
+
+  it('keeps a stored argument when its position carries no key', () => {
+    // Data stays data: an extension's own name, a host, a browser's error text. And a row
+    // written before the convention has no keys at all — it reads in the words it was
+    // written with, which is what it did before and is not a regression to a bare id.
+    const summary = summaryOf({
+      explainKey: 'feedRefusedSignature',
+      explainArgs: ['Somebody Else’s List', '7'],
+    })
+    expect(summary).toContain('Somebody Else’s List')
   })
 })

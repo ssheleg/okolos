@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { fromCatalogue, t, useResolver, type Catalogue } from './index.js'
+import { explained, fromCatalogue, resolveArgs, t, useResolver, type Catalogue } from './index.js'
 
 const CATALOGUE: Catalogue = {
   plain: { message: 'Эта страница заблокирована до загрузки' },
@@ -78,5 +78,85 @@ describe('the resolver the host installs', () => {
     })
     t('withTwo', 'a', 'b')
     expect(seen).toEqual(['a', 'b'])
+  })
+})
+
+/**
+ * The two catalogues below are the whole point: a row written under one and read under
+ * the other. The journal resolves `explainKey` at read time so the reader's language
+ * decides — and its *arguments* were stored as finished strings, which quietly undid half
+ * of that. A feed's name or "неназванная сторона" is our word, resolved on the day of the
+ * write, so a reader who switched language got their own sentence with one word of the
+ * old one inside it (B-77).
+ */
+const RU: Catalogue = {
+  listed: {
+    message: 'Список $FEED$ отклонён: $WHY$',
+    placeholders: { feed: { content: '$1' }, why: { content: '$2' } },
+  },
+  feedName: { message: 'Список Okolos: фишинг' },
+  unnamed: { message: 'неназванная сторона' },
+}
+
+const EN: Catalogue = {
+  listed: {
+    message: 'The $FEED$ list was refused: $WHY$',
+    placeholders: { feed: { content: '$1' }, why: { content: '$2' } },
+  },
+  feedName: { message: 'Okolos phishing list' },
+  unnamed: { message: 'an unnamed party' },
+}
+
+describe('an argument that is a message rather than data', () => {
+  it('is stored resolved and keyed, so it reads in either language', () => {
+    useResolver(fromCatalogue(RU))
+    const row = explained('listed', [{ messageKey: 'feedName' }, 'HTTP 503'])
+
+    // Written: legible as-is to anything that does not know this convention — an older
+    // build, an export dump, a person reading the raw database.
+    expect(row.explainArgs).toEqual(['Список Okolos: фишинг', 'HTTP 503'])
+    expect(row.explainArgKeys).toEqual(['feedName', null])
+
+    // Read later, in another language: the message argument comes back in the reader's
+    // words, the data argument comes through untouched.
+    useResolver(fromCatalogue(EN))
+    expect(t(row.explainKey, ...resolveArgs(row.explainArgs, row.explainArgKeys))).toBe(
+      'The Okolos phishing list list was refused: HTTP 503',
+    )
+  })
+
+  it('leaves data alone, because inventing a translation of it would invent a fact', () => {
+    useResolver(fromCatalogue(RU))
+    const row = explained('listed', ['some-other-list', 'offline'])
+    expect(row.explainArgKeys).toEqual([null, null])
+
+    useResolver(fromCatalogue(EN))
+    expect(resolveArgs(row.explainArgs, row.explainArgKeys)).toEqual(['some-other-list', 'offline'])
+  })
+
+  it('reads a row written before the convention, in the words it was written with', () => {
+    /**
+     * No migration, and that is deliberate. A row from an older build has no
+     * `explainArgKeys`, and inventing which key each of its arguments came from is how a
+     * journal stops being evidence. It degrades to the language of its day — which is
+     * exactly what it was before — rather than to a bare identifier.
+     */
+    useResolver(fromCatalogue(EN))
+    expect(resolveArgs(['Список Okolos: фишинг', 'HTTP 503'])).toEqual([
+      'Список Okolos: фишинг',
+      'HTTP 503',
+    ])
+    expect(resolveArgs(['x'], [])).toEqual(['x'])
+  })
+
+  it('treats an empty key as no key, because that is what an unset field looks like', () => {
+    useResolver(fromCatalogue(EN))
+    expect(resolveArgs(['неназванная сторона'], [''])).toEqual(['неназванная сторона'])
+  })
+
+  it('takes no arguments at all without complaining', () => {
+    useResolver(fromCatalogue(RU))
+    const row = explained('feedName')
+    expect(row).toEqual({ explainKey: 'feedName', explainArgs: [], explainArgKeys: [] })
   })
 })

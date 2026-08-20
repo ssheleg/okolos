@@ -1,7 +1,6 @@
 import { classifyUndecided, detectHidden } from '@okolos/core-injection'
 import { detectPlatform, type RpcSender } from '@okolos/platform'
 import { buildRules, matchUrl, type FeedSnapshot,
-  displayFeedName,
 } from '@okolos/core-feeds'
 import { createOnnxRuntime, MODEL } from '@okolos/model'
 import {
@@ -51,10 +50,11 @@ const platform = detectPlatform()
  */
 useResolver((key, substitutions) => platform.message(key, substitutions))
 import { spaceAwareWrite } from './audit-space.js'
+import { feedArg } from './feed-words.js'
 import { gateExplain } from './gate-words.js'
 import { canVerify, createVerifier, FEED_PUBLIC_KEY, updateFeed } from './feeds.js'
 import { syncFeed } from './feed-sync.js'
-import { t, useResolver } from '@okolos/i18n'
+import { explained, t, useResolver } from '@okolos/i18n'
 import { reuseOf } from '@okolos/core-credential'
 
 import { recordPageRequest } from './page-requests.js'
@@ -314,8 +314,9 @@ export async function refreshBlockRules(): Promise<{ installed: number; dropped:
       createdAt: new Date().toISOString(),
       kind: 'error',
       detail: {
-        explainKey: 'logRulesTruncated',
-        explainArgs: [displayFeedName(feed.name, t) ?? feed.name, String(set.dropped)],
+        // The feed's name is a message of ours where we publish the list, so it travels
+        // as a key and is resolved again for whoever reads the row (B-77).
+        ...explained('logRulesTruncated', [feedArg(feed.name), String(set.dropped)]),
         feed: feed.name,
       },
     })
@@ -1083,19 +1084,24 @@ async function pullFeed(): Promise<void> {
         const result = await updateFeed(db, signed, createVerifier(FEED_PUBLIC_KEY), () =>
           new Date().toISOString(),
         )
-        // Resolved here because it becomes an argument inside another message, and a
-        // message cannot carry a key. Same freeze as any stored argument — see B-77.
+        // The refusal's own key and arguments travel on, rather than a sentence
+        // resolved here and substituted into another one (B-77).
         return result.accepted
           ? { accepted: true }
-          : { accepted: false, reason: t(result.explainKey, ...result.explainArgs) }
+          : {
+              accepted: false,
+              explainKey: result.explainKey,
+              explainArgs: result.explainArgs,
+              explainArgKeys: result.explainArgKeys,
+            }
       },
       refresh: () => refreshBlockRules(),
-      note: async (explainKey, ...explainArgs) => {
+      note: async (note) => {
         await db.put('journal', {
           id: `feed:${new Date().toISOString()}`,
           createdAt: new Date().toISOString(),
           kind: 'error',
-          detail: { reason: 'feed-sync', explainKey, explainArgs },
+          detail: { reason: 'feed-sync', ...note },
         })
       },
     })

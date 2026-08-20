@@ -89,6 +89,9 @@ describe('every kind of change a person can be shown', () => {
     expect(changeExplain(change('permission-added'))).toEqual({
       explainKey: 'extensionsChangePermission',
       explainArgs: ['Считыватель страниц', 'cookies, debugger'],
+      // Both positions are data — an extension's own name and the manifest's permission
+      // identifiers — so neither is re-resolved for the reader (B-77).
+      explainArgKeys: [null, null],
     })
   })
 })
@@ -100,6 +103,25 @@ describe('what each sentence is allowed to say', () => {
     const sentence = changeSentence(change('publisher-changed'))
     expect(sentence).toContain('Кто-то Ещё')
     expect(sentence).toContain('Кто-то')
+  })
+
+  it('carries the key for an unnamed publisher, so it re-resolves for the reader', () => {
+    /**
+     * "неназванная сторона" is *our* phrase, and the journal keeps this row for as long
+     * as the change is unaccepted. Stored resolved, a reader who switched language got
+     * their own sentence with one word of the old one inside it — the shape B-77 is
+     * about. The publisher who *is* named stays a string: their name is theirs.
+     */
+    const explained = changeExplain({
+      id: 'abc',
+      name: 'Считыватель страниц',
+      kind: 'publisher-changed',
+      severity: 'critical',
+      publisher: null,
+      previousPublisher: 'Кто-то',
+    })
+    expect(explained.explainArgKeys).toEqual([null, 'extensionsUnnamedParty', null])
+    expect(explained.explainArgs[1]).toBe(CATALOGUE['extensionsUnnamedParty']?.message)
   })
 
   it('words an unnamed publisher rather than printing nothing', () => {

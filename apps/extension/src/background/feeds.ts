@@ -1,6 +1,7 @@
 import { feedAccepted, feedRefusal } from './feed-words.js'
 import { applyUpdate, type FeedSnapshot, type SignedUpdate, type Verifier } from '@okolos/core-feeds'
 import type { OkolosDatabase } from '@okolos/storage'
+import type { Explained } from '@okolos/i18n'
 
 /**
  * The host side of feed updates: a real signature check and a place to keep
@@ -121,18 +122,18 @@ export async function readFeed(db: OkolosDatabase, name: string): Promise<FeedSn
   return row ? { name: row.name, version: row.version, updatedAt: row.updatedAt, entries: row.entries } : null
 }
 
-export interface FeedUpdateResult {
+export interface FeedUpdateResult extends Explained {
   readonly inForce: FeedSnapshot | null
   readonly accepted: boolean
   /**
-   * A catalogue key and its arguments, not a sentence.
+   * `Explained` is a catalogue key with its arguments, never a sentence.
    *
-   * The journal keeps this and `summarise` resolves it when somebody reads it, so a
-   * reader who switches language sees their own words on old rows (B-75). A sentence
-   * stored here would freeze the language in force when the feed happened to update.
+   * The journal keeps it and `summarise` resolves it when somebody reads it, so a reader
+   * who switches language sees their own words on old rows (B-75). `explainArgKeys` came
+   * with B-77: an argument that is itself a message of ours — a feed's name — carries its
+   * key too, or the sentence resolves in the reader's language around a word frozen in
+   * the writer's.
    */
-  readonly explainKey: string
-  readonly explainArgs: readonly string[]
 }
 
 /**

@@ -13,7 +13,7 @@ import { syncFeed, FEED_URL } from './feed-sync.js'
 
 function deps(overrides: Partial<Parameters<typeof syncFeed>[0]> & { body?: unknown; status?: number; throws?: unknown } = {}) {
   /** Key first, then its arguments — the shape the journal is handed. */
-  const notes: string[] = []
+  const notes: { explainKey: string; explainArgs: readonly string[] }[] = []
   const refreshed: number[] = []
   const applied: unknown[] = []
   const base = {
@@ -36,8 +36,12 @@ function deps(overrides: Partial<Parameters<typeof syncFeed>[0]> & { body?: unkn
       refreshed.push(1)
       return undefined
     },
-    note: async (explainKey: string, ...explainArgs: string[]) => {
-      notes.push([explainKey, ...explainArgs].join(' '))
+    // The key and its arguments, kept apart. Joining them into one string was fine
+    // while the note took positional arguments; now the shape itself is what these
+    // tests are about — a refusal must arrive as its own key, not as a sentence
+    // substituted into another message (B-77).
+    note: async (note: { explainKey: string; explainArgs: readonly string[] }) => {
+      notes.push(note)
     },
     ...overrides,
   }
@@ -71,19 +75,35 @@ describe('pulling the blocking feed', () => {
 
   it('keeps the list in force when the update does not verify', async () => {
     const { deps: d, refreshed, notes } = deps({
-      apply: async () => ({ accepted: false, reason: 'bad-signature' }),
+      apply: async () => ({
+        accepted: false,
+        explainKey: 'feedRefusedSignature',
+        explainArgs: ['Список Okolos: фишинг', '7'],
+        explainArgKeys: ['feedNamePhishing', null],
+      }),
     })
     const result = await syncFeed(d)
     expect(result.accepted).toBe(false)
     expect(refreshed, 'rules must not be rebuilt from a feed that was refused').toHaveLength(0)
-    expect(notes.join(' ')).toMatch(/feedRefused|bad-signature/i)
+    /**
+     * The refusal's own key, passed through rather than resolved and wrapped.
+     *
+     * It used to become a substitution inside `feedRefused` — a sentence inside a
+     * sentence, resolved on the day of the write. Both halves were wrong: it read as
+     * "Обновление отклонено: Обновление подписано не тем ключом…", and the inner half
+     * froze in whichever language was active then (B-77).
+     */
+    expect(notes).toHaveLength(1)
+    expect(notes[0]?.explainKey).toBe('feedRefusedSignature')
+    expect(notes[0]?.explainArgs).toEqual(['Список Okolos: фишинг', '7'])
   })
 
   it('says so when the server refuses, rather than failing silently', async () => {
     const { deps: d, notes } = deps({ status: 503 })
     const result = await syncFeed(d)
     expect(result.fetched).toBe(false)
-    expect(notes.join(' ')).toMatch(/503/)
+    expect(notes[0]?.explainKey).toBe('feedFetchStatus')
+    expect(notes[0]?.explainArgs).toEqual(['503'])
   })
 
   it('says so when the fetch throws, and leaves what is in force alone', async () => {
@@ -91,7 +111,8 @@ describe('pulling the blocking feed', () => {
     const result = await syncFeed(d)
     expect(result.fetched).toBe(false)
     expect(refreshed).toHaveLength(0)
-    expect(notes.join(' ')).toMatch(/offline/)
+    expect(notes[0]?.explainKey).toBe('feedFetchFailed')
+    expect(String(notes[0]?.explainArgs)).toMatch(/offline/)
   })
 
   it('names a feed address that is not a placeholder', async () => {

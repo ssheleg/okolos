@@ -124,8 +124,16 @@ export interface JournalRecord {
    * A journal entry stores what happened, not a sentence about it: a key and
    * its substitutions, resolved when the entry is read so the reader's language
    * decides rather than the language in force when the event occurred.
+   *
+   * `readonly (string | null)[]` for `explainArgKeys`, which is parallel to
+   * `explainArgs` and holds a key where that position is a message of ours rather than
+   * data — with `null` where it is data. Half-resolving at write time was how a reader
+   * who switched language got their own sentence with one word of the old one in it
+   * (B-77).
    */
-  detail?: Readonly<Record<string, string | number | boolean | readonly string[]>>
+  detail?: Readonly<
+    Record<string, string | number | boolean | readonly string[] | readonly (string | null)[]>
+  >
 }
 
 export interface ExceptionRecord {

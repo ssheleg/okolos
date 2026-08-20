@@ -1,4 +1,4 @@
-import { t } from '@okolos/i18n'
+import { resolveArgs, t } from '@okolos/i18n'
 import { buildQueue, diffSince, QUEUE_LIMIT, type JournalEntry, type QueueItem } from '@okolos/core-queue'
 import type { FindingRecord, JournalRecord } from '@okolos/storage'
 import type { PopupState } from '@okolos/ui'
@@ -165,7 +165,8 @@ function hostOf(subject: string): string {
  *
  * Three sources, in order, and the order is the whole design:
  *
- *   1. `explainKey` (+ `explainArgs`) — written by everything that has been
+ *   1. `explainKey` (+ `explainArgs`, and `explainArgKeys` for the arguments that
+ *      are messages rather than data) — written by everything that has been
  *      moved to the catalogue. Resolved **now**, so the reader's language
  *      decides, not the language in force when the event happened.
  *   2. `explain` — a sentence stored before that move. It stays English, and
@@ -182,7 +183,15 @@ function summarise(detail: Record<string, unknown>, kind: JournalEntry['kind']):
     const args = Array.isArray(detail.explainArgs)
       ? detail.explainArgs.filter((arg): arg is string => typeof arg === 'string')
       : []
-    return t(key, ...args)
+    /**
+     * An argument can be a message of ours rather than data — a feed's name, "an unnamed
+     * party" — and those were stored resolved, in the language of the write. A reader who
+     * switched language got their own sentence with one word of the old one inside it
+     * (B-77). `explainArgKeys` says which positions to resolve again; a row written before
+     * the convention has none, and falls back to the words it was written with.
+     */
+    const argKeys = Array.isArray(detail.explainArgKeys) ? detail.explainArgKeys : []
+    return t(key, ...resolveArgs(args, argKeys))
   }
   if (typeof detail.explain === 'string') return detail.explain
   return t(DEFAULT_SUMMARY_KEY[kind])

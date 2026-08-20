@@ -28,6 +28,13 @@
  * found by looking at a screenshot rather than by counting. A number from here
  * is a floor, not a total.
  *
+ * Half of that class has a shape now, and it is still invisible here. An argument that
+ * is a message of ours travels as `{ messageKey: '…' }` and is resolved for whoever
+ * reads the row rather than for whoever wrote it (B-77) — a *stored* argument was our
+ * word frozen on the day of the write, which is the same defect one level down from the
+ * sentence. `tools/locales.test.ts` sees that form, because a field ending in `Key` is
+ * what it reads; this sweep counts quoted prose and neither knows nor should.
+ *
  * It exists because the number kept being wrong. Four iterations reported 49,
  * 43, 36 and 15 remaining, each derived by a fresh throwaway regex, and every
  * one of them undercounted: the pattern required a capital first letter, and

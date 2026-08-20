@@ -147,6 +147,9 @@ test('the verdict is recorded, so it survives being missed', async ({
   extensionId,
 }) => {
   await serve(context)
+  // This one paid the cold start on its own until 2026-08-20 — the only test in the file
+  // without the warm-up, and it failed inside the full suite for that reason alone.
+  await workerAwake(context, extensionId)
   const page = await context.newPage()
   await page.goto('https://bank.test/')
   await contentScriptReady(page)

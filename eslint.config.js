@@ -158,6 +158,10 @@ export default tseslint.config(
         // page's globals are the ones in scope, not Node's.
         chrome: 'readonly',
         indexedDB: 'readonly',
+        // The Firefox harness asks the page whether the content script has finished a
+        // scan, and it asks with the product's own measure — `performance` is the page's,
+        // not Node's, in exactly the same way as the two above.
+        performance: 'readonly',
       },
     },
   },

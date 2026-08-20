@@ -70,6 +70,18 @@ jobs:
       - name: ux lint
         run: python3 docs/ux/lint.py
 
+      # The brand pack is the source for every string a user reads, and it went
+      # four errors deep while nothing ran it. Warnings print and pass; errors
+      # refuse — the mapping is in tools/brand-gate.mjs with its reason.
+      - name: brand pack
+        run: pnpm brand:lint
+
+      # A sentence the code holds instead of the catalogue is English on a
+      # Russian-facing surface. Exemptions are allowed and must carry a reason
+      # at the site; this refuses the ones that do not.
+      - name: sentences outside the catalogue
+        run: pnpm i18n:sweep
+
       # Before an upload rather than after one: a manifest naming a missing
       # file, a locale that cannot answer a __MSG__, or a build carrying the
       # test hooks that open the shadow roots.

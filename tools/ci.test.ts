@@ -19,11 +19,50 @@ const scripts = (JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'
   scripts: Record<string, string>
 }).scripts
 
+/** The steps of `pnpm gates`, in order — the one list both wirings are checked against. */
+function gateSteps(): string[] {
+  const steps = script('gates')
+    .split('&&')
+    .map((part) => part.trim().replace(/^pnpm\s+/, ''))
+    .filter((name) => name !== '')
+  if (steps.length < 5) throw new Error(`the gate chain parsed to ${steps.length} step(s)`)
+  return steps
+}
+
 /** Fails with the script's name rather than on `undefined` three lines later. */
 function script(name: string): string {
   const value = scripts[name]
   if (value === undefined) throw new Error(`package.json has no "${name}" script`)
   return value
+}
+
+/**
+ * Does `body` run `command`, by its own name or by the file it invokes?
+ *
+ * `body` must be **executable lines only**. Given the whole file this returned true
+ * for a gate that had been replaced by `echo skipped`, because a YAML comment three
+ * lines up still named `tools/brand-gate.mjs` — a check about a mention rather than
+ * a use, which is the same weak discriminator that kept `dueForFeed` green in B-54.
+ * The plant that found it was the second one written; the first landed and hid it.
+ */
+function shares(body: string, command: string): boolean {
+  if (body.includes(command)) return true
+  // `python3 docs/ux/lint.py` and `node tools/i18n-sweep.mjs` are the same gate
+  // whether reached through pnpm or called directly; the file is the identity.
+  const file = /([\w./-]+\.(?:py|mjs|js|ts))/.exec(command)
+  return file !== null && body.includes(file[1] as string)
+}
+
+/** The `run:` values of a workflow — what it executes, without what it says about it. */
+function commandsIn(yaml: string): string {
+  return [...yaml.matchAll(/^\s*(?:- )?run: (?:\|)?\s*(.*)$/gm)]
+    .map((match) => match[1] as string)
+    .join('\n')
+}
+
+/** The hook's `run <label> '<command>'` lines, without its commentary. */
+function commandsInHook(shell: string): string {
+  return [...shell.matchAll(/^run\s+\S+\s+'(.+)'$/gm)].map((match) => match[1] as string).join('\n')
 }
 
 describe('the workflow runs what the project has', () => {
@@ -32,6 +71,18 @@ describe('the workflow runs what the project has', () => {
     expect(workflow).toContain('docs/ux/lint.py')
     expect(workflow).toContain('pnpm test:e2e')
     expect(workflow).toContain('tools/firefox-e2e.mjs')
+  })
+
+  it('runs every gate the local chain runs', () => {
+    // The other half of the same rule: a gate added to `pnpm gates` and to the
+    // hook, and forgotten in CI, is a gate one `OKOLOS_SKIP_GATES=1` from absent.
+    const runs = commandsIn(workflow)
+    expect(runs, 'no run: steps parsed out of the workflow').toContain('pnpm test')
+    for (const step of gateSteps()) {
+      const resolved = scripts[step] ?? ''
+      const ran = runs.includes(step) || (resolved !== '' && shares(runs, resolved))
+      expect(ran, `CI does not run the "${step}" gate`).toBe(true)
+    }
   })
 
   it('does not pin a Playwright build number', () => {
@@ -98,10 +149,26 @@ describe('the pre-push hook exists and runs the gates', () => {
     expect(statSync(hook).mode & 0o111).toBeGreaterThan(0)
   })
 
-  it('runs every gate CI runs, so local green means the same thing', () => {
-    const body = readFileSync(hook, 'utf8')
-    for (const gate of ['lint', 'typecheck', 'test', 'docs/ux/lint.py']) {
-      expect(body, `the hook does not run ${gate}`).toContain(gate)
+  it('runs every gate the chain runs, derived from the chain', () => {
+    /**
+     * Derived, not listed. The hand-kept list here was `['lint', 'typecheck',
+     * 'test', 'docs/ux/lint.py']`, and three gates lived outside it for weeks —
+     * the brand linter with four errors, the i18n sweep that never returned
+     * non-zero, and a graph check nobody ran. A list a person maintains is a list
+     * that stops matching the thing it describes, silently, which is the whole
+     * failure this test exists to prevent.
+     *
+     * Each step of `pnpm gates` counts as run when the hook names either the
+     * script (`pnpm i18n:sweep`) or the command it resolves to
+     * (`node tools/i18n-sweep.mjs`) — the hook calls the tools directly to keep
+     * one pnpm start-up per gate rather than two.
+     */
+    const body = commandsInHook(readFileSync(hook, 'utf8'))
+    expect(body, 'no run lines parsed out of the hook').toContain('pnpm -s lint')
+    for (const step of gateSteps()) {
+      const resolved = scripts[step] ?? ''
+      const ran = body.includes(step) || (resolved !== '' && shares(body, resolved))
+      expect(ran, `the hook does not run the "${step}" gate`).toBe(true)
     }
   })
 

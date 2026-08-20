@@ -112,6 +112,15 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (сорок четвёртый)** — B-77; стадии 0–10. Аргумент журнала, который сам
+  является нашим сообщением, теперь едет ключом и разрешается при чтении. Наших слов среди
+  аргументов оказалось три места, а не «везде», и худшее из них — целая фраза, вложенная
+  подстановкой в другую фразу. Поле пришлось назвать `messageKey`, а не `key`: гейт локалей
+  намеренно читает только поля на `Key`, и пять живых сообщений успели стать «translated and
+  never shown». Полный e2e-прогон поймал гонок в `scn-007`: `waitForEvent('page')` отдаёт
+  вкладку до навигации, и `url()` прочитался как `/`. 2245 юнит-тестов в 140 файлах, 126
+  e2e. Четыре планта; один не лёг — конец цепочки не проверял никто. Постоянных инструкций
+  десять, снятий нет. Вердикт REFINE.
 - **2026-08-20 (сорок третий)** — B-71 плюс красный CI от прошлого прогона; стадии 0–10.
   CI упал на моём же тесте, читавшем `graphify-out/manifest.json` — артефакт в
   `.gitignore`, на CI его нет: тест про мою машину в одежде теста про правило, и я написал
@@ -2116,6 +2125,38 @@ description.
   keeping. But a row closed with its verification outstanding is a row closed early, and
   the honest form is the one now in the board: closed on the second attempt, with the
   first attempt's failure written into it rather than tidied away.
+
+### 2026-08-20 — both halves were proved and the join between them was not
+
+**Symptom.** A plant that disabled `resolveArgs` in the popup's `summarise` — the single
+call that makes a journal row re-resolve for its reader — passed every test. Three green
+suites: `@okolos/i18n` proving `explained` records the keys, `@okolos/i18n` proving
+`resolveArgs` resolves them, `packages/ui` proving the writers emit them. Nothing proved
+the reader calls it.
+
+**Stage it surfaced at.** 5, on the fourth plant of the run. The first three landed, which
+is what made the fourth informative: the same session's tests were good enough to catch
+three defects in the same feature and blind to the one that would have shipped it dead.
+
+**Stage that owned it.** 5. Every test was written next to the code it tests, which is the
+right instinct and produces exactly this gap: each unit is covered and the seam between
+them belongs to neither file, so neither author writes it.
+
+**Root cause.** A feature assembled from a producer and a consumer has three things to
+check and the third has no natural home. Coverage of the parts reads as coverage of the
+whole, and the arithmetic is convincing — three tests, three components, done.
+
+**Fix, by grade.** *Check:* a test in `state.test.ts` for the whole chain — a row carrying
+`explainArgKeys`, read under the catalogue, asserting the argument comes back in the
+reader's word and that a keyless position comes back as written. The plant lands now.
+*Process:* when a change adds a producer and a consumer, the plant to run first is the one
+that severs the join, not the one that breaks either end.
+
+**The check that catches it next time.** For any convention with a write side and a read
+side, one test must exercise both in a single call. This is the same lesson as the
+recovery-checklist plant earlier this week — that one checked the catalogue instead of the
+rendered label — and the shape is identical: the assertion sat one step short of the
+screen.
 
 ### 2026-08-20 — I read the note about this failure and then wrote it again
 

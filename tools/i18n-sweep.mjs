@@ -86,7 +86,17 @@ for (const base of ROOTS) {
     lines.forEach((line, index) => {
       const trimmed = line.trim()
       // Comments explain; they are not shipped to anyone.
-      if (trimmed.startsWith('*') || trimmed.startsWith('//')) return
+      /**
+       * Comments explain; they are not shipped to anyone.
+       *
+       * `/*` is in the list because a **one-line** block comment starts with it and
+       * with nothing else — the first version checked only `*` (a continuation line)
+       * and `//`, so `/** the project's wrapper … *\/` was scanned as code and its
+       * apostrophe read as an opening quote. The gate refused a push over a doc
+       * comment, which is the kind of false positive that teaches people to reach for
+       * `OKOLOS_SKIP_GATES=1`.
+       */
+      if (trimmed.startsWith('*') || trimmed.startsWith('//') || trimmed.startsWith('/*')) return
       for (const match of line.matchAll(SENTENCE)) {
         const value = match[2]
         if (NOISE.test(value)) continue

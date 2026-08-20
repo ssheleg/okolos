@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, utimesSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, utimesSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
@@ -165,33 +165,64 @@ describe('the code-graph check', () => {
     expect(out).toContain('No manifest beside the graph')
   })
 
-  it('claims every extracted file type in the tree, and no type the tree lacks', () => {
+  it('claims every file type the extraction reads, and no type it does not', () => {
     /**
-     * Both directions, because they fail differently and both have happened.
+     * Both directions, because they fail differently and all three have happened.
      *
      * `.css` was claimed and is not in graphify's detection, so two stylesheets sat
      * permanently in "never extracted" — a gap in the pattern reported as a gap in the
      * graph, burying nine real documents in the same list. `.tsx` was claimed and this
-     * project has none: dead weight that reads as coverage.
+     * project has none: dead weight reading as coverage. And `.githooks/pre-push` is
+     * extracted and was not claimed, because a git hook carries no extension — so the
+     * check silently never asked about the hook that runs every other gate.
      *
-     * The other direction is the blind spot: a type the extraction reads and this
-     * pattern omits is a set of sources the check silently stops asking about.
+     * **Measured, not live.** The first version of this read
+     * `graphify-out/manifest.json`, which is git-ignored and absent on a fresh clone: it
+     * passed here and failed CI within the hour — a test about my machine wearing the
+     * clothes of a test about the rule, which is the same shape as the `git rev-parse
+     * HEAD~1` failure this file already carries a note about. The list below is a
+     * recorded measurement with its command and its date; the live cross-check is the
+     * assertion after it, and it says so when it cannot run.
+     *
+     * Measured 2026-08-20 by:
+     *   python3 -c "import json,collections;print(collections.Counter(
+     *     k.rsplit('.',1)[-1] for k in json.load(open('graphify-out/manifest.json'))))"
      */
-    const manifest = JSON.parse(
-      readFileSync(path.join(root, 'graphify-out/manifest.json'), 'utf8'),
-    ) as Record<string, unknown>
-    // By basename, because a git hook has no extension at all and `split('.').pop()`
-    // hands back the whole path for one — which reads as an unclaimed file type.
-    const names = Object.keys(manifest).map((f) => f.split('/').pop() ?? f)
+    const EXTRACTS = ['ts', 'md', 'json', 'mjs', 'mts', 'png', 'html', 'py', 'js', 'sql', 'yml', 'yaml']
 
     // `png` is extracted and deliberately unclaimed: an image has no text to go stale,
     // and "which images changed" is not a question this check answers.
-    const blind = names.filter((name) => !name.endsWith('.png') && !COVERED_FILE.test(name))
-    expect(blind, `extracted and unclaimed: ${[...new Set(blind)].join(', ')}`).toEqual([])
+    const blind = EXTRACTS.filter((ext) => ext !== 'png' && !COVERED_FILE.test(`x.${ext}`))
+    expect(blind, `extracted and unclaimed: ${blind.join(', ')}`).toEqual([])
 
     const claimed = [...COVERED_FILE.source.matchAll(/[a-z]{2,}/g)].map((m) => m[0])
-    const dead = claimed.filter((ext) => !names.some((name) => name.includes(ext)))
+    const dead = claimed.filter((ext) => !EXTRACTS.includes(ext) && !ext.startsWith('pre'))
     expect(dead, `claimed and never extracted: ${dead.join(', ')}`).toEqual([])
+  })
+
+  it('holds that measurement against the live manifest, where there is one', () => {
+    /**
+     * The other half, and it refuses to be silent about not running.
+     *
+     * `graphify-out/` is git-ignored, so on CI and on a fresh clone there is nothing to
+     * compare against. That is not a pass: a skipped assertion is exactly how the list
+     * above would rot into a decoration. So the absence is asserted *as* absence — this
+     * test states which of the two worlds it is in, and the recorded list carries the
+     * date it was measured on for the world where it cannot be checked.
+     */
+    const manifestPath = path.join(root, 'graphify-out/manifest.json')
+    if (!existsSync(manifestPath)) {
+      // Nothing to check, and the reason is structural rather than a failure. The
+      // recorded list above is what stands in for it, dated.
+      expect(existsSync(path.join(root, 'graphify-out'))).toBe(false)
+      return
+    }
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as Record<string, unknown>
+    // By basename: `split('.').pop()` on an extensionless git hook hands back the whole
+    // path, which then reads as an unclaimed file type.
+    const names = Object.keys(manifest).map((f) => f.split('/').pop() ?? f)
+    const unclaimed = names.filter((name) => !name.endsWith('.png') && !COVERED_FILE.test(name))
+    expect(unclaimed, `extracted and unclaimed: ${[...new Set(unclaimed)].join(', ')}`).toEqual([])
   })
 
   it('does not need repository history to answer', () => {

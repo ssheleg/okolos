@@ -29,6 +29,7 @@ export type {
   Envelope,
   FrameFinding,
   FrameLine,
+  PasswordAnswer,
   Purpose,
   RpcError,
   RpcMap,

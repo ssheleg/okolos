@@ -17,6 +17,7 @@ import type {
   Envelope,
   FrameFinding,
   GateDecision,
+  PasswordAnswer,
   PageCandidates,
   RpcMap,
   RpcType,
@@ -54,6 +55,7 @@ useResolver((key, substitutions) => platform.message(key, substitutions))
 import { spaceAwareWrite } from './audit-space.js'
 import { feedArg } from './feed-words.js'
 import { gateExplain } from './gate-words.js'
+import { holdVerdict, releaseVerdict, takeVerdict } from './pending-password.js'
 import { canVerify, createVerifier, FEED_PUBLIC_KEY, updateFeed } from './feeds.js'
 import { syncFeed } from './feed-sync.js'
 import { explained, t, useResolver } from '@okolos/i18n'
@@ -85,9 +87,14 @@ platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>, from: RpcSe
     case 'block/allow':
       return allowBlocked(message.payload as { url: string }) as Promise<RpcMap[T]['res']>
     case 'password/check':
-      return handlePasswordCheck(message.payload as { sha1: string; host: string }) as Promise<
-        RpcMap[T]['res']
-      >
+      return handlePasswordCheck(
+        message.payload as { sha1: string; host: string },
+        from,
+      ) as Promise<RpcMap[T]['res']>
+    case 'password/shown':
+      return forgetHeldVerdict(from) as Promise<RpcMap[T]['res']>
+    case 'password/pending':
+      return answerPendingVerdict(from) as Promise<RpcMap[T]['res']>
     case 'leaks/check':
       return handleLeakCheck(message.payload as { address: string }) as Promise<RpcMap[T]['res']>
     case 'extensions/state':
@@ -549,15 +556,10 @@ async function reuseTag(sha1: string): Promise<string | null> {
   }
 }
 
-async function handlePasswordCheck(payload: { sha1: string; host: string }): Promise<{
-  compromised: boolean
-  count: number | null
-  offline: boolean
-  // A code and its numbers: the sentence is written where the catalogue is (B-75).
-  explain: { code: string; detail?: string; count?: number }
-  reusedOn: string[]
-  reuseUnknown: boolean
-}> {
+async function handlePasswordCheck(
+  payload: { sha1: string; host: string },
+  from: RpcSender,
+): Promise<PasswordAnswer> {
   const verdict = await checkSubmittedPassword(payload.sha1, await auditDeps())
 
   let reusedOn: string[] = []
@@ -582,7 +584,7 @@ async function handlePasswordCheck(payload: { sha1: string; host: string }): Pro
     }
   }
 
-  return {
+  const answer: PasswordAnswer = {
     compromised: verdict.compromised,
     count: verdict.count,
     offline: verdict.offline,
@@ -590,6 +592,96 @@ async function handlePasswordCheck(payload: { sha1: string; host: string }): Pro
     reusedOn,
     reuseUnknown,
   }
+
+  if (answer.compromised) {
+    /**
+     * Recorded here, not by whoever shows it, and that is the point.
+     *
+     * Until 2026-08-20 a compromised password produced a banner and **nothing else**:
+     * no row anywhere. So a banner dismissed, or lost to the navigation the submission
+     * itself caused, took the fact with it (B-82). The journal is written before any
+     * delivery is attempted, because the fact is true whether or not anybody saw it.
+     */
+    await journalPasswordVerdict(payload.host, answer)
+
+    // And held for the tab, so the next document there can show it. Released by the
+    // surface that draws it — a receipt, not a timeout.
+    if (typeof from.tabId === 'number') {
+      await holdVerdict(platform.storage, from.tabId, {
+        host: payload.host,
+        verdict: answer,
+        at: new Date().toISOString(),
+      })
+
+      /**
+       * And offered once, right now, to whatever document the tab has. Not awaited: the
+       * answer this function returns is what the asking document draws when it is still
+       * alive, and making it wait on a delivery to its own replacement would hold up the
+       * ordinary case for the rare one.
+       *
+       * One attempt, no retries. A loop would have to live in this worker, and the worker
+       * is torn down when the browser decides — measured as a warning that arrived most of
+       * the time. Whoever this misses asks for it themselves as they start.
+       */
+      void platform.tabs
+        .sendToFrame(
+          'password/verdict',
+          { host: payload.host, verdict: answer },
+          { tabId: from.tabId, frameId: 0 },
+        )
+        .catch(() => false)
+
+    }
+  }
+
+  return answer
+}
+
+/** One row, one sentence: the verdict, naming the site the password was sent to. */
+async function journalPasswordVerdict(host: string, answer: PasswordAnswer): Promise<void> {
+  try {
+    const db = await openDb()
+    await db.put('journal', {
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+      kind: 'verdict',
+      detail: {
+        host,
+        // Facts beside the sentence, for the export and for anything that wants to
+        // count rather than read: which source answered, and what it said.
+        offline: answer.offline,
+        code: answer.explain.code,
+        reusedOn: answer.reusedOn.join(','),
+        reuseUnknown: answer.reuseUnknown,
+        ...explained('journalPasswordCompromised', [host]),
+      },
+    })
+  } catch {
+    // An unwritable journal must not swallow the verdict: the answer still returns and
+    // the surface still draws. Nothing is claimed about the record that was not made.
+  }
+}
+
+/** The surface confirmed it drew the verdict, so the held copy is forgotten. */
+async function forgetHeldVerdict(from: RpcSender): Promise<{ ok: true }> {
+  if (typeof from.tabId === 'number') await releaseVerdict(platform.storage, from.tabId)
+  return { ok: true }
+}
+
+/**
+ * The verdict this tab is still holding, or null.
+ *
+ * Answering does not consume it — `password/shown` does. A document that asks and is
+ * destroyed before it can draw has changed nothing, and the next one asks again. That is
+ * the whole reason this is a question rather than a push: nothing here depends on a
+ * service worker staying alive between the answer and the drawing.
+ */
+async function answerPendingVerdict(
+  from: RpcSender,
+): Promise<{ host: string; verdict: PasswordAnswer } | null> {
+  if (typeof from.tabId !== 'number') return null
+  const held = await takeVerdict(platform.storage, from.tabId, Date.now())
+  return held === null ? null : { host: held.host, verdict: held.verdict }
 }
 
 async function handleLeakCheck(payload: { address: string }) {

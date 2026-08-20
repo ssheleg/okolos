@@ -2194,6 +2194,14 @@
       }
     }
   },
+  "journalPasswordCompromised": {
+    "message": "the password sent to $HOST$ has appeared in a breach",
+    "placeholders": {
+      "host": {
+        "content": "$1"
+      }
+    }
+  },
   "warnPasswordReuse": {
     "message": "The same password has been seen on $COUNT$ other site(s): $HOSTS$.",
     "placeholders": {

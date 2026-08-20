@@ -300,18 +300,28 @@ flowchart TD
   F -->|no| G[Verdict: not found in known leaks]
   E -->|network unavailable| E_err[Inline: could not check online - local result only]
   E_err --> G
+  D --> J1[Journal row written first - the fact is true whether or not it is seen]
   D --> H[Screen: In-page banner - password variant + Change password]
   D -->|the form was inside an embedded frame| F2[Frame reports its verdict upward, draws nothing]
   F2 -->|background stamps the frame's origin| H
+  D -->|the form navigated the page away| K[Held for the tab, one minute]
+  K -->|the landing page asks as it starts, and is pushed it once| H
   H -->|change now| I[Background composes the address and opens that site's change-password page]
   H -->|where else do I use it| J[Screen: Leaks and repair - reuse list]
 ```
 
-**Two things about the last arrow.** The address is composed by the **background**, from a
-host rather than a URL: a content script cannot open a tab at all, and a caller that could
-pass a URL could pass any URL. And the host is the one whose form received the password —
-the frame's, when the form was in a frame — so the page that opens is the login the verdict
-is about rather than the page that happened to embed it.
+**Two things about the change-password arrow.** The address is composed by the
+**background**, from a host rather than a URL: a content script cannot open a tab at all,
+and a caller that could pass a URL could pass any URL. And the host is the one whose form
+received the password — the frame's, when the form was in a frame — so the page that opens
+is the login the verdict is about rather than the page that happened to embed it.
+
+**And one about the held branch.** The check runs after the submission by design, so a form
+with an `action` can take the asking document with it. The verdict is written to the journal
+*before* any delivery is attempted, and held for the tab for a minute; the page the login
+lands on both asks for it and is offered it once. Two directions because each covers what
+the other misses — a document that starts before the answer is told nothing when it asks,
+and one that starts after it has nobody to be pushed to (FLW-10 → SCN-036).
 
 - **Screens traversed:**
   | Screen | States used here |

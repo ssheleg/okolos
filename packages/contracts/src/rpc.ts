@@ -22,6 +22,35 @@ export interface FrameLine {
 }
 
 /**
+ * What the check knows about a submitted password.
+ *
+ * Extracted from `password/check`'s response because it travels twice now: back to
+ * whoever asked, and — when the asking document navigated away before it could draw
+ * anything — held for the tab and pushed to the next one (B-82). One declaration, so
+ * the held copy cannot drift from the answer.
+ */
+export interface PasswordAnswer {
+  readonly compromised: boolean
+  readonly count: number | null
+  readonly offline: boolean
+  /**
+   * A code and its numbers, not a sentence.
+   *
+   * Six English explanations used to cross this line from a zero-dependency package,
+   * one of them with an English thousands separator baked in (B-75). The words belong
+   * to the surface that shows the banner.
+   */
+  readonly explain: { code: string; detail?: string; count?: number }
+  /** Other hosts this device has seen the same password on, oldest first. */
+  readonly reusedOn: string[]
+  /**
+   * True when this device has no record of the password at all. Not the same as "used
+   * nowhere else": a fresh install knows nothing, and the screen must say which it is.
+   */
+  readonly reuseUnknown: boolean
+}
+
+/**
  * What a frame can report, and why the shape is a union rather than one widened record.
  *
  * The relay was built for injections and carried their shape — `{origin, summary,
@@ -160,27 +189,7 @@ export interface RpcMap {
      * host is what makes "where else do I use this" answerable at all.
      */
     req: { sha1: string; host: string }
-    res: {
-      compromised: boolean
-      count: number | null
-      offline: boolean
-      /**
-       * A code and its numbers, not a sentence.
-       *
-       * Six English explanations used to cross this line from a zero-dependency
-       * package, one of them with an English thousands separator baked in (B-75). The
-       * words belong to the surface that shows the banner.
-       */
-      explain: { code: string; detail?: string; count?: number }
-      /** Other hosts this device has seen the same password on, oldest first. */
-      reusedOn: string[]
-      /**
-       * True when this device has no record of the password at all. Not the
-       * same as "used nowhere else": a fresh install knows nothing, and the
-       * screen must say which of the two it is.
-       */
-      reuseUnknown: boolean
-    }
+    res: PasswordAnswer
   }
   /** User-initiated: nothing is looked up in the background. */
   'leaks/check': {
@@ -273,6 +282,69 @@ export interface RpcMap {
    * names that host — a refusal said out loud rather than a tab that goes somewhere else.
    */
   'password/change': { req: { host: string }; res: { opened: boolean } }
+  /**
+   * A leak verdict this tab is still holding, asked for by every document as it starts.
+   *
+   * The check runs after the submission, and a form with an `action` navigates the
+   * document while it is in flight — so the verdict arrives at a content script that no
+   * longer exists, and nothing is shown (B-82). It is held for the tab instead, and the
+   * next document there asks for it: after a successful login that is the site's own
+   * page, and "the password you just sent to this site is in a breach" is as true there
+   * as it was on the form.
+   *
+   * **Pulled rather than pushed, and the reason is the worker's lifetime.** The first
+   * version pushed with a retry budget, twelve attempts over nine seconds — and a
+   * service worker is torn down when the browser decides, taking the loop with it. It
+   * worked most of the time, which is the worst property a security warning can have:
+   * measured flaky across identical runs of `e2e/scn-036.spec.ts`. A question asked by
+   * the document that needs the answer depends on nothing that can die first.
+   *
+   * **What it costs, said out loud:** one message per document, on every page, including
+   * the pages that are holding nothing. That wakes the service worker on page loads that
+   * would otherwise not have woken it. The alternative — a content script reading
+   * `storage` directly, which does not wake the worker — needs a key the content script
+   * can find, and a content script does not know its own tab id. Named here rather than
+   * discovered later.
+   *
+   * `host` rather than an origin: it is the site the password was sent to, and it is
+   * what the sentence names and what the change-password button opens. The verdict
+   * travels as **facts**, not as a finished sentence — the surface that draws it owns the
+   * words, exactly as it does when it asked for the check itself.
+   *
+   * Answering does not consume the record: `password/shown` does. A document that asks
+   * and is destroyed before it can draw has changed nothing, and the next one asks again.
+   */
+  'password/pending': {
+    req: Record<string, never>
+    res: { host: string; verdict: PasswordAnswer } | null
+  }
+  /**
+   * The same verdict, pushed the moment it is reached — the other half of the pair.
+   *
+   * Neither direction is enough alone, and the two holes are complementary. A document
+   * that starts **before** the check answers asks and is told nothing; a document that
+   * starts **after** it gets nothing pushed, because there was nobody to push to. So the
+   * verdict is offered both ways: once, at the instant it exists, and once, by whoever
+   * starts next. Measured the hard way — each direction on its own was flaky across
+   * identical runs of `e2e/scn-036.spec.ts`, in opposite cases.
+   *
+   * A single push, with no retry budget: a loop would have to live in the service worker,
+   * and the worker is torn down when the browser decides. Whoever the push misses will
+   * ask.
+   */
+  'password/verdict': {
+    req: { host: string; verdict: PasswordAnswer }
+    res: { ok: true }
+  }
+  /**
+   * A surface saying it drew the verdict, so the held copy can be forgotten.
+   *
+   * A delivery receipt rather than a timeout: if the document was torn down before it
+   * could draw, no receipt arrives and the verdict is still waiting for the next one. It
+   * is what stops the held copy from being pushed a second time to a page that already
+   * showed it — the tab is the unit, so either frame may confirm.
+   */
+  'password/shown': { req: Record<string, never>; res: { ok: true } }
   /**
    * `domains` is kept for callers that only need the names — the lookalike
    * check asks on every navigation and has no use for the rest. `entries`

@@ -57,6 +57,24 @@ const LOGIN_FRAME = `<!doctype html>
   </script>
 </body></html>`
 
+/**
+ * Waits until the content script has run **inside the frame**.
+ *
+ * Without it a spec can submit before the frame's script exists, and then nothing happens
+ * at all — a failure that reads exactly like a broken product (the lesson of scn-036).
+ * `okolos:collect` is the product's own measure, set at the end of every scan, and the
+ * frame runs its own.
+ */
+async function frameScriptReady(page: import('@playwright/test').Page): Promise<void> {
+  const frame = page.frames().find((f) => f.url().includes('g00gle')) ?? page.mainFrame()
+  await expect
+    .poll(
+      () => frame.evaluate(() => performance.getEntriesByName('okolos:collect').length),
+      { timeout: SURFACE_MOUNT_MS },
+    )
+    .toBeGreaterThan(0)
+}
+
 /** The panel's variant, once it settles on one. */
 async function variantBecomes(page: import('@playwright/test').Page, want: string): Promise<void> {
   await expect
@@ -89,6 +107,7 @@ async function variantBecomes(page: import('@playwright/test').Page, want: strin
  * relay is proved by scn-034, and their interaction on one panel by the slot's unit tests.
  */
 async function submitPassword(page: import('@playwright/test').Page): Promise<void> {
+  await frameScriptReady(page)
   const frame = page.frameLocator('iframe')
   await frame.locator('input[type=password]').evaluate((el) => {
     ;(el as HTMLInputElement).value = 'password'
@@ -179,6 +198,7 @@ test('stays silent when the password submitted from the frame is not in a breach
   await serveHosts(context, { 'parent.test': PARENT, 'sso.partner.test': LOGIN_FRAME })
   const page = await context.newPage()
   await page.goto('https://parent.test/')
+  await frameScriptReady(page)
   const frame = page.frameLocator('iframe')
   // Not in the common list, and the range query cannot be reached from here — so the
   // verdict is "not compromised" and no leak banner may appear. Filled without focus for

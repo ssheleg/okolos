@@ -2194,6 +2194,14 @@
       }
     }
   },
+  "journalPasswordCompromised": {
+    "message": "Пароль, отправленный на $HOST$, встречался в утечке.",
+    "placeholders": {
+      "host": {
+        "content": "$1"
+      }
+    }
+  },
   "warnPasswordReuse": {
     "message": "Этот же пароль видели ещё на $COUNT$ сайте(-ах): $HOSTS$.",
     "placeholders": {

@@ -487,11 +487,15 @@ function showFramePassword(
   finding: Extract<FrameFinding, { kind: 'password' }>,
   where: string,
 ): void {
+  const host = hostOf(finding.origin)
   claimPasswordBanner({
     detail: passwordDetail(finding.lines),
     offline: finding.offline,
-    host: hostOf(finding.origin),
-    headline: t('warnPasswordFrameHeadline', where),
+    host,
+    // The host, not the whole origin: "the password sent to sso.partner.test" reads as a
+    // sentence, "the password sent to https://sso.partner.test" reads as a log line. The
+    // caller's `where` is the fallback for a frame with no address of its own.
+    headline: t('warnPasswordFrameHeadline', host ?? where),
   })
 }
 
@@ -507,6 +511,44 @@ function claimPasswordBanner(finding: {
   host: string | null
   headline: string
 }): void {
+  /**
+   * The receipt, and **when** it is sent is the whole design.
+   *
+   * The background holds a compromised verdict until a surface says it drew it, because
+   * the navigation a submission itself causes takes the asking document with it (B-82).
+   * A first version sent this the instant the banner was claimed — and that receipt was a
+   * lie: the answer came back to the document that was already navigating away, which
+   * drew a banner nobody could read and then reported success. Measured, not reasoned: the
+   * verdict was in the journal and the held copy was gone, so the next page showed
+   * nothing.
+   *
+   * So the receipt waits for the panel to still be there after a moment. A document being
+   * replaced does not survive `RECEIPT_DWELL_MS`; one a person is looking at does. Pressing
+   * any control sends it at once — that is a person having read it, which is what the
+   * receipt is actually about.
+   */
+  let sent = false
+  const receipt = () => {
+    if (sent) return
+    sent = true
+    void platform.runtime.send('password/shown', {}).catch(() => undefined)
+  }
+  const dwell = setTimeout(receipt, RECEIPT_DWELL_MS)
+  /**
+   * The document saying it is going away, which is the one signal that settles this
+   * without a race. A timer alone cannot tell a navigation that commits in 200 ms from one
+   * that commits in three seconds, and the second kind sent the receipt from a document
+   * about to disappear — measured, and it is why the landing page showed nothing.
+   *
+   * `pagehide` rather than `beforeunload`: the latter is ignored without user interaction
+   * in Chrome and blocks the back-forward cache.
+   */
+  addEventListener('pagehide', () => clearTimeout(dwell), { once: true })
+  const read = () => {
+    clearTimeout(dwell)
+    receipt()
+  }
+
   slot.claim({
     kind: 'password',
     severity: 'major',
@@ -529,6 +571,7 @@ function claimPasswordBanner(finding: {
     },
     handlers: {
       onPrimary: () => {
+        read()
         if (finding.host === null) {
           openFrameJournal()
           return
@@ -541,9 +584,64 @@ function claimPasswordBanner(finding: {
           .catch(() => undefined)
       },
       onRetry: () => undefined,
-      onDispute: resolveEverything,
-      onDismiss: resolveEverything,
+      onDispute: () => {
+        read()
+        resolveEverything()
+      },
+      onDismiss: () => {
+        read()
+        resolveEverything()
+      },
     },
+  })
+}
+
+/**
+ * How long a leak banner has to stand before the product calls it delivered.
+ *
+ * The correctness does not rest on this number — `pagehide` cancels the receipt whenever
+ * the document is actually leaving, whether that happens in 200 ms or three seconds. What
+ * the number decides is the remaining case: a navigation so slow that the banner has been
+ * readable on the old page for longer than this, which counts as having been shown. A
+ * second and a half is long enough to read one sentence and short enough that nobody sees
+ * the same verdict twice for the sake of it.
+ */
+const RECEIPT_DWELL_MS = 1_500
+
+/** The verdict this document is already showing, so a repeat push changes nothing. */
+let shownVerdict: string | null = null
+
+/**
+ * Draws a leak verdict and tells the background it was drawn.
+ *
+ * The confirmation is what stops the held copy from arriving twice: the background keeps
+ * the verdict until a surface says it showed it, because the alternative — a timeout —
+ * cannot tell "nobody drew it" from "somebody drew it slowly". If this document is torn
+ * down before the confirmation lands, the verdict is still waiting for the next one,
+ * which is exactly the case B-82 is about.
+ */
+function showPasswordVerdict(
+  host: string,
+  verdict: Parameters<typeof passwordLines>[0],
+  offline: boolean,
+): void {
+  /**
+   * A repeat of the verdict this document is already showing is ignored.
+   *
+   * The background pushes until a surface confirms, and its gap is shorter than the
+   * confirmation's dwell — so without this, every push would restart the dwell and the
+   * confirmation would never be sent. Not a coincidence to be tuned around: the two
+   * numbers belong to different sides and should be free to move.
+   */
+  const mark = `${host}\u0000${verdict.explain.code}`
+  if (mark === shownVerdict) return
+  shownVerdict = mark
+
+  claimPasswordBanner({
+    detail: passwordDetail(passwordLines(verdict)),
+    offline,
+    host: host === '' ? null : host,
+    headline: t('warnPasswordFrameHeadline', host === '' ? t('warnFrameUnnamed') : host),
   })
 }
 
@@ -1107,8 +1205,48 @@ if (isTopFrame) {
       return Promise.resolve({ ok: true }) as never
     }
 
+    /**
+     * A verdict pushed the moment it was reached, for the document that is here now.
+     *
+     * The pair to the question this document asks as it starts: a document that started
+     * before the check answered is told nothing by that question, and this is what
+     * reaches it (B-82). Drawing twice is prevented where the drawing happens, not here.
+     */
+    if (message.type === 'password/verdict') {
+      const pushed = message.payload as {
+        host: string
+        verdict: Parameters<typeof passwordLines>[0] & { offline: boolean }
+      }
+      showPasswordVerdict(pushed.host, pushed.verdict, pushed.verdict.offline)
+      return Promise.resolve({ ok: true }) as never
+    }
+
     return undefined
   })
+}
+
+/**
+ * Does this tab hold a leak verdict nobody has been shown?
+ *
+ * Asked once as this document starts, because the document that asked for the check may
+ * not have survived to hear the answer: a form with an `action` navigates, and the check
+ * runs after the submission by design (B-82). Asked rather than waited for — a push with
+ * a retry budget lived in the service worker, and a service worker is torn down when the
+ * browser decides, which made a security warning arrive most of the time and is the worst
+ * property such a warning can have.
+ *
+ * Top frame only, because this draws and only the top frame draws.
+ */
+if (isTopFrame) {
+  void platform.runtime
+    .send('password/pending', {})
+    .then((held) => {
+      if (held) showPasswordVerdict(held.host, held.verdict, held.verdict.offline)
+    })
+    .catch(() => {
+      // Nothing to show and nothing to say: the verdict, if there is one, is in the
+      // journal either way, and a page is never told that a question of ours failed.
+    })
 }
 
 void safely(scan)

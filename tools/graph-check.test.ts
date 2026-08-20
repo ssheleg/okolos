@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, utimesSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
@@ -16,10 +16,21 @@ import { describe, expect, it } from 'vitest'
 const root = path.resolve(import.meta.dirname, '..')
 const head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim()
 
-function run(graph: unknown): { code: number; out: string } {
+/**
+ * Writes a graph and runs the check against it.
+ *
+ * `builtAt` stamps the file's mtime, because that is what the freshness question is
+ * now asked of. The first version asked git — `git rev-parse HEAD~1` — and that made
+ * this a test about the clone: it passes locally and fails outright on
+ * `actions/checkout`, whose default depth is 1. It also let a graph built at HEAD
+ * with uncommitted edits under it read as fresh, which is the normal state of a
+ * working tree and exactly when someone reads a graph.
+ */
+function run(graph: unknown, builtAt?: number): { code: number; out: string } {
   const dir = mkdtempSync(path.join(tmpdir(), 'okolos-graph-'))
   const file = path.join(dir, 'graph.json')
   writeFileSync(file, JSON.stringify(graph))
+  if (builtAt !== undefined) utimesSync(file, builtAt / 1000, builtAt / 1000)
   try {
     const out = execFileSync('node', [path.join(root, 'tools/graph-check.mjs'), file], {
       cwd: root,
@@ -37,6 +48,7 @@ function run(graph: unknown): { code: number; out: string } {
 function healthy(overrides: Record<string, unknown> = {}) {
   return {
     built_at_commit: head,
+    // Reported, not load-bearing: the check asks the file's age, not this string.
     nodes: [
       { id: 'a', file_type: 'code', source_file: 'a.ts' },
       { id: 'b', file_type: 'code', source_file: 'b.ts' },
@@ -47,40 +59,62 @@ function healthy(overrides: Record<string, unknown> = {}) {
 }
 
 describe('the code-graph check', () => {
-  it('passes a graph built from the tree that is here', () => {
-    const { code, out } = run(healthy())
+  it('passes a graph newer than everything it covers', () => {
+    // An hour ahead rather than "now": a file written by another test in this same
+    // run must not be able to make a fresh graph look stale.
+    const { code, out } = run(healthy(), Date.now() + 60 * 60_000)
     expect(code, out).toBe(0)
-    expect(out).toContain('the tree that is here now')
+    expect(out).toContain('nothing it covers has changed since')
   })
 
   it('refuses an edge that lands on nothing', () => {
-    const { code, out } = run(healthy({ links: [{ source: 'a', target: 'ghost' }] }))
+    const { code, out } = run(
+      healthy({ links: [{ source: 'a', target: 'ghost' }] }),
+      Date.now() + 60 * 60_000,
+    )
     expect(code).toBe(1)
     expect(out).toContain('ghost')
   })
 
   it('refuses a graph built before the tree changed', () => {
-    /**
-     * The check the tool did not have. `HEAD~1` is one commit back, so at least the
-     * files of that commit differ — which is the whole condition being tested.
-     */
-    const older = execFileSync('git', ['rev-parse', 'HEAD~1'], {
-      cwd: root,
-      encoding: 'utf8',
-    }).trim()
-    const { code, out } = run(healthy({ built_at_commit: older }))
+    // A year old: older than anything in the tree, on any machine, with no history
+    // to consult. The condition under test is "the tree moved after the graph did".
+    const { code, out } = run(healthy(), Date.now() - 365 * 24 * 60 * 60_000)
     expect(code).toBe(1)
-    expect(out).toContain('file(s) have changed since')
+    expect(out).toContain('minute(s) after the graph was built')
   })
 
-  it('refuses a graph that cannot say when it was built', () => {
-    // Standing instruction 3, at the level of a whole artefact: an unknown age is
-    // not a young age, and reporting one as the other is how the twelve days passed.
+  it('does not need repository history to answer', () => {
+    /**
+     * The reason this file changed shape. The first version ran
+     * `git rev-parse HEAD~1`, which fails on a shallow clone — so a test about the
+     * tool became a test about the checkout, green locally and red on CI within the
+     * hour. Nothing in the tool may reach for git now, and this asserts that rather
+     * than trusting it.
+     */
+    const tool = readFileSync(path.join(root, 'tools/graph-check.mjs'), 'utf8')
+    // The import, not the word. Asserting the file never says "rev-parse" failed on
+    // the paragraph above explaining why it must not run one — a negative assertion
+    // about a mention, which is the same weak discriminator as a positive one.
+    expect(tool).not.toMatch(/from 'node:child_process'/)
+    expect(tool).not.toMatch(/execFileSync\(/)
+  })
+
+  it('reports which commit it came from without deciding on it', () => {
+    // Useful to know, and not the answer: a graph built at HEAD can have a working
+    // tree of uncommitted edits under it, which the commit comparison called fresh.
+    const { out } = run(healthy(), Date.now() + 60 * 60_000)
+    expect(out).toContain(head.slice(0, 7))
+  })
+
+  it('names an unrecorded commit rather than inventing one', () => {
+    // Standing instruction 3 at the level of a field: not knowing which commit is
+    // not the same as knowing, and the line must say so out loud.
     const graph = healthy()
     delete (graph as { built_at_commit?: string }).built_at_commit
-    const { code, out } = run(graph)
-    expect(code).toBe(1)
-    expect(out).toContain('unknown')
+    const { code, out } = run(graph, Date.now() + 60 * 60_000)
+    expect(code, out).toBe(0)
+    expect(out).toContain('an unrecorded commit')
   })
 
   it('names a code file the graph connects to nothing', () => {
@@ -92,6 +126,7 @@ describe('the code-graph check', () => {
           { id: 'c', file_type: 'code', source_file: 'packages/lost/src/index.ts' },
         ],
       }),
+      Date.now() + 60 * 60_000,
     )
     expect(code).toBe(1)
     expect(out).toContain('packages/lost/src/index.ts')
@@ -113,6 +148,7 @@ describe('the code-graph check', () => {
           { id: 'doc', file_type: 'document', source_file: 'docs/README.md' },
         ],
       }),
+      Date.now() + 60 * 60_000,
     )
     expect(code, out).toBe(0)
     expect(out).toContain('code orphans:   1 (0 unaccounted for)')

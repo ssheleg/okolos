@@ -17,8 +17,28 @@ export function isBuildInput(file: string): boolean
 /** The most recently touched build input, or null when the tree cannot be read. */
 export function newestSource(): SourceFile | null
 
+/** The newest file under any of `dirs`, for a question that is not about the build. */
+export function newestUnder(dirs: readonly string[], pattern?: RegExp): SourceFile | null
+
 /** When a build directory was last written, or null when there is no build there. */
 export function buildStamp(dir: string): number | null
 
 /** A sentence when a build cannot be trusted, `null` when it can. */
 export function buildTooOld(dir: string, howToBuild: string): string | null
+
+/** Three states, because "could not tell" is not "current". */
+export type Staleness =
+  | { readonly known: false; readonly reason: string; readonly built?: number }
+  | {
+      readonly known: true
+      readonly built: number
+      readonly newest: SourceFile
+      readonly stale: boolean
+    }
+
+/** Is `file` older than the newest thing under `dirs`? */
+export function artefactStaleness(
+  file: string,
+  dirs: readonly string[],
+  pattern?: RegExp,
+): Staleness

@@ -110,6 +110,23 @@ export function newestSource() {
   return files.reduce((newest, file) => (file.at > newest.at ? file : newest))
 }
 
+/**
+ * The newest file under any of `dirs`, for a caller whose question is not the build.
+ *
+ * Here rather than as a second walk in `graph-check.mjs`, for the reason this file
+ * exists at all: the same rule written twice drifts into the shape the rule exists
+ * to catch. `pattern` is the caller's, because "what counts as a source" is the one
+ * part that legitimately differs — the build reads `.ts` and `.html`, the code graph
+ * covers `.md` and `.py` as well.
+ */
+export function newestUnder(dirs, pattern = SOURCE_FILE) {
+  const files = dirs.flatMap((dir) =>
+    walk(path.isAbsolute(dir) ? dir : path.join(root, dir), pattern, NOT_A_SOURCE_DIR, NOT_A_SOURCE_FILE),
+  )
+  if (files.length === 0) return null
+  return files.reduce((newest, file) => (file.at > newest.at ? file : newest))
+}
+
 /** When `dir` was last written, or null when there is no build there. */
 export function buildStamp(dir) {
   const absolute = path.isAbsolute(dir) ? dir : path.join(root, dir)
@@ -151,4 +168,31 @@ export function buildTooOld(dir, howToBuild) {
     `\`pnpm build\` writes dist/chrome,\n  \`pnpm build:e2e\` writes dist/chrome-e2e, and the ` +
     `specs are split between them.`
   )
+}
+
+/**
+ * Is one artefact older than the newest thing it was made from?
+ *
+ * The same question `buildTooOld` asks about a build, asked about any file — the code
+ * graph, a generated page, a signed feed. It lives here rather than in each caller
+ * because the answer has three states and only two of them are obvious: newer,
+ * older, and **could not tell**. That third one is the whole reason this is a
+ * function: a caller that folds it into "newer" reports an artefact of unknown age as
+ * current, which is how a twelve-day-old graph was read as the tree that was there.
+ *
+ * `dirs` is a parameter rather than a constant so the unreadable case is reachable
+ * from a test. That is not testability for its own sake: the branch is load-bearing —
+ * without it the caller reads `.newest.file` off `null` and a freshness check throws
+ * a TypeError instead of answering — and a plant against an unreachable branch cannot
+ * land, so the guard would have been unverifiable by construction.
+ */
+export function artefactStaleness(file, dirs, pattern = SOURCE_FILE) {
+  const built = statSync(file, { throwIfNoEntry: false })?.mtimeMs
+  if (built === undefined) return { known: false, reason: `could not read the age of ${file}` }
+
+  const newest = newestUnder(dirs, pattern)
+  if (newest === null) {
+    return { known: false, reason: 'could not read the tree it is made from', built }
+  }
+  return { known: true, built, newest, stale: newest.at > built }
 }

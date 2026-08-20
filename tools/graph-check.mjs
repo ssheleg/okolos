@@ -36,8 +36,9 @@
  * adding a step that quietly skips.
  */
 import { readFileSync } from 'node:fs'
-import { execFileSync } from 'node:child_process'
 import path from 'node:path'
+
+import { artefactStaleness } from './build-age.mjs'
 
 const graphPath = process.argv[2] ?? 'graphify-out/graph.json'
 
@@ -86,37 +87,38 @@ const codeOrphans = orphans
   .map((node) => node.source_file ?? String(node.id))
 const unexpected = codeOrphans.filter((file) => !EDGELESS_BY_DESIGN.has(file))
 
-/** Which commit the graph was built from, and what has changed since. */
-function stalenessAgainstHead() {
-  const builtAt = graph.built_at_commit
-  if (typeof builtAt !== 'string' || builtAt === '') {
-    return { known: false, reason: 'the graph does not record which commit it was built from' }
-  }
-  try {
-    const head = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
-    if (head === builtAt) return { known: true, changed: [], builtAt }
-    const diff = execFileSync('git', ['diff', '--name-only', `${builtAt}..HEAD`], {
-      encoding: 'utf8',
-    })
-    const changed = diff
-      .split('\n')
-      .filter((line) => /\.(ts|tsx|mjs|js|py|html|json|md)$/.test(line))
-    return { known: true, changed, builtAt }
-  } catch (cause) {
-    // A shallow clone, or a commit that has been rebased away. Not knowing is not
-    // the same as being fresh, and it must not be reported as fresh.
-    return { known: false, reason: `could not compare against HEAD (${String(cause)})` }
-  }
-}
+/**
+ * What the graph covers, and what counts as a change to it.
+ *
+ * Wider than a build input: the extraction reads documents and shell as well as
+ * TypeScript, and a rationale node comes from a `.md`.
+ */
+const COVERED = ['apps', 'packages', 'tools', 'docs', 'e2e', '.githooks']
+const COVERED_FILE = /\.(ts|tsx|mjs|js|py|html|json|md|css|yml)$/
 
-const staleness = stalenessAgainstHead()
+/**
+ * Is the graph older than the newest thing it covers?
+ *
+ * **Asked by file time, not by commit, and the first version asked by commit.** That
+ * had two faults and CI found the loud one. `git rev-parse HEAD~1` fails outright on
+ * `actions/checkout`'s shallow clone — a test about the tool that turned out to be a
+ * test about the clone. The quiet fault was worse: a graph built at HEAD read as
+ * fresh with any number of *uncommitted* edits under it, which is the normal state of
+ * a working tree mid-task and exactly when someone reads the graph.
+ *
+ * `built_at_commit` is still reported, because knowing which commit it came from is
+ * useful. It is no longer what decides.
+ */
+const staleness = artefactStaleness(path.resolve(graphPath), COVERED, COVERED_FILE)
+const builtAtCommit = typeof graph.built_at_commit === 'string' ? graph.built_at_commit : null
 
 console.log(`  code orphans:   ${codeOrphans.length} (${unexpected.length} unaccounted for)`)
+const from = builtAtCommit === null ? 'an unrecorded commit' : builtAtCommit.slice(0, 7)
 if (staleness.known) {
   console.log(
-    staleness.changed.length === 0
-      ? `  built from:     ${staleness.builtAt.slice(0, 7)} — the tree that is here now`
-      : `  built from:     ${staleness.builtAt.slice(0, 7)}, ${staleness.changed.length} file(s) changed since`,
+    staleness.stale
+      ? `  built from:     ${from}, and ${staleness.newest.file} is newer than it`
+      : `  built from:     ${from} — nothing it covers has changed since`,
   )
 } else {
   console.log(`  built from:     unknown — ${staleness.reason}`)
@@ -145,10 +147,10 @@ if (!staleness.known) {
   console.error(`\n  Freshness could not be established: ${staleness.reason}.` +
     '\n  An unknown age is not a young age — rebuild with `/graphify . --update`.\n')
   refused = true
-} else if (staleness.changed.length > 0) {
-  for (const file of staleness.changed.slice(0, 10)) console.error(`    changed: ${file}`)
+} else if (staleness.stale) {
+  const minutes = Math.max(1, Math.round((staleness.newest.at - staleness.built) / 60_000))
   console.error(
-    `\n  ${staleness.changed.length} file(s) have changed since ${staleness.builtAt.slice(0, 7)}.` +
+    `\n  ${staleness.newest.file} changed ${minutes} minute(s) after the graph was built.` +
       '\n  A stale graph is a false premise carrying the authority of a machine: a wrong' +
       '\n  document gets argued with, a wrong graph gets believed. Rebuild it with' +
       '\n  `/graphify . --update` before reading anything from it.\n',

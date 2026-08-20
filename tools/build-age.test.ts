@@ -4,7 +4,13 @@ import path from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { buildStamp, buildTooOld, isBuildInput, newestSource } from './build-age.mjs'
+import {
+  artefactStaleness,
+  buildStamp,
+  buildTooOld,
+  isBuildInput,
+  newestSource,
+} from './build-age.mjs'
 
 /**
  * The check that makes "I rebuilt" and "this spec's build is current" the same fact.
@@ -16,6 +22,14 @@ import { buildStamp, buildTooOld, isBuildInput, newestSource } from './build-age
  */
 
 const root = path.resolve(import.meta.dirname, '..')
+
+/** One file stamped at `at`, for the artefact-level question. */
+function builtFile(at: number): string {
+  const file = path.join(mkdtempSync(path.join(tmpdir(), 'okolos-artefact-')), 'graph.json')
+  writeFileSync(file, '{}')
+  utimesSync(file, at / 1000, at / 1000)
+  return file
+}
 
 /** A directory with one file, stamped at `at`. */
 function builtAt(at: number): string {
@@ -134,5 +148,56 @@ describe('reading the age of a build', () => {
      */
     const old = builtAt(Date.now() - 24 * 60 * 60_000)
     expect(buildTooOld(old, 'pnpm build:e2e')).toContain('older than the tree')
+  })
+})
+
+describe('the age of an artefact against the tree it came from', () => {
+  it('answers "could not tell" rather than "current" when the tree is unreadable', () => {
+    /**
+     * The third state, and the reason `dirs` is a parameter at all.
+     *
+     * A caller that folds "could not tell" into "current" reports an artefact of
+     * unknown age as fresh — which is how a twelve-day-old code graph was read as the
+     * tree that was there. The branch is also load-bearing against a crash: without
+     * it the caller reads `.newest.file` off `null`. A plant against it could not land
+     * while the roots were a constant, because no input reached it — an unverifiable
+     * guard, which this project treats as the same problem as a missing one.
+     */
+    const answer = artefactStaleness(path.join(root, 'package.json'), [])
+    expect(answer.known).toBe(false)
+    expect(answer).toHaveProperty('reason')
+    expect('stale' in answer, 'an unknown age must not carry a verdict').toBe(false)
+  })
+
+  it('answers "could not tell" for an artefact that is not there', () => {
+    const answer = artefactStaleness(path.join(tmpdir(), 'okolos-no-such-artefact'), ['packages'])
+    expect(answer.known).toBe(false)
+  })
+
+  it('calls an artefact newer than its tree fresh, and an older one stale', () => {
+    /**
+     * Both sides stamped, neither read from the repository.
+     *
+     * The first version pointed `dirs` at `packages` and asserted an
+     * hour-old artefact was stale — which is true only if something under
+     * `packages` was touched within the hour. It passed in isolation and failed in
+     * the full suite forty minutes later. That is the third time today a test turned
+     * out to be about the state of the tree rather than about the rule, so this one
+     * owns both of its timestamps.
+     */
+    const tree = mkdtempSync(path.join(tmpdir(), 'okolos-tree-'))
+    const source = path.join(tree, 'thing.ts')
+    writeFileSync(source, 'export const x = 1')
+    const sourceAt = Date.now() - 2 * 60 * 60_000
+    utimesSync(source, sourceAt / 1000, sourceAt / 1000)
+
+    expect(artefactStaleness(builtFile(sourceAt + 60_000), [tree])).toMatchObject({
+      known: true,
+      stale: false,
+    })
+    expect(artefactStaleness(builtFile(sourceAt - 60_000), [tree])).toMatchObject({
+      known: true,
+      stale: true,
+    })
   })
 })

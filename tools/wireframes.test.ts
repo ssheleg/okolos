@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-import { SCREENS, rolesOf, wireframe } from './wireframes.mjs'
+import { SCREENS, attributeRoles, composedRoles, rolesOf, wireframe } from './wireframes.mjs'
 
 /**
  * The wireframes are generated, so this test is what makes them true.
@@ -39,6 +39,85 @@ describe('the generator reads something real', () => {
   })
 })
 
+describe('the generator and the cross-check mean the same thing by "elements"', () => {
+  it('lists every composed role the check knows about', () => {
+    /**
+     * The defect this closes (B-71). `popup.ts` renders the queue from
+     * `queue/queue.ts`, so `[data-role=item]` is addressable on SCR-02 — the cross-check
+     * walked one hop of imports and knew that, and the generated wireframe listed one
+     * file's roles under a heading that said "elements of the screen". Two answers to the
+     * same question, and the one a person reads was the narrower.
+     *
+     * Both sides call `composedRoles` now, and this holds the output to it: a generator
+     * that goes back to own-roles-only fails here rather than quietly shipping a document
+     * that omits what is on the screen.
+     */
+    let composedTotal = 0
+    for (const [id, screen] of Object.entries(SCREENS)) {
+      const text = wireframe(id)
+      const own = new Set(rolesOf(screen.source))
+      for (const { role } of composedRoles(screen.source)) {
+        if (own.has(role)) continue
+        composedTotal += 1
+        expect(text, `${id} omits the composed role ${role}`).toContain(`\`${role}\``)
+      }
+    }
+    // At least one screen must actually be composed, or this passes on an empty walk —
+    // which is what it would have done had the walk been broken instead of the generator.
+    expect(composedTotal, 'no screen composed anything — the import walk is broken').toBeGreaterThan(
+      0,
+    )
+  })
+
+  it('keeps a role the screen also emits in its own list, not attributed elsewhere', () => {
+    /**
+     * Tested directly, because the tree has no instance of it: no screen here emits a
+     * role one of its components also emits. That is what makes this a rule worth pinning
+     * rather than one worth trusting — the day two files both emit `title`, the wireframe
+     * would otherwise tell a reader to change the component when the screen is what
+     * writes it. A guard whose case the tree does not contain cannot be checked through
+     * the tree.
+     */
+    const composed = [
+      { role: 'title', from: 'a/b.ts' },
+      { role: 'item', from: 'a/b.ts' },
+      { role: 'item', from: 'c/d.ts' },
+    ]
+    expect(attributeRoles(['title', 'footer'], composed)).toEqual([
+      { role: 'item', from: 'a/b.ts' },
+    ])
+  })
+
+  it('names the file to change beside a composed role, and not for its own', () => {
+    // A reader who wants to change `item` must be sent to `queue/queue.ts`, not to
+    // `popup.ts`. A role the screen emits itself carries no "from" for the same reason:
+    // sending them to a component that also happens to emit it would be a wrong address.
+    const text = wireframe('SCR-02')
+    expect(text).toContain('— from `packages/ui/src/queue/queue.ts`')
+    const popup = SCREENS['SCR-02']
+    if (popup === undefined) throw new Error('SCR-02 is not in SCREENS')
+    for (const role of rolesOf(popup.source)) {
+      expect(text, `${role} is the screen's own and was attributed elsewhere`).not.toContain(
+        `\`${role}\` — from`,
+      )
+    }
+  })
+
+  it('says which kind of element each list holds', () => {
+    // The heading was the actual defect: "Elements, in the order the renderer emits them"
+    // over a list that was one file's roles. A reader cannot tell a screen with nothing
+    // composed from a generator that cannot see composition unless the document says
+    // which it is.
+    const composed = wireframe('SCR-02')
+    expect(composed).toContain('Elements this screen emits itself')
+    expect(composed).toContain('through the components it composes')
+
+    const plain = wireframe('SCR-16')
+    expect(plain).toContain('Elements this screen emits itself')
+    expect(plain).not.toContain('through the components it composes')
+  })
+})
+
 describe('the extractor knows about every shape the sources use', () => {
   /**
    * `rolesOf` reads source text and reports the shapes it was taught. On
@@ -54,23 +133,16 @@ describe('the extractor knows about every shape the sources use', () => {
    * and where they disagree one of them is wrong — which is the only kind of
    * check that catches an extractor being taught too little.
    */
-  /** Roles emitted by the local modules this source imports, one hop deep. */
-  const composedRoles = (source: string): string[] => {
-    const text = readFileSync(path.join(root, source), 'utf8')
-    const dir = path.dirname(source)
-    const roles: string[] = []
-    for (const match of text.matchAll(/from '(\.[^']+)\.js'/g)) {
-      const target = path.join(dir, `${match[1] as string}.ts`)
-      try {
-        readFileSync(path.join(root, target), 'utf8')
-      } catch {
-        continue
-      }
-      roles.push(...rolesOf(target))
-    }
-    return roles
-  }
-
+  /**
+   * One hop of composition, and it is the generator's function now.
+   *
+   * This test walked the imports itself and the generator did not, so the gate knew
+   * about composition while the document it guards listed one file's roles under a
+   * heading that said "elements of the screen" (B-71). Two answers to "what is on this
+   * screen", and the one a person reads was the narrower. Importing it here is the whole
+   * fix: the wireframe lists composed roles in their own section, and this check and
+   * that section can no longer mean different things.
+   */
   const testFileFor = (source: string): string | null => {
     const candidate = source.replace(/\.ts$/, '.test.ts')
     try {
@@ -111,7 +183,10 @@ describe('the extractor knows about every shape the sources use', () => {
       // components, and their roles are addressable on it. `packages/ui/src/popup`
       // renders the queue, so `[data-role=item]` is reachable there and no amount
       // of reading `popup.ts` will say so.
-      const known = new Set([...rolesOf(screen.source), ...composedRoles(screen.source)])
+      const known = new Set([
+        ...rolesOf(screen.source),
+        ...composedRoles(screen.source).map((entry: { role: string }) => entry.role),
+      ])
       for (const role of addressed) {
         if (!known.has(role)) missing.push(`${id}: ${role}`)
       }

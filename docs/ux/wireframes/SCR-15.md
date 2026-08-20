@@ -5,8 +5,8 @@
 
 **Purpose:** answer "what needs me, and where do I go" before any area is opened — the question the eight-panel stack made the user assemble by scrolling
 
-**Elements, in the order the renderer emits them.** Each is addressable as
-`[data-role=<name>]`, which is also how the tests reach them.
+**Elements this screen emits itself, in the order the renderer names them.** Each is
+addressable as `[data-role=<name>]`, which is also how the tests reach them.
 
 - `overview`
 - `overview-heading`

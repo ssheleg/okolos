@@ -5,8 +5,8 @@
 
 **Purpose:** what changed since last time — not an ever-growing red list
 
-**Elements, in the order the renderer emits them.** Each is addressable as
-`[data-role=<name>]`, which is also how the tests reach them.
+**Elements this screen emits itself, in the order the renderer names them.** Each is
+addressable as `[data-role=<name>]`, which is also how the tests reach them.
 
 - `journal`
 - `group`

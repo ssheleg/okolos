@@ -83,9 +83,73 @@ export function purposeOf(id) {
   return /- \*\*Purpose:\*\*\s*(.+)/.exec(block)?.[1]?.trim() ?? ''
 }
 
+/**
+ * Roles emitted by the local modules a screen imports, one hop deep.
+ *
+ * A screen in this project is composed: `popup.ts` renders the queue from
+ * `queue/queue.ts`, so `[data-role=item]` is addressable on SCR-02 and no amount of
+ * reading `popup.ts` will say so. The cross-check in `wireframes.test.ts` knew that and
+ * walked one hop; the generator did not — so "Elements" meant "roles this one file names"
+ * while the heading said "elements of the screen" (B-71). The gate knew about composition
+ * and the document it guards did not.
+ *
+ * One hop, deliberately. Two would pull in every leaf helper of every component and turn
+ * an inventory a person reads at a glance into a transitive closure. Where a screen
+ * composes a component that itself composes another, the second level shows up in *that*
+ * component's own wireframe, which is where a reader looking for it would go.
+ *
+ * @param {string} source
+ * @returns {{ role: string, from: string }[]}
+ */
+export function composedRoles(source) {
+  const text = readFileSync(path.join(root, source), 'utf8')
+  const dir = path.dirname(source)
+  const found = []
+  for (const match of text.matchAll(/from '(\.[^']+)\.js'/g)) {
+    const target = path.join(dir, `${match[1]}.ts`)
+    try {
+      readFileSync(path.join(root, target), 'utf8')
+    } catch {
+      continue
+    }
+    for (const role of rolesOf(target)) found.push({ role, from: target })
+  }
+  return found
+}
+
+/**
+ * Which composed roles get a "from" line, and which are the screen's own.
+ *
+ * A role emitted by the screen *and* by a component it composes belongs in the own list:
+ * saying "from `queue/queue.ts`" about something `popup.ts` also writes sends a reader to
+ * the wrong file to change it. No screen in this tree currently emits a role one of its
+ * components also emits — which is exactly why this is a function with its own test
+ * rather than a condition inside the template. A guard whose case the tree does not
+ * contain cannot be checked through the tree, and an unchecked guard is a comment.
+ *
+ * Deduplicated too: two components emitting the same role produce one line, attributed to
+ * the first, because the reader needs somewhere to start and not a list of everywhere.
+ *
+ * @param {readonly string[]} own
+ * @param {readonly {role: string, from: string}[]} composed
+ * @returns {{role: string, from: string}[]}
+ */
+export function attributeRoles(own, composed) {
+  const mine = new Set(own)
+  const seen = new Set()
+  const out = []
+  for (const { role, from } of composed) {
+    if (mine.has(role) || seen.has(role)) continue
+    seen.add(role)
+    out.push({ role, from })
+  }
+  return out
+}
+
 export function wireframe(id) {
   const { title, source } = SCREENS[id]
   const roles = rolesOf(source)
+  const composed = attributeRoles(roles, composedRoles(source))
   const states = statesOf(id)
   const purpose = purposeOf(id)
 
@@ -96,11 +160,20 @@ export function wireframe(id) {
 
 **Purpose:** ${purpose}
 
-**Elements, in the order the renderer emits them.** Each is addressable as
-\`[data-role=<name>]\`, which is also how the tests reach them.
+**Elements this screen emits itself, in the order the renderer names them.** Each is
+addressable as \`[data-role=<name>]\`, which is also how the tests reach them.
 
 ${roles.map((role) => `- \`${role}\``).join('\n')}
+${
+  composed.length === 0
+    ? ''
+    : `
+**Elements it shows through the components it composes.** Addressable on this screen in
+exactly the same way; listed separately because the file to change is not this screen's.
 
+${composed.map(({ role, from }) => `- \`${role}\` — from \`${from}\``).join('\n')}
+`
+}
 **States**
 
 ${

@@ -5,8 +5,8 @@
 
 **Purpose:** the 3-second answer — is this page fine, and is there anything new
 
-**Elements, in the order the renderer emits them.** Each is addressable as
-`[data-role=<name>]`, which is also how the tests reach them.
+**Elements this screen emits itself, in the order the renderer names them.** Each is
+addressable as `[data-role=<name>]`, which is also how the tests reach them.
 
 - `popup`
 - `changed`
@@ -19,6 +19,20 @@
 - `self-audit`
 - `journal`
 - `settings`
+
+**Elements it shows through the components it composes.** Addressable on this screen in
+exactly the same way; listed separately because the file to change is not this screen's.
+
+- `queue` — from `packages/ui/src/queue/queue.ts`
+- `item` — from `packages/ui/src/queue/queue.ts`
+- `item-actions` — from `packages/ui/src/queue/queue.ts`
+- `queue-empty` — from `packages/ui/src/queue/queue.ts`
+- `ranking-note` — from `packages/ui/src/queue/queue.ts`
+- `show-all` — from `packages/ui/src/queue/queue.ts`
+- `act` — from `packages/ui/src/queue/queue.ts`
+- `resolve` — from `packages/ui/src/queue/queue.ts`
+- `defer` — from `packages/ui/src/queue/queue.ts`
+- `summary` — from `packages/ui/src/queue/queue.ts`
 
 **States**
 

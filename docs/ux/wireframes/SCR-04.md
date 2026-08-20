@@ -5,8 +5,8 @@
 
 **Purpose:** show the evidence so the user can judge the verdict instead of trusting it
 
-**Elements, in the order the renderer emits them.** Each is addressable as
-`[data-role=<name>]`, which is also how the tests reach them.
+**Elements this screen emits itself, in the order the renderer names them.** Each is
+addressable as `[data-role=<name>]`, which is also how the tests reach them.
 
 - `panel`
 - `restore-note`

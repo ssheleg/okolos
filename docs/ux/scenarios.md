@@ -42,6 +42,7 @@ are specified once in [screens.md](screens.md).
 | SCN-030 | An unread count never renders as "nothing here" | daily-use | P-01 | ST-017, FLW-17 | implemented | 2026-08-13 PASS |
 | SCN-031 | A finding inside an embedded frame reaches the page that embeds it | ai-shield | P-01 | ST-001, FLW-02 | implemented | 2026-08-20 e2e |
 | SCN-032 | The local store was written by a newer build | recovery | P-01 | ST-019, FLW-14 | implemented | 2026-08-20 unit |
+| SCN-033 | Deciding whether to install, from pages that run nothing | pre-install | P-01 | ST-021, FLW-18 | implemented | 2026-08-20 unit+gate |
 
 ## Personas
 
@@ -694,3 +695,24 @@ See [foundation.md](foundation.md) → Personas.
 - **Behaviour notes:** the frame keeps asking until someone hears it — twelve attempts, 750 ms apart, then a journalled give-up naming the count and the duration. **Not a workaround for slowness:** measured at 135 ms when it lands, and lost entirely when it does not, because an embedded document can reach `document_idle` and finish its whole cycle before the embedding page's content script has started, so a report sent once arrives at a frame zero with no listener. The end-to-end spec passed in isolation and failed in the full suite on exactly that; setting the budget back to one attempt reproduces it. The report goes frame → background → top frame rather than frame → top frame directly, and that is a security choice rather than a convenience. A subframe can reach the top with `window.top.postMessage`, and that message travels through the page's own window — where the page can forge it, and the top frame has no way to tell an extension's report from a claim made by the thing being reported. The background sits outside the page, so this hop is not forgeable. **Until 2026-08-20 the reporting half did not exist at all:** `content/index.ts` returned on `if (!isTopFrame)` after neutralising and arming, while its own comment three screens up promised "subframes still collect and report; the top frame is the one that speaks"
 - **Status:** implemented
 - **Coverage:** apps/extension/src/background/index.ts:handleCandidates (the relay), packages/platform/src/adapter.ts:sendToFrame, apps/extension/src/content/index.ts:showFrameFinding, apps/extension/src/content/surface-slot.ts:createSurfaceSlot, packages/contracts/src/verdict.ts:worstOf, e2e/scn-031.spec.ts, e2e/two-findings.spec.ts (one panel on the fixture that is both a lookalike and poisoned)
+
+### SCN-033: Deciding whether to install, from pages that run nothing
+- **Persona:** P-01
+- **Feature:** pre-install
+- **Traces:** ST-021, FLW-18 (JTBD-05, JRN-01/#2, JRN-01/#3)
+- **Entry point:** a search result, a link from a blocked page's `/status`, a repository README
+- **Preconditions:** nothing is installed and nobody has an account
+- **Steps:**
+  1. Reader opens `/` -> system serves the whole argument as markup: what it is, what it does, and **what it does not do** — half the page
+  2. Reader looks for what leaves the device -> system links to `/privacy`, which says the same thing in more detail and does not contradict it
+  3. Reader decides -> the install link goes to the store listing, which is Chrome's page with Chrome's permission prompt
+- **Expected result:** somebody who had never heard of this can say what it refuses to do before granting it broad permissions — which is the only basis on which a security tool asking for `<all_urls>` can be trusted
+- **Alt paths:** the reader decides **not** to install -> that is an exit of this flow and not a failure; a page that serves only the other exit is a sales page rather than an argument
+- **UI elements:** SCR-17 (landing), SCR-18 (privacy); the store listing is drawn as a boundary because it is not ours
+- **States covered:** success
+- **Errors & recovery:** the pages carry no state that can fail — there is no script on either, by gate, so there is no loading state to get wrong and no error state to render. `/status` failing is SCN-024's path, not this one
+- **Behaviour notes:** **no executable scripts at all**, held by eleven rules in `apps/proxy/src/landing.test.ts`, four of them verified by planted defects; the privacy page is generated from `docs/privacy.md` by `tools/privacy-page.mjs` and `tools/docs.test.ts` refuses when the two disagree, so the claims a reader checks are the claims the repository states
+- **Why this was written on 2026-08-20 and not when the pages shipped.** The journey carried the step from the day it was drawn, the pages were built and gated in B-15, and the screen entries recorded on 2026-08-12 that no flow covered them — honestly, rather than inventing one. What was missing was the story in between. Written now as ST-021 → FLW-18 → this scenario (B-22)
+- **Status:** implemented
+- **Coverage:** apps/proxy/src/landing.test.ts, apps/proxy/src/router.test.ts, tools/docs.test.ts
+

@@ -292,6 +292,16 @@ its owner** ([evidence/06](../evidence/06-competitors.md) §6.3).
 - **Priority:** should
 - **Status:** proposed
 
+### ST-021: Judge the product before installing it
+- **Story:** As P-01, I want to see what this thing refuses to do before I install it, so that I can trust a security tool that asks for broad permissions.
+- **Traces:** JTBD-05, JRN-01/#2, JRN-01/#3
+- **Acceptance criteria:**
+  - Given no prior knowledge and no installation, when I open the product's own page, then I can read what it does, what it does **not** do, and what leaves the device — without running a script and without an account.
+  - Given that page, when I follow the privacy link, then I read the same claims in more detail, and the two do not disagree.
+- **Priority:** must
+- **Status:** implemented
+- **Note:** written 2026-08-20 (B-22). The journey had carried this step since it was drawn — JRN-01 stages 2 and 3 are Discover and Install — and the pages were built and gated in B-15, but no story tied the two together, so SCR-17 and SCR-18 belonged to no flow. The gap was recorded in the screen entries on 2026-08-12 and named honestly rather than filled with an invented flow; this is the story that was missing, and FLW-18 is the flow that traces to it.
+
 ### ST-020: Quiet mode for a protected relative
 - **Story:** As P-01 acting as carer, I want a mode that stays silent except for serious events, so that a relative isn't trained to dismiss warnings.
 - **Traces:** JTBD-07

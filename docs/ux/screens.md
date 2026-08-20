@@ -37,8 +37,8 @@ never updated, which is the same drift this file exists to catch.)
 | SCR-14 | Public domain status | FLW-04, FLW-15 | - | built | apps/proxy/src/router.test.ts |
 | SCR-15 | Dashboard overview | FLW-17 | - | built | packages/ui/src/dashboard/overview.ts:renderOverview, e2e/scn-027.spec.ts |
 | SCR-16 | Trusted domains | FLW-05, FLW-14 | - | built | packages/ui/src/trusted/trusted.ts:renderTrusted, e2e/scn-024.spec.ts |
-| SCR-17 | Product landing page | none yet (gap) | - | built | apps/proxy/src/landing.test.ts |
-| SCR-18 | Privacy page | none yet (gap) | - | built | tools/privacy-page.mjs, tools/docs.test.ts |
+| SCR-17 | Product landing page | FLW-18 | - | built | apps/proxy/src/landing.test.ts |
+| SCR-18 | Privacy page | FLW-18 | - | built | tools/privacy-page.mjs, tools/docs.test.ts |
 | SCR-19 | Lookalike comparison | FLW-05 | - | built | packages/ui/src/comparison/comparison.ts:mountComparison, e2e/scn-006.spec.ts, e2e/a11y-overlays.spec.ts |
 | SCR-20 | Local store unavailable | FLW-14 | - | built | packages/ui/src/storage/storage-problem.ts:renderStorageProblem |
 
@@ -377,7 +377,7 @@ includes a redirect from `*.workers.dev`, not just a CNAME.
 - **Status:** built
 
 ### SCR-17: Product landing page
-- **Used by:** **no flow yet — coverage gap, recorded 2026-08-12.** The page serves JTBD-05 ("be protected without being watched", whose Forces in [foundation.md](foundation.md) name the pre-install decision directly), but no story and no flow cover the journey before installation. The chain starts at first run. Inventing a flow here to fill the column would be a flow traced to no story, so the gap is named instead and belongs to a `/ux-audit coverage` pass
+- **Used by:** FLW-18 (deciding whether to install). **The gap recorded here on 2026-08-12 is closed 2026-08-20 (B-22)** — and the way it was recorded is why closing it was easy: the entry said a flow traced to no story would be a diagram rather than a design, and named the missing piece instead of inventing one. ST-021 is that story, FLW-18 the flow, SCN-033 the scenario
 - **Purpose:** let someone who has never heard of this decide whether to install it — including by reading what it refuses to do
 - **Elements:** what the product is in one sentence; what it does; **what it does not do** (half the page); how to install; links to `/privacy` and `/status`. **Primary action: install**
 - **States:**
@@ -397,7 +397,7 @@ includes a redirect from `*.workers.dev`, not just a CNAME.
 - **Status:** built
 
 ### SCR-18: Privacy page
-- **Used by:** **no flow yet — same gap as SCR-17.** It is linked from SCR-17, from the store listing and from the extension, and it is the document SCR-10 (self-audit) must agree with — but the pre-install journey that reaches it is not in the chain
+- **Used by:** FLW-18 (deciding whether to install), as the second step. It is also linked from the store listing and from the extension, and it is the document SCR-10 (self-audit) must agree with. **The gap recorded here on 2026-08-12 closed 2026-08-20 (B-22):** the pre-install journey is in the chain now — JRN-01 stages 2 and 3 always carried it, and what was missing was ST-021 between the journey and these pages
 - **Purpose:** state what leaves the device, where to, why, and what is never stored — the document the store requires and the one the self-audit screen must agree with
 - **Elements:** the five outbound destinations with what each carries; what is stored on the device and for how long; the reuse-index paragraph; what does not exist (no analytics, no account, no ads); why the extension asks for every site
 - **States:**

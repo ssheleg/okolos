@@ -112,6 +112,13 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (пятьдесят пятый)** — B-20, B-21, B-22; стадии 0–10. Две строки оказались
+  устаревшими и закрыты с доказательством, а не на слово: работа по B-20 сделана 13 августа
+  (пять зелёных тестов в `scn-030.spec.ts`), B-21 поглощена B-72. B-22 закрыта первой веткой:
+  путь «решаю, ставить ли» существовал в журнале всегда, и объявить его вне цепочки значило
+  бы оставить входную дверь продукта вне карты. Написаны ST-021, FLW-18, SCN-033 — **линтер
+  `docs/ux` впервые чист**, ноль ошибок и ноль предупреждений. 2307 юнит-тестов в 142 файлах.
+  Постоянных инструкций десять, снятий нет. Вердикт REFINE.
 - **2026-08-20 (пятьдесят четвёртый)** — B-24; стадии 0–10. Русское имя списка у проекта
   было, английское — вторым литералом, дублировавшим запись английского каталога, и на
   `lang="ru"` страницу уезжало именно оно. Починка оказалась удалением: лишняя копия ушла,
@@ -2211,6 +2218,34 @@ description.
   keeping. But a row closed with its verification outstanding is a row closed early, and
   the honest form is the one now in the board: closed on the second attempt, with the
   first attempt's failure written into it rather than tidied away.
+
+### 2026-08-20 — a gap recorded honestly is a gap that closes in an afternoon
+
+**Symptom.** Two screens — the landing page and the privacy page — belonged to no flow, and
+`docs/ux/lint.py` had said so twice a day for a week. B-22 offered two ways out: build the
+missing chain, or record that the pre-install path is outside it.
+
+**What made the choice easy.** The entry written on 2026-08-12 did not invent a flow to
+fill the column. It said, in the screen record itself, that a flow traced to no story would
+be a diagram rather than a design — and named what was missing. A week later the work was
+to write exactly the piece it had pointed at: the journey already carried the step (JRN-01
+stages 2 and 3 are Discover and Install), the pages were built and gated in B-15 with
+eleven rules and four planted defects, and the only absence was a story between them.
+
+**The choice itself.** Declaring the path out of the chain would have left the product's own
+front door outside the map everything else is checked against — to silence two warnings. A
+person deciding whether to install a security tool that asks for `<all_urls>` is the reader
+the landing page spends half its length on.
+
+**What the chain did once the story existed.** Adding ST-021 made the linter immediately
+demand a scenario; adding SCN-033 made the facts gate catch that the scenario count was now
+33. Neither was a nuisance — both are the chain noticing a change and asking for the rest of
+it, which is what it is for.
+
+**The lesson worth keeping.** A gap that is named — with what is missing and why it was not
+filled — costs one session to close later. A gap that is filled with something plausible
+costs an argument with the person who finds it, and usually a rewrite. The 12 August entry
+is the model: it refused to invent, and it wrote down what an honest closure would need.
 
 ### 2026-08-20 — two copies of one name, and the unused copy was the one that shipped
 

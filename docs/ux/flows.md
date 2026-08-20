@@ -555,3 +555,45 @@ flowchart TD
   design; they are this flow, finally built. The redesign, its findings and the
   losing alternative are in
   [plans/2026-08-12-options-dashboard.md](plans/2026-08-12-options-dashboard.md).
+
+### FLW-18: Deciding whether to install
+- **Traces:** ST-021 (JTBD-05, JRN-01/#2, JRN-01/#3)
+- **Goal:** someone who has never heard of this can decide whether to install it, from pages that run no script and ask for nothing
+- **Entry points:** a search result, a link from a blocked page's `/status`, a repository README, word of mouth
+- **Success exit:** the reader installs, or decides not to — both are exits, and a page that only serves the first is a sales page rather than an argument
+- **Task analysis:**
+  1. Find out what this thing is, in one sentence
+  2. Find out what it refuses to do, because a security tool that lists only its own powers cannot be checked
+  3. Find out what leaves the device before granting it broad permissions
+- **Flow:**
+
+```mermaid
+flowchart TD
+  A[Screen: Product landing page] -->|what it does not do| A
+  A -->|"what leaves the device"| B[Screen: Privacy page]
+  B -->|back| A
+  A -->|install| C[Store listing — not ours]
+  C -->|installed| D[FLW-01: First run]
+  S[Screen: Public domain status] -->|what is this product| A
+```
+
+- **Screens traversed:**
+  | Screen | States used here |
+  |--------|------------------|
+  | SCR-17 Product landing page | success |
+  | SCR-18 Privacy page | success |
+  | SCR-14 Public domain status | listed, not listed |
+
+- **Why this flow was written late, 2026-08-20.** The journey carried this step
+  from the day it was drawn — JRN-01 stages 2 and 3 are Discover and Install —
+  and the pages were built and gated in B-15, with eleven rules and four planted
+  defects. What was missing was the story between them, so SCR-17 and SCR-18
+  belonged to no flow and the linter said so twice for a week (B-22). The gap was
+  recorded in the screen entries on 2026-08-12 rather than filled with an
+  invented flow, which was the right call at the time: a flow traced to no story
+  is a diagram, not a design. ST-021 is that story.
+- **The store listing is not our screen and is drawn as a boundary.** It is
+  Chrome's page with Chrome's words, and the permission prompt on it is the
+  moment this flow exists to prepare a reader for — which is why the landing page
+  spends half itself on what the product does not do.
+

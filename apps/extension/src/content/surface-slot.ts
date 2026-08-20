@@ -41,6 +41,15 @@ export interface SlotEnvironment {
   /** How the "also here" line is worded — the slot decides when, not what. */
   readonly alsoLine: (kinds: readonly string[]) => string
   readonly wait: (ms: number) => Promise<void>
+  /**
+   * Called the first time a panel goes up, so the wait a person actually experiences
+   * can be measured in one place.
+   *
+   * Here rather than at each mount site for the reason the slot exists at all: six
+   * sources mounted their own banner, and a measurement taken at one of them is a
+   * measurement of that one.
+   */
+  readonly mounted?: () => void
 }
 
 export interface SlotClaim {
@@ -97,6 +106,7 @@ export function createSurfaceSlot(env: SlotEnvironment) {
     claim(request: SlotClaim): BannerHandle {
       if (held === null) {
         const handle = mountBanner(env.doc, request.props, request.handlers)
+        env.mounted?.()
         held = { kind: request.kind, severity: request.severity, handle, watch: null }
         held.watch = watchOver(handle)
         paintAlso()

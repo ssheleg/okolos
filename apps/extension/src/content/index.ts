@@ -157,6 +157,16 @@ const slot = createSurfaceSlot({
     })
   },
   alsoLine: (kinds) => t('warnAlsoHere', String(kinds.length)),
+  mounted: () => {
+    // From the navigation's time origin, which is what a person waited from. Wrapped
+    // because a page can have taken the API away, and a missing measurement must not
+    // be the reason a warning does not appear.
+    try {
+      performance.measure(MEASURE_TO_BANNER)
+    } catch {
+      // Nothing to report is better than a throw on the path to the surface.
+    }
+  },
   wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   escalate: async (removals) => {
     // The watch escalates once by construction, so this is belt and braces rather
@@ -179,6 +189,23 @@ const slot = createSurfaceSlot({
 const MARK_START = 'okolos:collect:start'
 const MARK_END = 'okolos:collect:end'
 export const MEASURE_COLLECT = 'okolos:collect'
+
+/**
+ * From the navigation to the warning being on screen — the number SCN-003 promises in
+ * words and nothing measured.
+ *
+ * "Before the page settles" is a promise, not a figure, and the only thing anywhere
+ * that said anything about this delay was a test's ten-second wait, written into
+ * thirteen files and measured nowhere (B-65). Twice a CI run failed a spec that was
+ * not about mounting because the banner had not arrived: `scn-010` on a cold runner and
+ * `hostile-page` on a colour token.
+ *
+ * Measured from the navigation's own start rather than from when the content script
+ * happened to run: what a person waits is from pressing enter, and the script's start
+ * is part of that wait. `performance.measure` with no start mark uses the time origin,
+ * which for a document *is* the navigation start.
+ */
+export const MEASURE_TO_BANNER = 'okolos:banner'
 
 /**
  * The bridge to the MAIN-world watcher.

@@ -119,7 +119,10 @@ happens before adding.
   бюджета при нуле кандидатов уходило в тишину, теперь пишется строка журнала. Моя же
   e2e-фикстура не воспроизводила случай, ради которого писалась, и это поймал прогон.
   2303 юнит-теста в 142 файлах, 4 e2e по бюджету. Четыре планта, легли все. Постоянных
-  инструкций десять, снятий нет. Вердикт REFINE.
+  инструкций десять, снятий нет. Вердикт REFINE. **Красный CI на предыдущем коммите
+  разобран, а не перезапущен наугад:** упала SCR-06 из a11y-overlays, фикстура там
+  крошечная, потолок из B-41 ни при чём; перезапуск прошёл, заведена B-78 с частотой и
+  тем, что уже исключено.
 - **2026-08-20 (пятьдесят второй)** — B-41; стадии 0–10. Потолок кандидатов проверялся раз
   на узел, а один узел может порождать кандидатов без счёта: элемент с 20 000 `data-*`
   давал 20 000 кандидатов при `truncated: false` — потолок памяти обойдён, вердикт
@@ -2200,6 +2203,39 @@ description.
   keeping. But a row closed with its verification outstanding is a row closed early, and
   the honest form is the one now in the board: closed on the second attempt, with the
   first attempt's failure written into it rather than tidied away.
+
+### 2026-08-20 — the diagnosis fired, and stopped one link short
+
+**Symptom.** CI red once in twelve runs: `okolos-banner` not present after 35 seconds in
+the agent-gate spec. The re-run passed.
+
+**What went right.** The report built for B-73 printed on its first live firing and
+eliminated two links: a service worker was registered, so the extension had started; the
+page was `complete` with ten nodes, so the fixture had loaded; zero host elements, so
+nothing had mounted. The failure was between "page loaded" and "surface mounted".
+
+**What it could not say.** Whether the content script got as far as scanning — which is
+exactly the fork that remained. And the product marks its own scan:
+`performance.measure('okolos:collect')` is on the page, read by `budget.spec.ts` every
+run. The answer was sitting there and nothing asked for it.
+
+**Stage it surfaced at.** 7, reading a CI failure I could have re-run and forgotten.
+
+**Stage that owned it.** 5 of the run that wrote the report. It listed what it could see
+about the *document* and about the *browser*, and stopped before the one thing the product
+publishes about itself.
+
+**Fix, by grade.** *Structural:* the report now prints either "the content script never
+finished a scan: it did not run, or it threw" or "scanned in N ms, so the verdict is what
+did not arrive". Verified by forcing the wait to expire — the line prints and names the
+link. *Process:* the intermittent is B-78 with its date, its frequency (one in twelve) and
+what is already excluded, rather than a re-run and a shrug. A failure that happens once in
+twelve runs becomes normal exactly that way: each instance is individually explainable, and
+together they are a gate nobody believes.
+
+**The check that catches it next time.** When a diagnostic exists, its first real firing is
+the moment to ask what it did *not* say. That reading costs one run and is only available
+while the failure is fresh.
 
 ### 2026-08-20 — the fix worked and the attack moved down one floor
 

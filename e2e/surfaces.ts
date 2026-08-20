@@ -54,8 +54,24 @@ async function diagnose(page: Page, context?: BrowserContext): Promise<string> {
       neutralised: document.querySelectorAll('[data-okolos-neutralised]').length,
       ready: document.readyState,
       nodes: document.querySelectorAll('*').length,
+      /**
+       * Did the content script get as far as scanning?
+       *
+       * The one fact that separates "it never ran" from "it ran and the verdict never
+       * came back" — and the one this report did not carry on its first live firing.
+       * CI, 2026-08-20: a worker registered, the page complete with ten nodes, zero
+       * hosts, and nothing to say which of the two links had broken. The product marks
+       * its own scan (`performance.measure('okolos:collect')`), so the answer was
+       * already on the page and nobody asked for it.
+       */
+      scanned: performance.getEntriesByName('okolos:collect')[0]?.duration ?? null,
     }))
     lines.push(`  - page ${page_.url} (${page_.ready}), ${page_.nodes} nodes`)
+    lines.push(
+      page_.scanned === null
+        ? '  - the content script never finished a scan: it did not run, or it threw'
+        : `  - the content script scanned in ${page_.scanned.toFixed(1)} ms, so the verdict is what did not arrive`,
+    )
     lines.push(
       `  - ${page_.hosts} okolos host element(s), ${page_.neutralised} neutralised node(s)`,
     )

@@ -1,4 +1,5 @@
 import { expect, test } from './fixtures.js'
+import { RECORD_VISIBLE_MS } from './budgets.js'
 
 /**
  * SCN-015 and SCN-016 — the leak inventory, and the coverage line that gives
@@ -196,7 +197,7 @@ test('a source that cannot run is named, and the total says it may be incomplete
   const coverage = page.locator('[data-role=leaks] [data-role=coverage]')
   await expectWithDiagnosis(
     page,
-    expect(coverage).toContainText('Have I Been Pwned', { timeout: 15_000 }),
+    expect(coverage).toContainText('Have I Been Pwned', { timeout: RECORD_VISIBLE_MS }),
   )
   await expect(coverage).toContainText('may be incomplete')
 })
@@ -232,7 +233,7 @@ test('a recent infection is separated from an old breach, and each carries its r
   await page.locator('[data-role=leaks] [data-role=check]').click()
 
   const fresh = page.locator('[data-role=leak-group][data-urgency=fresh-infostealer]')
-  await expectWithDiagnosis(page, expect(fresh).toHaveCount(1, { timeout: 15_000 }))
+  await expectWithDiagnosis(page, expect(fresh).toHaveCount(1, { timeout: RECORD_VISIBLE_MS }))
   await expect(fresh.locator('[data-role=group-why]')).toContainText('session cookies')
 
   // Cavalier names no site, so the panel says so instead of guessing a login page.
@@ -277,7 +278,7 @@ test('the address field survives a repaint instead of being rebuilt', async ({
   // and no real request.
   await page.locator('[data-role=leaks] [data-role=check]').click()
   await expect(page.locator('[data-role=leaks] [data-role=coverage]')).toBeVisible({
-    timeout: 15_000,
+    timeout: RECORD_VISIBLE_MS,
   })
 
   await expect(page.locator('[data-role=address][data-identity=original]')).toHaveCount(1)

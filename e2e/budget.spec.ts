@@ -1,5 +1,6 @@
 import { expect, serve, test } from './fixtures.js'
 import { expectJournalLine } from './surfaces.js'
+import { SURFACE_MOUNT_MS } from './budgets.js'
 
 /**
  * REQ-09 — the traversal budget, measured where it matters.
@@ -38,7 +39,7 @@ test('a small page is scanned well inside the budget', async ({ context }) => {
   await serve(context, page(200))
   const p = await context.newPage()
   await p.goto('https://fixture.test/')
-  await expect(p.locator('okolos-banner')).toHaveCount(1, { timeout: 10_000 })
+  await expect(p.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
 
   const duration = await collectDuration(p)
   expect(duration).toBeGreaterThanOrEqual(0)
@@ -49,7 +50,7 @@ test('a large page is cut short rather than allowed to run long', async ({ conte
   await serve(context, page(4000))
   const p = await context.newPage()
   await p.goto('https://fixture.test/')
-  await expect(p.locator('okolos-banner')).toHaveCount(1, { timeout: 15_000 })
+  await expect(p.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
 
   // The budget is enforced by the collector itself: on a page this size it
   // stops early and says the scan was partial, rather than spending whatever
@@ -70,7 +71,7 @@ test('the warning still arrives on a page too large to scan in full', async ({ c
   // The hidden instruction sits first in the document, so a truncated scan
   // still finds it. Missing the warning because the page was big would be the
   // worst possible reading of "budget".
-  await expect(p.locator('okolos-banner')).toHaveCount(1, { timeout: 15_000 })
+  await expect(p.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
 })
 
 test('a page that spends the whole budget on nothing is recorded, not passed over', async ({

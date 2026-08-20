@@ -55,3 +55,25 @@ export const SURFACE_MOUNT_MS = 35_000
  * a sentence naming what did not happen, rather than a timeout naming nothing.
  */
 export const WORKER_REGISTER_MS = 20_000
+
+/**
+ * How long a test may wait for a **record** to reach a screen a person reads.
+ *
+ * A journal row, a self-audit row, a coverage line, an outbound-log entry, a count that
+ * has to reach zero after a wipe: none of these is a surface mounting on a page, so
+ * `SURFACE_MOUNT_MS` is the wrong name for them, and each had its own literal — nine
+ * sites at 15 s and two at 10 s when this was written.
+ *
+ * **The value is the one those sites already used**, and that is deliberate: this change
+ * gives the wait a name, not a longer budget. Raising a number to quiet a failure is what
+ * this project's retrospective forbids, and none of the failures that prompted the naming
+ * were at 15 s — they were at 10 s (`budget.spec.ts` on a saturated machine) and at 5 s
+ * (a vitest default in `tools/script-names.test.ts`).
+ *
+ * Why a third name rather than reusing the surface budget: the two answer different
+ * questions. A surface that never mounts means the page was never told; a record that
+ * never appears means the store, the worker or the screen did not agree. Reading one
+ * number for both would tell the next reader neither.
+ */
+export const RECORD_VISIBLE_MS = 15_000
+

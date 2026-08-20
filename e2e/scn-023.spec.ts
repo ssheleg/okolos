@@ -1,4 +1,5 @@
 import { expect, test } from './fixtures.js'
+import { RECORD_VISIBLE_MS } from './budgets.js'
 
 /**
  * SCN-023 — wiping every local store, from the settings screen, for real.
@@ -112,7 +113,7 @@ test('the confirmation names every kind of data, and the wipe empties every stor
 
   await expect
     .poll(async () => Object.values(await counts(page)).reduce((a, b) => a + b, 0), {
-      timeout: 10_000,
+      timeout: RECORD_VISIBLE_MS,
     })
     .toBe(0)
 

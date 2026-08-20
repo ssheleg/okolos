@@ -1,4 +1,5 @@
 import { expect, test } from './fixtures.js'
+import { RECORD_VISIBLE_MS } from './budgets.js'
 
 /**
  * SCN-019 — the user asks what left the device and gets an answer they can
@@ -24,7 +25,7 @@ test('a fresh install shows the one request it made, and what it was for', async
   await expect(page.getByText('What left this device')).toBeVisible()
 
   const entries = page.locator('[data-role=entries] [data-role=entry]')
-  await expect(entries).toHaveCount(1, { timeout: 15_000 })
+  await expect(entries).toHaveCount(1, { timeout: RECORD_VISIBLE_MS })
   // The words a person reads, not the key the code uses: the panel exists to
   // be understood, and asserting the internal name would let the wording rot.
   await expect(entries.first()).toContainText('list of known-bad sites')
@@ -54,5 +55,5 @@ test('the panel never shows an empty list in place of a failure', async ({
     const hasSentence = (await sentence.count()) > 0
     expect(hasRows || hasSentence, 'neither rows nor the sentence — an empty claim').toBe(true)
     if (hasTable) expect(hasRows, 'a table with no rows is an empty claim').toBe(true)
-  }).toPass({ timeout: 15_000 })
+  }).toPass({ timeout: RECORD_VISIBLE_MS })
 })

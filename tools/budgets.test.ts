@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { globSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 
 import { describe, expect, it } from 'vitest'
@@ -82,3 +82,65 @@ describe('the waits an e2e test can stack', () => {
     expect(playwrightTimeout()).toBeLessThan(300_000)
   })
 })
+
+/**
+ * A wait in a browser spec carries a name, or it carries its reason.
+ *
+ * `e2e/budgets.ts` exists because ten seconds was written into thirteen spec files and
+ * measured nowhere; it produced failures on CI that had nothing to do with what the tests
+ * were about. The conversion happened — and **the siblings were missed**: fourteen literal
+ * waits were still there on 2026-08-20, one of them at ten seconds in `budget.spec.ts`,
+ * which is the check that reddened CI that evening, and one of them in the very helper
+ * written that afternoon to fix a different flake.
+ *
+ * That is the class appearing a third time, so it becomes a check rather than a third
+ * edit. What it protects is a reader's ability to tell a busy machine from a broken
+ * fixture: a named budget says which of the two ran out, and a literal says nothing.
+ *
+ * **Short waits stay allowed, and must say why.** A wait that asserts a *failure* — a
+ * control that cannot be clicked — has to be short, or the suite pays for a truth it
+ * already knows. Those are listed here by file and reason rather than pattern-matched,
+ * because "this number is deliberate" is a claim somebody has to make out loud.
+ */
+describe('a wait in a browser spec is named', () => {
+  /** Deliberate short waits: file, and why the number must stay small. */
+  const DELIBERATE: Readonly<Record<string, string>> = {
+    'scn-008.spec.ts':
+      'asserts that a click does NOT reach a control behind a blocking banner — the wait is the assertion, and a long one would only slow the suite down to learn the same thing',
+  }
+
+  function specs(): string[] {
+    return globSync('e2e/*.spec.ts', { cwd: root }).map((p) => path.join(root, p))
+  }
+
+  it('is looking at the specs it claims to check', () => {
+    expect(specs().length).toBeGreaterThan(20)
+  })
+
+  it('has no literal timeout outside the ones declared deliberate', () => {
+    const literals: string[] = []
+    for (const file of specs()) {
+      const name = path.basename(file)
+      for (const [i, line] of readFileSync(file, 'utf8').split('\n').entries()) {
+        const code = line.trim()
+        if (code.startsWith('//') || code.startsWith('*')) continue
+        if (!/\btimeout:\s*\d/.test(code)) continue
+        if (DELIBERATE[name] !== undefined) continue
+        literals.push(`${name}:${i + 1}: ${code.slice(0, 60)}`)
+      }
+    }
+    expect(literals, 'name the budget in e2e/budgets.ts, or declare the wait deliberate').toEqual(
+      [],
+    )
+  })
+
+  it('declares nothing deliberate that has no literal left to justify', () => {
+    // An exemption outliving its case is how a list stops describing the tree.
+    const stale = Object.keys(DELIBERATE).filter((name) => {
+      const file = specs().find((f) => path.basename(f) === name)
+      return file === undefined || !/\btimeout:\s*\d/.test(readFileSync(file, 'utf8'))
+    })
+    expect(stale, 'these exemptions no longer describe anything').toEqual([])
+  })
+})
+

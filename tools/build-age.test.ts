@@ -33,6 +33,21 @@ function builtFile(at: number): string {
 }
 
 /** A directory with one file, stamped at `at`. */
+/**
+ * A build older than every source, whatever the clock says.
+ *
+ * `Date.now() - 60 * 60_000` was the value in two places, and it made those checks depend
+ * on **when the suite runs**: they assert that a build is stale, which is only true if some
+ * product source was touched within the last hour. Spend an hour on documentation and the
+ * newest source becomes older than the fake build, `buildTooOld` correctly answers `null`,
+ * and two checks fail for a reason that has nothing to do with what they test. Measured
+ * 2026-08-20, on exactly that hour.
+ *
+ * The mirror of the comment three lines below the sibling case: "far in the future rather
+ * than now" is already how the fresh direction avoids the same trap. This is its opposite.
+ */
+const LONG_AGO = Date.parse('2020-01-01T00:00:00.000Z')
+
 function builtAt(at: number): string {
   const dir = mkdtempSync(path.join(tmpdir(), 'okolos-build-'))
   const file = path.join(dir, 'background.js')
@@ -50,7 +65,7 @@ describe('reading the age of a build', () => {
   })
 
   it('names the file and the command when the tree moved on', () => {
-    const dir = builtAt(Date.now() - 365 * 24 * 60 * 60_000)
+    const dir = builtAt(LONG_AGO)
     const answer = buildTooOld(dir, 'pnpm build:e2e')
     expect(answer).not.toBeNull()
     expect(answer).toContain('pnpm build:e2e')
@@ -67,7 +82,7 @@ describe('reading the age of a build', () => {
      */
     const missing = buildTooOld(path.join(tmpdir(), 'okolos-absent-build'), 'pnpm build')
     expect(missing).toContain('no build in')
-    const stale = buildTooOld(builtAt(Date.now() - 60 * 60_000), 'pnpm build')
+    const stale = buildTooOld(builtAt(LONG_AGO), 'pnpm build')
     expect(stale).toContain('older than the tree')
     expect(stale).not.toContain('no build in')
   })
@@ -83,7 +98,7 @@ describe('reading the age of a build', () => {
   it('ignores a nested node_modules inside a build directory', () => {
     // A dependency's mtime is not this build's mtime, and node_modules is the one
     // directory whose files are routinely newer than everything.
-    const dir = builtAt(Date.now() - 60 * 60_000)
+    const dir = builtAt(LONG_AGO)
     const nested = path.join(dir, 'node_modules')
     mkdirSync(nested)
     const fresh = path.join(nested, 'index.js')
@@ -147,7 +162,9 @@ describe('reading the age of a build', () => {
      * `dist/firefox-e2e` is whatever the last `pnpm build:e2e` left. The harness
      * asked `existsSync` — present, not current — and passed for months.
      */
-    const old = builtAt(Date.now() - 24 * 60 * 60_000)
+    // `LONG_AGO`, not a day ago: the same trap with a wider margin, and the comment
+    // further down this file already counts three of these today.
+    const old = builtAt(LONG_AGO)
     expect(buildTooOld(old, 'pnpm build:e2e')).toContain('older than the tree')
   })
 })

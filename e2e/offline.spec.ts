@@ -1,4 +1,5 @@
 import { expect, outbound, serve, test } from './fixtures.js'
+import { RECORD_VISIBLE_MS } from './budgets.js'
 
 /**
  * The suite does not reach the internet, and this is what says so.
@@ -32,7 +33,7 @@ test('nothing in this suite reaches a real host', async ({ context, extensionId 
   // Without this the next assertion would be satisfied by a recorder that had
   // simply stopped working.
   await expect
-    .poll(() => outbound.length, { timeout: 15_000, message: 'the extension made no outbound request at all — either it stopped pulling its feed, or the fixture stopped recording' })
+    .poll(() => outbound.length, { timeout: RECORD_VISIBLE_MS, message: 'the extension made no outbound request at all — either it stopped pulling its feed, or the fixture stopped recording' })
     .toBeGreaterThan(0)
 
   const escaped = outbound.filter(
@@ -69,7 +70,7 @@ test('nothing in this suite reaches a real host', async ({ context, extensionId 
           return JSON.stringify(all)
         }),
       {
-        timeout: 15_000,
+        timeout: RECORD_VISIBLE_MS,
         message: 'the journal never recorded a failed feed fetch, so the pull reached something real',
       },
     )

@@ -1,6 +1,6 @@
 import { expect, type BrowserContext, type Page } from '@playwright/test'
 
-import { SURFACE_MOUNT_MS } from './budgets.js'
+import { RECORD_VISIBLE_MS, SURFACE_MOUNT_MS } from './budgets.js'
 
 /**
  * Waiting for the banner, and saying which link broke when it does not come.
@@ -141,7 +141,7 @@ async function diagnose(page: Page, context?: BrowserContext): Promise<string> {
 export async function expectJournalLine(
   journal: Page,
   text: string,
-  timeoutMs = 15_000,
+  timeoutMs = RECORD_VISIBLE_MS,
 ): Promise<void> {
   await expect
     .poll(

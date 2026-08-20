@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium, expect, test } from '@playwright/test'
+import { WORKER_REGISTER_MS } from './budgets.js'
 
 /**
  * The extension loads at all.
@@ -28,7 +29,7 @@ for (const build of ['chrome', 'chrome-e2e']) {
     })
     try {
       let [worker] = context.serviceWorkers()
-      if (!worker) worker = await context.waitForEvent('serviceworker', { timeout: 20_000 })
+      if (!worker) worker = await context.waitForEvent('serviceworker', { timeout: WORKER_REGISTER_MS })
       expect(worker.url(), `${build} loaded, but its background is not where the manifest says`).toContain(
         'background.js',
       )

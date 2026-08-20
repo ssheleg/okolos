@@ -1,6 +1,5 @@
 import { expect, test } from './hooks.js'
 import { serveHosts } from './serve.js'
-import { RECORD_VISIBLE_MS } from './budgets.js'
 
 /**
  * The block page refuses to be somebody else's iframe.
@@ -15,6 +14,12 @@ import { RECORD_VISIBLE_MS } from './budgets.js'
  * The page cannot be made to *name* an arbitrary site — it asks the background rather than
  * reading its own query string, which is a decision that predates this spec. A click is
  * enough on its own.
+ *
+ * **Since 2026-08-21 there are two defences, and this spec asserts the outer one.**
+ * `use_dynamic_url` on the resource means it answers only to a per-session address a page
+ * cannot learn, so the embed never loads. The inner defence — the page refusing to draw
+ * when it is not the top document — is asserted in `framed.test.ts`, and it is what would
+ * still hold if the manifest were ever changed back.
  */
 
 const HOST = `<!doctype html>
@@ -24,42 +29,40 @@ const HOST = `<!doctype html>
   <iframe id="framed" width="480" height="320"></iframe>
 </body></html>`
 
-test('refuses to render inside another page, and says why', async ({ context, extensionId }) => {
+test('a page that embeds the block page gets nothing of ours', async ({
+  context,
+  extensionId,
+}) => {
   await serveHosts(context, { 'host.test': HOST })
   const page = await context.newPage()
   await page.goto('https://host.test/')
 
-  // Set from the page, the way an attacker would: the address is public by design.
+  // Set from the page, the way an attacker would. The id is fixed and public; what is not
+  // reachable is the resource behind it.
   await page.evaluate((id) => {
     const frame = document.getElementById('framed') as HTMLIFrameElement
     frame.src = `chrome-extension://${id}/interstitial.html`
   }, extensionId)
 
+  /**
+   * **Two defences, and this asserts the outer one.**
+   *
+   * `use_dynamic_url` means the resource answers only to a per-session address the
+   * extension knows and a page cannot learn, so the browser refuses the load outright:
+   * measured, the frame exists and its document is unreachable — `contentDocument` is null
+   * and nothing renders. The inner defence, the page refusing to draw when it is not the
+   * top document, is asserted in `framed.test.ts` and is what would still hold if this
+   * outer one were ever configured away.
+   */
   const framed = page.frameLocator('#framed')
+  await page.waitForTimeout(3_000)
 
-  /**
-   * The sentence is read from an extension page, not from this one: `chrome.i18n` exists
-   * only in extension contexts and content scripts, and a first version asked the hostile
-   * page for it and got `undefined`. Reading it here also keeps the assertion in whichever
-   * language the browser actually picked, rather than in the one the spec guessed.
-   */
-  const reader = await context.newPage()
-  await reader.goto(`chrome-extension://${extensionId}/interstitial.html`)
-  const refusal = await reader.evaluate(() => chrome.i18n.getMessage('blockFramed'))
-  await reader.close()
-  expect(refusal.length, 'the catalogue has no sentence for the refusal').toBeGreaterThan(20)
-
-  // The refusal is what renders, and it names who put the page there.
-  await expect(framed.locator('#root')).toContainText(refusal.slice(0, 40), {
-    timeout: RECORD_VISIBLE_MS,
-  })
-
-  /**
-   * And none of the block page is drawn — not the control that matters. Asserted after the
-   * refusal is on screen, so it cannot pass by the frame having failed to load at all.
-   */
+  // None of the block page — and the control that matters least of all.
   await expect(framed.locator('[data-role=continue]')).toHaveCount(0)
   await expect(framed.locator('[data-role=back]')).toHaveCount(0)
+  // And not our refusal either: nothing of ours ran at all, which is a stronger answer
+  // than a sentence. Stated so the difference between the two defences stays legible.
+  await expect(framed.locator('#root')).toHaveCount(0)
 })
 
 test('still renders as a tab of its own', async ({ context, extensionId }) => {

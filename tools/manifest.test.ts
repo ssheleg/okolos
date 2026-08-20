@@ -60,6 +60,42 @@ describe('what the extension asks for', () => {
       expect(ALLOWED_PERMISSIONS.every((p) => expected.includes(p))).toBe(true)
     })
 
+    /**
+     * The page-facing surface, and nothing was checking it.
+     *
+     * `web_accessible_resources` is the list of files **any** page may reach. One file is on
+     * it, and it has to be: the blocker redirects a tab to `interstitial.html`, and that
+     * redirect is the block. A second file added here would be a new opening nobody
+     * reviewed, and until 2026-08-21 no test read this key at all.
+     *
+     * `use_dynamic_url` is Chrome-only and is the difference between "any page can embed our
+     * block page" and "the address answers only to a per-session URL a page cannot learn".
+     * Firefox does not support the flag, which is why the two manifests differ here and why
+     * the extension also refuses to draw when it is not the top document — the browser-level
+     * defence is not available on both engines (B-94, B-95).
+     */
+    it(`${browser}: opens exactly one file to the web, and only the one the blocker needs`, () => {
+      /**
+       * The expectation branches; the assertion does not. `tools/test-quality.test.ts`
+       * refuses a test whose `expect` sits inside an `if`, and it is right: a conditional
+       * assertion is one that can quietly assert nothing. Same shape as the permissions
+       * check above.
+       */
+      const expected =
+        browser === 'chrome'
+          ? // Chrome-only: the resource then answers to a per-session address a page cannot
+            // learn, so an embed by the fixed address never loads.
+            [{ resources: ['interstitial.html'], matches: ['<all_urls>'], use_dynamic_url: true }]
+          : // Firefox has no such flag, and declaring it would be a claim this engine cannot
+            // keep. The page's own refusal to draw when framed is what holds here (B-94).
+            [{ resources: ['interstitial.html'], matches: ['<all_urls>'] }]
+
+      expect(
+        manifest(browser).web_accessible_resources,
+        'this is the whole list of files any page may reach',
+      ).toEqual(expected)
+    })
+
     it(`${browser}: asks for host access only to the web, and only http(s)`, () => {
       // Broad host access arrived with the feature that needs it — blocking a
       // page before it renders — and it is bounded: no file://, no other

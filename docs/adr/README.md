@@ -20,3 +20,4 @@
 | [0009](0009-the-page-watcher-observes-and-never-holds.md) | Наблюдатель страницы смотрит и никогда не задерживает | `apps/extension/src/page-watch/`, `tools/gates/bundle-scan.test.ts` |
 | [0010](0010-the-blocklist-is-about-hosts-so-the-sources-must-be.md) | Блок-лист про хосты, значит и источники должны быть про хосты | `tools/ingest.test.ts` |
 | [0011](0011-the-signature-primitive-decides-the-supported-range.md) | Примитив подписи решает, какие браузеры мы поддерживаем | `tools/manifest.test.ts`, `apps/extension/src/background/feeds.test.ts` |
+| [0012](0012-one-signal-is-a-suspicion.md) | Один сигнал — подозрение, два — вердикт | `packages/core-injection/src/stage1.test.ts`, `chars.test.ts`, `corpora/injections/negatives.json` |

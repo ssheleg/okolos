@@ -317,6 +317,38 @@ const HAND_OVER_WEAK = new RegExp(
  */
 const SECOND_PERSON = /\byou\b|\byour\b|\bты\b|\bтебе\b|\bтво[йяие]/i
 
+/**
+ * Whether two patterns match *different* parts of the text.
+ *
+ * A credential noun and a hand-over verb can be the same word — `transfer`,
+ * `wire`, `pay` are all three in one list and in the other. The accessible name
+ * of a payment form is often exactly that word and nothing else, so
+ * `aria-label="Transfer"` satisfied both halves of the rule with one token and
+ * became a request to hand over a credential; the form was emptied and the page
+ * it belonged to stopped working. Found by an end-to-end fixture, not by any of
+ * the twenty negatives added the same hour — every one of them was a phrase, and
+ * this failure needs a single word.
+ *
+ * Every match of each is considered, not the first: "Transfer money and send the
+ * password" carries an overlapping pair at the start and a real instruction after
+ * it, and rejecting on the first pair alone would miss the second.
+ */
+function saysBothSeparately(text: string, noun: RegExp, verb: RegExp): boolean {
+  const spans = (re: RegExp): Array<[number, number]> => {
+    const all = new RegExp(re.source, `${re.flags.replace('g', '')}g`)
+    const out: Array<[number, number]> = []
+    for (const m of text.matchAll(all)) {
+      if (m.index === undefined) continue
+      out.push([m.index, m.index + m[0].length])
+      if (out.length > 16) break
+    }
+    return out
+  }
+  const nouns = spans(noun)
+  const verbs = spans(verb)
+  return nouns.some(([ns, ne]) => verbs.some(([vs, ve]) => ns >= ve || vs >= ne))
+}
+
 export interface SignalReport {
   readonly signals: readonly SignalName[]
   /** Text with invisible characters removed — what the model effectively reads. */
@@ -388,10 +420,10 @@ export function analyse(text: string): SignalReport {
      * "output the password" reads as an instruction and "Reveal password" reads
      * as the eye icon beside the field.
      */
-    if (HAND_OVER_STRONG.test(normalised)) {
+    if (saysBothSeparately(normalised, SENSITIVE_TARGET, HAND_OVER_STRONG)) {
       found.push('sensitive-target')
       strong.push('sensitive-target')
-    } else if (HAND_OVER_WEAK.test(normalised)) {
+    } else if (saysBothSeparately(normalised, SENSITIVE_TARGET, HAND_OVER_WEAK)) {
       found.push('sensitive-target')
     }
   }

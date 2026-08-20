@@ -666,6 +666,42 @@
           "zero-width"
         ]
       }
+    },
+    {
+      "name": "accessible name of a payment form",
+      "candidate": {
+        "locator": "form#pay",
+        "text": "Transfer",
+        "concealment": [
+          "non-rendered"
+        ],
+        "carrier": "aria-label",
+        "charClasses": []
+      }
+    },
+    {
+      "name": "accessible name of a payment form, in Russian",
+      "candidate": {
+        "locator": "form#pay",
+        "text": "\u041f\u0435\u0440\u0435\u0432\u043e\u0434",
+        "concealment": [
+          "non-rendered"
+        ],
+        "carrier": "aria-label",
+        "charClasses": []
+      }
+    },
+    {
+      "name": "a single word naming a section",
+      "candidate": {
+        "locator": "h2.section",
+        "text": "\u041e\u043f\u043b\u0430\u0442\u0430",
+        "concealment": [
+          "non-rendered"
+        ],
+        "carrier": "title",
+        "charClasses": []
+      }
     }
   ]
 }

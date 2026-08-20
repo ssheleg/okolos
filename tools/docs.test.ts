@@ -134,6 +134,49 @@ describe('the coverage matrix claims only what shipped', () => {
   it('says outright that an unmarked row is not a capability', () => {
     expect(matrix).toMatch(/строка без отметки — намерение/i)
   })
+
+  it('backs every tick with code, not only with a requirement', () => {
+    /**
+     * The hole this closes. A tick used to be earned by citing a REQ the ledger calls
+     * DONE — and a REQ can cover several rows, so row 2.2 ("block by hash") carried a
+     * tick on REQ-19 while **nothing in the tree computed a hash**: no MalwareBazaar,
+     * no VirusTotal, no `crypto.subtle.digest` over the bytes, and the production path
+     * hard-coded `hash: { ran: false }`. The verdict was honest; the matrix was not,
+     * and a reader takes a ticked row as a capability (B-57).
+     *
+     * So a tick has to name a path, and the path has to be there. Seven of the
+     * twenty-one ticked rows named none when this was written.
+     */
+    const ticked = [...matrix.matchAll(/^\| ([0-9]+\.[0-9]+) \|.*\*\*✓\*\* ([^|]+)\|$/gm)]
+    expect(ticked.length, 'no ticked rows parsed out of the matrix').toBeGreaterThan(10)
+
+    for (const [, row, claim] of ticked) {
+      /**
+       * Two citation forms, because the matrix uses both and neither is wrong: a
+       * backticked path to the module that performs the check, or a bare `e2e/scn-007`
+       * naming the scenario that exercises it. Demanding one form would have meant
+       * rewriting fourteen rows to satisfy a regex rather than to say anything truer.
+       */
+      const modules = [
+        ...(claim as string).matchAll(/`((?:apps|packages|tools|e2e)\/[\w./-]+)`/g),
+      ].map((found) => path.join(root, found[1] as string))
+      const specs = [...(claim as string).matchAll(/(?<!`)(e2e\/[a-z0-9-]+)(?![\w/-])/g)].map(
+        (found) => path.join(root, `${found[1] as string}.spec.ts`),
+      )
+      const cited = [...modules, ...specs]
+
+      expect(
+        cited.length,
+        `row ${row} is ticked and names no file — a REQ is not an implementation`,
+      ).toBeGreaterThan(0)
+      for (const file of cited) {
+        expect(
+          existsSync(file),
+          `row ${row} cites ${path.relative(root, file)}, which is not there`,
+        ).toBe(true)
+      }
+    }
+  })
 })
 
 describe('a screen record names the controls its renderer draws', () => {

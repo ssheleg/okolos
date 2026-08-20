@@ -112,6 +112,11 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (семнадцатый)** — B-54; стадии 0–10. Фид перестал тянуться на каждом
+  пробуждении воркера: одна проверка «пора ли» вместо двух согласующихся, отметка
+  попытки до запроса. Плант нашёл, что мой же гейт проверял упоминание, а не
+  использование. 2007 юнит-тестов в 123 файлах, пять плантов легли. Постоянных
+  инструкций десять, снятий нет. Вердикт REFINE.
 - **2026-08-20 (шестнадцатый)** — B-48; стадии 0–10. Гейт агента перестал выпускать
   действие, если описание бросит, и «ещё не читали» перестало выдаваться за
   «нечего держать». Новый гейт на secure-context-API нашёл второй fail-open той же
@@ -293,6 +298,46 @@ happens before adding.
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-20 — the comment named the reason and it was applied to one of two jobs
+
+**Symptom.** `void pullFeed()` ran on every service-worker start, with no check
+of whether a pull was owed. An MV3 worker starts on nearly every page — a content
+script sends it a message — so instead of four feed requests a day the product
+made one **per page**, each writing a row to `outbound_log`, because the audit
+entry is mandatory before a request leaves. The self-audit panel, whose entire
+subject is "here is what left this device", filled with `feed-update`.
+
+**Stage it surfaced at.** 0, from a filed row.
+
+**Stage that owned it.** 5, and the sharpest part is that the reasoning was
+already written at the call site: "six hours, and once at start: a worker that
+restarts often would otherwise keep resetting a longer alarm, **which is how
+retention came to never run**." The author had met this exact failure, drawn the
+right conclusion, and applied half of it. Retention got a timestamp in storage;
+the feed got the "once at start" and nothing to bound it.
+
+**Root cause.** Two jobs with identical requirements, implemented once each. The
+sweep's due-check has four edge cases — never done, unreadable timestamp, clock
+moved backwards, interval elapsed — and the feed had none of them, because the
+feed had no due-check at all. Four cases duplicated across two callers are four
+that will disagree; zero cases in one of them is worse.
+
+**Fix, by grade.** Structural: one `dueAgain(lastAt, now, interval)` with the four
+cases, and two named wrappers over it with their own windows. A test asserts they
+answer differently at the same moment, because a shared interval would have had to
+be wrong for one of them. The attempt is recorded **before** the request, not
+after: a pull that throws would otherwise leave no mark and the next wake-up would
+retry immediately — the same flood, arriving only when something is already wrong.
+
+**And the gate I wrote for it checked a mention rather than a use.** A plant of
+`void dueForFeed` — which does nothing — left it green, because it asked whether
+the function's text contained the name. That is the same weak discriminator this
+repository has caught before, when a type merely *mentioned* in the content script
+counted as *handled* there. Narrowed to the shape that matters: the check negated
+in a condition whose body returns. And the discriminator is now asserted against
+four snippets — two it must accept, two it must reject — because a matcher nobody
+has watched fail is a matcher that matches anything.
 
 ### 2026-08-20 — a secure-context API on a page the manifest matches over http
 

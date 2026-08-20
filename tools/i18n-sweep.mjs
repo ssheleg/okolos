@@ -39,14 +39,53 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import path from 'node:path'
 
+/**
+ * Copy that is known, counted and not yet moved — with an owner.
+ *
+ * Widening the sweep to every package and to sentences that begin with a value found
+ * 61 of them at once (B-51). Two dishonest ways out were available and both were
+ * refused: marking them `i18n-exempt` would dress debt as a decision, which is the
+ * allowlist-wearing-a-comment failure this file warns about; leaving the gate red
+ * would make the one load-bearing gate of this project something to skip.
+ *
+ * So the debt is **recorded with a date and a rule**: exact match per file. More hits
+ * than the entry is a regression and refuses; fewer means the debt was paid and the
+ * number has to come down in the same change, which also refuses — a ceiling nobody
+ * lowers is a ceiling that rots upward.
+ */
+const BASELINE = JSON.parse(
+  readFileSync(path.join(import.meta.dirname, 'i18n-baseline.json'), 'utf8'),
+)
+
 const root = path.resolve(import.meta.dirname, '..')
-const ROOTS = ['apps/extension/src', 'packages/ui/src']
+/**
+ * Everywhere a user-facing sentence can be written.
+ *
+ * It was `apps/extension/src` and `packages/ui/src`, which left every `core-*`
+ * package unswept — and `core-recovery` holds the recovery checklist's own wording,
+ * twenty-three sentences of it. A sweep whose roots are narrower than the product is
+ * a floor pretending to be a total (B-51).
+ */
+const ROOTS = ['apps/extension/src', 'packages']
 
 /**
  * Three or more words with at least two lowercase ones after the first. Prose,
  * in other words — not an identifier, a role name or a key.
+ *
+ * **A leading interpolation is allowed, and that is the second half of B-51.** The
+ * anchored form required a letter immediately after the quote, so every sentence that
+ * begins with a value — `` `${outcome.gone} passages were not put back…` `` — was
+ * invisible. Six in `packages/ui` and three on the restore banner itself, all of them
+ * with English pluralisation that does not work in Russian, all of them shipping to a
+ * ru-default interface.
+ *
+ * Still anchored, though: the first word must follow the interpolations, not appear
+ * anywhere in the string. A pattern that matches prose *somewhere* sweeps up
+ * `'data-role=x'` and selector soup, and a check that widens until it fails is not
+ * stricter — it is broken.
  */
-const SENTENCE = /(['"`])([A-Za-z][\w']*(?: [a-z][\w'-]*){2,}[^'"`]*)\1/g
+const SENTENCE =
+  /(['"`])(\s*(?:\$\{[^}]*\}[\s,.:;!?-]*)*[A-Za-z][\w']*(?: [a-z][\w'-]*){2,}[^'"`]*)\1/g
 
 /** Values that look like prose and are not: paths, MIME types, URLs. */
 const NOISE = /^(data-|https?:|chrome-extension:|application\/|text\/|[a-z]+\/[a-z]+$)/
@@ -133,6 +172,22 @@ for (const base of ROOTS) {
 const byFile = new Map()
 for (const hit of hits) byFile.set(hit.file, (byFile.get(hit.file) ?? 0) + 1)
 
+/** What the recorded ceiling allows, per file. */
+const allowed = BASELINE.files ?? {}
+const overBudget = []
+const underBudget = []
+for (const [file, count] of byFile) {
+  const budget = allowed[file] ?? 0
+  if (count > budget) overBudget.push({ file, count, budget })
+}
+for (const [file, budget] of Object.entries(allowed)) {
+  const count = byFile.get(file) ?? 0
+  if (count < budget) underBudget.push({ file, count, budget })
+}
+
+/** Hits that sit inside a recorded ceiling — debt, not a refusal. */
+const recorded = hits.filter((hit) => (allowed[hit.file] ?? 0) > 0).length
+
 if (process.argv.includes('--list')) {
   for (const hit of hits) {
     console.log(`${hit.file}:${hit.line}  ${JSON.stringify(hit.value.slice(0, 72))}`)
@@ -145,9 +200,26 @@ for (const [file, count] of [...byFile].sort((a, b) => b[1] - a[1])) {
 }
 console.log(`\n${hits.length} sentence(s) in ${byFile.size} file(s) outside the catalogue`)
 console.log(`${exempt.length} exempt, each with its reason at the site`)
+console.log(
+  `${recorded} recorded as debt in tools/i18n-baseline.json (measured ${BASELINE.measured}) — B-75 carries them`,
+)
 
 for (const hit of hits) {
+  const budget = allowed[hit.file] ?? 0
+  if (budget > 0) continue
   console.error(`  UNEXPLAINED ${hit.file}:${hit.line}  ${JSON.stringify(hit.value.slice(0, 64))}`)
+}
+for (const over of overBudget) {
+  console.error(
+    `  MORE THAN RECORDED ${over.file}: ${over.count} where ${over.budget} are recorded ` +
+      `(tools/i18n-baseline.json, measured ${BASELINE.measured})`,
+  )
+}
+for (const under of underBudget) {
+  console.error(
+    `  FEWER THAN RECORDED ${under.file}: ${under.count} where ${under.budget} are recorded — ` +
+      `lower the number in tools/i18n-baseline.json in this change`,
+  )
 }
 for (const hit of unreasoned) {
   console.error(
@@ -158,7 +230,12 @@ for (const mark of stale) {
   console.error(`  MARKS NOTHING ${mark.file}:${mark.line}  no sentence within three lines below`)
 }
 
-const refusals = hits.length + unreasoned.length + stale.length
+/**
+ * A hit inside a recorded ceiling is not a refusal; going over one is, and so is
+ * coming under one without lowering it.
+ */
+const refusals =
+  hits.length - recorded + unreasoned.length + stale.length + overBudget.length + underBudget.length
 if (refusals > 0) {
   console.error(
     `\n  ${refusals} problem(s). A sentence a user reads belongs in _locales; one they cannot` +
@@ -166,4 +243,9 @@ if (refusals > 0) {
   )
   process.exit(1)
 }
-console.log('\n  OK — every user-facing sentence is in the catalogue.\n')
+console.log(
+  recorded === 0
+    ? '\n  OK — every user-facing sentence is in the catalogue.\n'
+    : `\n  OK — nothing new, and the ${recorded} recorded still owe a translation (B-75).\n` +
+        '  This is not "every sentence is in the catalogue": it is "the debt did not grow".\n',
+)

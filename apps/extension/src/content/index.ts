@@ -342,10 +342,11 @@ function openFrameJournal(): void {
 
 function show(verdict: Verdict, total: number, partialScan: boolean, neutralised: number): void {
 
-  const others = total > 1 ? ` and ${total - 1} more on this page` : ''
-  const scanNote = partialScan
-    ? ' This page was too large to check in full, so there may be more.'
-    : ''
+  // Both were English literals the sweep could not see either: one begins with a
+  // space, the other with a space and then a word, and its anchor wanted a letter
+  // immediately after the quote.
+  const others = total > 1 ? t('warnInjectionOthers', String(total - 1)) : ''
+  const scanNote = partialScan ? t('warnScanTruncated') : ''
 
   slot.claim({
     kind: 'injection',
@@ -396,20 +397,30 @@ function resolveEverything(): void {
  * own content into it. Neither is a failure of the product, and both are worth
  * saying out loud.
  */
+/**
+ * What a restore managed, in the reader's language.
+ *
+ * **It was English, with English pluralisation, on a ru-default interface.**
+ * `1 passage was / 2 passages were`, `it / them`, `1 was / 2 were` — three grammatical
+ * choices no Russian sentence can borrow, and the sweep could not see any of them
+ * because the literal begins with `${outcome.gone}` (B-51).
+ *
+ * **Worded to need no agreement at all, which is a decision and not a shortcut.**
+ * Russian needs three plural forms where English needs two, `chrome.i18n` has no
+ * plural support, and picking the form in code means either hardcoding one language's
+ * grammar or trusting `Intl.PluralRules` to agree with the locale `chrome.i18n`
+ * actually resolved. Both are machinery around a problem the copy can simply not have:
+ * "не вернулось фрагментов: 3" reads correctly for every count, and so does "left
+ * alone: 1". The brand pack prefers the form that needs no grammar games.
+ */
 function explainRestore(outcome: { restored: number; gone: number; changed: number }): string {
   const parts: string[] = []
-  if (outcome.gone > 0) {
-    parts.push(
-      `${outcome.gone} ${outcome.gone === 1 ? 'passage was' : 'passages were'} not put back: the page had already removed ${outcome.gone === 1 ? 'it' : 'them'}`,
-    )
-  }
-  if (outcome.changed > 0) {
-    parts.push(
-      `${outcome.changed} ${outcome.changed === 1 ? 'was' : 'were'} left alone: the page has written its own content there since, and adding the hidden text back beside it would put the instruction into the page again`,
-    )
-  }
+  if (outcome.gone > 0) parts.push(t('contentRestoreGone', String(outcome.gone)))
+  if (outcome.changed > 0) parts.push(t('contentRestoreChanged', String(outcome.changed)))
   const restored =
-    outcome.restored > 0 ? `${outcome.restored} restored. ` : t('contentNothingRestored')
+    outcome.restored > 0
+      ? t('contentRestoreDone', String(outcome.restored))
+      : t('contentNothingRestored')
   return `${restored}${parts.join('; ')}.`
 }
 

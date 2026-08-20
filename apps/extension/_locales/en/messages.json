@@ -351,6 +351,30 @@
   "contentNothingRestored": {
     "message": "Nothing could be restored. "
   },
+  "contentRestoreChanged": {
+    "message": "left alone: $COUNT$ — the page has written its own content there since, and adding the hidden text back beside it would put the instruction into the page again",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "contentRestoreDone": {
+    "message": "Restored: $COUNT$. ",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "contentRestoreGone": {
+    "message": "not put back: $COUNT$ — the page had already removed them",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
   "dashboardBack": {
     "message": "← Overview"
   },
@@ -1531,6 +1555,14 @@
       }
     }
   },
+  "warnInjectionOthers": {
+    "message": "; and on this page: $COUNT$ more",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
   "warnInjectionPlain": {
     "message": "Hidden text is addressing an assistant rather than you$OTHERS$.$SCAN$",
     "placeholders": {
@@ -1584,6 +1616,9 @@
   },
   "warnPasswordSourceOnline": {
     "message": "Have I Been Pwned (CC BY 4.0), via a range query that sent five characters of the fingerprint"
+  },
+  "warnScanTruncated": {
+    "message": " This page was too large to check in full, so there may be more."
   },
   "warnTechsupportDialogs": {
     "message": "This page keeps raising dialogs that cannot be stopped from here — closing the tab is the way out."

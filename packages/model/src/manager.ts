@@ -104,6 +104,7 @@ export class ModelManager {
     if (digest !== this.descriptor.sha256) {
       this.#state = 'failed'
       throw new Error(
+        // i18n-exempt: the digest mismatch is a developer's fact: it names a pinned hash and a computed one, and a user can do nothing with either
         `Refused the model: digest ${digest.slice(0, 12)}… does not match the pinned value`,
       )
     }

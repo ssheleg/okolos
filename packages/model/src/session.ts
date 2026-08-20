@@ -60,10 +60,12 @@ export class ClassifierSession {
   }
 
   async score(text: string): Promise<number> {
+    // i18n-exempt: thrown at a caller that used a closed session — a programming mistake, not a state a user reaches
     if (this.#closed) throw new Error('The classifier session is closed.')
 
     const value = await this.session.run(text)
     if (!Number.isFinite(value) || value < 0 || value > 1) {
+      // i18n-exempt: an inference backend returning a non-probability is a fault in the backend, reported to whoever is debugging it
       throw new Error(`The classifier returned ${value}, which is not a probability.`)
     }
     return value

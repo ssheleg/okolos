@@ -44,6 +44,7 @@ export interface RequestDeps {
 
 export class RedactionError extends Error {
   constructor(readonly finding: RedactionFinding) {
+    // i18n-exempt: the redaction refusal is thrown to the caller and the audit entry is what the user reads; this string names the finding for a developer
     super(`Refused to send: ${finding.reason} found in the ${finding.where}`)
     this.name = 'RedactionError'
   }
@@ -59,6 +60,7 @@ export class DestinationError extends Error {
       `Refused to send: '${purpose}' may not reach ${destination}. ` +
         (allowed && allowed.length > 0
           ? `It may reach ${allowed.join(', ')}.`
+          // i18n-exempt: names a source file, which is the audience: nobody but a developer can act on a purpose with no destinations
           : `It has no destinations at all — see packages/net/src/destinations.ts for why.`),
     )
     this.name = 'DestinationError'
@@ -67,6 +69,7 @@ export class DestinationError extends Error {
 
 export class AuditWriteError extends Error {
   constructor(cause: unknown) {
+    // i18n-exempt: thrown when the audit write failed, so the surface that would show this sentence is the one that is broken
     super('Refused to send: the audit entry could not be written')
     this.name = 'AuditWriteError'
     this.cause = cause

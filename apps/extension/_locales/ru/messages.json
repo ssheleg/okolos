@@ -351,6 +351,30 @@
   "contentNothingRestored": {
     "message": "Восстановить ничего не удалось. "
   },
+  "contentRestoreChanged": {
+    "message": "оставлено как есть: $COUNT$ — страница успела записать туда своё, и вернуть скрытый текст рядом значило бы вернуть инструкцию на страницу",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "contentRestoreDone": {
+    "message": "Возвращено: $COUNT$. ",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "contentRestoreGone": {
+    "message": "не вернулось фрагментов: $COUNT$ — их уже удалила сама страница",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
   "dashboardBack": {
     "message": "← Обзор"
   },
@@ -1531,6 +1555,14 @@
       }
     }
   },
+  "warnInjectionOthers": {
+    "message": "; ещё на этой странице: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
   "warnInjectionPlain": {
     "message": "Скрытый текст обращается к ассистенту, а не к вам$OTHERS$.$SCAN$",
     "placeholders": {
@@ -1584,6 +1616,9 @@
   },
   "warnPasswordSourceOnline": {
     "message": "Have I Been Pwned (CC BY 4.0), запрос по диапазону: ушли пять символов отпечатка"
+  },
+  "warnScanTruncated": {
+    "message": " Страница слишком большая, проверена не полностью — может быть ещё."
   },
   "warnTechsupportDialogs": {
     "message": "Эта страница продолжает открывать окна, которые отсюда не остановить, — выход в том, чтобы закрыть вкладку."

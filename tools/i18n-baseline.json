@@ -1,0 +1,21 @@
+{
+  "measured": "2026-08-20",
+  "why": "Copy a person reads that is still written in the code rather than in _locales. Every entry is debt with an owner: B-75 carries the translation work, and the shape it must take is named there — a core package returns facts, the surface words them, because core-* packages have no dependencies and adding @okolos/i18n to them would spend that property on a string table.",
+  "rule": "Exact match. A file with more hits than its entry is a regression; a file with fewer means the debt was paid and the number here has to come down in the same change. Both are refusals, because a ceiling nobody lowers is a ceiling that rots upward.",
+  "files": {
+    "apps/extension/src/background/feeds.ts": 1,
+    "apps/extension/src/background/leaks.ts": 1,
+    "packages/core-credential/src/guard.ts": 6,
+    "packages/core-credential/src/password.ts": 4,
+    "packages/core-download/src/judge.ts": 8,
+    "packages/core-extensions/src/analyse.ts": 3,
+    "packages/core-extensions/src/diff.ts": 3,
+    "packages/core-feeds/src/apply.ts": 3,
+    "packages/core-feeds/src/display.ts": 1,
+    "packages/core-gate/src/decide.ts": 2,
+    "packages/core-injection/src/stage1.ts": 1,
+    "packages/core-recovery/src/checklist.ts": 18,
+    "packages/core-recovery/src/portable.ts": 6,
+    "packages/storage/src/export.ts": 4
+  }
+}

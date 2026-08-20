@@ -288,6 +288,7 @@ export function createPlatform(kind: Platform['kind'], api: WebExtensionApi): Pl
             // WORKERS is the closest honest reason on Chrome's fixed list: the
             // document exists to host a WASM/WebGPU worker, nothing else.
             reasons: ['WORKERS'],
+            // i18n-exempt: Chrome's own `justification` field for an offscreen document — a fixed English string the platform reads, not copy this product renders
             justification: 'Runs the local hidden-instruction classifier.',
           })
         }

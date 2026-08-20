@@ -112,6 +112,17 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (сороковой)** — B-75, часть пятая и последняя; стадии 0–10. Потолок долга
+  11 → 0: `storage/export.ts` берёт слова у вызывающего, `core-feeds` отдал шесть отказов
+  через union, две из одиннадцати «строк» переводом не были вообще — ложное срабатывание
+  якоря и имя списка для `apps/proxy`. Комментарий «английское имя для воркера» опирался на
+  посылку, устаревшую с B-51, и сервис-воркер расширения читал её про себя: два предложения
+  подставляли английское имя в русскую фразу. Заключительная строка свипа **ослаблена
+  намеренно**, а файл потолка оставлен с пустой картой — против условия готовности самой
+  строки, потому что удалить леджер по нулю от частично слепого измерителя значит превратить
+  «инструмент ничего не нашёл» в «ничего нет». Заведена B-77 (аргумент в журнале замерзает в
+  языке дня). 2200 юнит-тестов в 138 файлах, 126 e2e. Четыре планта, все легли. Постоянных
+  инструкций десять, снятий нет. Вердикт REFINE.
 - **2026-08-20 (тридцать девятый)** — B-75, часть четвёртая; стадии 0–10. `core-gate` и
   `core-extensions`: потолок долга 19 → 11. Форма оказалась не «перенести слова», а «слов
   не должно было быть» — `explain` дублировал код `reason`, который уже был кодом. Слова
@@ -2075,6 +2086,68 @@ description.
   keeping. But a row closed with its verification outstanding is a row closed early, and
   the honest form is the one now in the board: closed on the second attempt, with the
   first attempt's failure written into it rather than tidied away.
+
+### 2026-08-20 — the ledger reached zero, and deleting it was the wrong move
+
+**Symptom.** B-75's own done condition says: the number is zero, the file is deleted along
+with the code that reads it, and the sweep's closing line goes back to "every user-facing
+sentence is in the catalogue". The number reached zero this run. Following the condition
+would have shipped a claim the tool cannot support — B-76, filed one run earlier, records
+two classes of sentence its anchor cannot see, and four live strings were sitting in those
+classes while it called their files clean.
+
+**Stage it surfaced at.** 10, the ladder walk, on the row's own exit criterion.
+
+**Stage that owned it.** 0 of the run that *wrote* the criterion. "Zero, file deleted" was
+written when the sweep was believed to be complete. The criterion aged into a false one the
+moment its measurer was found to be partial, and nothing re-derives a done condition when
+the ground under it moves.
+
+**Root cause.** A done condition is a claim about the future, written with the confidence
+of the present. This one encoded "the ledger is empty" as "there is nothing left" — the
+same substitution standing instruction #3 forbids in the other direction.
+
+**Fix, by grade.** *Structural:* the closing line now says "nothing the sweep can see is
+outside the catalogue", and names B-76 for what it cannot. *Structural:* the baseline file
+stays with an empty map and the exact-match rule intact, so a new entry is a regression
+somebody has to argue for rather than a number to top up. *Process:* the deviation from the
+row's stated criterion is written into the row itself, with the reason — a closed row whose
+exit criterion was quietly not met is worse than an open one.
+
+**The check that catches it next time.** The sweep's own output carries the caveat, so
+nobody can read a green from it as completeness without reading the row that limits it. The
+file goes when B-76 lands, and B-76's done condition is a plant per blind class — a
+measurement, not a belief.
+
+### 2026-08-20 — "for the worker" named the wrong worker
+
+**Symptom.** `OUR_FEEDS.en` carried the comment "The English name, for the worker, which
+has no catalogue." Two call sites in the browser extension's *service* worker used it
+inside `t(...)` calls — substituting `Okolos phishing list` into Russian sentences on the
+download check and in a journal row. The premise had been true and stopped being true at
+B-51, when the worker got a catalogue and an installed resolver.
+
+**Stage it surfaced at.** 5, and only because the file was on B-75's list for an unrelated
+string. Nothing else would have found it: the sweep sees `t('downloadListedBy', …)` and is
+satisfied, because the English is in an *argument*, not in the sentence.
+
+**Stage that owned it.** 9 of the run that installed the resolver in the worker. Making a
+capability true somewhere invalidates every comment that says it is false there, and
+"docs ship in the same change" covers the code being changed, not the sentence three
+packages away that justified an alternative.
+
+**Root cause.** The word "worker" names two things in this repository — a Cloudflare worker
+with no `_locales` and a service worker that has them — and a comment that used it
+unqualified read as permission at both.
+
+**Fix, by grade.** *Structural:* both call sites use `displayFeedName(…, t)`; the field's
+note names `apps/proxy` explicitly and records what the loose wording cost. *Check:*
+`feed-words.test.ts` asserts our own list is never named by its identifier and never by its
+English name, so the substitution cannot come back quietly.
+
+**The check that catches it next time.** A comment justifying an English string now has to
+name the surface that cannot translate, not the role. `apps/proxy` resolves to one thing;
+"the worker" resolves to two.
 
 ### 2026-08-20 — the second source of one truth was the words, and the code was already there
 

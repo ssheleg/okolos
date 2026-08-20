@@ -378,6 +378,45 @@
       }
     }
   },
+  "credFactFirstDay": {
+    "message": "This is the first day this device has seen this site."
+  },
+  "credFactImitates": {
+    "message": "This address imitates $OTHER$.",
+    "placeholders": {
+      "other": {
+        "content": "$1"
+      }
+    }
+  },
+  "credFactNotEncrypted": {
+    "message": "This connection is not encrypted, so anything typed here can be read in transit."
+  },
+  "credFactPostsElsewhere": {
+    "message": "This form sends what you type to $WHERE$, not to $HOST$.",
+    "placeholders": {
+      "where": {
+        "content": "$1"
+      },
+      "host": {
+        "content": "$2"
+      }
+    }
+  },
+  "credFactSeenForDays": {
+    "message": "This device first saw this site $DAYS$ day(s) ago.",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "credUnknownHowLong": {
+    "message": "how long you have been visiting this site — no earlier visit is recorded on this device"
+  },
+  "credUnknownWhenRegistered": {
+    "message": "when the domain was registered — that would require asking the service about this address"
+  },
   "dashboardBack": {
     "message": "← Overview"
   },
@@ -1353,6 +1392,31 @@
   },
   "popupStorageNote": {
     "message": "This is a storage problem. It is not a statement that this page is fine."
+  },
+  "pwdExplainAbsent": {
+    "message": "This password does not appear in the breach corpus. Only the first five characters of its fingerprint were sent."
+  },
+  "pwdExplainCommon": {
+    "message": "This password is one of the most common in the world. It was recognised on this device, so nothing was sent anywhere."
+  },
+  "pwdExplainFound": {
+    "message": "This password appears $COUNT$ times in breached data. Only the first five characters of its fingerprint were sent.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "pwdExplainUnreachable": {
+    "message": "This password could not be checked: $CAUSE$. That is not a statement that it is safe.",
+    "placeholders": {
+      "cause": {
+        "content": "$1"
+      }
+    }
+  },
+  "pwdExplainUnreadable": {
+    "message": "This password could not be checked: the answer from the breach corpus could not be read. That is not a statement that it is safe."
   },
   "queueDefer": {
     "message": "Not now"

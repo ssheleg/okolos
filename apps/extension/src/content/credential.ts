@@ -1,5 +1,5 @@
 import { t } from '@okolos/i18n'
-import { guardCredentialEntry, type CredentialContext } from '@okolos/core-credential'
+import { guardCredentialEntry, type CredentialContext, type CredentialWarning } from '@okolos/core-credential'
 import { mountBanner, type BannerHandle, type BannerHandlers, type BannerProps } from '@okolos/ui'
 
 /**
@@ -53,6 +53,35 @@ function isSensitive(element: Element): boolean {
   return /card(number|num)?|cardnumber/i.test(name)
 }
 
+/**
+ * Credential facts and unknowns to catalogue keys.
+ *
+ * `*_KEY` tables rather than a computed key, because that is the form the locale gate
+ * reads; a computed one would make all seven messages look dead to it (B-75).
+ */
+const FACT_KEY: Record<string, string> = {
+  'not-encrypted': 'credFactNotEncrypted',
+  imitates: 'credFactImitates',
+  'posts-elsewhere': 'credFactPostsElsewhere',
+  'first-day': 'credFactFirstDay',
+  'seen-for-days': 'credFactSeenForDays',
+}
+
+const UNKNOWN_KEY: Record<string, string> = {
+  'how-long-visited': 'credUnknownHowLong',
+  'when-registered': 'credUnknownWhenRegistered',
+}
+
+/** One fact, in words. An unknown code shows itself: wrong and visible beats invisible. */
+function factSentence(fact: CredentialWarning['facts'][number]): string {
+  const key = FACT_KEY[fact.code]
+  if (key === undefined) return fact.code
+  if (fact.code === 'imitates') return t(key, fact.resembles)
+  if (fact.code === 'posts-elsewhere') return t(key, fact.postsTo, fact.host)
+  if (fact.code === 'seen-for-days') return t(key, String(fact.days))
+  return t(key)
+}
+
 /** The injected mount, or the real one when a caller did not supply a slot. */
 function mounting(deps: { readonly doc: Document; mountWarning?: (p: BannerProps, h: BannerHandlers) => BannerHandle }) {
   return (props: BannerProps, handlers: BannerHandlers): BannerHandle =>
@@ -95,8 +124,18 @@ export function watchCredentialFields(deps: CredentialDeps): CredentialWatcher {
         severity: warning.severity,
         headline: t('warnCredentialHeadline'),
         detail: [
-          ...warning.facts,
-          warning.missing.length > 0 ? t('warnCredentialUnknown', warning.missing.join('; ')) : '',
+          ...warning.facts.map(factSentence),
+          warning.missing.length > 0
+            ? t(
+                'warnCredentialUnknown',
+                warning.missing
+                  .map((unknown) => {
+                    const key = UNKNOWN_KEY[unknown.code]
+                    return key === undefined ? unknown.code : t(key)
+                  })
+                  .join('; '),
+              )
+            : '',
         ]
           .filter(Boolean)
           .join(' '),

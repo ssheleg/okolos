@@ -32,44 +32,44 @@ describe('when it speaks', () => {
   it('on an unencrypted page, because that is a fact and not a guess', () => {
     const warning = guardCredentialEntry(ctx({ secure: false }))
     expect(warning?.severity).toBe('critical')
-    expect(warning?.facts[0]).toMatch(/not encrypted/i)
+    expect(warning?.facts[0]).toEqual({ code: 'not-encrypted' })
   })
 
   it('when the address imitates one the user trusts', () => {
     const warning = guardCredentialEntry(ctx({ resembles: 'paypal.com' }))
     expect(warning?.severity).toBe('critical')
-    expect(warning?.facts.join(' ')).toContain('paypal.com')
+    expect(warning?.facts).toContainEqual({ code: 'imitates', resembles: 'paypal.com' })
   })
 
   it('when the form sends the password somewhere else', () => {
     const warning = guardCredentialEntry(ctx({ postsTo: 'https://collector.test' }))
-    expect(warning?.facts.join(' ')).toContain('collector.test')
+    expect(warning?.facts.map((fact) => fact.code)).toContain('posts-elsewhere')
     expect(warning?.severity).toBe('major')
   })
 
   it('when this device has only just met the site', () => {
     const warning = guardCredentialEntry(ctx({ firstSeen: '2026-08-05T09:00:00.000Z' }))
-    expect(warning?.facts.join(' ')).toMatch(/first day/i)
+    expect(warning?.facts).toContainEqual({ code: 'first-day' })
   })
 
   it('counting the days when there are a few', () => {
     const warning = guardCredentialEntry(ctx({ firstSeen: '2026-08-02T12:00:00.000Z' }))
-    expect(warning?.facts.join(' ')).toContain('3 days ago')
+    expect(warning?.facts).toContainEqual({ code: 'seen-for-days', days: 3 })
   })
 })
 
 describe('what it admits not knowing', () => {
   it('names the missing history instead of calling the site new', () => {
     const warning = guardCredentialEntry(ctx({ firstSeen: null }))
-    expect(warning?.missing.join(' ')).toMatch(/no earlier visit is recorded/i)
-    expect(warning?.facts.join(' ')).not.toMatch(/first day/i)
+    expect(warning?.missing).toContainEqual({ code: 'how-long-visited' })
+    expect(warning?.facts.map((fact) => fact.code)).not.toContain('first-day')
   })
 
   it('always says the registration date is not something it looks up', () => {
     // Looking it up would mean sending the address of every login page the
     // user visits to a server.
     const warning = guardCredentialEntry(ctx({ secure: false }))
-    expect(warning?.missing.join(' ')).toMatch(/registered/i)
+    expect(warning?.missing).toContainEqual({ code: 'when-registered' })
   })
 
   it('says nothing at all when there is nothing to say, missing facts included', () => {

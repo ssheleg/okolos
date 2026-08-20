@@ -716,6 +716,32 @@ if (isTopFrame) {
  * reassurance is the reason the "Check reuse" control was removed for two
  * releases rather than left answering from a store that did not exist.
  */
+/**
+ * Why a password check answered what it did, in the reader's language.
+ *
+ * The package sent six English sentences across the RPC, one of them with the count
+ * already formatted by `toLocaleString('en')` — an English thousands separator chosen
+ * inside a package that has no business knowing the reader's locale (B-75). The count
+ * travels as a number now and is formatted here, with no locale argument, so the
+ * runtime's own is used.
+ */
+const PASSWORD_EXPLAIN_KEY: Record<string, string> = {
+  'in-common-list': 'pwdExplainCommon',
+  unreachable: 'pwdExplainUnreachable',
+  unreadable: 'pwdExplainUnreadable',
+  absent: 'pwdExplainAbsent',
+  found: 'pwdExplainFound',
+}
+
+/** One explanation, in words. An unknown code shows itself rather than nothing. */
+function explainPassword(explain: { code: string; detail?: string; count?: number }): string {
+  const key = PASSWORD_EXPLAIN_KEY[explain.code]
+  if (key === undefined) return explain.code
+  if (explain.code === 'unreachable') return t(key, explain.detail ?? '')
+  if (explain.code === 'found') return t(key, (explain.count ?? 0).toLocaleString())
+  return t(key)
+}
+
 function reuseLine(verdict: { reusedOn: string[]; reuseUnknown: boolean }): string {
   if (verdict.reuseUnknown) return t('warnPasswordReuseUnknown')
   if (verdict.reusedOn.length === 0) return t('warnPasswordReuseNone')
@@ -781,7 +807,7 @@ if (isTopFrame) {
               // "this password is in a breach" and "you use it in four places"
               // are two facts, and the second is what turns the first into
               // something to do this evening.
-              detail: `${verdict.explain} ${reuseLine(verdict)}`,
+              detail: `${explainPassword(verdict.explain)} ${reuseLine(verdict)}`,
               sourceLine: t(
                 'warnFoundBy',
                 verdict.offline ? t('warnPasswordSourceOffline') : t('warnPasswordSourceOnline'),

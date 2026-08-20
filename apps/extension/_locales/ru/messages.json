@@ -378,6 +378,45 @@
       }
     }
   },
+  "credFactFirstDay": {
+    "message": "Это устройство видит сайт первый день."
+  },
+  "credFactImitates": {
+    "message": "Этот адрес подражает $OTHER$.",
+    "placeholders": {
+      "other": {
+        "content": "$1"
+      }
+    }
+  },
+  "credFactNotEncrypted": {
+    "message": "Соединение не зашифровано — всё, что здесь набрано, можно прочитать по пути."
+  },
+  "credFactPostsElsewhere": {
+    "message": "Эта форма отправляет набранное на $WHERE$, а не на $HOST$.",
+    "placeholders": {
+      "where": {
+        "content": "$1"
+      },
+      "host": {
+        "content": "$2"
+      }
+    }
+  },
+  "credFactSeenForDays": {
+    "message": "Это устройство впервые увидело сайт дней назад: $DAYS$.",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "credUnknownHowLong": {
+    "message": "сколько вы уже ходите на этот сайт — на устройстве нет записи о прежнем визите"
+  },
+  "credUnknownWhenRegistered": {
+    "message": "когда домен зарегистрирован — для этого пришлось бы спрашивать про адрес у сервиса"
+  },
   "dashboardBack": {
     "message": "← Обзор"
   },
@@ -1353,6 +1392,31 @@
   },
   "popupStorageNote": {
     "message": "Это неполадка хранилища. Это не утверждение, что страница в порядке."
+  },
+  "pwdExplainAbsent": {
+    "message": "В корпусе утечек этого пароля нет. Отправлялись только первые пять символов отпечатка."
+  },
+  "pwdExplainCommon": {
+    "message": "Этот пароль — один из самых распространённых в мире. Он опознан на устройстве, поэтому никуда ничего не отправлялось."
+  },
+  "pwdExplainFound": {
+    "message": "В утечках этот пароль встречается раз: $COUNT$. Отправлялись только первые пять символов отпечатка.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "pwdExplainUnreachable": {
+    "message": "Пароль проверить не удалось: $CAUSE$. Это не значит, что он безопасен.",
+    "placeholders": {
+      "cause": {
+        "content": "$1"
+      }
+    }
+  },
+  "pwdExplainUnreadable": {
+    "message": "Пароль проверить не удалось: ответ корпуса утечек не прочитался. Это не значит, что он безопасен."
   },
   "queueDefer": {
     "message": "Не сейчас"

@@ -84,7 +84,7 @@ describe('everything else', () => {
     const verdict = await checkSubmittedPassword(RARE, d)
     expect(verdict.source).toBe('nothing')
     expect(verdict.compromised).toBe(false)
-    expect(verdict.explain).toMatch(/could not be checked/i)
+    expect(verdict.explain.code).toBe('unreachable')
   })
 })
 

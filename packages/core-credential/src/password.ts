@@ -32,6 +32,22 @@ export interface PasswordCheckDeps {
 
 export type PasswordSource = 'built-in list' | 'range query' | 'nothing'
 
+/**
+ * Why the answer is what it is, as a code rather than a sentence.
+ *
+ * Six English sentences lived here, in a package with zero dependencies, and one of them
+ * formatted a number with `toLocaleString('en')` — an English thousands separator on a
+ * ru-default interface, which the i18n sweep cannot even see because it is not a quoted
+ * string (B-75). The words belong to the surface; what belongs here is which case this
+ * is and the numbers that case needs.
+ */
+export type PasswordExplanation =
+  | { readonly code: 'in-common-list' }
+  | { readonly code: 'unreachable'; readonly detail: string }
+  | { readonly code: 'unreadable' }
+  | { readonly code: 'absent' }
+  | { readonly code: 'found'; readonly count: number }
+
 export interface PasswordVerdict {
   readonly compromised: boolean
   /** How many times it appears, when the source says. */
@@ -39,7 +55,7 @@ export interface PasswordVerdict {
   readonly source: PasswordSource
   /** True when the answer cost no network request at all. */
   readonly offline: boolean
-  readonly explain: string
+  readonly explain: PasswordExplanation
 }
 
 export async function checkPassword(deps: PasswordCheckDeps): Promise<PasswordVerdict> {
@@ -53,8 +69,7 @@ export async function checkPassword(deps: PasswordCheckDeps): Promise<PasswordVe
       count: null,
       source: 'built-in list',
       offline: true,
-      explain:
-        'This password is one of the most common in the world. It was recognised on this device, so nothing was sent anywhere.',
+      explain: { code: 'in-common-list' },
     }
   }
 
@@ -68,7 +83,10 @@ export async function checkPassword(deps: PasswordCheckDeps): Promise<PasswordVe
       count: null,
       source: 'nothing',
       offline: false,
-      explain: `This password could not be checked: ${cause instanceof Error ? cause.message : String(cause)}.`,
+      explain: {
+        code: 'unreachable',
+        detail: cause instanceof Error ? cause.message : String(cause),
+      },
     }
   }
 
@@ -82,8 +100,7 @@ export async function checkPassword(deps: PasswordCheckDeps): Promise<PasswordVe
       count: null,
       source: 'nothing',
       offline: false,
-      explain:
-        'This password could not be checked: the answer from the breach corpus could not be read. That is not a statement that it is safe.',
+      explain: { code: 'unreadable' },
     }
   }
 
@@ -93,8 +110,7 @@ export async function checkPassword(deps: PasswordCheckDeps): Promise<PasswordVe
       count: null,
       source: 'range query',
       offline: false,
-      explain:
-        'This password does not appear in the breach corpus. Only the first five characters of its fingerprint were sent.',
+      explain: { code: 'absent' },
     }
   }
 
@@ -103,7 +119,12 @@ export async function checkPassword(deps: PasswordCheckDeps): Promise<PasswordVe
     count: answer.count,
     source: 'range query',
     offline: false,
-    explain: `This password appears ${answer.count.toLocaleString('en')} times in breached data. Only the first five characters of its fingerprint were sent.`,
+    /**
+     * The count travels as a number, not as a formatted string. It used to be
+     * `toLocaleString('en')` — an English thousands separator, chosen inside a package
+     * that has no business knowing the reader's locale.
+     */
+    explain: { code: 'found', count: answer.count },
   }
 }
 

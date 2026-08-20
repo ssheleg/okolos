@@ -544,7 +544,8 @@ async function handlePasswordCheck(payload: { sha1: string; host: string }): Pro
   compromised: boolean
   count: number | null
   offline: boolean
-  explain: string
+  // A code and its numbers: the sentence is written where the catalogue is (B-75).
+  explain: { code: string; detail?: string; count?: number }
   reusedOn: string[]
   reuseUnknown: boolean
 }> {

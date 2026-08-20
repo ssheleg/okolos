@@ -100,7 +100,14 @@ export interface RpcMap {
       compromised: boolean
       count: number | null
       offline: boolean
-      explain: string
+      /**
+       * A code and its numbers, not a sentence.
+       *
+       * Six English explanations used to cross this line from a zero-dependency
+       * package, one of them with an English thousands separator baked in (B-75). The
+       * words belong to the surface that shows the banner.
+       */
+      explain: { code: string; detail?: string; count?: number }
       /** Other hosts this device has seen the same password on, oldest first. */
       reusedOn: string[]
       /**

@@ -29,52 +29,66 @@ export interface CredentialContext {
   readonly now: string
 }
 
+/**
+ * What is known and what is not, as codes rather than sentences.
+ *
+ * They were English sentences in a package with zero dependencies (B-75) — including
+ * `day${age === 1 ? '' : 's'}`, English pluralisation that no Russian sentence can
+ * borrow. The words belong to `apps/extension/src/content/credential.ts`, which has the
+ * catalogue; what belongs here is which facts are true and how serious they make this.
+ */
+export type CredentialFact =
+  | { readonly code: 'not-encrypted' }
+  | { readonly code: 'imitates'; readonly resembles: string }
+  | { readonly code: 'posts-elsewhere'; readonly postsTo: string; readonly host: string }
+  | { readonly code: 'first-day' }
+  | { readonly code: 'seen-for-days'; readonly days: number }
+
+/** Something this product cannot know, named rather than assumed. */
+export type CredentialUnknown = { readonly code: 'how-long-visited' } | { readonly code: 'when-registered' }
+
 export interface CredentialWarning {
   readonly severity: 'critical' | 'major' | 'minor'
-  /** What is known, in sentences the user can act on. */
-  readonly facts: readonly string[]
+  /** What is known — codes, so the surface can say it in the reader's language. */
+  readonly facts: readonly CredentialFact[]
   /** What is not known, named rather than assumed. */
-  readonly missing: readonly string[]
+  readonly missing: readonly CredentialUnknown[]
 }
 
 export function guardCredentialEntry(ctx: CredentialContext): CredentialWarning | null {
   if (ctx.trusted) return null
 
-  const facts: string[] = []
-  const missing: string[] = []
+  const facts: CredentialFact[] = []
+  const missing: CredentialUnknown[] = []
   let severity: CredentialWarning['severity'] = 'minor'
 
   if (!ctx.secure) {
     // Not a heuristic: anything typed here travels in the clear.
-    facts.push('This connection is not encrypted, so anything typed here can be read in transit.')
+    facts.push({ code: 'not-encrypted' })
     severity = 'critical'
   }
 
   if (ctx.resembles) {
-    facts.push(`This address imitates ${ctx.resembles}.`)
+    facts.push({ code: 'imitates', resembles: ctx.resembles })
     severity = 'critical'
   }
 
   if (ctx.postsTo) {
-    facts.push(`This form sends what you type to ${ctx.postsTo}, not to ${ctx.host}.`)
+    facts.push({ code: 'posts-elsewhere', postsTo: ctx.postsTo, host: ctx.host })
     if (severity !== 'critical') severity = 'major'
   }
 
   const age = daysSince(ctx.firstSeen, ctx.now)
   if (age === null) {
-    missing.push('how long you have been visiting this site — no earlier visit is recorded on this device')
+    missing.push({ code: 'how-long-visited' })
   } else if (age < ESTABLISHED_AFTER_DAYS) {
-    facts.push(
-      age === 0
-        ? 'This is the first day this device has seen this site.'
-        : `This device first saw this site ${age} day${age === 1 ? '' : 's'} ago.`,
-    )
+    facts.push(age === 0 ? { code: 'first-day' } : { code: 'seen-for-days', days: age })
     if (severity === 'minor') severity = 'major'
   }
 
   // Nothing is looked up anywhere, so the fact a paid product would show is a
   // fact this one has to admit it does not have.
-  missing.push('when the domain was registered — that would require asking a server about this address')
+  missing.push({ code: 'when-registered' })
 
   const established = age !== null && age >= ESTABLISHED_AFTER_DAYS
   if (facts.length === 0 && established) return null

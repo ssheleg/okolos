@@ -37,7 +37,7 @@ describe('a password the device already recognises', () => {
     const verdict = await checkPassword(
       deps({ sha1: COMMON, localSuffixes: () => [COMMON.slice(PREFIX_LENGTH)] }),
     )
-    expect(verdict.explain).toMatch(/nothing was sent/i)
+    expect(verdict.explain).toEqual({ code: 'in-common-list' })
   })
 })
 
@@ -66,7 +66,7 @@ describe('a password the device does not recognise', () => {
   it('is reported as clean when it is not', async () => {
     const verdict = await checkPassword(deps())
     expect(verdict.compromised).toBe(false)
-    expect(verdict.explain).toMatch(/only the first five/i)
+    expect(verdict.explain.code).toMatch(/absent|found/)
   })
 
   it('matches a suffix whatever case the server used', async () => {
@@ -93,7 +93,7 @@ describe('a password the device does not recognise', () => {
     )
     expect(verdict.compromised).toBe(false)
     expect(verdict.count).toBeNull()
-    expect(verdict.explain).toMatch(/could not be read/i)
+    expect(verdict.explain).toEqual({ code: 'unreadable' })
   })
 })
 
@@ -107,7 +107,7 @@ describe('when the check cannot be made', () => {
       }),
     )
     expect(verdict.source).toBe('nothing')
-    expect(verdict.explain).toMatch(/could not be checked/i)
+    expect(verdict.explain.code).toBe('unreachable')
   })
 })
 
@@ -142,7 +142,7 @@ describe('what a range response is allowed to mean', () => {
     const verdict = await check(`${suffix}:not-a-number`)
     expect(verdict.compromised).toBe(false)
     expect(verdict.count).toBeNull()
-    expect(verdict.explain).toMatch(/could not be read|could not be checked/i)
+    expect(['unreadable', 'unreachable']).toContain(verdict.explain.code)
   })
 
   it('still reports a real hit, with its real count', async () => {

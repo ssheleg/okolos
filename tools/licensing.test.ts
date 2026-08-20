@@ -1,9 +1,9 @@
-import { readFileSync, existsSync, readdirSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-import { directoriesIn } from './tree.mjs'
+import { directoriesIn, filesUnder } from './tree.mjs'
 
 /**
  * REQ-30 — the licence and the attributions this project owes.
@@ -131,8 +131,10 @@ describe('the licences of what this project consumes', () => {
   const shipped = (): Array<{ name: string; from: string }> => {
     const manifests = [
       'package.json',
-      ...readdirSync(path.join(root, 'packages')).map((d) => `packages/${d}/package.json`),
-      ...readdirSync(path.join(root, 'apps')).map((d) => `apps/${d}/package.json`),
+      // `directoriesIn`, because `readdirSync` returns entries and this gate used each
+      // one as a path segment — the class `tree.mjs` exists for (B-26, B-58).
+      ...directoriesIn(path.join(root, 'packages')).map((d) => `packages/${d}/package.json`),
+      ...directoriesIn(path.join(root, 'apps')).map((d) => `apps/${d}/package.json`),
     ].filter((p) => existsSync(path.join(root, p)))
 
     return manifests.flatMap((from) => {
@@ -183,14 +185,16 @@ describe('the licences of what this project consumes', () => {
   })
 })
 
-/** Files under a directory, recursively — no dependency, and the tree is small. */
+/**
+ * Files under a directory, recursively.
+ *
+ * `dist` is kept deliberately — this gate reads what ships, and the built output is
+ * exactly what ships — so the skip list is narrowed to `node_modules` rather than
+ * taken from the default (B-58).
+ */
 function walk(dir: string): string[] {
   if (!existsSync(dir)) return []
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const full = path.join(dir, entry.name)
-    if (entry.name === 'node_modules') return []
-    return entry.isDirectory() ? walk(full) : [full]
-  })
+  return filesUnder(dir, '', { skip: ['node_modules'] })
 }
 
 describe('the weights policy is written down and still true', () => {

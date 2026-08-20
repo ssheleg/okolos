@@ -66,6 +66,39 @@ export default tseslint.config(
     },
   },
 
+  /**
+   * B-58 — the gates read the tree through one definition, not each their own.
+   *
+   * `readdirSync(dir)` returns the *entries* of a directory, and the entries are not
+   * the directories: macOS writes `.DS_Store` into any folder its Finder has shown.
+   * B-26 closed the instance by writing `tools/tree.mjs`; twelve gates went on walking
+   * the tree themselves, each filtering differently — `statSync().isDirectory()` in
+   * three, a `^\d{4}-` pattern in one, an `existsSync` put there for another reason
+   * entirely in a fifth. A class closed by a helper nobody has to use is a class that
+   * comes back.
+   *
+   * `tree.mjs` itself is exempt: it is where the call lives.
+   */
+  {
+    files: ['tools/**/*.ts', 'tools/**/*.mjs'],
+    ignores: ['tools/tree.mjs', 'tools/tree.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'node:fs',
+              importNames: ['readdirSync'],
+              message:
+                'Read the tree through tools/tree.mjs — directoriesIn, filesIn or filesUnder (B-58). readdirSync returns entries, and .DS_Store is an entry.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // REQ-01 — core-* is pure: no browser APIs, no network, no clock, no
   // randomness. This is what makes detectors reproducible on a corpus.
   {

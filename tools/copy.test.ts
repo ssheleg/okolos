@@ -12,10 +12,12 @@
  * carries part of a password hash.
  */
 
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+
+import { filesUnder } from './tree.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const read = (p: string): string => readFileSync(path.join(root, p), 'utf8')
@@ -115,19 +117,12 @@ describe('a catalogue key never reaches the screen unresolved', () => {
    * is a perfectly good string, the types are satisfied, and the screen is
    * wrong.
    */
-  const sources: string[] = []
-  const walk = (dir: string): void => {
-    for (const entry of readdirSync(path.join(root, dir))) {
-      const rel = path.join(dir, entry)
-      if (statSync(path.join(root, rel)).isDirectory()) {
-        if (entry !== 'node_modules' && entry !== 'dist') walk(rel)
-      } else if (entry.endsWith('.ts') && !entry.endsWith('.test.ts')) {
-        sources.push(rel)
-      }
-    }
-  }
-  walk('packages/ui/src')
-  walk('apps/extension/src')
+  // `filesUnder` is the shared walker; the test-file filter is this gate's own rule.
+  // Both walks here were the same eight lines, written twice (B-58).
+  const sources: string[] = ['packages/ui/src', 'apps/extension/src']
+    .flatMap((dir) => filesUnder(path.join(root, dir), '.ts'))
+    .filter((file) => !file.endsWith('.test.ts'))
+    .map((file) => path.relative(root, file))
 
   it('is reading real files', () => {
     expect(sources.length).toBeGreaterThan(20)
@@ -163,19 +158,10 @@ describe('nothing asks the catalogue before a resolver exists', () => {
    * catalogue became a `const` holding a resolved message. Only the test that
    * asserted the actual words noticed.
    */
-  const sources: string[] = []
-  const walk = (dir: string): void => {
-    for (const entry of readdirSync(path.join(root, dir))) {
-      const rel = path.join(dir, entry)
-      if (statSync(path.join(root, rel)).isDirectory()) {
-        if (entry !== 'node_modules' && entry !== 'dist') walk(rel)
-      } else if (entry.endsWith('.ts') && !entry.endsWith('.test.ts')) {
-        sources.push(rel)
-      }
-    }
-  }
-  walk('packages')
-  walk('apps/extension/src')
+  const sources: string[] = ['packages', 'apps/extension/src']
+    .flatMap((dir) => filesUnder(path.join(root, dir), '.ts'))
+    .filter((file) => !file.endsWith('.test.ts'))
+    .map((file) => path.relative(root, file))
 
   it('is reading real files', () => {
     expect(sources.length).toBeGreaterThan(40)

@@ -1,9 +1,9 @@
 import { execFileSync } from 'node:child_process'
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-import { directoriesIn } from './tree.mjs'
+import { directoriesIn, filesIn, filesUnder } from './tree.mjs'
 import { SCREENS } from './wireframes.mjs'
 // A relative path, not the package name: `tools/` is not a workspace member, so
 // vitest cannot resolve `@okolos/net` from here. The file is what matters anyway.
@@ -225,8 +225,8 @@ describe('a screen record names the controls its renderer draws', () => {
         .map((m) => `packages/${(m[1] as string).replace('@okolos/', '')}/src`)
         .flatMap((dir) => {
           try {
-            return readdirSync(path.join(root, dir))
-              .filter((name) => name.endsWith('.ts') && !name.endsWith('.test.ts'))
+            return filesIn(path.join(root, dir), '.ts')
+              .filter((name) => !name.endsWith('.test.ts'))
               .map((name) => readFileSync(path.join(root, dir, name), 'utf8'))
           } catch {
             return []
@@ -401,7 +401,7 @@ describe('the brand pack states facts, and a fact is checkable', () => {
   })
 
   it('counts e2e spec files rather than remembering them', () => {
-    const specs = readdirSync(path.join(root, 'e2e')).filter((f) => f.endsWith('.spec.ts')).length
+    const specs = filesIn(path.join(root, 'e2e'), '.spec.ts').length
     // The number, not the noun after it. Hardcoding `${n} файлов` demanded the
     // genitive plural for every count, so at 22 the gate insisted on "22
     // файлов" — wrong Russian, in the one document whose subject is the
@@ -599,14 +599,10 @@ describe('the privacy policy describes the code, not an intention', () => {
      */
     const hosts = new Set<string>()
     const walk = (dir: string): void => {
-      for (const entry of readdirSync(dir, { withFileTypes: true })) {
-        const p = path.join(dir, entry.name)
-        if (entry.isDirectory()) {
-          if (entry.name !== 'node_modules' && entry.name !== 'dist') walk(p)
-        } else if (entry.name.endsWith('.ts') && !entry.name.endsWith('.test.ts')) {
-          for (const m of readFileSync(p, 'utf8').matchAll(/https:\/\/([a-z0-9.-]+)/g)) {
-            hosts.add(m[1] as string)
-          }
+      for (const file of filesUnder(dir, '.ts')) {
+        if (file.endsWith('.test.ts')) continue
+        for (const m of readFileSync(file, 'utf8').matchAll(/https:\/\/([a-z0-9.-]+)/g)) {
+          hosts.add(m[1] as string)
         }
       }
     }

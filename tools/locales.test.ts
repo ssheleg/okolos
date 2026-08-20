@@ -12,12 +12,12 @@
  * a line the next person has to decide about.
  */
 
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-import { directoriesIn } from './tree.mjs'
+import { directoriesIn, filesUnder } from './tree.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const localesDir = path.join(root, 'apps/extension/_locales')
@@ -59,11 +59,11 @@ const read = (locale: string): Catalogue =>
 function keysAsked(): Set<string> {
   const keys = new Set<string>()
   const walk = (dir: string): void => {
-    for (const name of readdirSync(dir)) {
-      const p = path.join(dir, name)
-      if (statSync(p).isDirectory()) {
-        if (name !== 'node_modules' && name !== 'dist') walk(p)
-      } else if (name.endsWith('.ts') && !name.endsWith('.test.ts')) {
+    // `filesUnder` walks and skips `node_modules` and `dist`, which this function did
+    // by hand. The test-file filter stays here: it is this gate's rule, not the
+    // walker's (B-58).
+    for (const p of filesUnder(dir, '.ts')) {
+      if (!p.endsWith('.test.ts')) {
         const text = readFileSync(p, 'utf8')
         for (const m of text.matchAll(/\bt\(\s*'([a-zA-Z0-9_.]+)'/g)) keys.add(m[1] as string)
         for (const block of text.matchAll(/const \w+_KEY(?::[^=]*)? = \{([\s\S]*?)\n\}/g)) {

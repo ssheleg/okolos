@@ -20,29 +20,27 @@
  * code that reads `location.hash`.
  */
 
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 import { ALL_VIEWS, optionsPageFor, routeFor } from '../apps/extension/src/options/views.js'
 
+import { filesUnder } from './tree.mjs'
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const extension = path.join(root, 'apps/extension/src')
 
 function sources(dir: string): Array<{ file: string; text: string }> {
-  const out: Array<{ file: string; text: string }> = []
-  const walk = (d: string): void => {
-    for (const name of readdirSync(d)) {
-      const p = path.join(d, name)
-      if (statSync(p).isDirectory()) walk(p)
-      else if (name.endsWith('.ts') && !name.endsWith('.test.ts')) {
-        out.push({ file: path.relative(root, p), text: readFileSync(p, 'utf8') })
-      }
-    }
-  }
-  walk(dir)
-  return out
+  /**
+   * `filesUnder` walks, and it skips `node_modules` and `dist` — which this function
+   * did **not**, so it was also reading built output and finding every literal twice
+   * (B-58). The test-file filter stays: that is this gate's rule, not the walker's.
+   */
+  return filesUnder(dir, '.ts')
+    .filter((file) => !file.endsWith('.test.ts'))
+    .map((file) => ({ file: path.relative(root, file), text: readFileSync(file, 'utf8') }))
 }
 
 /** The pages `tools/build.mjs` emits, which are the only ones `getUrl` can name. */

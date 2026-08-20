@@ -7,10 +7,12 @@
  * sentence nobody checks.
  */
 
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+
+import { filesIn } from './tree.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const listing = readFileSync(path.join(root, 'docs/store/listing.md'), 'utf8')
@@ -93,7 +95,7 @@ describe('the screenshots are of this product', () => {
 
   it('exist, and are the size the store requires', () => {
     expect(existsSync(dir), 'no screenshots directory').toBe(true)
-    const shots = readdirSync(dir).filter((f) => f.endsWith('.png'))
+    const shots = filesIn(dir, '.png')
     expect(shots.length, 'the store wants at least one').toBeGreaterThanOrEqual(1)
     for (const shot of shots) {
       const png = readFileSync(path.join(dir, shot))

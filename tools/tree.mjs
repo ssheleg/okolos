@@ -30,6 +30,7 @@
  */
 
 import { readdirSync } from 'node:fs'
+import path from 'node:path'
 
 /** The directories directly inside `dir`, by name, sorted. */
 export function directoriesIn(dir) {
@@ -50,4 +51,34 @@ export function filesIn(dir, suffix) {
     .filter((entry) => entry.isFile() && entry.name.endsWith(suffix))
     .map((entry) => entry.name)
     .sort()
+}
+
+/**
+ * Every file under `dir` whose name ends with `suffix`, recursively, sorted.
+ *
+ * **Added because the rule needed it, not the other way round.** Six gates walked the
+ * tree themselves — `coverage-shape`, `docs`, `licensing`, `reachable`, `secrets`,
+ * `test-quality` — and forbidding `readdirSync` in `tools/**` without giving them this
+ * would have sent them to write an `eslint-disable` instead, which is a boundary that
+ * teaches people to step over it (B-58).
+ *
+ * `skip` names directories, not paths: every one of those six skipped `node_modules`
+ * and `dist` and none of them skipped anything else, so that is the default and it is
+ * the whole reason the parameter exists rather than a hardcoded pair.
+ */
+export function filesUnder(dir, suffix, { skip = ['node_modules', 'dist'] } = {}) {
+  const skipped = new Set(skip)
+  const out = []
+  const walk = (here) => {
+    for (const entry of readdirSync(here, { withFileTypes: true })) {
+      const full = path.join(here, entry.name)
+      if (entry.isDirectory()) {
+        if (!skipped.has(entry.name)) walk(full)
+      } else if (entry.isFile() && entry.name.endsWith(suffix)) {
+        out.push(full)
+      }
+    }
+  }
+  walk(dir)
+  return out.sort()
 }

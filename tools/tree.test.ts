@@ -15,7 +15,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { directoriesIn, filesIn } from './tree.mjs'
+import { directoriesIn, filesIn, filesUnder } from './tree.mjs'
 
 let dir: string
 
@@ -77,5 +77,73 @@ describe('filesIn', () => {
     // The failure mode worth pinning: a suffix check written as a truthiness
     // test would return the whole listing here.
     expect(filesIn(dir, '.nope')).toEqual([])
+  })
+})
+
+describe('filesUnder', () => {
+  /**
+   * Built here, not read from the repository — the same reason the fixtures above are:
+   * a check against the real tree agrees with whatever the tree happens to hold today,
+   * and the defect this module closes was a verdict that depended on which folders
+   * somebody had opened in Finder. My first version of these tests read `packages/`,
+   * which is that mistake with a new name.
+   */
+  let deep: string
+
+  beforeAll(() => {
+    deep = mkdtempSync(path.join(tmpdir(), 'okolos-under-'))
+    mkdirSync(path.join(deep, 'src', 'nested'), { recursive: true })
+    mkdirSync(path.join(deep, 'node_modules', 'dep'), { recursive: true })
+    mkdirSync(path.join(deep, 'dist'), { recursive: true })
+    writeFileSync(path.join(deep, 'top.ts'), '')
+    writeFileSync(path.join(deep, 'src', 'middle.ts'), '')
+    writeFileSync(path.join(deep, 'src', 'nested', 'bottom.ts'), '')
+    writeFileSync(path.join(deep, 'src', 'notes.md'), '')
+    writeFileSync(path.join(deep, '.DS_Store'), 'Finder wrote this')
+    writeFileSync(path.join(deep, 'node_modules', 'dep', 'index.ts'), '')
+    writeFileSync(path.join(deep, 'dist', 'built.ts'), '')
+  })
+
+  afterAll(() => {
+    rmSync(deep, { recursive: true, force: true })
+  })
+
+  it('finds every depth, and sorts', () => {
+    const found = filesUnder(deep, '.ts').map((file) => path.relative(deep, file))
+    expect(found).toEqual(['src/middle.ts', 'src/nested/bottom.ts', 'top.ts'].sort())
+  })
+
+  it('skips node_modules and dist by default, because every caller did', () => {
+    // Six gates walked the tree themselves and all six skipped exactly these two. The
+    // parameter exists so a caller can say otherwise, not so each can invent a list.
+    const found = filesUnder(deep, '.ts').map((file) => path.relative(deep, file))
+    expect(found.some((file) => file.startsWith('node_modules/'))).toBe(false)
+    expect(found.some((file) => file.startsWith('dist/'))).toBe(false)
+  })
+
+  it('honours a caller that wants a different skip', () => {
+    const found = filesUnder(deep, '.ts', { skip: ['node_modules'] }).map((file) =>
+      path.relative(deep, file),
+    )
+    expect(found).toContain('dist/built.ts')
+    expect(found.some((file) => file.startsWith('node_modules/'))).toBe(false)
+  })
+
+  it('throws on a directory that is not there, rather than answering "no files"', () => {
+    /**
+     * The guard the eleven gates depend on and none of them exercises. A gate handed a
+     * path that does not exist and answered with an empty list is absence reading as a
+     * pass — this project's most-repeated defect — so the walker refuses, and the one
+     * caller for whom missing is a real state (`build-age`, reporting "no build")
+     * checks for it itself.
+     */
+    expect(() => filesUnder(path.join(deep, 'nowhere'), '.ts')).toThrow()
+  })
+
+  it('takes the suffix as a requirement, so a dotfile cannot pass as a source', () => {
+    // The same reason `filesIn` demands one: a caller asking for "the files" is a
+    // caller that will accept `.DS_Store` as one.
+    expect(filesUnder(deep, '.ts').every((file) => file.endsWith('.ts'))).toBe(true)
+    expect(filesUnder(deep, '.md').map((file) => path.basename(file))).toEqual(['notes.md'])
   })
 })

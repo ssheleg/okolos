@@ -36,8 +36,10 @@
  * this file was written is 44. A measurement re-invented per run is a guess
  * wearing a number's clothes.
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
+
+import { filesUnder } from './tree.mjs'
 
 /**
  * Copy that is known, counted and not yet moved — with an owner.
@@ -90,13 +92,15 @@ const SENTENCE =
 /** Values that look like prose and are not: paths, MIME types, URLs. */
 const NOISE = /^(data-|https?:|chrome-extension:|application\/|text\/|[a-z]+\/[a-z]+$)/
 
+/**
+ * Sources this sweep reads: `.ts`, not a test.
+ *
+ * The walk is `tree.mjs`'s — twelve gates and four tools each wrote their own, and one
+ * of them read a directory's *entries* as if they were its directories (B-58). The
+ * test-file filter stays here, because it is this sweep's rule.
+ */
 function walk(dir) {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const full = path.join(dir, entry.name)
-    if (entry.isDirectory()) return walk(full)
-    if (!entry.name.endsWith('.ts') || entry.name.endsWith('.test.ts')) return []
-    return [full]
-  })
+  return filesUnder(dir, '.ts').filter((file) => !file.endsWith('.test.ts'))
 }
 
 /** A reason long enough to be one. `i18n-exempt: no` explains nothing. */

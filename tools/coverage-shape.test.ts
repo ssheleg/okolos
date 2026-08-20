@@ -1,6 +1,8 @@
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
+
+import { filesUnder } from './tree.mjs'
 
 /**
  * Every module that holds a rule is tested where the rule lives.
@@ -58,15 +60,17 @@ const EXEMPT: Record<string, string> = {
     'a seam that returns null until a classifier ships. There is nothing to assert beyond that, and licensing.test.ts asserts the descriptor it holds.',
 }
 
-/** Source modules, excluding tests, declarations and build output. */
-function sources(dir: string, out: string[] = []): string[] {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name)
-    if (entry.name === 'node_modules' || entry.name === 'dist') continue
-    if (entry.isDirectory()) sources(full, out)
-    else if (/\.(ts|mjs)$/.test(entry.name) && !/\.(test|d)\./.test(entry.name)) out.push(full)
-  }
-  return out
+/**
+ * Source modules, excluding tests, declarations and build output.
+ *
+ * The walk is `filesUnder`'s; the two suffixes and the "not a test, not a declaration"
+ * rule are this gate's own (B-58).
+ */
+function sources(dir: string): string[] {
+  return ['.ts', '.mjs']
+    .flatMap((suffix) => filesUnder(dir, suffix))
+    .filter((file) => !/\.(test|d)\./.test(path.basename(file)))
+    .sort()
 }
 
 /** A module that only re-exports has no rule of its own to test. */

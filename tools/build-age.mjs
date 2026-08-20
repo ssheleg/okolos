@@ -23,8 +23,10 @@
  * "built the wrong one" are different mistakes with different fixes — so they are
  * reported as different sentences.
  */
-import { readdirSync, statSync } from 'node:fs'
+import { existsSync, statSync } from 'node:fs'
 import path from 'node:path'
+
+import { filesUnder } from './tree.mjs'
 
 const root = path.resolve(import.meta.dirname, '..')
 
@@ -73,29 +75,37 @@ export function isBuildInput(file) {
 }
 
 /** Every file under `dir` matching `pattern`, with its mtime. */
+/**
+ * Every file under `dir` matching `pattern`, with its mtime.
+ *
+ * The walk is `tree.mjs`'s (B-58) — this module wrote its own that morning and put the
+ * `.DS_Store` class back in by hand. What stays here is the part that is this module's:
+ * the mtime, and the two exclusions tested against two different strings.
+ */
 function walk(dir, pattern, skipDir, skipFile = null) {
-  let entries
-  try {
-    entries = readdirSync(dir, { withFileTypes: true })
-  } catch {
-    return []
-  }
-  return entries.flatMap((entry) => {
-    const full = path.join(dir, entry.name)
-    if (entry.isDirectory()) {
-      // A directory pattern needs the trailing separator; a file pattern must not
-      // see it. Sharing one string between them is what disabled the file rule.
-      return skipDir.test(`${full}/`) ? [] : walk(full, pattern, skipDir, skipFile)
-    }
-    if (skipFile !== null && skipFile.test(full)) return []
-    if (!pattern.test(entry.name)) return []
-    try {
-      return [{ file: path.relative(root, full), at: statSync(full).mtimeMs }]
-    } catch {
-      // Removed between the listing and the stat. Not newer than anything.
-      return []
-    }
-  })
+  const skip = ['node_modules', 'dist'].filter((name) => skipDir.test(`/${name}/`))
+  /**
+   * The absent directory is answered here, not swallowed by the walker.
+   *
+   * `filesUnder` throws on a path that is not there, and that is right for a gate: a
+   * wrong path answered with "no files" is absence reading as a pass. This caller is
+   * the one place where missing means something — "no build" is exactly what
+   * `buildStamp` needs to report — so the decision sits here.
+   */
+  if (!existsSync(dir)) return []
+  return filesUnder(dir, '', { skip })
+    .filter((full) => {
+      if (skipFile !== null && skipFile.test(full)) return false
+      return pattern.test(path.basename(full))
+    })
+    .flatMap((full) => {
+      try {
+        return [{ file: path.relative(root, full), at: statSync(full).mtimeMs }]
+      } catch {
+        // Removed between the listing and the stat. Not newer than anything.
+        return []
+      }
+    })
 }
 
 /** The most recently touched thing the build reads, or null if the tree is gone. */

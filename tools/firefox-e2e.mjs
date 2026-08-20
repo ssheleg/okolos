@@ -31,7 +31,9 @@ import { spawn } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Builder, By, until } from 'selenium-webdriver'
-import { existsSync, readdirSync } from 'node:fs'
+import { existsSync } from 'node:fs'
+
+import { directoriesIn } from './tree.mjs'
 import { Options } from 'selenium-webdriver/firefox.js'
 
 import { buildTooOld } from './build-age.mjs'
@@ -68,7 +70,7 @@ function findFirefox() {
   for (const dir of roots) {
     let entries
     try {
-      entries = readdirSync(dir)
+      entries = directoriesIn(dir)
     } catch {
       continue
     }

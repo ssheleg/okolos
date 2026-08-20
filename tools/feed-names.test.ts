@@ -13,12 +13,14 @@
  *   3. no surface interpolates a raw feed identifier into copy.
  */
 
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 import { OUR_FEEDS } from '../packages/core-feeds/src/display.js'
+
+import { filesUnder } from './tree.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const read = (p: string): string => readFileSync(path.join(root, p), 'utf8')
@@ -63,20 +65,10 @@ describe('the lists this project names', () => {
 
 describe('no surface writes a feed identifier into copy', () => {
   /** Source files that could put a sentence in front of a person. */
-  const surfaces: string[] = []
-  const walk = (dir: string): void => {
-    for (const entry of readdirSync(path.join(root, dir))) {
-      const rel = path.join(dir, entry)
-      if (statSync(path.join(root, rel)).isDirectory()) {
-        if (entry !== 'node_modules' && entry !== 'dist') walk(rel)
-      } else if (entry.endsWith('.ts') && !entry.endsWith('.test.ts')) {
-        surfaces.push(rel)
-      }
-    }
-  }
-  walk('apps/extension/src')
-  walk('apps/proxy/src')
-  walk('packages/ui/src')
+  const surfaces: string[] = ['apps/extension/src', 'apps/proxy/src', 'packages/ui/src']
+    .flatMap((dir) => filesUnder(path.join(root, dir), '.ts'))
+    .filter((file) => !file.endsWith('.test.ts'))
+    .map((file) => path.relative(root, file))
 
   it('is reading real files', () => {
     expect(surfaces.length).toBeGreaterThan(30)

@@ -24,8 +24,10 @@
  */
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import path from 'node:path'
+
+import { filesUnder } from './tree.mjs'
 import { FEED_MAX_AGE_DAYS, FEED_PATH, feedAgeDays, feedTooOld } from './feed-age.mjs'
 
 const root = path.resolve(import.meta.dirname, '..')
@@ -41,15 +43,17 @@ function die(message) {
 
 const ok = (message) => console.log(`   ok    ${message}`)
 
-/** Everything in a directory, relative to it. */
-function filesIn(dir, prefix = '') {
-  const found = []
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const rel = prefix === '' ? entry.name : `${prefix}/${entry.name}`
-    if (entry.isDirectory()) found.push(...filesIn(path.join(dir, entry.name), rel))
-    else found.push(rel)
-  }
-  return found
+/**
+ * Everything in a directory, relative to it.
+ *
+ * The walk is `tree.mjs`'s (B-58); the relative shape is this tool's, because a release
+ * archive is described by paths inside itself. Nothing is skipped: what is in the
+ * directory is what ships, and a `dist` inside a build output is part of the build.
+ */
+function filesIn(dir) {
+  return filesUnder(dir, '', { skip: [] }).map((file) =>
+    path.relative(dir, file).split(path.sep).join('/'),
+  )
 }
 
 /**

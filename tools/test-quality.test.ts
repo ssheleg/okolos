@@ -1,6 +1,8 @@
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
+
+import { filesIn, filesUnder } from './tree.mjs'
 
 /**
  * The shapes a test takes when it stops testing.
@@ -23,17 +25,18 @@ import { describe, expect, it } from 'vitest'
  */
 
 const root = process.cwd()
-const specs = readdirSync(path.join(root, 'e2e')).filter((name) => name.endsWith('.spec.ts'))
+const specs = filesIn(path.join(root, 'e2e'), '.spec.ts')
 
-/** Files under a directory, found rather than listed. */
-function walk(dir: string, keep: (name: string) => boolean, found: string[] = []): string[] {
-  for (const entry of readdirSync(path.join(root, dir), { withFileTypes: true })) {
-    if (entry.name === 'node_modules' || entry.name === 'dist') continue
-    const next = path.join(dir, entry.name)
-    if (entry.isDirectory()) walk(next, keep, found)
-    else if (keep(entry.name)) found.push(next)
-  }
-  return found
+/**
+ * Files under a directory, found rather than listed.
+ *
+ * The walk is `filesUnder`'s. `keep` stays, because every caller here filters on
+ * something different and that is the caller's business, not the walker's (B-58).
+ */
+function walk(dir: string, keep: (name: string) => boolean): string[] {
+  return filesUnder(path.join(root, dir), '')
+    .filter((file) => keep(path.basename(file)))
+    .map((file) => path.relative(root, file))
 }
 
 const unitTests = (dir: string): string[] => walk(dir, (name) => name.endsWith('.test.ts'))

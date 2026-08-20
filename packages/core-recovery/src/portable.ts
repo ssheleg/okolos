@@ -17,18 +17,18 @@ import type { Checklist, RecoveryStep } from './checklist.js'
  */
 
 export interface PortableChecklist {
-  readonly text: string
+  /**
+   * The remaining steps in the order they must be read, numbered from one.
+   *
+   * **The order is the product.** Numbering runs across both groups rather than per
+   * group, because renumbering inside "here" and "elsewhere" would lose which step
+   * matters most.
+   */
+  readonly ordered: readonly { readonly index: number; readonly step: RecoveryStep }[]
   /** Steps that remain and cannot be done in this browser. */
   readonly elsewhere: readonly RecoveryStep[]
   /** Steps that remain and can. Listed too, so nothing is silently dropped. */
   readonly here: readonly RecoveryStep[]
-}
-
-const TITLES: Record<Checklist['kind'], string> = {
-  'pasted-command': 'after running a pasted command',
-  'entered-password': 'after entering a password on a fake page',
-  'called-number': 'after calling a number from a warning',
-  'not-sure': 'when you are not sure what happened',
 }
 
 export function toPortable(checklist: Checklist): PortableChecklist {
@@ -36,24 +36,14 @@ export function toPortable(checklist: Checklist): PortableChecklist {
   const elsewhere = remaining.filter((step) => step.elsewhere)
   const here = remaining.filter((step) => !step.elsewhere)
 
-  const lines: string[] = [
-    `What to do ${TITLES[checklist.kind]}`,
-    '',
-    remaining.length === 0
-      ? 'Every step is done. Nothing left to carry.'
-      : `${remaining.length} step${remaining.length === 1 ? '' : 's'} left, most important first.`,
-  ]
-
-  // Numbered from one across both groups: the order is the product, and
-  // renumbering per group would lose it.
-  let index = 0
-  for (const step of remaining) {
-    index += 1
-    lines.push('', `${index}. ${step.title}${step.elsewhere ? '  (not in this browser)' : ''}`)
-    // The reason travels with the step. A list of bare instructions is followed
-    // once, badly, and abandoned at the first inconvenient one.
-    lines.push(`   Why: ${step.why}`)
+  /**
+   * Structure, not prose. The text is assembled by the surface, which has the
+   * catalogue; this decides what remains and in what order, which is the part that is
+   * a product decision rather than a translation (B-75).
+   */
+  return {
+    ordered: remaining.map((step, at) => ({ index: at + 1, step })),
+    elsewhere,
+    here,
   }
-
-  return { text: lines.join('\n'), elsewhere, here }
 }

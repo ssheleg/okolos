@@ -201,6 +201,9 @@
   "auditUnreadNote": {
     "message": "Это неполадка хранилища, а не утверждение, что ничего не отправлялось."
   },
+  "badgeSurfaceRemoved": {
+    "message": "Предупреждение на этой странице удалено самой страницей. Откройте Okolos, чтобы прочитать его."
+  },
   "bannerActionClickfix": {
     "message": "Уйти со страницы"
   },
@@ -224,9 +227,6 @@
   },
   "bannerDismiss": {
     "message": "Скрыть"
-  },
-  "badgeSurfaceRemoved": {
-    "message": "Предупреждение на этой странице удалено самой страницей. Откройте Okolos, чтобы прочитать его."
   },
   "bannerRetry": {
     "message": "Попробовать снова"
@@ -404,6 +404,14 @@
   "dataExport": {
     "message": "Выгрузить все данные"
   },
+  "dataExportFailed": {
+    "message": "Выгрузить не удалось: $WHY$. Файл не создан.",
+    "placeholders": {
+      "why": {
+        "content": "$1"
+      }
+    }
+  },
   "dataHeading": {
     "message": "Ваши данные"
   },
@@ -416,26 +424,26 @@
   "dataKindExceptions": {
     "message": "доверенные домены и исключения правил"
   },
+  "dataKindFeeds": {
+    "message": "скачанные списки блокировок"
+  },
   "dataKindFindings": {
     "message": "находки и их доказательства"
   },
   "dataKindJournal": {
     "message": "журнал произошедшего"
   },
+  "dataKindModels": {
+    "message": "скачанные веса модели"
+  },
+  "dataKindReuse": {
+    "message": "индекс переиспользования паролей"
+  },
   "dataKindSettings": {
     "message": "настройки"
   },
   "dataKindSnapshots": {
     "message": "снимки установленных расширений"
-  },
-  "dataKindModels": {
-    "message": "скачанные веса модели"
-  },
-  "dataKindFeeds": {
-    "message": "скачанные списки блокировок"
-  },
-  "dataKindReuse": {
-    "message": "индекс переиспользования паролей"
   },
   "dataWipe": {
     "message": "Удалить все данные"
@@ -453,14 +461,6 @@
   },
   "dataWipeUnavailable": {
     "message": "Удалить не удалось: $WHY$. Ничего не стёрто — данные на месте.",
-    "placeholders": {
-      "why": {
-        "content": "$1"
-      }
-    }
-  },
-  "dataExportFailed": {
-    "message": "Выгрузить не удалось: $WHY$. Файл не создан.",
     "placeholders": {
       "why": {
         "content": "$1"
@@ -592,6 +592,9 @@
   "feedNamePhishing": {
     "message": "Список Okolos: фишинг"
   },
+  "feedNoVerifier": {
+    "message": "Этот браузер не умеет проверять подпись списка блокировок, поэтому список не загружается и блокировки нет. Она включится после обновления браузера."
+  },
   "feedNotVerified": {
     "message": "подпись не сошлась"
   },
@@ -602,9 +605,6 @@
         "content": "$1"
       }
     }
-  },
-  "feedNoVerifier": {
-    "message": "Этот браузер не умеет проверять подпись списка блокировок, поэтому список не загружается и блокировки нет. Она включится после обновления браузера."
   },
   "firstRunCheckDownloads": {
     "message": "Проверка загрузок"
@@ -742,9 +742,6 @@
   "gateFormSubmission": {
     "message": "Отправка формы"
   },
-  "gateUnknownAction": {
-    "message": "Действие на этой странице, которое не удалось описать"
-  },
   "gateFormWithPassword": {
     "message": "форму с паролем"
   },
@@ -785,6 +782,9 @@
   },
   "gateTitle": {
     "message": "Что-то попыталось действовать на этой странице"
+  },
+  "gateUnknownAction": {
+    "message": "Действие на этой странице, которое не удалось описать"
   },
   "inferenceNoModel": {
     "message": "Хост классификатора сообщил, что модели нет."
@@ -1033,6 +1033,14 @@
       }
     }
   },
+  "logGateUnread": {
+    "message": "Действие прошло до того, как страница была прочитана: $WHAT$",
+    "placeholders": {
+      "what": {
+        "content": "$1"
+      }
+    }
+  },
   "logKeptVisiting": {
     "message": "Вы решили продолжить на $HOST$ после блокировки.",
     "placeholders": {
@@ -1049,6 +1057,14 @@
       },
       "host": {
         "content": "$2"
+      }
+    }
+  },
+  "logPasswordUnchecked": {
+    "message": "Проверить пароль не удалось: $WHY$. Ответа о нём нет — ни «в утечке», ни «чистый».",
+    "placeholders": {
+      "why": {
+        "content": "$1"
       }
     }
   },
@@ -1320,6 +1336,18 @@
   "recoveryElsewhere": {
     "message": "Этот шаг нельзя сделать в этом браузере."
   },
+  "recoveryPortableAfterCall": {
+    "message": "Что делать после звонка по номеру из предупреждения"
+  },
+  "recoveryPortableAfterPassword": {
+    "message": "Что делать после ввода пароля на поддельной странице"
+  },
+  "recoveryPortableAfterPasted": {
+    "message": "Что делать после запуска вставленной команды"
+  },
+  "recoveryPortableAfterUnsure": {
+    "message": "Что делать, если вы не уверены, что произошло"
+  },
   "recoveryPortableAllHere": {
     "message": "Все оставшиеся шаги можно сделать здесь, но список всё равно можно взять с собой."
   },
@@ -1331,8 +1359,79 @@
       }
     }
   },
+  "recoveryPortableNotHere": {
+    "message": "  (не в этом браузере)"
+  },
+  "recoveryPortableNothingLeft": {
+    "message": "Все шаги сделаны. Переносить нечего."
+  },
+  "recoveryPortableStepsLeft": {
+    "message": "Осталось шагов: $COUNT$, самое важное первым.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
   "recoveryPortableTitle": {
     "message": "Продолжить на другом устройстве"
+  },
+  "recoveryPortableWhyLabel": {
+    "message": "   Почему: "
+  },
+  "recoveryStepTitleBank": {
+    "message": "Позвоните в банк по номеру, напечатанному на карте"
+  },
+  "recoveryStepTitleChangePassword": {
+    "message": "Смените введённый пароль — и везде, где вы его использовали"
+  },
+  "recoveryStepTitleDisconnect": {
+    "message": "Отключите это устройство от сети"
+  },
+  "recoveryStepTitlePasswordsElsewhere": {
+    "message": "Смените пароль почты с другого устройства"
+  },
+  "recoveryStepTitleRemoteAccess": {
+    "message": "Удалите программы удалённого доступа, которые вас попросили поставить"
+  },
+  "recoveryStepTitleScan": {
+    "message": "Запустите полную проверку встроенным средством защиты системы"
+  },
+  "recoveryStepTitleSessions": {
+    "message": "Завершите все сессии в важных аккаунтах"
+  },
+  "recoveryStepTitleTwoFactor": {
+    "message": "Проверьте настройки двухфакторной защиты в основных аккаунтах"
+  },
+  "recoveryStepTitleWatch": {
+    "message": "Понаблюдайте за аккаунтом неделю"
+  },
+  "recoveryStepWhyBank": {
+    "message": "Не по тому номеру, который вам дали. Если деньги ушли, чем раньше в банке узнают, тем больше можно остановить."
+  },
+  "recoveryStepWhyChangePassword": {
+    "message": "Пароль, введённый на поддельном сайте, сразу пробуют на каждом сервисе, где он мог совпасть."
+  },
+  "recoveryStepWhyDisconnect": {
+    "message": "Всё, что уже запущено, теряет связь с тем, кто это подложил — кража останавливается, пока вы идёте по остальным шагам."
+  },
+  "recoveryStepWhyPasswordsElsewhere": {
+    "message": "Почта — ключ ко всем остальным аккаунтам. Смена с заражённого устройства отдала бы и новый пароль."
+  },
+  "recoveryStepWhyRemoteAccess": {
+    "message": "Через них возвращаются, и они продолжают работать долго после того, как звонок закончился."
+  },
+  "recoveryStepWhyScan": {
+    "message": "Она ищет то, что установила команда. Делайте это после того, как аккаунты в безопасности, а не до: аккаунты злоумышленник использует первыми."
+  },
+  "recoveryStepWhySessions": {
+    "message": "Украденная сессионная cookie продолжает работать после смены пароля — пока саму сессию не закрыть."
+  },
+  "recoveryStepWhyTwoFactor": {
+    "message": "Добавить свой второй фактор — это то, как злоумышленник сохраняет доступ после того, как его выгнали."
+  },
+  "recoveryStepWhyWatch": {
+    "message": "Доступ, переживший всё перечисленное, проявляется как вход, которого вы не узнаёте."
   },
   "recoveryTitle": {
     "message": "Что делать сейчас"
@@ -1381,6 +1480,41 @@
   },
   "stageRules": {
     "message": "правила"
+  },
+  "storageBlocked": {
+    "message": "Хранилище занято другой копией Okolos в этом профиле. Закройте остальные окна расширения и попробуйте снова."
+  },
+  "storageHeading": {
+    "message": "Локальные данные недоступны"
+  },
+  "storageNewerVersion": {
+    "message": "Эти данные записаны более новой версией Okolos. Установите её обратно — данные целы и откроются. Либо очистите локальные данные и начните заново."
+  },
+  "storageReset": {
+    "message": "Очистить локальные данные"
+  },
+  "storageResetNote": {
+    "message": "Очистка удаляет всё, что Okolos хранил на этом устройстве: находки, журнал, аудит сети, исключения, настройки, снимки расширений, модель, фиды и индекс повторов пароля. Отменить нельзя."
+  },
+  "storageRetry": {
+    "message": "Попробовать снова"
+  },
+  "storageShapeIncomplete": {
+    "message": "Хранилище открылось, но его устройство не то, которое ожидает эта версия: часть данных не читается. Обновление это не исправит — браузер меняет устройство хранилища только при смене версии."
+  },
+  "storageUnknown": {
+    "message": "Хранилище не открылось. Причина ниже — она нужна, если вы будете сообщать об этом."
+  },
+  "storageVersions": {
+    "message": "В профиле версия $FOUND$, эта сборка понимает $EXPECTED$.",
+    "placeholders": {
+      "found": {
+        "content": "$1"
+      },
+      "expected": {
+        "content": "$2"
+      }
+    }
   },
   "techniqueAriaHidden": {
     "message": "скрыт от вспомогательных технологий"
@@ -1516,6 +1650,17 @@
       }
     }
   },
+  "warnFrameJournal": {
+    "message": "Показать запись"
+  },
+  "warnFrameMore": {
+    "message": " И ещё $COUNT$ в том же фрейме.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
   "warnFramePlain": {
     "message": "Найденное обезврежено в самом фрейме, и действия ассистента там удерживаются. $SNIPPET$$MORE$",
     "placeholders": {
@@ -1527,22 +1672,11 @@
       }
     }
   },
-  "warnFrameMore": {
-    "message": " И ещё $COUNT$ в том же фрейме.",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "warnFrameUnnamed": {
-    "message": "встроенный фрейм без собственного адреса"
-  },
   "warnFrameSource": {
     "message": "Найдено на этой странице, во встроенном фрейме"
   },
-  "warnFrameJournal": {
-    "message": "Показать запись"
+  "warnFrameUnnamed": {
+    "message": "встроенный фрейм без собственного адреса"
   },
   "warnInjectionHeadline": {
     "message": "На этой странице есть инструкции, написанные для ассистента"
@@ -1636,57 +1770,6 @@
     "message": "Показанный номер, $PHONE$, ведёт к тем, кто сделал эту страницу.",
     "placeholders": {
       "phone": {
-        "content": "$1"
-      }
-    }
-  },
-  "storageHeading": {
-    "message": "Локальные данные недоступны"
-  },
-  "storageNewerVersion": {
-    "message": "Эти данные записаны более новой версией Okolos. Установите её обратно — данные целы и откроются. Либо очистите локальные данные и начните заново."
-  },
-  "storageShapeIncomplete": {
-    "message": "Хранилище открылось, но его устройство не то, которое ожидает эта версия: часть данных не читается. Обновление это не исправит — браузер меняет устройство хранилища только при смене версии."
-  },
-  "storageBlocked": {
-    "message": "Хранилище занято другой копией Okolos в этом профиле. Закройте остальные окна расширения и попробуйте снова."
-  },
-  "storageUnknown": {
-    "message": "Хранилище не открылось. Причина ниже — она нужна, если вы будете сообщать об этом."
-  },
-  "storageVersions": {
-    "message": "В профиле версия $FOUND$, эта сборка понимает $EXPECTED$.",
-    "placeholders": {
-      "found": {
-        "content": "$1"
-      },
-      "expected": {
-        "content": "$2"
-      }
-    }
-  },
-  "storageRetry": {
-    "message": "Попробовать снова"
-  },
-  "storageReset": {
-    "message": "Очистить локальные данные"
-  },
-  "storageResetNote": {
-    "message": "Очистка удаляет всё, что Okolos хранил на этом устройстве: находки, журнал, аудит сети, исключения, настройки, снимки расширений, модель, фиды и индекс повторов пароля. Отменить нельзя."
-  },
-  "logGateUnread": {
-    "message": "Действие прошло до того, как страница была прочитана: $WHAT$",
-    "placeholders": {
-      "what": {
-        "content": "$1"
-      }
-    }
-  },
-  "logPasswordUnchecked": {
-    "message": "Проверить пароль не удалось: $WHY$. Ответа о нём нет — ни «в утечке», ни «чистый».",
-    "placeholders": {
-      "why": {
         "content": "$1"
       }
     }

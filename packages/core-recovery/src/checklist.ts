@@ -13,10 +13,20 @@
 
 export type IncidentKind = 'pasted-command' | 'entered-password' | 'called-number' | 'not-sure'
 
+/**
+ * A step is an **identity and a fact**, not a sentence.
+ *
+ * It carried `title` and `why` until 2026-08-20, in English, in a package with zero
+ * dependencies — so eighteen sentences of the most important screen this product has
+ * shipped to a ru-default interface, and adding `@okolos/i18n` here would have spent
+ * `core-*`'s only architectural property on a string table (B-75).
+ *
+ * The id is the join: `packages/ui/src/recovery/recovery.ts` maps it to a catalogue key
+ * through a `*_KEY` table, which is the shape the locale gate reads — a computed key
+ * would make every one of these eighteen messages look dead to it.
+ */
 export interface RecoveryStep {
   readonly id: string
-  readonly title: string
-  readonly why: string
   /** True when this cannot be done in this browser — another device, or offline. */
   readonly elsewhere: boolean
 }
@@ -37,64 +47,46 @@ export interface Checklist {
 
 const DISCONNECT: RecoveryStep = {
   id: 'disconnect',
-  title: 'Disconnect this device from the network',
-  why: 'Anything already running loses its connection to whoever placed it, which stops the theft while you work through the rest.',
   elsewhere: true,
 }
 
 const PASSWORDS_FROM_ELSEWHERE: RecoveryStep = {
   id: 'passwords-elsewhere',
-  title: 'Change your email password from a different device',
-  why: 'Email is the key to every other account. Changing it from the affected device would hand the new password over too.',
   elsewhere: true,
 }
 
 const SESSIONS: RecoveryStep = {
   id: 'sessions',
-  title: 'Sign out of all sessions on your important accounts',
-  why: 'A stolen session cookie keeps working after a password change until the session itself is ended.',
   elsewhere: false,
 }
 
 const TWO_FACTOR: RecoveryStep = {
   id: 'two-factor',
-  title: 'Check the two-factor settings on your main accounts',
-  why: 'Adding a second factor of their own is how an intruder keeps access after you have locked them out.',
   elsewhere: false,
 }
 
 const SCAN: RecoveryStep = {
   id: 'scan',
-  title: 'Run a full scan with your system’s own security tool',
-  why: 'It looks for what the command installed. Do this after the accounts are safe, not before — the accounts are what an attacker uses first.',
   elsewhere: true,
 }
 
 const BANK: RecoveryStep = {
   id: 'bank',
-  title: 'Call your bank on the number printed on your card',
-  why: 'Not the number you were given. If money moved, the earlier they know, the more of it can be stopped.',
   elsewhere: true,
 }
 
 const REMOTE_ACCESS: RecoveryStep = {
   id: 'remote-access',
-  title: 'Remove any remote-access software they had you install',
-  why: 'That software is how they get back in, and it keeps working long after the call ends.',
   elsewhere: true,
 }
 
 const REVIEW_PASSWORD: RecoveryStep = {
   id: 'change-password',
-  title: 'Change the password you typed, and anywhere else you used it',
-  why: 'A password entered on a fake site is tried immediately on every service that shares it.',
   elsewhere: false,
 }
 
 const WATCH: RecoveryStep = {
   id: 'watch',
-  title: 'Watch the account for a week',
-  why: 'Access that survives everything above shows up as a login you do not recognise.',
   elsewhere: false,
 }
 

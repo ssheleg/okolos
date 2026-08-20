@@ -23,19 +23,30 @@ describe('the order is the product', () => {
   })
 })
 
-describe('every step says why', () => {
-  it('for every incident, without exception', () => {
+describe('every step is identifiable and says where it can be done', () => {
+  /**
+   * The words moved out on 2026-08-20 (B-75): this package has zero dependencies, and
+   * eighteen English sentences in it were shipping to a ru-default interface. What is
+   * left here is what this package actually decides — which steps, in what order, and
+   * which of them cannot be done in this browser.
+   *
+   * **The assertions about the words did not disappear**; they moved to
+   * `packages/ui/src/recovery/recovery.test.ts`, which has the catalogue to check them
+   * against. A step with no entry in the title or why table fails there.
+   */
+  it('gives every step an id, and no two the same', () => {
     for (const steps of Object.values(INCIDENTS)) {
-      for (const step of steps) {
-        expect(step.why.length).toBeGreaterThan(20)
-      }
+      const ids = steps.map((step) => step.id)
+      expect(ids.every((id) => id.length > 2)).toBe(true)
+      expect(new Set(ids).size, `duplicate ids in ${ids.join(', ')}`).toBe(ids.length)
     }
   })
 
-  it('and says when a step cannot be done here', () => {
-    const step = buildChecklist('pasted-command').steps.find((entry) => entry.id === 'passwords-elsewhere')
+  it('says when a step cannot be done here', () => {
+    const step = buildChecklist('pasted-command').steps.find(
+      (entry) => entry.id === 'passwords-elsewhere',
+    )
     expect(step?.elsewhere).toBe(true)
-    expect(step?.why).toMatch(/affected device/i)
   })
 })
 

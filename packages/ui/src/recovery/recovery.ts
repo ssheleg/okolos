@@ -1,6 +1,6 @@
 import { t } from '@okolos/i18n'
 
-import { toPortable, type Checklist } from '@okolos/core-recovery'
+import { toPortable, type Checklist, type PortableChecklist } from '@okolos/core-recovery'
 
 /**
  * SCR-13 — the recovery checklist.
@@ -17,6 +17,58 @@ export interface RecoveryHandlers {
   readonly onArchive: () => void
   /** Copies the remaining steps. Optional: the text is on screen either way. */
   readonly onCopy?: (text: string) => void
+}
+
+/**
+ * A step's id to its words. Two tables, because the locale gate reads `const *_KEY`
+ * maps and cannot see a computed key — with `t(`recoveryStepTitle${id}`)` all eighteen
+ * of these messages would read as dead and be deleted by the next sweep (B-75).
+ *
+ * The mapping (which step gets which sentence) is a product decision and stays in code;
+ * the sentences are translations and live in `_locales`. Same split as `SEVERITY_KEY`.
+ */
+const STEP_TITLE_KEY: Record<string, string> = {
+  disconnect: 'recoveryStepTitleDisconnect',
+  'passwords-elsewhere': 'recoveryStepTitlePasswordsElsewhere',
+  sessions: 'recoveryStepTitleSessions',
+  'two-factor': 'recoveryStepTitleTwoFactor',
+  scan: 'recoveryStepTitleScan',
+  bank: 'recoveryStepTitleBank',
+  'remote-access': 'recoveryStepTitleRemoteAccess',
+  'change-password': 'recoveryStepTitleChangePassword',
+  watch: 'recoveryStepTitleWatch',
+}
+
+const STEP_WHY_KEY: Record<string, string> = {
+  disconnect: 'recoveryStepWhyDisconnect',
+  'passwords-elsewhere': 'recoveryStepWhyPasswordsElsewhere',
+  sessions: 'recoveryStepWhySessions',
+  'two-factor': 'recoveryStepWhyTwoFactor',
+  scan: 'recoveryStepWhyScan',
+  bank: 'recoveryStepWhyBank',
+  'remote-access': 'recoveryStepWhyRemoteAccess',
+  'change-password': 'recoveryStepWhyChangePassword',
+  watch: 'recoveryStepWhyWatch',
+}
+
+/** The heading of the carried text, by incident. */
+const PORTABLE_HEADING_KEY: Record<string, string> = {
+  'pasted-command': 'recoveryPortableAfterPasted',
+  'entered-password': 'recoveryPortableAfterPassword',
+  'called-number': 'recoveryPortableAfterCall',
+  'not-sure': 'recoveryPortableAfterUnsure',
+}
+
+/**
+ * A step's words, or its id when the table has no entry.
+ *
+ * The fallback is the id rather than an empty string: a step added to the package and
+ * forgotten here shows `two-factor` on screen, which is wrong and **visible**. An empty
+ * label is wrong and invisible, and this is the screen a person opens in a panic.
+ */
+function words(id: string, table: Record<string, string>): string {
+  const key = table[id]
+  return key === undefined ? id : t(key)
 }
 
 export function renderRecovery(
@@ -73,9 +125,9 @@ export function renderRecovery(
     // sibling is an unlabelled checkbox to everything but a sighted mouse user.
     const label = doc.createElement('label')
     label.htmlFor = control.id
-    label.textContent = step.title
+    label.textContent = words(step.id, STEP_TITLE_KEY)
 
-    item.append(control, label, text(doc, 'why', step.why))
+    item.append(control, label, text(doc, 'why', words(step.id, STEP_WHY_KEY)))
     if (step.elsewhere) {
       item.append(text(doc, 'elsewhere', t('recoveryElsewhere')))
     }
@@ -106,6 +158,35 @@ export function renderRecovery(
  * mid-recovery. And the copy happens on a real click and shows exactly what it
  * copied, which is the distinction this product's own ClickFix detector draws.
  */
+/**
+ * The carried text, assembled where the catalogue is.
+ *
+ * `toPortable` decides what remains and in what order — a product decision. Turning
+ * that into lines is presentation, and it used to live in a zero-dependency package
+ * with the words baked in English (B-75). The numbering comes from the package, so the
+ * order cannot drift between the screen and the text a person takes with them.
+ */
+function portableText(checklist: Checklist, portable: PortableChecklist): string {
+  const heading = PORTABLE_HEADING_KEY[checklist.kind]
+  const lines: string[] = [
+    heading === undefined ? checklist.kind : t(heading),
+    '',
+    portable.ordered.length === 0
+      ? t('recoveryPortableNothingLeft')
+      : t('recoveryPortableStepsLeft', String(portable.ordered.length)),
+  ]
+
+  for (const { index, step } of portable.ordered) {
+    const notHere = step.elsewhere ? t('recoveryPortableNotHere') : ''
+    lines.push('', `${index}. ${words(step.id, STEP_TITLE_KEY)}${notHere}`)
+    // The reason travels with the step. A list of bare instructions is followed once,
+    // badly, and abandoned at the first inconvenient one.
+    lines.push(`${t('recoveryPortableWhyLabel')}${words(step.id, STEP_WHY_KEY)}`)
+  }
+
+  return lines.join('\n')
+}
+
 function portableBlock(
   doc: Document,
   checklist: Checklist,
@@ -129,14 +210,15 @@ function portableBlock(
     ),
   )
 
+  const carried = portableText(checklist, portable)
   const pre = doc.createElement('pre')
   pre.setAttribute('data-role', 'portable-text')
-  pre.textContent = portable.text
+  pre.textContent = carried
   block.append(pre)
 
   if (handlers.onCopy) {
     const copy = handlers.onCopy
-    block.append(button(doc, 'copy', t('recoveryCopy'), () => copy(portable.text)))
+    block.append(button(doc, 'copy', t('recoveryCopy'), () => copy(carried)))
   }
 
   return block

@@ -201,6 +201,9 @@
   "auditUnreadNote": {
     "message": "This is a storage problem, not a statement that nothing was sent."
   },
+  "badgeSurfaceRemoved": {
+    "message": "The warning on this page was removed by the page itself. Open Okolos to read it."
+  },
   "bannerActionClickfix": {
     "message": "Leave this page"
   },
@@ -224,9 +227,6 @@
   },
   "bannerDismiss": {
     "message": "Dismiss"
-  },
-  "badgeSurfaceRemoved": {
-    "message": "The warning on this page was removed by the page itself. Open Okolos to read it."
   },
   "bannerRetry": {
     "message": "Try again"
@@ -404,6 +404,14 @@
   "dataExport": {
     "message": "Export all data"
   },
+  "dataExportFailed": {
+    "message": "The export could not be made: $WHY$. No file was created.",
+    "placeholders": {
+      "why": {
+        "content": "$1"
+      }
+    }
+  },
   "dataHeading": {
     "message": "Your data"
   },
@@ -416,26 +424,26 @@
   "dataKindExceptions": {
     "message": "trusted domains and rule exceptions"
   },
+  "dataKindFeeds": {
+    "message": "the blocking feeds that were downloaded"
+  },
   "dataKindFindings": {
     "message": "findings and their evidence"
   },
   "dataKindJournal": {
     "message": "the journal of what happened"
   },
+  "dataKindModels": {
+    "message": "downloaded model weights"
+  },
+  "dataKindReuse": {
+    "message": "the password-reuse index"
+  },
   "dataKindSettings": {
     "message": "settings"
   },
   "dataKindSnapshots": {
     "message": "snapshots of your installed extensions"
-  },
-  "dataKindModels": {
-    "message": "downloaded model weights"
-  },
-  "dataKindFeeds": {
-    "message": "the blocking feeds that were downloaded"
-  },
-  "dataKindReuse": {
-    "message": "the password-reuse index"
   },
   "dataWipe": {
     "message": "Delete all data"
@@ -453,14 +461,6 @@
   },
   "dataWipeUnavailable": {
     "message": "The deletion could not start: $WHY$. Nothing was erased — your data is still here.",
-    "placeholders": {
-      "why": {
-        "content": "$1"
-      }
-    }
-  },
-  "dataExportFailed": {
-    "message": "The export could not be made: $WHY$. No file was created.",
     "placeholders": {
       "why": {
         "content": "$1"
@@ -592,6 +592,9 @@
   "feedNamePhishing": {
     "message": "Okolos phishing list"
   },
+  "feedNoVerifier": {
+    "message": "This browser cannot check the blocking feed's signature, so no feed is loaded and nothing is blocked. Updating the browser turns it on."
+  },
   "feedNotVerified": {
     "message": "it did not verify"
   },
@@ -602,9 +605,6 @@
         "content": "$1"
       }
     }
-  },
-  "feedNoVerifier": {
-    "message": "This browser cannot check the blocking feed's signature, so no feed is loaded and nothing is blocked. Updating the browser turns it on."
   },
   "firstRunCheckDownloads": {
     "message": "Download checks"
@@ -742,9 +742,6 @@
   "gateFormSubmission": {
     "message": "A form submission"
   },
-  "gateUnknownAction": {
-    "message": "An action on this page that could not be described"
-  },
   "gateFormWithPassword": {
     "message": "a form containing a password"
   },
@@ -785,6 +782,9 @@
   },
   "gateTitle": {
     "message": "Something tried to act on this page"
+  },
+  "gateUnknownAction": {
+    "message": "An action on this page that could not be described"
   },
   "inferenceNoModel": {
     "message": "The classifier host reported no model."
@@ -1033,6 +1033,14 @@
       }
     }
   },
+  "logGateUnread": {
+    "message": "An action went through before this page had been read: $WHAT$",
+    "placeholders": {
+      "what": {
+        "content": "$1"
+      }
+    }
+  },
   "logKeptVisiting": {
     "message": "You chose to keep visiting $HOST$ after it was blocked.",
     "placeholders": {
@@ -1049,6 +1057,14 @@
       },
       "host": {
         "content": "$2"
+      }
+    }
+  },
+  "logPasswordUnchecked": {
+    "message": "The password could not be checked: $WHY$. There is no answer about it — neither breached nor clean.",
+    "placeholders": {
+      "why": {
+        "content": "$1"
       }
     }
   },
@@ -1320,6 +1336,18 @@
   "recoveryElsewhere": {
     "message": "This one cannot be done in this browser."
   },
+  "recoveryPortableAfterCall": {
+    "message": "What to do after calling a number from a warning"
+  },
+  "recoveryPortableAfterPassword": {
+    "message": "What to do after entering a password on a fake page"
+  },
+  "recoveryPortableAfterPasted": {
+    "message": "What to do after running a pasted command"
+  },
+  "recoveryPortableAfterUnsure": {
+    "message": "What to do when you are not sure what happened"
+  },
   "recoveryPortableAllHere": {
     "message": "Every remaining step can be done here, but you can still take the list with you."
   },
@@ -1331,8 +1359,79 @@
       }
     }
   },
+  "recoveryPortableNotHere": {
+    "message": "  (not in this browser)"
+  },
+  "recoveryPortableNothingLeft": {
+    "message": "Every step is done. Nothing left to carry."
+  },
+  "recoveryPortableStepsLeft": {
+    "message": "Steps left: $COUNT$, most important first.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
   "recoveryPortableTitle": {
     "message": "Continue on another device"
+  },
+  "recoveryPortableWhyLabel": {
+    "message": "   Why: "
+  },
+  "recoveryStepTitleBank": {
+    "message": "Call your bank on the number printed on your card"
+  },
+  "recoveryStepTitleChangePassword": {
+    "message": "Change the password you typed, and anywhere else you used it"
+  },
+  "recoveryStepTitleDisconnect": {
+    "message": "Disconnect this device from the network"
+  },
+  "recoveryStepTitlePasswordsElsewhere": {
+    "message": "Change your email password from a different device"
+  },
+  "recoveryStepTitleRemoteAccess": {
+    "message": "Remove any remote-access software they had you install"
+  },
+  "recoveryStepTitleScan": {
+    "message": "Run a full scan with your system’s own security tool"
+  },
+  "recoveryStepTitleSessions": {
+    "message": "Sign out of all sessions on your important accounts"
+  },
+  "recoveryStepTitleTwoFactor": {
+    "message": "Check the two-factor settings on your main accounts"
+  },
+  "recoveryStepTitleWatch": {
+    "message": "Watch the account for a week"
+  },
+  "recoveryStepWhyBank": {
+    "message": "Not the number you were given. If money moved, the earlier they know, the more of it can be stopped."
+  },
+  "recoveryStepWhyChangePassword": {
+    "message": "A password entered on a fake site is tried immediately on every service that shares it."
+  },
+  "recoveryStepWhyDisconnect": {
+    "message": "Anything already running loses its connection to whoever placed it, which stops the theft while you work through the rest."
+  },
+  "recoveryStepWhyPasswordsElsewhere": {
+    "message": "Email is the key to every other account. Changing it from the affected device would hand the new password over too."
+  },
+  "recoveryStepWhyRemoteAccess": {
+    "message": "That software is how they get back in, and it keeps working long after the call ends."
+  },
+  "recoveryStepWhyScan": {
+    "message": "It looks for what the command installed. Do this after the accounts are safe, not before — the accounts are what an attacker uses first."
+  },
+  "recoveryStepWhySessions": {
+    "message": "A stolen session cookie keeps working after a password change until the session itself is ended."
+  },
+  "recoveryStepWhyTwoFactor": {
+    "message": "Adding a second factor of their own is how an intruder keeps access after you have locked them out."
+  },
+  "recoveryStepWhyWatch": {
+    "message": "Access that survives everything above shows up as a login you do not recognise."
   },
   "recoveryTitle": {
     "message": "What to do now"
@@ -1381,6 +1480,41 @@
   },
   "stageRules": {
     "message": "rules"
+  },
+  "storageBlocked": {
+    "message": "The store is held by another copy of Okolos in this profile. Close the extension’s other windows and try again."
+  },
+  "storageHeading": {
+    "message": "The local data cannot be opened"
+  },
+  "storageNewerVersion": {
+    "message": "This data was written by a newer version of Okolos. Install that one again — the data is intact and will open. Or clear the local data and start over."
+  },
+  "storageReset": {
+    "message": "Clear the local data"
+  },
+  "storageResetNote": {
+    "message": "Clearing removes everything Okolos kept on this device: findings, the journal, the network audit, exceptions, settings, extension snapshots, the model, the feeds and the password-reuse index. It cannot be undone."
+  },
+  "storageRetry": {
+    "message": "Try again"
+  },
+  "storageShapeIncomplete": {
+    "message": "The store opened, and it is not the shape this version expects: some of the data cannot be read. Updating will not fix it — a browser changes a store’s shape only when its version changes."
+  },
+  "storageUnknown": {
+    "message": "The store did not open. The reason is below — you will need it if you report this."
+  },
+  "storageVersions": {
+    "message": "The profile holds version $FOUND$; this build understands $EXPECTED$.",
+    "placeholders": {
+      "found": {
+        "content": "$1"
+      },
+      "expected": {
+        "content": "$2"
+      }
+    }
   },
   "techniqueAriaHidden": {
     "message": "hidden from assistive technology"
@@ -1516,6 +1650,17 @@
       }
     }
   },
+  "warnFrameJournal": {
+    "message": "Show the record"
+  },
+  "warnFrameMore": {
+    "message": " And $COUNT$ more in the same frame.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
   "warnFramePlain": {
     "message": "What was found is neutralised inside the frame, and an assistant acting there is held. $SNIPPET$$MORE$",
     "placeholders": {
@@ -1527,22 +1672,11 @@
       }
     }
   },
-  "warnFrameMore": {
-    "message": " And $COUNT$ more in the same frame.",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "warnFrameUnnamed": {
-    "message": "an embedded frame with no address of its own"
-  },
   "warnFrameSource": {
     "message": "Found on this page, in an embedded frame"
   },
-  "warnFrameJournal": {
-    "message": "Show the record"
+  "warnFrameUnnamed": {
+    "message": "an embedded frame with no address of its own"
   },
   "warnInjectionHeadline": {
     "message": "This page carries instructions written for an AI assistant"
@@ -1636,57 +1770,6 @@
     "message": "The number shown, $PHONE$, reaches the people who made this page.",
     "placeholders": {
       "phone": {
-        "content": "$1"
-      }
-    }
-  },
-  "storageHeading": {
-    "message": "The local data cannot be opened"
-  },
-  "storageNewerVersion": {
-    "message": "This data was written by a newer version of Okolos. Install that one again — the data is intact and will open. Or clear the local data and start over."
-  },
-  "storageShapeIncomplete": {
-    "message": "The store opened, and it is not the shape this version expects: some of the data cannot be read. Updating will not fix it — a browser changes a store’s shape only when its version changes."
-  },
-  "storageBlocked": {
-    "message": "The store is held by another copy of Okolos in this profile. Close the extension’s other windows and try again."
-  },
-  "storageUnknown": {
-    "message": "The store did not open. The reason is below — you will need it if you report this."
-  },
-  "storageVersions": {
-    "message": "The profile holds version $FOUND$; this build understands $EXPECTED$.",
-    "placeholders": {
-      "found": {
-        "content": "$1"
-      },
-      "expected": {
-        "content": "$2"
-      }
-    }
-  },
-  "storageRetry": {
-    "message": "Try again"
-  },
-  "storageReset": {
-    "message": "Clear the local data"
-  },
-  "storageResetNote": {
-    "message": "Clearing removes everything Okolos kept on this device: findings, the journal, the network audit, exceptions, settings, extension snapshots, the model, the feeds and the password-reuse index. It cannot be undone."
-  },
-  "logGateUnread": {
-    "message": "An action went through before this page had been read: $WHAT$",
-    "placeholders": {
-      "what": {
-        "content": "$1"
-      }
-    }
-  },
-  "logPasswordUnchecked": {
-    "message": "The password could not be checked: $WHY$. There is no answer about it — neither breached nor clean.",
-    "placeholders": {
-      "why": {
         "content": "$1"
       }
     }

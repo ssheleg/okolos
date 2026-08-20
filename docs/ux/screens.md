@@ -138,7 +138,8 @@ includes a redirect from `*.workers.dev`, not just a CNAME.
   |-------|---------|-------------|----------|
   | success | a finding is raised | - | banner appears in the corner; blocking variants (clickfix) overlay and require a deliberate dismiss |
   | error | detail view or action failed | - | inline failure text with retry; the warning itself never disappears on error |
-- **Behavior notes:** closed Shadow DOM; keyboard reachable; announced to screen readers; never covers a form field it warns about; low-confidence findings never block
+  | removed by the page | the page deletes the host from the document | - | put back up to three times, a quarter-second apart; after that the extension's **icon** carries a badge and the journal records the count. The banner is not on the page any more, and the product says so rather than going quiet |
+- **Behavior notes:** closed Shadow DOM; keyboard reachable; announced to screen readers; never covers a form field it warns about; low-confidence findings never block. **A page can delete this surface and nothing can forbid that** — the DOM belongs to the page — so the answer is bounded (ADR-0001, amended 2026-08-20): a short argument, then a channel the page does not own. A dismissal by the user is not a removal: the watch stops before the product destroys its own banner
 - **Wireframe:** wireframes/SCR-03.md
 - **Coverage:** packages/ui/src/banner/banner.ts:mountBanner, e2e/scn-003.spec.ts, e2e/a11y-overlays.spec.ts (injection variant built; the other six land with their modules)
 - **Scenarios:** SCN-003, SCN-006, SCN-008, SCN-009, SCN-011, SCN-012, SCN-013

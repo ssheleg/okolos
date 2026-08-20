@@ -14,7 +14,14 @@ jobs:
     name: gates
     runs-on: ubuntu-latest
     steps:
+      # Full history for this job: `tools/listing.test.ts` asks git when the store
+      # screenshots were last retaken against when the surfaces they show last changed.
+      # A shallow clone holds one commit, every path answers with the tip, and the check
+      # would pass on nothing — which is how its first version (mtimes) went red here on
+      # a fresh checkout where every file is written at once.
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       # No `version:` here on purpose. `pnpm/action-setup` refuses to run when
       # a version is given both here and as `packageManager` in package.json,

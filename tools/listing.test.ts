@@ -14,9 +14,7 @@ import { describe, expect, it } from 'vitest'
 
 import { filesIn } from './tree.mjs'
 
-import { statSync } from 'node:fs'
-
-import { artefactStaleness } from './build-age.mjs'
+import { execFileSync } from 'node:child_process'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const listing = readFileSync(path.join(root, 'docs/store/listing.md'), 'utf8')
@@ -125,46 +123,59 @@ describe('the screenshots are of this product', () => {
   })
 
   /**
-   * Present is not current, and this is the third place that lesson has been learned.
+   * Present is not current — and **mtime cannot answer it for a committed artefact.**
    *
-   * The images were twelve days old on 2026-08-21 — taken before the dashboard existed as a
+   * The images were twelve days old on 2026-08-21: taken before the dashboard existed as a
    * screen, before the frame surfaces, before the copy moved to the catalogue. Two of the
-   * four changed the moment they were retaken, and one of those showed a screen with **no
-   * styling at all** and a raw ISO timestamp on it: the picture a store reviewer sees first.
-   * "From the built product" was asserted; "from *this* build" was not.
+   * four changed the moment they were retaken, and one showed a screen with no styling at
+   * all and a raw ISO timestamp on it — the picture a store reviewer sees first. "From the
+   * built product" was asserted; "from *this* build" was not.
    *
-   * Compared against the surfaces they depict rather than against the whole tree: a change
-   * to the feed pipeline does not restage a screenshot, and a gate that says it does is a
-   * gate people learn to re-run without reading.
+   * The first version of this check compared file mtimes and **went red on CI within the
+   * hour**, naming a file edited in the same commit. A fresh checkout writes every file at
+   * once, so which one is "newest" there is arbitrary. `buildTooOld` gets away with mtimes
+   * because a build is produced during the run; a screenshot is committed, and the only
+   * durable record of when it was retaken is the history.
+   *
+   * So: the last commit touching the screenshots must not be older than the last commit
+   * touching the surfaces they show. Equal is the healthy case — retaken in the same change.
+   * Compared against those surfaces rather than the whole tree, because a change to the feed
+   * pipeline does not restage a picture, and a gate that fires for unrelated reasons is one
+   * people re-run without reading.
    */
-  it('is not older than the surfaces it shows', () => {
-    const shot = path.join(dir, '03-self-audit.png')
-    const answer = artefactStaleness(shot, [
-      path.join(root, 'packages/ui/src'),
-      path.join(root, 'apps/extension/src/options'),
-    ])
-    // Narrowed rather than optional-chained: `Staleness` is a union on `known`, and
-    // "could not tell" is a third answer this gate must not fold into "current".
-    if (!answer.known) throw new Error(`could not tell: ${answer.reason}`)
-    expect(
-      answer.stale,
-      `the surfaces moved after the screenshots were taken (newest: ${answer.newest.file}) — run \`pnpm screenshots\``,
-    ).toBe(false)
+  const SURFACES = [
+    'packages/ui/src',
+    'apps/extension/src/options',
+    'apps/extension/src/pages.css',
+  ]
 
-    /**
-     * The stylesheet, compared on its own rather than by widening the walk.
-     *
-     * `artefactStaleness` walks directories, and `pages.css` is one file inside the app's
-     * source — passing it as a directory throws, which is how this assertion first failed.
-     * Widening the walk to `apps/extension/src` would restage a screenshot whenever the
-     * content script changed, and a gate that fires for unrelated reasons is one people
-     * re-run without reading. The stylesheet earns its own line because this iteration
-     * proved it decides what the picture looks like: the dashboard had no rule at all.
-     */
-    const css = statSync(path.join(root, 'apps/extension/src/pages.css')).mtimeMs
+  /** The commit date of the last change to a path, or null when history cannot say. */
+  function lastTouched(...paths: string[]): number | null {
+    const out = execFileSync('git', ['log', '-1', '--format=%ct', '--', ...paths], {
+      cwd: root,
+      encoding: 'utf8',
+    }).trim()
+    return out === '' ? null : Number(out)
+  }
+
+  it('is not older than the surfaces it shows', () => {
+    const shallow =
+      execFileSync('git', ['rev-parse', '--is-shallow-repository'], {
+        cwd: root,
+        encoding: 'utf8',
+      }).trim() === 'true'
+    // A shallow clone holds one commit, so every path answers with the tip and the
+    // comparison would pass on nothing. Said out loud rather than silently skipped: the
+    // workflow fetches full history for this job precisely so this stays a real check.
+    expect(shallow, 'shallow clone — this gate needs history; set fetch-depth: 0').toBe(false)
+
+    const shots = lastTouched('docs/store/screenshots')
+    const surfaces = lastTouched(...SURFACES)
+    expect(shots, 'no commit touches the screenshots').not.toBeNull()
+    expect(surfaces, 'no commit touches the surfaces').not.toBeNull()
     expect(
-      css <= statSync(shot).mtimeMs,
-      'pages.css changed after the screenshots were taken — run `pnpm screenshots`',
+      (shots as number) >= (surfaces as number),
+      'a surface changed in a later commit than the screenshots — run `pnpm screenshots` and commit them',
     ).toBe(true)
   })
 })

@@ -242,6 +242,24 @@ describe('what a journal record says, and in whose language', () => {
     expect(summaryOf({ explainKey: 'journalDefaultVerdict' })).toBe('Записана находка')
   })
 
+  /**
+   * The union shrank on 2026-08-20 (`detector-disabled` removed as vocabulary for a state
+   * the product cannot reach), and a shrinking union is exactly when a stored row can name
+   * a kind this build has no entry for. Rendering nothing would be a row that exists, is
+   * displayed, and says nothing — so the kind shows itself, bracketed like any unknown key.
+   */
+  it('says something for a kind this build has never heard of', () => {
+    const stranger = {
+      id: 'j9',
+      createdAt: '2026-08-08T10:00:00.000Z',
+      kind: 'detector-disabled',
+      detail: {},
+    } as unknown as JournalRecord
+    const summary = mapJournal([stranger]).entries[0]?.summary ?? ''
+    expect(summary).not.toBe('')
+    expect(summary).toContain('detector-disabled')
+  })
+
   it('prefers the key over a sentence stored beside it', () => {
     expect(summaryOf({ explainKey: 'journalDefaultVerdict', explain: 'an older sentence' })).toBe(
       'Записана находка',

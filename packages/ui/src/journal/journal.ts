@@ -21,7 +21,6 @@ const KIND_TITLE_KEY: Record<JournalEntry['kind'], string> = {
   verdict: 'journalKindVerdict',
   action: 'journalKindAction',
   error: 'journalKindError',
-  'detector-disabled': 'journalKindDisabled',
 }
 
 export interface JournalMeta {

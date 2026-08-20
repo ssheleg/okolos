@@ -82,7 +82,6 @@ const DEFAULT_SUMMARY_KEY: Record<JournalEntry['kind'], string> = {
   verdict: 'journalDefaultVerdict',
   action: 'journalDefaultAction',
   error: 'journalDefaultError',
-  'detector-disabled': 'journalDefaultDisabled',
 }
 
 export interface PopupInputs {
@@ -194,5 +193,15 @@ function summarise(detail: Record<string, unknown>, kind: JournalEntry['kind']):
     return t(key, ...resolveArgs(args, argKeys))
   }
   if (typeof detail.explain === 'string') return detail.explain
-  return t(DEFAULT_SUMMARY_KEY[kind])
+  /**
+   * A kind this build does not know still gets a sentence.
+   *
+   * The union shrank on 2026-08-20 — `detector-disabled` was removed as vocabulary for a
+   * state the product cannot reach — and a shrinking union is exactly when a stored row
+   * can name something the reader has no entry for. Without the fallback, the lookup is
+   * `undefined` and `t(undefined)` renders nothing: a row that exists, is displayed, and
+   * says **nothing at all**, which is the one failure a journal must not have. The kind
+   * itself is shown instead, bracketed by the resolver like any unknown key.
+   */
+  return t(DEFAULT_SUMMARY_KEY[kind] ?? kind)
 }

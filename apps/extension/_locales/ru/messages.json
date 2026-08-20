@@ -1233,9 +1233,6 @@
   "journalDefaultAction": {
     "message": "Принято решение по действию"
   },
-  "journalDefaultDisabled": {
-    "message": "Детектор был выключен"
-  },
   "journalDefaultError": {
     "message": "Ошибка без описания: подробности не сохранились"
   },
@@ -1255,9 +1252,6 @@
   },
   "journalKindAction": {
     "message": "Действия"
-  },
-  "journalKindDisabled": {
-    "message": "Выключено"
   },
   "journalKindError": {
     "message": "Проблемы"

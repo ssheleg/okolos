@@ -1233,9 +1233,6 @@
   "journalDefaultAction": {
     "message": "An action was decided"
   },
-  "journalDefaultDisabled": {
-    "message": "A detector was turned off"
-  },
   "journalDefaultError": {
     "message": "An error with no description: the details were not recorded"
   },
@@ -1255,9 +1252,6 @@
   },
   "journalKindAction": {
     "message": "Actions"
-  },
-  "journalKindDisabled": {
-    "message": "Turned off"
   },
   "journalKindError": {
     "message": "Problems"

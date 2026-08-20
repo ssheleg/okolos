@@ -117,7 +117,18 @@ export interface FindingRecord {
 export interface JournalRecord {
   id: string
   createdAt: string
-  kind: 'verdict' | 'action' | 'error' | 'detector-disabled'
+  /**
+   * Three kinds, and `detector-disabled` was a fourth until 2026-08-20.
+   *
+   * It had four readers and no writer: the m0/m1 spec described a fuse that quenches a
+   * failing detector for the session, and that was never built — nor should it be. A
+   * quenched detector leaves a page unprotected in silence, while what the product
+   * actually does is fail open, mark the page, and journal the cause once (`scan-failed`,
+   * an `error` row). Vocabulary for a state that cannot occur makes every exhaustive
+   * `Record<kind, …>` look complete while one entry can never be exercised.
+   * `tools/journal-kinds.test.ts` now refuses a kind nothing writes.
+   */
+  kind: 'verdict' | 'action' | 'error'
   /**
    * `readonly string[]` is here for `explainArgs`.
    *

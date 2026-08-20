@@ -10,7 +10,7 @@
  * is what makes the same journal produce the same diff wherever it runs.
  */
 
-export type JournalKind = 'verdict' | 'action' | 'error' | 'detector-disabled'
+export type JournalKind = 'verdict' | 'action' | 'error'
 
 export interface JournalEntry {
   readonly id: string
@@ -37,7 +37,7 @@ export interface Diff {
 }
 
 /** Fixed order, so the view does not reshuffle between two openings. */
-const KIND_ORDER: readonly JournalKind[] = ['verdict', 'action', 'error', 'detector-disabled']
+const KIND_ORDER: readonly JournalKind[] = ['verdict', 'action', 'error']
 
 export function diffSince(
   entries: readonly JournalEntry[],

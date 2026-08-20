@@ -4,6 +4,8 @@ import { chromium, test as base, type BrowserContext } from '@playwright/test'
 
 import { buildTooOld } from '../tools/build-age.mjs'
 
+import { WORKER_REGISTER_MS } from './budgets.js'
+
 const here = path.dirname(fileURLToPath(import.meta.url))
 
 /**
@@ -26,7 +28,7 @@ const BUILD = path.join(here, '..', 'apps', 'extension', 'dist', 'chrome-e2e')
 const stale = buildTooOld(BUILD, 'pnpm build:e2e')
 if (stale !== null) throw new Error(`e2e: ${stale}`)
 
-export const test = base.extend<{ context: BrowserContext }>({
+export const test = base.extend<{ context: BrowserContext; extensionId: string }>({
   // eslint-disable-next-line no-empty-pattern
   context: async ({}, use) => {
     const context = await chromium.launchPersistentContext('', {
@@ -35,6 +37,33 @@ export const test = base.extend<{ context: BrowserContext }>({
     })
     await use(context)
     await context.close()
+  },
+
+  /**
+   * The extension's own id, for a spec that has to read the store it writes to.
+   *
+   * IndexedDB is per origin, so a fixture page's `indexedDB.open('okolos')` opens an
+   * empty database that has never heard of this product. Reading the journal means
+   * opening an extension page, and that needs the id.
+   *
+   * Same shape and same named budget as `fixtures.ts`: an unnamed wait here reported
+   * "Test timeout while setting up extensionId" over "target closed", which sends the
+   * reader looking for a broken fixture instead of a busy machine (B-73).
+   */
+  extensionId: async ({ context }, use) => {
+    let [worker] = context.serviceWorkers()
+    if (!worker) {
+      worker = await context
+        .waitForEvent('serviceworker', { timeout: WORKER_REGISTER_MS })
+        .catch(() => {
+          throw new Error(
+            `the extension's service worker did not register within ` +
+              `${WORKER_REGISTER_MS / 1000}s — the extension may have failed to load, or this ` +
+              `machine is busy enough that a fresh browser plus an extension load takes longer`,
+          )
+        })
+    }
+    await use(worker.url().split('/')[2] as string)
   },
 })
 

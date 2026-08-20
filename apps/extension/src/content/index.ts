@@ -32,6 +32,7 @@ import { watchForTraps } from './traps.js'
 import { Sanitiser } from './sanitize.js'
 import { createSurfaceSlot } from './surface-slot.js'
 import { failOpen } from './fail-open.js'
+import { createJournalOnce } from './journal-once.js'
 
 /**
  * The content script: collect, ask the background for a verdict, warn.
@@ -134,27 +135,36 @@ let gate: GateHandle | null = null
  * of those six sites: both are rules about the surface, and a rule about the surface
  * applied per source is the defect, not the fix.
  */
+/**
+ * One record per distinct fact, for this frame.
+ *
+ * The journal has a retention period, so repeated identical lines evict what happened
+ * once. Three writers here could produce them — the standing restore refusal (B-64),
+ * the slot's refused claims, and the scan's give-up — and all three go through this.
+ * The screen is unaffected: a person pressing a button is answered every time.
+ */
+const journal = createJournalOnce()
+
 const slot = createSurfaceSlot({
   doc: document,
   noteRefused: (kind, severity) => {
     // Not drawn is not lost: the popup and the journal hold every finding, and this
-    // line is what makes the refusal readable afterwards rather than inferred.
-    void platform.runtime
-      .send('page/note', {
-        kind: 'gate-unread',
-        explain: t('noteSecondWarning', kind, severity),
-      })
-      .catch(() => undefined)
+    // line is what makes the refusal readable afterwards rather than inferred. Once
+    // per kind, because a page with several findings of one kind asks more than once.
+    const explain = t('noteSecondWarning', kind, severity)
+    void journal.record(`second:${kind}`, async () => {
+      await platform.runtime.send('page/note', { kind: 'gate-unread', explain })
+    })
   },
   alsoLine: (kinds) => t('warnAlsoHere', String(kinds.length)),
   wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   escalate: async (removals) => {
-    await platform.runtime
-      .send('page/note', {
-        kind: 'surface-removed',
-        explain: t('noteSurfaceRemoved', String(removals)),
-      })
-      .catch(() => undefined)
+    // The watch escalates once by construction, so this is belt and braces rather
+    // than the flood guard the other two need.
+    const explain = t('noteSurfaceRemoved', String(removals))
+    await journal.record('surface-removed', async () => {
+      await platform.runtime.send('page/note', { kind: 'surface-removed', explain })
+    })
   },
 })
 
@@ -426,9 +436,15 @@ function openInspector(verdict: Verdict, restoreNote?: string): void {
         // not be put back, because closing on a restore that did not happen is
         // how the user learns the button does nothing.
         const note = explainRestore(outcome)
+        // The sentence, every press. That is the screen's contract and B-36's whole
+        // point: a refusal is a standing fact about the page, and every press must say
+        // the same thing rather than the second one retracting the first.
         openInspector(verdict, note)
-        void platform.runtime
-          .send('page/note', { kind: 'restore', explain: note })
+        // The record, once. Ten presses on one node used to be ten identical journal
+        // lines, evicting what happened once from a store with a retention period.
+        void journal.record(`restore:${note}`, async () => {
+          await platform.runtime.send('page/note', { kind: 'restore', explain: note })
+        })
           .catch(() => undefined)
       },
       onDispute: () => {
@@ -474,10 +490,14 @@ async function safely(work: () => Promise<void>): Promise<void> {
       /**
        * The journal, not the badge: a worker restart is ordinary, and an icon that
        * cries wolf on every one of them is how a badge stops meaning anything.
+       *
+       * Once per distinct cause: a page that mutates while the worker is unavailable
+       * fails its rescan over and over, and the same sentence repeated is the flood
+       * this store cannot afford. A *different* cause is new information and is written.
        */
-      await platform.runtime.send('page/note', {
-        kind: 'scan-failed',
-        explain: t('noteScanFailed', String(cause)),
+      const explain = t('noteScanFailed', String(cause))
+      await journal.record(`scan:${explain}`, async () => {
+        await platform.runtime.send('page/note', { kind: 'scan-failed', explain })
       })
     },
   })

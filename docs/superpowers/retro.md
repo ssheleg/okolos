@@ -112,6 +112,12 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (девятый)** — B-39; стадии 0–10. Четвёртая внутристраничная
+  поверхность приведена к режиму трёх остальных и записана как SCR-19. По дороге:
+  пять изобретённых имён токенов (контраст 1.22 на главной кнопке), три
+  существующих a11y-аудита, не утверждавших отсутствие нарушений, и два баннера в
+  одних координатах. 1839 юнит-тестов в 117 файлах, три планта — все легли.
+  Постоянных инструкций десять, снятий нет. Вердикт REFINE.
 - **2026-08-20 (восьмой)** — B-38; стадии 0–10. Обещание ADR-0001 «страница не
   может скрыть предупреждение» стало проверенным вместо выведенного: измерено 6
   работающих атак из 20, найдено ещё три вектора, которых в строке не было, и все
@@ -241,6 +247,59 @@ happens before adding.
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-20 — the fourth surface returned an element, so nobody saw it was one
+
+**Symptom.** `renderComparison` handed back a bare `<section>` and the caller
+appended it to the page's own `body`. No shadow root, no stylesheet — not one line
+of CSS in the module. The page it warns about could read it, restyle it and delete
+it, and it did not have to try: on the hostile fixture the accessibility suite
+already ships, a `* { font-size: 6px; color: #eee }` rule rendered the comparison
+as grey on grey. ADR-0001 named three surfaces; the a11y suite audited those three;
+this was the fourth.
+
+**Stage it surfaced at.** 0, from a filed row. But the shape that hid it is worth
+naming: three surfaces called `mount*` and owned their hosts, and one returned an
+element. A function that returns markup reads as a fragment of somebody else's
+screen, and nothing about a fragment looks like it is missing a shadow root.
+
+**Stage that owned it.** 3. The surface was specified as "comparison view" inside
+SCN-006's UI elements — a component of a screen rather than a screen — and it had
+no record in `screens.md` at all. It was built, shipped, and compared against
+nothing for months.
+
+**Root cause.** A list of surfaces written in three places (the ADR, the a11y
+suite, the token check) and a fourth surface that was in none of them. Each list
+was complete with respect to the other two.
+
+**Fix, by grade.** Structural: `mountComparison` owns its host through the same
+`createOverlayHost` and carries `OVERLAY_TOKENS`, so the armour from the previous
+run applies to it without anyone deciding again. Its tests read the panel out of
+the shadow root — they used `document.querySelector` before, which was true and
+was the defect. Recorded as SCR-19, in FLW-05, in SCN-006 and in the ADR.
+
+**And the run's own mistake, caught by the run's own gate — after I widened it.**
+I invented five custom-property names while writing that stylesheet:
+`--ok-colour-on-accent` where the palette says `accent-text`, plus four more. An
+undeclared custom property inherits in silence, so the primary button came out
+dark-on-dark at **contrast 1.22** — in the surface whose entire job is to be read.
+The check that catches exactly this had been written an hour earlier for B-38, and
+it did not catch it, because its list of surfaces was the same three. It found all
+five the moment the fourth was added.
+
+**A gate that reached the surface and did not judge it.** The three existing a11y
+audits asserted that axe had evaluated some rules and that `color-contrast` was
+decided rather than incomplete. Both are real checks against a scan that silently
+reached nothing — and neither says the surface *passed*. `results.violations` was
+never compared to anything. The line is now in the shared helper, so it holds for
+all four; the three existing surfaces were already clean, which is the good case
+and not the one to plan for.
+
+**The check that catches it next time.** The armour count in
+`overlay-tokens.test.ts` asserts four occurrences, one per surface, so a fifth
+surface that forgets the tokens — or a fourth quietly dropped from the list —
+reddens. The plant proves it: removing the comparison from that list is caught
+there, not by the token check, which would have gone silent.
 
 ### 2026-08-20 — the promise was derived from the cascade, and the cascade says the opposite
 

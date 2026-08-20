@@ -83,6 +83,21 @@ export interface BannerHandle {
   readonly host: HTMLElement
   readonly root: ShadowRoot
   showError(message: string): void
+  /**
+   * One line for a second finding of a different kind, in the panel that is already
+   * up rather than in a second panel beside it.
+   *
+   * Two overlays used to appear on a page that was both a lookalike and poisoned, at
+   * the same `inset` — so one was drawn exactly on top of the other and the lower one
+   * could not be read at all (B-69). SCN-031 had already recorded the rule for the
+   * frame case: two warnings on one page is how a warning stops being read. That rule
+   * is about the surface, not about the source, and this is the affordance that lets
+   * the other sources follow it without losing the fact.
+   *
+   * One slot, set or replaced: a page with three kinds of finding must not grow three
+   * lines here either.
+   */
+  alsoHere(message: string | null): void
   destroy(): void
 }
 
@@ -98,6 +113,20 @@ export function mountBanner(
   return {
     host,
     root,
+    alsoHere(message: string | null) {
+      // Removed before it is re-added, and both happen here rather than around an
+      // await, which is what produced three identical lines from three clicks on a
+      // failing export in `data-controls`.
+      root.querySelector('[data-role=also]')?.remove()
+      if (message === null) return
+      const line = doc.createElement('p')
+      line.setAttribute('data-role', 'also')
+      // `status`, not `alert`: it is context for the warning already announced, and a
+      // second assertive announcement interrupts the first one being read aloud.
+      line.setAttribute('role', 'status')
+      line.textContent = message
+      root.querySelector('[data-role=panel]')?.append(line)
+    },
     showError(message: string) {
       let slot = root.querySelector('[data-role=error]')
       if (!slot) {

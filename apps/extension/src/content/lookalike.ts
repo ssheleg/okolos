@@ -1,6 +1,6 @@
 import { t } from '@okolos/i18n'
 import { checkLookalike, DEFAULT_WATCHLIST, type LookalikeVerdict } from '@okolos/core-lookalike'
-import { mountBanner, mountComparison, type BannerHandle, type ComparisonHandle } from '@okolos/ui'
+import { mountBanner, mountComparison, type BannerHandle, type ComparisonHandle, type BannerHandlers, type BannerProps } from '@okolos/ui'
 
 /**
  * The lookalike warning, shown on the page it is about.
@@ -23,6 +23,19 @@ export interface LookalikeDeps {
   trust(host: string): Promise<void>
   leave(): void
   watchlist?: readonly string[]
+  /**
+   * How a warning reaches the screen.
+   *
+   * Injected rather than imported so every source passes through the same slot. Six
+   * modules mounted their own banner, and on a page that was both a lookalike and
+   * poisoned two of them drew panels at identical coordinates — one exactly on top of
+   * the other, the lower one unreadable (B-69). "One in-page panel" is a rule about
+   * the surface, not about the source, so it cannot live in any one source.
+   *
+   * Optional so a test can leave it out and get the real thing; the entry point always
+   * supplies the slot.
+   */
+  mountWarning?: (props: BannerProps, handlers: BannerHandlers) => BannerHandle
 }
 
 export interface LookalikeWarning {
@@ -42,6 +55,12 @@ export interface LookalikeWarning {
   dismiss(): void
 }
 
+/** The injected mount, or the real one when a caller did not supply a slot. */
+function mounting(deps: { readonly doc: Document; mountWarning?: (p: BannerProps, h: BannerHandlers) => BannerHandle }) {
+  return (props: BannerProps, handlers: BannerHandlers): BannerHandle =>
+    (deps.mountWarning ?? ((p, h) => mountBanner(deps.doc, p, h)))(props, handlers)
+}
+
 export async function warnIfLookalike(deps: LookalikeDeps): Promise<LookalikeWarning | null> {
   const host = deps.hostname()
   const trusted = await deps.trusted()
@@ -55,6 +74,7 @@ export async function warnIfLookalike(deps: LookalikeDeps): Promise<LookalikeWar
 }
 
 function show(deps: LookalikeDeps, verdict: LookalikeVerdict): LookalikeWarning {
+  const mount = mounting(deps)
   let banner: BannerHandle | null = null
   let comparison: ComparisonHandle | null = null
 
@@ -94,8 +114,7 @@ function show(deps: LookalikeDeps, verdict: LookalikeVerdict): LookalikeWarning 
     )
   }
 
-  const mounted = mountBanner(
-    deps.doc,
+  const mounted = mount(
     {
       variant: 'lookalike',
       severity: 'major',

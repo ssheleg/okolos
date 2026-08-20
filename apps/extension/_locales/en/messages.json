@@ -1059,6 +1059,17 @@
       }
     }
   },
+  "noteSecondWarning": {
+    "message": "A second warning ($KIND$, $SEVERITY$) was not shown on the page: the panel already holds a more serious finding.",
+    "placeholders": {
+      "kind": {
+        "content": "$1"
+      },
+      "severity": {
+        "content": "$2"
+      }
+    }
+  },
   "noteSurfaceRemoved": {
     "message": "This page removed the warning $COUNT$ time(s). It could not be shown on the page.",
     "placeholders": {
@@ -1388,6 +1399,14 @@
   },
   "trustedTitle": {
     "message": "Sites you marked legitimate"
+  },
+  "warnAlsoHere": {
+    "message": "There is more here: $COUNT$ other kind(s) of warning. Open Okolos to read them.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
   },
   "warnClickfixCopied": {
     "message": "This page copied a command for you to run"

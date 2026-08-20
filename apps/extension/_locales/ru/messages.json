@@ -1059,6 +1059,17 @@
       }
     }
   },
+  "noteSecondWarning": {
+    "message": "Второе предупреждение ($KIND$, $SEVERITY$) не показано на странице: панель уже занята более серьёзной находкой.",
+    "placeholders": {
+      "kind": {
+        "content": "$1"
+      },
+      "severity": {
+        "content": "$2"
+      }
+    }
+  },
   "noteSurfaceRemoved": {
     "message": "Предупреждение удалено этой страницей $COUNT$ раз(а). Показать его на странице не удалось.",
     "placeholders": {
@@ -1388,6 +1399,14 @@
   },
   "trustedTitle": {
     "message": "Сайты, которые вы отметили настоящими"
+  },
+  "warnAlsoHere": {
+    "message": "Здесь есть и другое: ещё $COUNT$ вида предупреждений. Откройте Okolos, чтобы прочитать их.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
   },
   "warnClickfixCopied": {
     "message": "Эта страница скопировала за вас команду"

@@ -4,16 +4,18 @@ import { planSanitisation } from '@okolos/core-sanitizer'
 import { t, useResolver } from '@okolos/i18n'
 import { detectPlatform } from '@okolos/platform'
 import {
-  mountBanner,
   mountGate,
-  mountInspector,
   type BannerHandle,
+  type BannerHandlers,
+  type BannerProps,
+  mountInspector,
   type GateHandle,
   type InspectorHandle,
 } from '@okolos/ui'
 import { worstOf } from '@okolos/contracts'
 import type {
   AgentAction,
+  Severity,
   GateChoice,
   UnresolvedFinding,
   Verdict,
@@ -28,7 +30,7 @@ import { watchCredentialFields } from './credential.js'
 import { showDownloadVerdict } from './download.js'
 import { watchForTraps } from './traps.js'
 import { Sanitiser } from './sanitize.js'
-import { keepSurfaceMounted, type WatchHandle } from './keep-surface.js'
+import { createSurfaceSlot } from './surface-slot.js'
 
 /**
  * The content script: collect, ask the background for a verdict, warn.
@@ -119,62 +121,42 @@ function randomId(): string {
 /** Kept so the gate can open the evidence for the finding it is asking about. */
 let lastVerdicts: Verdict[] = []
 
-let banner: BannerHandle | null = null
 let inspector: InspectorHandle | null = null
 let gate: GateHandle | null = null
 
 /**
- * The watch that puts the banner back when the page deletes it from the document.
+ * One in-page warning panel, and one place that decides which finding holds it.
  *
- * One at a time, and always stopped before we destroy the banner ourselves: the user
- * closing it also takes the host out of the DOM, and fighting that would be this
- * defect pointed at the person instead of the page (`keep-surface.ts`).
+ * Six modules used to mount their own, and on a page that was both a lookalike and
+ * poisoned two panels were drawn at identical coordinates — one exactly on top of the
+ * other (B-69). The slot also owns the re-mount watch, which had been wired into two
+ * of those six sites: both are rules about the surface, and a rule about the surface
+ * applied per source is the defect, not the fix.
  */
-let surfaceWatch: WatchHandle | null = null
+const slot = createSurfaceSlot({
+  doc: document,
+  noteRefused: (kind, severity) => {
+    // Not drawn is not lost: the popup and the journal hold every finding, and this
+    // line is what makes the refusal readable afterwards rather than inferred.
+    void platform.runtime
+      .send('page/note', {
+        kind: 'gate-unread',
+        explain: t('noteSecondWarning', kind, severity),
+      })
+      .catch(() => undefined)
+  },
+  alsoLine: (kinds) => t('warnAlsoHere', String(kinds.length)),
+  wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  escalate: async (removals) => {
+    await platform.runtime
+      .send('page/note', {
+        kind: 'surface-removed',
+        explain: t('noteSurfaceRemoved', String(removals)),
+      })
+      .catch(() => undefined)
+  },
+})
 
-/** Replaces the banner, and the watch that guards it, as one operation. */
-function setBanner(mount: () => BannerHandle): BannerHandle {
-  dropBanner()
-  const handle = mount()
-  banner = handle
-  surfaceWatch = keepSurfaceMounted({
-    present: () => handle.host.isConnected,
-    remount: () => {
-      // The same host, put back where it was. Building a new one would lose the
-      // panel's state — an expanded inspector, a typed reason — and would race the
-      // page for the element name all over again.
-      try {
-        document.body.append(handle.host)
-        return handle.host.isConnected
-      } catch {
-        return false
-      }
-    },
-    onChange: (react) => {
-      const observer = new MutationObserver(react)
-      observer.observe(document.documentElement, { childList: true, subtree: true })
-      return () => observer.disconnect()
-    },
-    wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
-    escalate: async (removals) => {
-      await platform.runtime
-        .send('page/note', {
-          kind: 'surface-removed',
-          explain: t('noteSurfaceRemoved', String(removals)),
-        })
-        .catch(() => undefined)
-    },
-  })
-  return handle
-}
-
-/** Stops the watch first, then destroys — in that order, or a dismissal reads as an attack. */
-function dropBanner(): void {
-  surfaceWatch?.stop()
-  surfaceWatch = null
-  banner?.destroy()
-  banner = null
-}
 
 
 /**
@@ -323,10 +305,10 @@ function showFrameFinding(finding: { origin: string; summary: string; count: num
   const where = finding.origin === '' ? t('warnFrameUnnamed') : finding.origin
   const more = finding.count > 1 ? t('warnFrameMore', String(finding.count - 1)) : ''
 
-  banner = setBanner(() =>
-    mountBanner(
-    document,
-    {
+  slot.claim({
+    kind: 'frame',
+    severity: 'major',
+    props: {
       variant: 'injection',
       severity: 'major',
       headline: t('warnFrameHeadline', where),
@@ -334,14 +316,13 @@ function showFrameFinding(finding: { origin: string; summary: string; count: num
       sourceLine: t('warnFrameSource'),
       primaryLabel: t('warnFrameJournal'),
     },
-    {
+    handlers: {
       onPrimary: openFrameJournal,
       onRetry: openFrameJournal,
       onDispute: resolveEverything,
       onDismiss: resolveEverything,
     },
-    ),
-  )
+  })
 }
 
 function openFrameJournal(): void {
@@ -355,10 +336,10 @@ function show(verdict: Verdict, total: number, partialScan: boolean, neutralised
     ? ' This page was too large to check in full, so there may be more.'
     : ''
 
-  banner = setBanner(() =>
-    mountBanner(
-    document,
-    {
+  slot.claim({
+    kind: 'injection',
+    severity: verdict.severity,
+    props: {
       variant: 'injection',
       severity: verdict.severity,
       headline: t('warnInjectionHeadline'),
@@ -368,7 +349,7 @@ function show(verdict: Verdict, total: number, partialScan: boolean, neutralised
           : t('warnInjectionPlain', others, scanNote),
       sourceLine: t('warnFoundBy', verdict.sources.map((s) => s.name).join(', ')),
     },
-    {
+    handlers: {
       onPrimary: () => openInspector(verdict),
       onRetry: () => openInspector(verdict),
       onDispute: resolveEverything,
@@ -377,15 +358,23 @@ function show(verdict: Verdict, total: number, partialScan: boolean, neutralised
         resolveEverything()
       },
     },
-    ),
-  )
+  })
 }
 
 /** The user has said this page is fine. The gate stands down with the banner. */
+/**
+ * The mount every other content module is given, so none of them can draw beside the
+ * panel that is up. `kind` is the variant, which is what a reader would call it.
+ */
+function warningMount(kind: string, severity: Severity) {
+  return (props: BannerProps, handlers: BannerHandlers): BannerHandle =>
+    slot.claim({ kind, severity, props, handlers })
+}
+
 function resolveEverything(): void {
   unresolved = []
   armPageWatch(false)
-  dropBanner()
+  slot.release()
 }
 
 /**
@@ -581,6 +570,7 @@ function closeGate(): void {
  */
 if (isTopFrame) {
   void warnIfLookalike({
+    mountWarning: warningMount('lookalike', 'major'),
     doc: document,
     hostname: () => location.hostname,
     trusted: async () => (await platform.runtime.send('trust/list', {}))?.domains ?? [],
@@ -601,6 +591,7 @@ if (isTopFrame) {
  */
 if (isTopFrame) {
   watchForTraps({
+    mountWarning: warningMount('trap', 'critical'),
     doc: document,
     text: () => document.body?.innerText ?? '',
     leave: () => history.back(),
@@ -627,6 +618,7 @@ if (isTopFrame) {
  */
 if (isTopFrame) {
   watchCredentialFields({
+    mountWarning: warningMount('credential', 'major'),
     doc: document,
     host: () => location.hostname,
     now: () => new Date().toISOString(),
@@ -710,9 +702,10 @@ if (isTopFrame) {
           })
           if (!verdict?.compromised) return
 
-          mountBanner(
-            document,
-            {
+          slot.claim({
+            kind: 'password',
+            severity: 'major',
+            props: {
               variant: 'password',
               severity: 'major',
               headline: t('warnPasswordHeadline'),
@@ -726,13 +719,13 @@ if (isTopFrame) {
                 verdict.offline ? t('warnPasswordSourceOffline') : t('warnPasswordSourceOnline'),
               ),
             },
-            {
+            handlers: {
               onPrimary: () => undefined,
               onRetry: () => undefined,
               onDispute: () => undefined,
               onDismiss: () => undefined,
             },
-          )
+          })
         } catch (cause) {
           /**
            * A failed check is not a clean password, and it is not a broken login
@@ -762,6 +755,7 @@ if (isTopFrame) {
   platform.runtime.onMessage((message) => {
     if (message.type === 'download/verdict') {
       showDownloadVerdict(message.payload as never, {
+        mountWarning: warningMount('download', 'major'),
         doc: document,
         openJournal: () => {
           void platform.runtime.send('recovery/open', { kind: 'journal' }).catch(() => undefined)
@@ -775,16 +769,18 @@ if (isTopFrame) {
      * cannot report it itself without going through the page's own window — where
      * the page could forge it.
      *
-     * **Recorded limit:** if this page already has a banner up for its own finding,
-     * the frame's is left to the journal rather than drawn as a second overlay. Two
-     * warnings stacked on one page is how a warning stops being read, and folding
-     * the count in would need the top frame to know about frames it cannot see. The
-     * common case — a clean page embedding a poisoned frame — is the one that had no
-     * warning at all until now.
+     * **The rule this recorded is now the slot's, for every source.** It said: if the
+     * page already has a banner up for its own finding, the frame's is left to the
+     * journal rather than drawn as a second overlay. That was right and it was applied
+     * here only — two other sources kept mounting a second panel, which is how a page
+     * that was both a lookalike and poisoned ended up with one warning drawn exactly
+     * on top of another (B-69). The claim below goes to the same slot as everything
+     * else: a `major` finding does not displace a worse one, and it becomes a line on
+     * the panel that is up instead of a panel beside it.
      */
     if (message.type === 'frame/finding') {
       const finding = message.payload as { origin: string; summary: string; count: number }
-      if (!banner) showFrameFinding(finding)
+      showFrameFinding(finding)
       return Promise.resolve({ ok: true }) as never
     }
 

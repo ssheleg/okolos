@@ -1,5 +1,5 @@
 import { t } from '@okolos/i18n'
-import { mountBanner, type BannerHandle } from '@okolos/ui'
+import { mountBanner, type BannerHandle, type BannerHandlers, type BannerProps } from '@okolos/ui'
 
 /**
  * The banner for a download the background judged.
@@ -29,12 +29,32 @@ export interface DownloadNoticeDeps {
   readonly doc: Document
   /** Opens the journal, where the full record of the download lives. */
   openJournal: () => void
+  /**
+   * How a warning reaches the screen.
+   *
+   * Injected rather than imported so every source passes through the same slot. Six
+   * modules mounted their own banner, and on a page that was both a lookalike and
+   * poisoned two of them drew panels at identical coordinates — one exactly on top of
+   * the other, the lower one unreadable (B-69). "One in-page panel" is a rule about
+   * the surface, not about the source, so it cannot live in any one source.
+   *
+   * Optional so a test can leave it out and get the real thing; the entry point always
+   * supplies the slot.
+   */
+  mountWarning?: (props: BannerProps, handlers: BannerHandlers) => BannerHandle
+}
+
+/** The injected mount, or the real one when a caller did not supply a slot. */
+function mounting(deps: { readonly doc: Document; mountWarning?: (p: BannerProps, h: BannerHandlers) => BannerHandle }) {
+  return (props: BannerProps, handlers: BannerHandlers): BannerHandle =>
+    (deps.mountWarning ?? ((p, h) => mountBanner(deps.doc, p, h)))(props, handlers)
 }
 
 export function showDownloadVerdict(
   message: DownloadVerdictMessage,
   deps: DownloadNoticeDeps,
 ): BannerHandle | null {
+  const mount = mounting(deps)
   // A file that passed everything is not news. Saying so on every download is
   // how a banner becomes wallpaper.
   if (message.action === 'inform') return null
@@ -46,8 +66,7 @@ export function showDownloadVerdict(
     banner = null
   }
 
-  banner = mountBanner(
-    deps.doc,
+  banner = mount(
     {
       variant: 'download',
       severity: blocked ? 'critical' : 'major',

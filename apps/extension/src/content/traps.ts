@@ -1,6 +1,6 @@
 import { t } from '@okolos/i18n'
 import { detectClickFix, detectTechSupport } from '@okolos/core-traps'
-import { mountBanner, type BannerHandle } from '@okolos/ui'
+import { mountBanner, type BannerHandle, type BannerHandlers, type BannerProps } from '@okolos/ui'
 
 /**
  * Watching for the two traps that work on the person rather than the browser.
@@ -25,6 +25,19 @@ export interface TrapDeps {
   exitFullscreen(): void
   /** Called once when a warning is raised, with what it rests on. */
   warned?: (kind: 'clickfix' | 'techsupport', signals: readonly string[]) => void
+  /**
+   * How a warning reaches the screen.
+   *
+   * Injected rather than imported so every source passes through the same slot. Six
+   * modules mounted their own banner, and on a page that was both a lookalike and
+   * poisoned two of them drew panels at identical coordinates — one exactly on top of
+   * the other, the lower one unreadable (B-69). "One in-page panel" is a rule about
+   * the surface, not about the source, so it cannot live in any one source.
+   *
+   * Optional so a test can leave it out and get the real thing; the entry point always
+   * supplies the slot.
+   */
+  mountWarning?: (props: BannerProps, handlers: BannerHandlers) => BannerHandle
 }
 
 export interface TrapWatcher {
@@ -33,7 +46,14 @@ export interface TrapWatcher {
 
 const RECHECK_MS = 400
 
+/** The injected mount, or the real one when a caller did not supply a slot. */
+function mounting(deps: { readonly doc: Document; mountWarning?: (p: BannerProps, h: BannerHandlers) => BannerHandle }) {
+  return (props: BannerProps, handlers: BannerHandlers): BannerHandle =>
+    (deps.mountWarning ?? ((p, h) => mountBanner(deps.doc, p, h)))(props, handlers)
+}
+
 export function watchForTraps(deps: TrapDeps): TrapWatcher {
+  const mount = mounting(deps)
   let banner: BannerHandle | null = null
   let scriptedCopy = false
   let copied: string | null = null
@@ -88,8 +108,7 @@ export function watchForTraps(deps: TrapDeps): TrapWatcher {
 
     const clickfix = detectClickFix({ text, scriptedCopy, copied })
     if (clickfix) {
-      banner = mountBanner(
-        deps.doc,
+      banner = mount(
         {
           variant: 'clickfix',
           severity: 'critical',
@@ -122,8 +141,7 @@ export function watchForTraps(deps: TrapDeps): TrapWatcher {
 
     const techsupport = detectTechSupport({ text, forcedFullscreen, dialogLoop })
     if (techsupport) {
-      banner = mountBanner(
-        deps.doc,
+      banner = mount(
         {
           variant: 'techsupport',
           severity: 'critical',

@@ -383,9 +383,12 @@ describe('a message that is never answered', () => {
 
 /** The shape the download handler actually sends, so the envelope test is about the envelope. */
 const DOWNLOAD_VERDICT = {
+  // Codes for the headline and the shape, words for the reasons: the split the
+  // contract draws, because the words for a code belong to the surface (B-75).
   action: 'warn' as const,
-  headline: 'This file passed the checks that could be run',
-  reasons: 'the name hides a program behind a document extension',
+  headline: 'passed-what-ran',
+  shape: [{ code: 'double-extension', filename: 'invoice.pdf.exe' }],
+  reasons: 'listed by URLhaus on 2026-08-04',
   skipped: 'hash: the file has not been written yet',
 }
 

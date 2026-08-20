@@ -20,9 +20,57 @@ import { mountBanner, type BannerHandle, type BannerHandlers, type BannerProps }
 
 export interface DownloadVerdictMessage {
   readonly action: string
+  /** A code, not a sentence: the words are this module's (B-75). */
   readonly headline: string
+  /** Facts about the file, as codes with the values their sentences need. */
+  readonly shape: ReadonlyArray<{
+    readonly code: string
+    readonly filename?: string
+    readonly mimeType?: string
+  }>
+  /** Words, resolved by whoever ran the checks. */
   readonly reasons: string
   readonly skipped: string
+}
+
+/**
+ * Headline codes to catalogue keys, and shape codes to theirs.
+ *
+ * `*_KEY` tables rather than a computed key, because that is the form the locale gate
+ * reads — with `t(\`downloadHeadline${code}\`)` all ten of these messages would look
+ * dead to it and the next sweep would offer to delete them.
+ */
+const HEADLINE_KEY: Record<string, string> = {
+  blocked: 'downloadHeadlineBlocked',
+  unchecked: 'downloadHeadlineUnchecked',
+  'needs-a-look': 'downloadHeadlineNeedsLook',
+  'passed-all': 'downloadHeadlinePassedAll',
+  'passed-what-ran': 'downloadHeadlinePassedWhatRan',
+}
+
+const SHAPE_KEY: Record<string, string> = {
+  'double-extension': 'downloadShapeDoubleExtension',
+  'name-hides-a-program': 'downloadShapeNameHidesProgram',
+  'type-is-a-program': 'downloadShapeTypeIsProgram',
+  'is-a-program': 'downloadShapeIsProgram',
+  'is-an-archive': 'downloadShapeIsArchive',
+}
+
+/**
+ * The sentence for one shape fact.
+ *
+ * The substitutions are positional and the order differs per message, so each code
+ * names its own arguments rather than passing a tuple every message has to accept.
+ */
+function shapeSentence(entry: DownloadVerdictMessage['shape'][number]): string {
+  const key = SHAPE_KEY[entry.code]
+  // An unknown code shows itself rather than nothing: wrong and visible beats wrong
+  // and invisible, on a banner about a file somebody is about to open.
+  if (key === undefined) return entry.code
+  if (entry.code === 'double-extension') return t(key, entry.filename ?? '')
+  if (entry.code === 'name-hides-a-program') return t(key, entry.mimeType ?? '')
+  if (entry.code === 'type-is-a-program') return t(key, entry.filename ?? '', entry.mimeType ?? '')
+  return t(key)
 }
 
 export interface DownloadNoticeDeps {
@@ -70,9 +118,12 @@ export function showDownloadVerdict(
     {
       variant: 'download',
       severity: blocked ? 'critical' : 'major',
-      headline: blocked ? t('warnDownloadBlockedHeadline') : message.headline,
+      headline: blocked
+        ? t('warnDownloadBlockedHeadline')
+        : t(HEADLINE_KEY[message.headline] ?? 'warnDownloadBlockedHeadline'),
       detail: [
         message.reasons,
+        message.shape.map(shapeSentence).join(' '),
         blocked ? t('warnDownloadCancelled') : '',
         message.skipped ? t('warnDownloadSkipped', message.skipped) : '',
       ]

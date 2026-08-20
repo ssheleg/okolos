@@ -80,7 +80,7 @@ describe('the check that can never run here', () => {
 
   it('never claims every check passed', async () => {
     const verdict = await handleDownload(item(), deps())
-    expect(verdict.headline).toMatch(/checks that could be run/i)
+    expect(verdict.headline).toBe('passed-what-ran')
   })
 })
 

@@ -470,6 +470,21 @@
   "downloadFeedUnread": {
     "message": "the blocklists could not be read, so the source was not checked"
   },
+  "downloadHeadlineBlocked": {
+    "message": "This file matched something known to be dangerous"
+  },
+  "downloadHeadlineNeedsLook": {
+    "message": "This file needs a look before you open it"
+  },
+  "downloadHeadlinePassedAll": {
+    "message": "This file passed every check"
+  },
+  "downloadHeadlinePassedWhatRan": {
+    "message": "This file passed the checks that could be run"
+  },
+  "downloadHeadlineUnchecked": {
+    "message": "This file was not checked at all"
+  },
   "downloadListedBy": {
     "message": "The address this came from is listed by $FEED$ (entry from $DATE$).",
     "placeholders": {
@@ -486,6 +501,39 @@
   },
   "downloadNotWritten": {
     "message": "the file has not been written yet, so there are no bytes to hash"
+  },
+  "downloadShapeDoubleExtension": {
+    "message": "The name “$FILE$” hides a program behind a document extension.",
+    "placeholders": {
+      "file": {
+        "content": "$1"
+      }
+    }
+  },
+  "downloadShapeIsArchive": {
+    "message": "This is an archive, so what it contains was not checked."
+  },
+  "downloadShapeIsProgram": {
+    "message": "This is a program, and not every check could be run on it."
+  },
+  "downloadShapeNameHidesProgram": {
+    "message": "The site sent this as $MIME$, but the name says it is a program.",
+    "placeholders": {
+      "mime": {
+        "content": "$1"
+      }
+    }
+  },
+  "downloadShapeTypeIsProgram": {
+    "message": "The name “$FILE$” reads as a document, but a program is being sent under it ($MIME$).",
+    "placeholders": {
+      "file": {
+        "content": "$1"
+      },
+      "mime": {
+        "content": "$2"
+      }
+    }
   },
   "errCheckEmpty": {
     "message": "the check returned nothing"

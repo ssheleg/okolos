@@ -28,10 +28,40 @@ export interface DownloadEvidence {
   readonly checks: Readonly<Record<CheckName, CheckOutcome>>
 }
 
+/**
+ * What the verdict says, as codes rather than sentences.
+ *
+ * The package held five headlines and five shape sentences in English, in a package with
+ * zero dependencies, and the background then joined them and sent the English over an
+ * RPC to be rendered (B-75). The words are the surface's;
+ * `apps/extension/src/content/download.ts` maps these through `*_KEY` tables, which is
+ * the shape the locale gate reads.
+ *
+ * `reasons` is different and stays words: those come from the checks, and the caller
+ * that ran them already resolved them through the catalogue (`downloadListedBy`).
+ */
+export type DownloadHeadline =
+  | 'blocked'
+  | 'unchecked'
+  | 'needs-a-look'
+  | 'passed-all'
+  | 'passed-what-ran'
+
+/** A fact about the file itself, with the values a sentence about it needs. */
+export type DownloadShape =
+  | { readonly code: 'double-extension'; readonly filename: string }
+  | { readonly code: 'name-hides-a-program'; readonly mimeType: string }
+  | { readonly code: 'type-is-a-program'; readonly filename: string; readonly mimeType: string }
+  | { readonly code: 'is-a-program' }
+  | { readonly code: 'is-an-archive' }
+
 export interface DownloadVerdict {
   readonly action: 'block' | 'warn' | 'inform'
-  readonly headline: string
+  readonly headline: DownloadHeadline
+  /** Details of the checks that failed — words, resolved by whoever ran them. */
   readonly reasons: readonly string[]
+  /** Facts about the file, as codes: the sentence is the surface's to write. */
+  readonly shape: readonly DownloadShape[]
   readonly ran: readonly CheckName[]
   readonly skipped: ReadonlyArray<{ readonly check: CheckName; readonly why: string }>
   /** True when nothing could be checked at all. */
@@ -140,8 +170,9 @@ export function judgeDownload(evidence: DownloadEvidence): DownloadVerdict {
   if (failures.length > 0) {
     return {
       action: 'block',
-      headline: 'This file matched something known to be dangerous',
+      headline: 'blocked',
       reasons,
+      shape: [],
       ran,
       skipped,
       unchecked: false,
@@ -150,31 +181,34 @@ export function judgeDownload(evidence: DownloadEvidence): DownloadVerdict {
 
   // Shape problems are not matches against anything: they are facts about the
   // file that a person can verify by looking at its name.
-  const shape: string[] = []
+  const shape: DownloadShape[] = []
   if (hasDoubleExtension(evidence.filename)) {
-    shape.push(`The name "${evidence.filename}" hides a program behind a document extension.`)
+    shape.push({ code: 'double-extension', filename: evidence.filename })
   }
   const disagreement = mimeDisagrees(evidence.filename, evidence.mimeType)
-  if (disagreement === 'name-hides-a-program') {
-    shape.push(`The server called this ${evidence.mimeType}, but the name says it is a program.`)
+  if (disagreement === 'name-hides-a-program' && evidence.mimeType !== null) {
+    shape.push({ code: 'name-hides-a-program', mimeType: evidence.mimeType })
   }
-  if (disagreement === 'type-is-a-program') {
-    shape.push(
-      `The name "${evidence.filename}" reads as a document, but the server is sending a program under it (${evidence.mimeType}).`,
-    )
+  if (disagreement === 'type-is-a-program' && evidence.mimeType !== null) {
+    shape.push({
+      code: 'type-is-a-program',
+      filename: evidence.filename,
+      mimeType: evidence.mimeType,
+    })
   }
   if (shape.length === 0 && EXECUTABLE.test(evidence.filename) && skipped.length > 0) {
-    shape.push('This is a program, and not every check could be run on it.')
+    shape.push({ code: 'is-a-program' })
   }
   if (shape.length === 0 && ARCHIVE.test(evidence.filename) && skipped.length > 0) {
-    shape.push('This is an archive, so what it contains was not checked.')
+    shape.push({ code: 'is-an-archive' })
   }
 
   if (ran.length === 0) {
     return {
       action: 'warn',
-      headline: 'This file was not checked at all',
-      reasons: shape,
+      headline: 'unchecked',
+      reasons: [],
+      shape,
       ran,
       skipped,
       unchecked: true,
@@ -184,8 +218,9 @@ export function judgeDownload(evidence: DownloadEvidence): DownloadVerdict {
   if (shape.length > 0) {
     return {
       action: 'warn',
-      headline: 'This file needs a look before you open it',
-      reasons: shape,
+      headline: 'needs-a-look',
+      reasons: [],
+      shape,
       ran,
       skipped,
       unchecked: false,
@@ -194,11 +229,9 @@ export function judgeDownload(evidence: DownloadEvidence): DownloadVerdict {
 
   return {
     action: 'inform',
-    headline:
-      skipped.length === 0
-        ? 'This file passed every check'
-        : 'This file passed the checks that could be run',
+    headline: skipped.length === 0 ? 'passed-all' : 'passed-what-ran',
     reasons: [],
+    shape: [],
     ran,
     skipped,
     unchecked: false,

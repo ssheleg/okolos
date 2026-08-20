@@ -71,8 +71,22 @@ export interface RpcMap {
     req: { origin: string; summary: string; count: number }
     res: { ok: true }
   }
+  /**
+   * A download's verdict, as codes plus the words that were already resolved.
+   *
+   * `headline` and `shape` are **codes**: the words for them belong to the surface that
+   * renders the banner, and until 2026-08-20 the background composed English sentences
+   * and sent them across this line (B-75). `reasons` stays words, because those come
+   * from the checks and whoever ran them resolved them through the catalogue.
+   */
   'download/verdict': {
-    req: { action: string; headline: string; reasons: string; skipped: string }
+    req: {
+      action: string
+      headline: string
+      shape: ReadonlyArray<{ code: string; filename?: string; mimeType?: string }>
+      reasons: string
+      skipped: string
+    }
     res: { ok: true }
   }
   /** SHA-1 of a submitted password. The password itself never crosses this line. */

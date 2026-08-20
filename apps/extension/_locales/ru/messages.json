@@ -470,6 +470,21 @@
   "downloadFeedUnread": {
     "message": "списки заблокированных не прочитались, поэтому источник не проверен"
   },
+  "downloadHeadlineBlocked": {
+    "message": "Этот файл совпал с известным опасным"
+  },
+  "downloadHeadlineNeedsLook": {
+    "message": "На этот файл стоит взглянуть, прежде чем открывать"
+  },
+  "downloadHeadlinePassedAll": {
+    "message": "Файл прошёл все проверки"
+  },
+  "downloadHeadlinePassedWhatRan": {
+    "message": "Файл прошёл те проверки, которые удалось выполнить"
+  },
+  "downloadHeadlineUnchecked": {
+    "message": "Этот файл не проверен вообще"
+  },
   "downloadListedBy": {
     "message": "Адрес, с которого он пришёл, есть в списке $FEED$ (запись от $DATE$).",
     "placeholders": {
@@ -486,6 +501,39 @@
   },
   "downloadNotWritten": {
     "message": "файл ещё не записан, поэтому хешировать нечего"
+  },
+  "downloadShapeDoubleExtension": {
+    "message": "Имя «$FILE$» прячет программу за расширением документа.",
+    "placeholders": {
+      "file": {
+        "content": "$1"
+      }
+    }
+  },
+  "downloadShapeIsArchive": {
+    "message": "Это архив, и что внутри — не проверялось."
+  },
+  "downloadShapeIsProgram": {
+    "message": "Это программа, и не все проверки удалось на ней выполнить."
+  },
+  "downloadShapeNameHidesProgram": {
+    "message": "Сайт отдал это как $MIME$, а имя говорит, что это программа.",
+    "placeholders": {
+      "mime": {
+        "content": "$1"
+      }
+    }
+  },
+  "downloadShapeTypeIsProgram": {
+    "message": "Имя «$FILE$» читается как документ, но под ним отдают программу ($MIME$).",
+    "placeholders": {
+      "file": {
+        "content": "$1"
+      },
+      "mime": {
+        "content": "$2"
+      }
+    }
   },
   "errCheckEmpty": {
     "message": "проверка ничего не вернула"

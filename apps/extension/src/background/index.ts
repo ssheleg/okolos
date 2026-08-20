@@ -940,7 +940,10 @@ platform.downloads.onCreated((item) => {
       const told = await platform.tabs
         .sendToActive('download/verdict', {
           action: verdict.action,
+          // Codes, not sentences: the words are the content script's, which has the
+          // catalogue. This line used to carry English composed here (B-75).
           headline: verdict.headline,
+          shape: verdict.shape,
           reasons: verdict.reasons.join(' '),
           skipped: verdict.skipped.map((entry) => `${entry.check}: ${entry.why}`).join('; '),
         })

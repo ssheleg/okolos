@@ -17,7 +17,10 @@ useResolver(fromCatalogue(CATALOGUE))
 function message(overrides: Partial<DownloadVerdictMessage> = {}): DownloadVerdictMessage {
   return {
     action: 'block',
-    headline: 'This file matched something known to be dangerous',
+    // A code, because that is what crosses the RPC now; the words are resolved here
+    // from the shipped catalogue (B-75).
+    headline: 'blocked',
+    shape: [],
     reasons: 'The address this came from is listed by URLhaus (entry from 2026-08-01).',
     skipped: 'hash: the file has not been written yet, so there are no bytes to hash',
     ...overrides,
@@ -61,11 +64,11 @@ describe('a download that was stopped', () => {
 describe('a download that was only doubted', () => {
   it('keeps the judge’s own headline rather than claiming a block', () => {
     const handle = showDownloadVerdict(
-      message({ action: 'warn', headline: 'This file needs a look before you open it' }),
+      message({ action: 'warn', headline: 'needs-a-look' }),
       deps(),
     )
-    expect(handle?.root.querySelector('[data-role=headline]')?.textContent).toContain(
-      'needs a look',
+    expect(handle?.root.querySelector('[data-role=headline]')?.textContent).toBe(
+      CATALOGUE.downloadHeadlineNeedsLook?.message,
     )
   })
 
@@ -96,5 +99,53 @@ describe('the way to the full record', () => {
     const handle = showDownloadVerdict(message(), d)
     handle?.root.querySelector<HTMLElement>('[data-role=primary]')?.click()
     expect(d.openJournal).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('the words for a code', () => {
+  /**
+   * The verdict crosses the RPC as codes and is worded here (B-75). What must not
+   * happen is a code reaching the screen: `[downloadHeadline…]` or the bare code itself
+   * on a banner about a file somebody is about to open.
+   */
+  it('renders a catalogue sentence for every headline the judge can produce', () => {
+    for (const code of ['blocked', 'unchecked', 'needs-a-look', 'passed-what-ran'] as const) {
+      // `inform` is not shown at all, so `passed-all` never reaches a banner.
+      const el = showDownloadVerdict(
+        message({ action: code === 'blocked' ? 'block' : 'warn', headline: code }),
+        deps(),
+      )
+      const headline = el?.root.querySelector('[data-role=headline]')?.textContent ?? ''
+      expect(headline, `${code} has no sentence`).not.toBe('')
+      expect(headline, `${code} rendered the resolver's fallback`).not.toMatch(/^\[/)
+      expect(headline, `${code} rendered its own code`).not.toBe(code)
+    }
+  })
+
+  it('renders a catalogue sentence for every shape fact, with its values in it', () => {
+    const cases = [
+      { code: 'double-extension', filename: 'invoice.pdf.exe' },
+      { code: 'name-hides-a-program', mimeType: 'application/pdf' },
+      { code: 'type-is-a-program', filename: 'invoice.pdf', mimeType: 'application/x-msdownload' },
+      { code: 'is-a-program' },
+      { code: 'is-an-archive' },
+    ]
+    for (const shape of cases) {
+      const el = showDownloadVerdict(
+        message({ action: 'warn', headline: 'needs-a-look', shape: [shape] }),
+        deps(),
+      )
+      const detail = el?.root.querySelector('[data-role=detail]')?.textContent ?? ''
+      expect(detail, `${shape.code} has no sentence`).not.toMatch(/^\[/)
+      expect(detail, `${shape.code} rendered its own code`).not.toContain(shape.code)
+      // Collected rather than asserted behind a branch: an `expect` inside an `if`
+      // does not run when the branch is not taken, and the test passes anyway — the
+      // rule `tools/test-quality.test.ts` enforces, and it caught this.
+      const values = [shape.filename, shape.mimeType].filter(
+        (value): value is string => value !== undefined,
+      )
+      const missing = values.filter((value) => !detail.includes(value))
+      expect(missing, `${shape.code} dropped its values from the sentence`).toEqual([])
+    }
   })
 })

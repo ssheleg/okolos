@@ -35,7 +35,7 @@ describe('a file that matched something known', () => {
 
 describe('what the verdict may claim', () => {
   it('says every check passed only when every check ran', () => {
-    expect(judgeDownload(evidence()).headline).toMatch(/passed every check/i)
+    expect(judgeDownload(evidence()).headline).toBe('passed-all')
   })
 
   it('says which checks it could run when one could not', () => {
@@ -44,7 +44,7 @@ describe('what the verdict may claim', () => {
     const verdict = judgeDownload(
       evidence({ checks: { feed: PASS, 'file-type': PASS, hash: skip('the file is behind a login') } }),
     )
-    expect(verdict.headline).toMatch(/checks that could be run/i)
+    expect(verdict.headline).toBe('passed-what-ran')
     expect(verdict.skipped).toEqual([{ check: 'hash', why: 'the file is behind a login' }])
   })
 
@@ -66,7 +66,7 @@ describe('what the verdict may claim', () => {
       }),
     )
     expect(verdict.unchecked).toBe(true)
-    expect(verdict.headline).toMatch(/not checked at all/i)
+    expect(verdict.headline).toBe('unchecked')
     expect(verdict.action).toBe('warn')
   })
 })
@@ -75,20 +75,24 @@ describe('what the file itself gives away', () => {
   it('catches a program wearing a document extension', () => {
     const verdict = judgeDownload(evidence({ filename: 'invoice.pdf.exe' }))
     expect(verdict.action).toBe('warn')
-    expect(verdict.reasons[0]).toContain('invoice.pdf.exe')
+    // The code and the value it needs — the sentence is the surface's (B-75).
+    expect(verdict.shape[0]).toEqual({ code: 'double-extension', filename: 'invoice.pdf.exe' })
   })
 
   it('catches a server calling a program a document', () => {
     const verdict = judgeDownload(evidence({ filename: 'setup.exe', mimeType: 'application/pdf' }))
     expect(verdict.action).toBe('warn')
-    expect(verdict.reasons[0]).toContain('application/pdf')
+    expect(verdict.shape[0]).toEqual({
+      code: 'name-hides-a-program',
+      mimeType: 'application/pdf',
+    })
   })
 
   it('says an archive was not looked inside, when something else was skipped too', () => {
     const verdict = judgeDownload(
       evidence({ filename: 'photos.zip', mimeType: 'application/zip', checks: { feed: PASS, 'file-type': PASS, hash: skip('too large') } }),
     )
-    expect(verdict.reasons[0]).toMatch(/archive/i)
+    expect(verdict.shape[0]).toEqual({ code: 'is-an-archive' })
   })
 
   it('does not nag about an ordinary document that passed everything', () => {
@@ -137,13 +141,13 @@ describe('the shapes this list is a claim about', () => {
   it('recognises the Windows script and control formats used to deliver payloads', () => {
     for (const ext of ['wsf', 'jse', 'vbe', 'pif', 'msc', 'cpl', 'reg', 'chm', 'scf', 'url', 'msix', 'appx']) {
       const verdict = named(`invoice.${ext}`)
-      expect(verdict.reasons.join(' '), ext).toMatch(/program/i)
+      expect(verdict.shape.map((entry) => entry.code), ext).toContain('is-a-program')
     }
   })
 
   it('recognises macro-enabled Office documents, which look like documents', () => {
     for (const ext of ['docm', 'xlsm', 'pptm', 'xlsb', 'dotm']) {
-      expect(named(`отчёт.${ext}`).reasons.join(' '), ext).toMatch(/program|macro/i)
+      expect(named(`отчёт.${ext}`).shape.map((entry) => entry.code), ext).toContain('is-a-program')
     }
   })
 
@@ -151,20 +155,20 @@ describe('the shapes this list is a claim about', () => {
     // .vhd and .cab join .iso and .img: a mounted container is where a file
     // arrives without the mark of the web.
     for (const ext of ['cab', 'vhd', 'vhdx', 'tar', 'gz', 'tgz', 'wim']) {
-      expect(named(`photos.${ext}`).reasons.join(' '), ext).toMatch(/archive|container/i)
+      expect(named(`photos.${ext}`).shape.map((entry) => entry.code), ext).toContain('is-an-archive')
     }
   })
 
   it('still sees a program hidden behind a decoy extension it now knows', () => {
     // The double-extension check is only as wide as the executable list.
     const verdict = judgeDownload(evidence({ filename: 'счёт.pdf.wsf', mimeType: null }))
-    expect(verdict.reasons.join(' ')).toMatch(/hides a program/i)
+    expect(verdict.shape.map((entry) => entry.code)).toContain('double-extension')
   })
 
   it('treats a wider decoy set, because a decoy is whatever looks harmless', () => {
     for (const decoy of ['rtf', 'htm', 'html', 'gif', 'mp4', 'eml', 'msg', 'xml']) {
       const verdict = judgeDownload(evidence({ filename: `letter.${decoy}.exe`, mimeType: null }))
-      expect(verdict.reasons.join(' '), decoy).toMatch(/hides a program/i)
+      expect(verdict.shape.map((entry) => entry.code), decoy).toContain('double-extension')
     }
   })
 
@@ -194,7 +198,7 @@ describe('a name and a type that disagree, in both directions', () => {
       mimeType: 'application/pdf',
       checks: { feed: PASS, 'file-type': PASS, hash: PASS },
     })
-    expect(verdict.reasons.join(' ')).toMatch(/hides a program|program under/i)
+    expect(verdict.shape.map((entry) => entry.code)).toContain('double-extension')
   })
 
   it('flags a program dressed as a document by its type', () => {
@@ -205,7 +209,7 @@ describe('a name and a type that disagree, in both directions', () => {
       mimeType: 'application/x-msdownload',
       checks: { feed: PASS, 'file-type': PASS, hash: PASS },
     })
-    expect(verdict.reasons.join(' ')).toMatch(/program under a document|x-msdownload/i)
+    expect(verdict.shape.map((entry) => entry.code)).toContain('type-is-a-program')
   })
 
   it('says nothing when the name and the type agree', () => {
@@ -226,9 +230,10 @@ describe('a name and a type that disagree, in both directions', () => {
         mimeType,
         checks: { feed: PASS, 'file-type': PASS, hash: PASS },
       })
-      expect(verdict.reasons.join(' '), `${filename} as ${mimeType}`).not.toMatch(
-        /hides a program|program under/i,
-      )
+      expect(
+        verdict.shape.map((entry) => entry.code),
+        `${filename} as ${mimeType}`,
+      ).not.toContain('type-is-a-program')
     }
   })
 })

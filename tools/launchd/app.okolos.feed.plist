@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Refreshes the blocklist on this machine, twice a day.
+
+  It has to be local. ADR-0002 keeps the signing key off every server, so the
+  feed is signed where the key is and published from there — moving the key into
+  CI is precisely the trade that decision refused. That makes the schedule a
+  human step by construction, and this file is what reduces it to one command:
+
+      launchctl bootstrap gui/$(id -u) tools/launchd/app.okolos.feed.plist
+
+  To check it is alive, and to see the last exit status:
+
+      launchctl print gui/$(id -u)/app.okolos.feed | grep -E 'state|last exit'
+
+  To take it away:
+
+      launchctl bootout gui/$(id -u)/app.okolos.feed
+
+  REPO_PATH below is a placeholder on purpose: an absolute path committed to a
+  repository is right on exactly one machine, and wrong silently everywhere else.
+  `tools/install-feed-agent.mjs` fills it in and writes the copy launchd reads.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>app.okolos.feed</string>
+
+  <!--
+    Through a login shell: `pnpm` arrives from a version manager on most
+    machines, and launchd's own environment has almost nothing in it. `cd` first
+    because the script resolves the repository from its own location and the
+    working directory is otherwise `/`.
+  -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/sh</string>
+    <string>-lc</string>
+    <string>cd REPO_PATH &amp;&amp; pnpm feed:refresh</string>
+  </array>
+
+  <!--
+    43200 seconds is twelve hours, which is the source's own cycle as recorded in
+    ADR-0010. launchd runs a missed StartInterval as soon as it can after a wake,
+    which is the behaviour this wants: a laptop that was closed overnight
+    refreshes on opening rather than waiting for the next slot.
+  -->
+  <key>StartInterval</key>
+  <integer>43200</integer>
+
+  <!--
+    And once at load, so installing the agent refreshes the feed instead of
+    promising to in twelve hours.
+  -->
+  <key>RunAtLoad</key>
+  <true/>
+
+  <!--
+    Not `KeepAlive`: this is a task that finishes, and keeping it alive would
+    restart it in a loop. A failed run is reported by its exit status and by the
+    log below, and the next interval tries again.
+  -->
+  <key>StandardOutPath</key>
+  <string>/tmp/okolos-feed.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/okolos-feed.log</string>
+
+  <!--
+    Nice, because a blocklist refresh is never the most important thing the
+    machine is doing.
+  -->
+  <key>Nice</key>
+  <integer>5</integer>
+
+  <key>ProcessType</key>
+  <string>Background</string>
+</dict>
+</plist>

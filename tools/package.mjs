@@ -26,6 +26,7 @@ import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs'
 import path from 'node:path'
+import { FEED_MAX_AGE_DAYS, FEED_PATH, feedAgeDays, feedTooOld } from './feed-age.mjs'
 
 const root = path.resolve(import.meta.dirname, '..')
 const dist = path.join(root, 'apps/extension/dist')
@@ -70,6 +71,23 @@ function referencedPaths(manifest) {
   }
   walk(manifest)
   return [...paths]
+}
+
+/**
+ * Before anything is built: is the blocklist still worth shipping.
+ *
+ * Here rather than in `pnpm test`, and the placement is the decision. Publishing
+ * is a local step by ADR-0002 — the signing key never leaves the machine — so a
+ * freshness gate on every commit would be red for a reason nobody can fix from
+ * where they are standing, which is how a project learns to pass
+ * `OKOLOS_SKIP_GATES=1`. A release is deliberate and rare, and refusing one that
+ * would ship an abandoned blocklist is exactly what a release gate is for.
+ */
+console.log('\n── the blocklist, which is the thing this product blocks with')
+{
+  const stale = feedTooOld()
+  if (stale) die(stale)
+  ok(`${FEED_PATH} is ${feedAgeDays().toFixed(1)} days old, within ${FEED_MAX_AGE_DAYS}`)
 }
 
 console.log('\n── build, so the archive is of something this command made')

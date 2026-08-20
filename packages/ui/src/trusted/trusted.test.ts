@@ -28,7 +28,14 @@ const ENTRY: TrustedDomain = {
 }
 
 function render(domains: readonly TrustedDomain[], h = handlers()): HTMLElement {
-  const el = renderTrusted(document, domains, h)
+  const el = renderTrusted(document, { kind: 'ready', domains }, h)
+  document.body.append(el)
+  return el
+}
+
+/** The other half of the screen: it could not read the list at all. */
+function renderUnread(message: string, h = handlers()): HTMLElement {
+  const el = renderTrusted(document, { kind: 'error', message }, h)
   document.body.append(el)
   return el
 }
@@ -80,5 +87,35 @@ describe('when nothing is trusted', () => {
     const el = render([])
     expect(role(el, 'trusted-empty')?.textContent).toMatch(/ещё не отмечали ни один сайт/i)
     expect(el.querySelectorAll('[data-role=trusted-row]')).toHaveLength(0)
+  })
+})
+
+describe('when the list could not be read', () => {
+  it('says so, and does not render an empty list in its place', () => {
+    /**
+     * The reassuring answer is "you trust nothing", and it is possibly the wrong one. The
+     * behaviour was already right — the options page built this sentence itself — but it
+     * lived *beside* this renderer, so SCR-16's record named a file its error state was
+     * not in, and no test here nor the axe sweep that walks this markup could reach it
+     * (B-59).
+     */
+    const el = renderUnread('store unreadable: VersionError')
+
+    expect(role(el, 'trusted-error')?.textContent).toContain('VersionError')
+    expect(role(el, 'trusted-empty'), 'an empty state stood in for a failure').toBeNull()
+    expect(el.querySelectorAll('[data-role=trusted-row]')).toHaveLength(0)
+  })
+
+  it('keeps the heading, so the screen is still the screen it was', () => {
+    // A failure that replaces the whole surface leaves the user unsure which page they
+    // are on; the area is addressed by hash and reached from a nav row that names it.
+    const el = renderUnread('nope')
+    expect(el.querySelector('h1')?.textContent).toBeTruthy()
+    expect(el.getAttribute('data-role')).toBe('trusted')
+  })
+
+  it('offers nothing to revoke, because there is nothing it could name', () => {
+    const el = renderUnread('nope')
+    expect(el.querySelectorAll('button')).toHaveLength(0)
   })
 })

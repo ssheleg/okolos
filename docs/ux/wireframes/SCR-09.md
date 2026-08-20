@@ -25,6 +25,7 @@ addressable as `[data-role=<name>]`, which is also how the tests reach them.
 - `permissions`
 - `disable`
 - `disabled`
+- `none-installed`
 - `analysis-note`
 - `analysis-summary`
 - `evidence`

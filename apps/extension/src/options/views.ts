@@ -1,3 +1,6 @@
+import { t } from '@okolos/i18n'
+import type { AreaId, AreaRow } from '@okolos/ui'
+
 /**
  * Which address opens which area.
  *
@@ -157,6 +160,48 @@ export function recoveryHref(incidents: readonly { kind: string }[]): string {
   const only = incidents.length === 1 ? incidents[0] : undefined
   return only === undefined ? optionsPageFor('overview') : optionsPageFor('recovery', only.kind)
 }
+
+/**
+ * The eight rows before anything has been read.
+ *
+ * `screens.md` promises SCR-15 paints its shell and all eight rows at once, with the band
+ * reading «Считаем…» and nothing waiting on data — and `overview.ts` has had the
+ * `loading` state ready the whole time. The page never built it: `renderRoute` awaited
+ * `storageProblem()` and then the whole section before touching the DOM, so the first
+ * thing a person saw was a blank page for the length of eight database reads (B-59).
+ *
+ * The state is «считаем…», not `null`. `null` on this screen means "we looked and could
+ * not read it" and renders as that — the single most important branch on the overview —
+ * so using it here would say a read had failed before one had been attempted.
+ *
+ * The recovery row points at the overview: which address it should carry depends on how
+ * many incidents are open, which is a read, and this is the shell that precedes reads.
+ */
+export function loadingRows(): AreaRow[] {
+  const row = (id: AreaId, label: string): AreaRow => ({
+    id,
+    label,
+    href: optionsPageFor(id === 'recovery' ? 'overview' : id),
+    state: t('areaStateCounting'),
+  })
+  return [
+    row('queue', t('optionsQueueHeading')),
+    row('journal', t('areaJournal')),
+    row('leaks', t('areaLeaks')),
+    row('extensions', t('areaExtensions')),
+    row('trusted', t('areaTrusted')),
+    row('recovery', t('areaRecovery')),
+    row('audit', t('areaAudit')),
+    row('data', t('dataHeading')),
+  ]
+}
+
+/**
+ * Here rather than in `options/index.ts` for the reason `recoveryHref` is: that file
+ * builds the whole settings surface at import, so nothing in it can be called from a test
+ * — and the eight labels a person sees before any read is exactly the kind of claim that
+ * should not be checked only by looking at it.
+ */
 
 /** Every area, for gates and for the overview's own list. */
 export const ALL_VIEWS: readonly ViewId[] = [

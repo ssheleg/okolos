@@ -242,7 +242,7 @@ includes a redirect from `*.workers.dev`, not just a CNAME.
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|
   | loading | inventory or package analysis running | - | list renders first, analysis fills in |
-  | empty | no extensions installed | - | plain statement, no filler |
+  | empty | no extensions installed | - | plain statement, no filler. **Built 2026-08-20:** the list rendered its heading with no rows under "nothing has changed since the last check" — two true sentences that together read as "we looked and there is nothing to say", when the fact is that there is nothing to look at (B-59) |
   | error | package could not be fetched | - | permission delta still shown; analysis marked unavailable |
   | success | inventory with deltas | - | deltas first, then the rest by risk |
 - **Wireframe:** wireframes/SCR-09.md
@@ -348,7 +348,7 @@ includes a redirect from `*.workers.dev`, not just a CNAME.
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|
-  | loading | page opened | - | shell and all eight rows paint at once, each state read as `"…"`, band reads `"считаем"`; the shell never waits on data |
+  | loading | page opened | - | shell and all eight rows paint at once, each row's state reads `"считаем…"` and the band `"Считаем…"`; the shell never waits on data. The record said `"…"` for the row state until 2026-08-20: a bare ellipsis is not a state a screen reader can read out, on the one screen whose axe sweep is a gate — and it must not be `null`, which on this screen means "looked and could not read it" |
   | empty | nothing outstanding anywhere | - | `"Сейчас ничего не требует внимания"` plus when this was last checked; the area list still carries its states |
   | error | the store is unreadable | - | names the failure, offers repair, and **no area row claims a state** |
   | success | outstanding items exist | - | up to three ranked rows, then the eight areas |
@@ -368,10 +368,10 @@ includes a redirect from `*.workers.dev`, not just a CNAME.
   |-------|---------|-------------|----------|
   | empty | nothing trusted yet | - | says nothing is trusted **and why the list would fill** — an empty state that only states emptiness leaves the user with nothing to do |
   | success | entries exist | - | each with when and why, each reversible |
-  | error | store unreadable | - | names the read failure; never an empty list in its place |
+  | error | store unreadable | - | names the read failure; never an empty list in its place. The sentence was built by the options page rather than by this renderer until 2026-08-20, so this record named a file the state did not live in and no renderer test nor the axe sweep could reach it (B-59) |
 - **Behavior notes:** split out of SCR-12 on 2026-08-12 — the dashboard renders one area per view, and the overview names `"Доверенные домены"` and `"Ваши данные"` as separate rows. The renderer and its e2e already existed; only the address changes
 - **Wireframe:** wireframes/SCR-16.md
-- **Coverage:** packages/ui/src/trusted/trusted.ts:renderTrusted, e2e/scn-024.spec.ts
+- **Coverage:** packages/ui/src/trusted/trusted.ts:renderTrusted (states `ready` and `error`), e2e/scn-024.spec.ts
 - **Scenarios:** SCN-024
 - **Resources:** trusted-domain store
 - **Status:** built

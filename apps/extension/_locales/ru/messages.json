@@ -50,6 +50,9 @@
       }
     }
   },
+  "areaStateCounting": {
+    "message": "считаем…"
+  },
   "areaStateJournalNever": {
     "message": "сверок ещё не было"
   },
@@ -622,6 +625,14 @@
   "extensionsAnalysisReadable": {
     "message": "Перечислено то, что нашлось в тексте. Ничто из этого не доказывает умысла."
   },
+  "extensionsCanUse": {
+    "message": "Может использовать: $WHAT$",
+    "placeholders": {
+      "what": {
+        "content": "$1"
+      }
+    }
+  },
   "extensionsChangeHosts": {
     "message": "Расширение $NAME$ теперь может читать $WHERE$.",
     "placeholders": {
@@ -724,11 +735,22 @@
   "extensionsInspectTitle": {
     "message": "Разобрать пакет"
   },
+  "extensionsInstalledCount": {
+    "message": "Установлено: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
   "extensionsNoChanges": {
     "message": "С прошлой проверки ничего не изменилось."
   },
   "extensionsNoPermissions": {
     "message": "Особых разрешений нет."
+  },
+  "extensionsNoneInstalled": {
+    "message": "Других расширений не установлено — следить не за чем."
   },
   "extensionsNotVisible": {
     "message": "Этот браузер не даёт расширению читать другие, поэтому следить здесь не за чем."

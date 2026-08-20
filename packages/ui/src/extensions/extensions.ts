@@ -99,7 +99,7 @@ export function renderExtensions(
   const list = doc.createElement('div')
   list.setAttribute('data-role', 'installed')
   const listHeading = doc.createElement('h2')
-  listHeading.textContent = `Installed (${state.installed.length})`
+  listHeading.textContent = t('extensionsInstalledCount', String(state.installed.length))
   list.append(listHeading)
 
   for (const entry of state.installed) {
@@ -113,12 +113,24 @@ export function renderExtensions(
         'permissions',
         entry.permissions.length === 0
           ? t('extensionsNoPermissions')
-          : `Can use: ${entry.permissions.join(', ')}`,
+          : t('extensionsCanUse', entry.permissions.join(', ')),
       ),
     )
     if (entry.enabled) row.append(button(doc, 'disable', t('extensionsDisable'), () => handlers.onDisable(entry.id)))
     else row.append(text(doc, 'disabled', t('extensionsAlreadyOff')))
     list.append(row)
+  }
+
+  /**
+   * Nothing else installed is not the same as nothing changed.
+   *
+   * The list rendered its heading and no rows, under a "nothing has changed since the
+   * last check" line — two true sentences that together read as "we looked and there is
+   * nothing to say", when the fact is that there is nothing to look at. SCR-16 records
+   * this state; the screen did not build it (B-59).
+   */
+  if (state.installed.length === 0) {
+    list.append(text(doc, 'none-installed', t('extensionsNoneInstalled')))
   }
 
   root.append(list)

@@ -42,7 +42,7 @@ import { mapJournal } from '../popup/state.js'
 import { answered } from './answered.js'
 import { keepingFocus, markFocus } from './keep-focus.js'
 import { whilePending } from './pending.js'
-import { optionsPageFor, recoveryHref, routeFor, type Route } from './views.js'
+import { loadingRows, optionsPageFor, recoveryHref, routeFor, type Route } from './views.js'
 import '../pages.css'
 
 /**
@@ -382,17 +382,23 @@ async function trustedSection(): Promise<HTMLElement> {
       ...(entry.reason ? { reason: entry.reason } : {}),
     }))
   } catch (cause) {
-    const failed = document.createElement('p')
-    failed.setAttribute('data-role', 'trusted-error')
-    // Never an empty list in place of a failure: it would read as "you trust
-    // nothing", which is the reassuring answer and possibly the wrong one.
-    failed.textContent = t('optionsTrustedUnread', String(cause))
-    container.append(failed)
+    // Through the renderer, not beside it: the sentence is the same one, and now it is
+    // reachable by a test of `renderTrusted` and by the axe sweep that walks its markup
+    // (B-59). It used to be built here, so SCR-16's record named a file its error state
+    // did not live in.
+    container.append(
+      renderTrusted(
+        document,
+        { kind: 'error', message: t('optionsTrustedUnread', String(cause)) },
+        // Nothing to revoke on a screen that could not read the list.
+        { onRevoke: () => undefined },
+      ),
+    )
     return container
   }
 
   container.append(
-    renderTrusted(document, entries, {
+    renderTrusted(document, { kind: 'ready', domains: entries }, {
       onRevoke: (domain: string) => {
         void act(async () => {
           await platform.runtime.send('trust/revoke', { domain })
@@ -769,6 +775,20 @@ async function renderRoute(route: Route): Promise<void> {
    * empty — and nothing said which of two different things had happened, or what
    * to do about either. One panel, and the two things a person can actually do.
    */
+  /**
+   * The shell first, synchronously, and only when arriving.
+   *
+   * Everything below is a read, and the page used to wait for all of them before painting
+   * anything. On a repaint — after resolving a finding, after a hashchange back to the
+   * overview — the shell is *not* repainted: flashing «Считаем…» over a page the user is
+   * looking at trades a blank first paint for a flicker on every action.
+   */
+  if (route.view === 'overview' && (root.childElementCount === 0 || lastView !== 'overview')) {
+    root.replaceChildren(
+      renderOverview(document, { kind: 'loading', areas: loadingRows() }, overviewHandlers()),
+    )
+  }
+
   const problem = await storageProblem()
   if (problem) {
     keepingFocus(root, document, () => {

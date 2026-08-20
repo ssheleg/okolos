@@ -30,9 +30,25 @@ export interface TrustedHandlers {
   readonly onRevoke: (domain: string) => void
 }
 
+/**
+ * What this screen has to show, including the case where it has nothing to show *from*.
+ *
+ * It took a plain array, so "the store could not be read" had no way to travel and the
+ * options page rendered that sentence itself, beside this renderer rather than through it
+ * (B-59). The behaviour was right; the arrangement meant SCR-16's record named this file
+ * as its coverage while its error state lived somewhere else — and no test of this
+ * renderer, nor the axe sweep that walks its markup, could ever reach that state.
+ *
+ * Every other screen with an error state expresses it here: `extensions.ts` and
+ * `overview.ts` both take a `kind`. This one was the exception.
+ */
+export type TrustedState =
+  | { readonly kind: 'ready'; readonly domains: readonly TrustedDomain[] }
+  | { readonly kind: 'error'; readonly message: string }
+
 export function renderTrusted(
   doc: Document,
-  domains: readonly TrustedDomain[],
+  state: TrustedState,
   handlers: TrustedHandlers,
 ): HTMLElement {
   const root = doc.createElement('section')
@@ -42,6 +58,14 @@ export function renderTrusted(
   heading.textContent = t('trustedTitle')
   root.append(heading)
 
+  if (state.kind === 'error') {
+    // Never an empty list in place of a failure: it would read as "you trust nothing",
+    // which is the reassuring answer and possibly the wrong one.
+    root.append(text(doc, 'trusted-error', state.message))
+    return root
+  }
+
+  const domains = state.domains
   if (domains.length === 0) {
     root.append(
       text(

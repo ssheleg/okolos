@@ -194,3 +194,36 @@ describe('inspecting a package the user supplies', () => {
     expect(role(el, 'analysis-summary')?.textContent).toMatch(/ничего примечательного/i)
   })
 })
+
+describe('when there is nothing to watch', () => {
+  it('says no other extensions are installed, rather than only "nothing changed"', () => {
+    /**
+     * Two true sentences that together mislead: a heading with no rows under "nothing has
+     * changed since the last check" reads as "we looked and there is nothing to say",
+     * when the fact is that there is nothing to look at. SCR-09 records this state and
+     * the screen did not build it (B-59).
+     */
+    const el = render({ kind: 'ready', changes: [], installed: [], analysis: null, analysisNote: NOTE })
+
+    expect(role(el, 'none-installed')?.textContent).toBe(CATALOGUE['extensionsNoneInstalled']?.message)
+  })
+
+  it('does not say it when something is installed', () => {
+    // The sentence is about an empty machine, not about a quiet week.
+    const el = render({ kind: 'ready', changes: [], installed: [ROW], analysis: null, analysisNote: NOTE })
+    expect(role(el, 'none-installed')).toBeNull()
+  })
+
+  it('counts what is installed from the catalogue, not from an English heading', () => {
+    // `Installed (1)` and `Can use: cookies` were English on a ru-default screen, and the
+    // sweep cannot see either: both are shorter than its three-word floor (B-76 records
+    // the classes it does read; this is the one it structurally cannot).
+    const el = render({ kind: 'ready', changes: [], installed: [ROW], analysis: null, analysisNote: NOTE })
+    const heading = el.querySelector('[data-role=installed] h2')
+    expect(heading?.textContent).toBe(
+      CATALOGUE['extensionsInstalledCount']?.message.replace('$COUNT$', '1'),
+    )
+    expect(role(el, 'permissions')?.textContent).toContain('storage')
+    expect(role(el, 'permissions')?.textContent).not.toContain('Can use')
+  })
+})

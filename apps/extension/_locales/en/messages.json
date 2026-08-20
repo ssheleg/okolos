@@ -50,6 +50,9 @@
       }
     }
   },
+  "areaStateCounting": {
+    "message": "counting…"
+  },
   "areaStateJournalNever": {
     "message": "never reviewed"
   },
@@ -622,6 +625,14 @@
   "extensionsAnalysisReadable": {
     "message": "What is listed is what was found in the text. None of it is proof of intent."
   },
+  "extensionsCanUse": {
+    "message": "Can use: $WHAT$",
+    "placeholders": {
+      "what": {
+        "content": "$1"
+      }
+    }
+  },
   "extensionsChangeHosts": {
     "message": "$NAME$ can now read $WHERE$.",
     "placeholders": {
@@ -724,11 +735,22 @@
   "extensionsInspectTitle": {
     "message": "Inspect a package"
   },
+  "extensionsInstalledCount": {
+    "message": "Installed: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
   "extensionsNoChanges": {
     "message": "Nothing has changed since the last check."
   },
   "extensionsNoPermissions": {
     "message": "No special permissions."
+  },
+  "extensionsNoneInstalled": {
+    "message": "No other extensions are installed, so there is nothing to watch."
   },
   "extensionsNotVisible": {
     "message": "This browser does not let an extension read the others, so nothing can be watched here."

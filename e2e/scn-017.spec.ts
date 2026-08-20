@@ -40,11 +40,25 @@ test('the inventory lists what is installed, with what each may do', async ({
   const panel = page.locator('[data-role=extensions]')
   await expect(panel).toHaveAttribute('data-state', 'ready')
 
-  // Okolos leaves itself out of its own report, so a profile carrying only this
-  // extension has an empty inventory — and says the number rather than showing
-  // a blank area that could mean anything.
-  await expect(panel.locator('[data-role=installed] h2')).toHaveText('Installed (0)')
+  /**
+   * Okolos leaves itself out of its own report, so a profile carrying only this extension
+   * has an empty inventory — and says the number rather than showing a blank area that
+   * could mean anything.
+   *
+   * Asserted against `chrome.i18n.getMessage`, not against a literal. The heading read
+   * `Installed (0)` until 2026-08-20 — English on a ru-default screen, and short enough
+   * that `pnpm i18n:sweep` structurally cannot see it — so a literal here would pin the
+   * defect rather than the behaviour. This resolves in whatever locale the browser picked,
+   * which is the point.
+   */
+  const heading = await page.evaluate(() => chrome.i18n.getMessage('extensionsInstalledCount', ['0']))
+  expect(heading, 'the catalogue has no extensionsInstalledCount').toBeTruthy()
+  await expect(panel.locator('[data-role=installed] h2')).toHaveText(heading)
   await expect(panel.locator('[data-role=installed-row]')).toHaveCount(0)
+
+  // And the sentence that tells an empty machine from a quiet week (B-59).
+  const none = await page.evaluate(() => chrome.i18n.getMessage('extensionsNoneInstalled'))
+  await expect(panel.locator('[data-role=none-installed]')).toHaveText(none)
 })
 
 test('SCN-018 — a package the user supplies is read on the device and reported', async ({

@@ -7,11 +7,24 @@ import {
   ALL_VIEWS,
   hashFor,
   KNOWN_HASHES,
+  loadingRows,
   optionsPageFor,
   recoveryHref,
   routeFor,
   VIEW_FOR_HASH,
 } from './views.js'
+
+import { fromCatalogue, useResolver, type Catalogue } from '@okolos/i18n'
+
+/** The shipped Russian catalogue: a fake would let a missing key pass as a label. */
+const CATALOGUE = JSON.parse(
+  readFileSync(
+    path.resolve(import.meta.dirname, '../../_locales/ru/messages.json'),
+    'utf8',
+  ),
+) as Catalogue
+
+useResolver(fromCatalogue(CATALOGUE))
 
 describe('the address decides the area', () => {
   it('opens the overview when there is no address', () => {
@@ -204,5 +217,82 @@ describe('where the recovery row in the areas list goes', () => {
     // The same rule `hashFor` follows: a kind travels percent-encoded, because it comes
     // from a stored key and `#recovery=a b` is not one address.
     expect(recoveryHref([{ kind: 'not sure' }])).toBe('options.html#recovery=not%20sure')
+  })
+})
+
+describe('the shell the overview paints before it has read anything', () => {
+  it('carries every area, so no row appears late', () => {
+    /**
+     * `screens.md` promises SCR-15 paints its shell and all eight rows at once, and
+     * `overview.ts` has had the `loading` state ready the whole time. The page never
+     * built it: `renderRoute` awaited the storage check and then the whole section
+     * before touching the DOM, so the first thing a person saw was a blank page for the
+     * length of eight database reads (B-59).
+     */
+    const rows = loadingRows()
+    expect(rows.map((row) => row.id).sort()).toEqual(
+      ALL_VIEWS.filter((view) => view !== 'overview')
+        .slice()
+        .sort(),
+    )
+  })
+
+  it('says "counting", never "could not be read"', () => {
+    /**
+     * The single most important branch on this screen: `null` means the product looked
+     * and could not read it, and renders as that. Using it before a read has been
+     * attempted would report a failure that has not happened — absence of data reading
+     * as a verdict, one level down from the one this screen exists to prevent.
+     */
+    const unread = CATALOGUE['overviewStateUnread']?.message
+    for (const row of loadingRows()) {
+      expect(row.state, `${row.id} has no state in the shell`).not.toBeNull()
+      expect(row.state).toBe(CATALOGUE['areaStateCounting']?.message)
+      expect(row.state).not.toBe(unread)
+    }
+  })
+
+  it('gives every row a real address, and the recovery row the honest one', () => {
+    // A shell with dead links is a shell that has to be waited out. Recovery is the one
+    // whose address depends on a read, so before any read it goes where `recoveryHref`
+    // sends a page that cannot tell: the overview.
+    for (const row of loadingRows()) {
+      expect(row.href, `${row.id} has no address`).toMatch(/^options\.html/)
+    }
+    expect(loadingRows().find((row) => row.id === 'recovery')?.href).toBe('options.html')
+  })
+
+  it('labels every row from the catalogue, with nothing left unresolved', () => {
+    for (const row of loadingRows()) {
+      expect(row.label, `${row.id} has no label`).toBeTruthy()
+      expect(row.label).not.toMatch(/^\[/)
+    }
+  })
+})
+
+describe('the shell is painted before anything is read', () => {
+  it('has no await between renderRoute opening and the first paint', () => {
+    /**
+     * The property the shell exists for, and the only one a unit test cannot reach:
+     * `options/index.ts` builds the whole settings surface at import, so `renderRoute`
+     * cannot be called from here. What can be checked is the shape — a paint that sits
+     * after an `await` is a paint that waits on data, which is the defect exactly.
+     *
+     * Read as source deliberately and narrowly: the slice between the function opening
+     * and its first `replaceChildren`, asserted to contain no `await`. Not a search for
+     * a phrase somewhere in the file, which is the kind of source assertion that agrees
+     * with anything.
+     */
+    const source = readFileSync(
+      path.resolve(import.meta.dirname, './index.ts'),
+      'utf8',
+    )
+    const start = source.indexOf('async function renderRoute(')
+    expect(start, 'renderRoute was renamed — this check now proves nothing').toBeGreaterThan(0)
+    const firstPaint = source.indexOf('replaceChildren', start)
+    expect(firstPaint, 'renderRoute paints nothing').toBeGreaterThan(start)
+
+    const before = source.slice(start, firstPaint)
+    expect(before, 'renderRoute awaits something before its first paint').not.toContain('await ')
   })
 })

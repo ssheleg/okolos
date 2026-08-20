@@ -112,6 +112,23 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (сорок седьмой)** — B-59, части вторая и третья; стадии 0–10. Оболочка обзора
+  рисуется до первого `await`; `TrustedState` внёс ошибочное состояние в рендерер, где его
+  может достать тест и axe-свип; SCR-09 научился отличать пустую машину от тихой недели. Два
+  раза подряд перепроверка перед `/ux` показала, что решение уже записано, — маршрут менялся
+  по доказательствам, а не по форме находки. Найдены две английские строки ниже порога свипа
+  в три слова и e2e, пиннивший одну из них литералом. Полный e2e упал один раз на моей же
+  конкуренции за ресурсы: 8.6 минуты вместо двух, потому что я гонял юнит-тесты параллельно.
+  2262 юнит-теста в 140 файлах, 25 e2e по затронутым экранам. Пять плантов, легли все.
+  Постоянных инструкций десять, снятий нет. Вердикт REFINE.
+- **2026-08-20 (сорок шестой)** — B-59, часть вторая; стадии 0–10. Оболочка обзора рисуется
+  до первого `await` и только при приходе: `screens.md` обещала это, `overview.ts` умел с 13
+  августа, а приложение ждало восьми чтений и показывало пустую страницу. Собирался вести
+  через `/ux` и не повёл — перечитал запись и увидел, что решение там уже есть; это долг кода
+  перед записью, а не вопрос к дизайну. Одна правка записи по существу: `"…"` заменено на
+  «считаем…», потому что голое многоточие скринридер состоянием не читает. 2256 юнит-тестов
+  в 140 файлах, 11 e2e по обзору. Три планта, легли все. Постоянных инструкций десять, снятий
+  нет. Вердикт REFINE.
 - **2026-08-20 (сорок пятый)** — B-59, часть первая; стадии 0–10. Первая находка строки
   оказалась наполовину устаревшей: область восстановления мелась, но **мимо списка**, со
   своей копией тегов — правило из шапки файла имело два места для соблюдения, одно
@@ -2134,6 +2151,111 @@ description.
   keeping. But a row closed with its verification outstanding is a row closed early, and
   the honest form is the one now in the board: closed on the second attempt, with the
   first attempt's failure written into it rather than tidied away.
+
+### 2026-08-20 — the state existed, one file away from where its record pointed
+
+**Symptom.** B-59 says SCR-16 has no error state in its renderer. It has one — in
+`options/index.ts`, which builds the sentence itself and appends it beside `renderTrusted`
+rather than through it. The behaviour is exactly what the record requires: never an empty
+list in place of a failed read.
+
+**Stage it surfaced at.** 0, reading the code before acting on the row.
+
+**Stage that owned it.** 3 of the run that split SCR-16 out of SCR-12. The record's
+Coverage line names `trusted.ts:renderTrusted`, so a reader checking "does this screen have
+its error state" opens that file and finds no such branch. The state was real and the
+address was wrong.
+
+**Root cause.** A renderer that takes a plain array cannot express "there was nothing to
+read", so the caller has to. Every other screen with an error state takes a `kind` —
+`extensions.ts`, `overview.ts` — and this one was the exception, which made the exception
+invisible to the two things that only look at renderers: the unit tests and the axe sweep.
+
+**Fix, by grade.** *Structural:* `TrustedState` with `ready` and `error`; the page passes
+the same sentence through the renderer. *Check:* three tests that could not previously
+exist — the failure names itself, no empty state stands in for it, and nothing is offered
+to revoke on a screen that could not read the list.
+
+**The check that catches it next time.** A state in a screen record is a state some test of
+the named file can reach. Where a renderer's signature cannot express a state the record
+lists, the signature is the defect.
+
+### 2026-08-20 — I ran the unit suite during the browser suite, again
+
+**Symptom.** The full e2e run took 8.6 minutes against a usual 2–4 and failed once: a
+banner that did not mount inside 35 seconds. Alone, on an idle machine, the same spec passes
+in 1.1 seconds.
+
+**Stage it surfaced at.** 6, and it cost a re-run plus the minutes spent reading a trace of
+nothing.
+
+**Stage that owned it.** 6, mine. I started `pnpm test` and `pnpm typecheck` while the
+browser suite was in flight, because both were "just checking something".
+
+**Root cause.** The e2e budgets are wall-clock and sized for a machine doing one thing. A
+second full suite on the same cores is not a smaller load than the extension under test.
+
+**Fix, by grade.** *Process:* while a browser suite runs, nothing else runs. This is the
+second instance this session — the earlier one produced an scn-030 flake and the same
+diagnosis. *Not structural:* raising the budget to survive contention would raise it past
+the point where it still means "a user waited this long", which is the number it exists to
+hold.
+
+**The check that catches it next time.** The run's own duration is the tell: 8.6 minutes
+where 2–4 is normal says the measurement was taken under load, before any trace is opened.
+
+### 2026-08-20 — the route I announced was not the route the work needed
+
+**Symptom.** I closed the previous iteration saying the rest of B-59 "goes through `/ux`:
+scenarios first, then code", because the remaining findings looked like interface
+decisions. Opening the largest of them — the settings shell that waits on every read before
+painting — the decision was already made and written down: `screens.md` promises "the shell
+never waits on data", SCN-027 step 1 spells out what the loading paint shows, and
+`overview.ts` has implemented the `loading` state since 2026-08-13. Only the application had
+never built it.
+
+**Stage it surfaced at.** 0, on re-reading the record before acting.
+
+**Stage that owned it.** 10 of the previous iteration. I classified five findings by their
+shape — "a state that does not exist is an interface question" — without checking which of
+them already had an answer on file. Four do not; this one did.
+
+**Root cause.** Routing by category rather than by evidence. "Does the record already
+decide this?" is one read, and it is the read that tells a design question from a code debt.
+Sending a settled question through the deciding route is not merely slower: it invites
+re-deciding something that was decided carefully, which is how a record loses authority.
+
+**Fix, by grade.** *Process:* the announcement was corrected in the row itself, with the
+reason, rather than quietly doing something other than what the previous entry said. The
+four findings that genuinely have no answer on file stay routed through `/ux`.
+
+**The check that catches it next time.** Before routing a finding as a design question,
+read the screen record and the scenario for it. A promise already written there makes it a
+debt, and a debt goes straight to code with the record as its specification.
+
+### 2026-08-20 — the record said "…" and the screen has an axe gate
+
+**Symptom.** Building the loading shell to the record's letter would have put a bare
+ellipsis in each area row's state. On the one screen whose accessibility sweep is a gate,
+that is a state a screen reader cannot read out.
+
+**Stage it surfaced at.** 5, while writing the rows.
+
+**Stage that owned it.** 3 of the run that wrote the record — a shorthand for "not yet
+known" that reads as a placeholder in a table and as nothing at all in a browser.
+
+**Root cause.** A record written to be read by people, quoted verbatim into a surface read
+by software. The two audiences want different things from the same cell.
+
+**Fix, by grade.** *Structural:* the row state is «считаем…», the same word as the band, and
+the record now says so with the reason in the cell. *Judgement:* this is a change to the
+source of truth to fit the implementation, which is normally the drift the record exists to
+prevent — so the argument is written where the change is, and it is an accessibility
+argument rather than a convenience one. *Check:* `views.test.ts` asserts the shell's state
+is neither `null` nor the "could not be read" message, so neither shortcut can return.
+
+**The check that catches it next time.** A record cell that will be rendered verbatim is
+copy, and copy on a gated surface answers to the same rules as the rest of it.
 
 ### 2026-08-20 — the finding was half stale, and the half that was true had moved
 

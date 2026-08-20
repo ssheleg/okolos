@@ -46,6 +46,7 @@ are specified once in [screens.md](screens.md).
 | SCN-034 | A login form inside an embedded frame is checked | web-guard | P-02 | ST-010, FLW-09 | implemented | 2026-08-20 e2e |
 | SCN-035 | A password submitted from an embedded frame is checked | credentials | P-01 | ST-011, FLW-10 | implemented | 2026-08-20 e2e |
 | SCN-036 | A verdict survives the navigation the submission caused | credentials | P-01 | ST-011, FLW-10 | implemented | 2026-08-20 e2e |
+| SCN-037 | The block page refuses to be another page's iframe | web-guard | P-02 | ST-005, FLW-04 | implemented | 2026-08-21 e2e |
 
 ## Personas
 
@@ -222,6 +223,24 @@ See [foundation.md](foundation.md) → Personas.
 - **How often the list is fetched, and why the number lives in storage.** Six hours, which is REQ-13's cadence and the alarm's period — but the alarm cannot be trusted with it: `alarms.create` replaces an alarm of the same name, the background re-creates it on every start, and an MV3 worker starts on nearly **every page**, because a content script sends it a message. So a six-hour alarm on a browser in daily use is reset before it fires, and the start-time pull that exists to cover that had no due-check of its own. Until 2026-08-20 the product therefore made **one feed request per page**, each writing a row to `outbound_log` — the audit entry is mandatory before a request leaves — so the self-audit panel, the screen whose whole subject is what left this device, filled with `feed-update` and buried everything else. The feed now records its last **attempt** (attempt, not success: a failed pull that left no mark would be retried on the next wake-up, which is the flood again and only when something is already wrong) and skips a pull inside the window
 - **Status:** implemented
 - **Coverage:** packages/core-feeds/src/rules.ts:buildRules, packages/storage/src/retention.ts:dueForFeed, packages/ui/src/interstitial/interstitial.ts:renderInterstitial, apps/extension/src/interstitial/appeal-link.ts:appealLinkFor, apps/extension/src/interstitial/context.ts:settleContext, e2e/scn-007.spec.ts
+
+### SCN-037: The block page refuses to be another page's iframe
+- **Persona:** P-02
+- **Feature:** web-guard
+- **Traces:** ST-005, FLW-04 (JTBD-02, JRN-03/#2)
+- **Entry point:** any site embeds `chrome-extension://<id>/interstitial.html` in an iframe
+- **Preconditions:** none — the address is public by design, because the blocker redirects a tab to it and a web-accessible resource is reachable from every page
+- **Steps:**
+  1. A page puts the block page in an iframe -> the block page notices it is not the top document, before it asks the background anything
+  2. It draws one sentence and stops -> the sentence says this is an Okolos page and the site around it embedded it
+- **Expected result:** the person is told what they are looking at, and there is no control of ours inside somebody else's layout
+- **Alt paths:** the page is opened as a tab of its own, which is how a real block creates it -> it renders normally; a cross-origin parent makes reading `window.top` throw -> read as framed, because only a framed document can be denied its own top
+- **UI elements:** one sentence in `#root`; no "Назад", no "Всё равно продолжить", no "Это мой сайт"
+- **States covered:** success
+- **Errors & recovery:** nothing to recover — the refusal makes no request, so there is no failure path to report
+- **Behaviour notes:** **what an attacker gains is narrow and real, and it is the click rather than the text.** The page cannot be made to name an arbitrary site: it asks the background for the last block instead of reading its own query string, a decision that predates this scenario. But "Всё равно продолжить" records an exception for that address, so a click stolen by an overlay switches off a block the product had made. Refusing costs nothing, because in real use this document is always a tab of its own. **Not covered here:** any page can still *detect* the extension by probing the address, and `use_dynamic_url` is the answer to that — Chrome-only, so it is filed separately (B-95) rather than half-done
+- **Status:** implemented
+- **Coverage:** apps/extension/src/interstitial/framed.ts:isFramed, apps/extension/src/interstitial/index.ts, apps/extension/src/interstitial/framed.test.ts (three checks including the cross-origin throw), e2e/scn-037.spec.ts (the refusal, and the page still rendering as its own tab)
 
 ### SCN-008: ClickFix — page copies a command
 - **Persona:** P-02

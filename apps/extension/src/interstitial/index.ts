@@ -4,6 +4,7 @@ import { renderInterstitial } from '@okolos/ui'
 import '../pages.css'
 
 import { appealLinkFor } from './appeal-link.js'
+import { isFramed } from './framed.js'
 import { settleContext, type BlockContext } from './context.js'
 
 /**
@@ -73,9 +74,23 @@ function paint(context: BlockContext | null): void {
   )
 }
 
-void settleContext(
-  () => platform.runtime.send('block/context', {}).catch(() => null),
-  paint,
-  (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
-  { abandoned: () => acted },
-)
+/**
+ * Framed: say what this is and draw nothing else.
+ *
+ * `framed.ts` carries the reasoning. In short: this file is the one web-accessible page the
+ * extension has, so any site can embed it, and a framed copy would offer a real "continue
+ * anyway" control inside a layout the attacker controls. A stolen click there turns off a
+ * block the product had made.
+ *
+ * Checked before the context is asked for, so a framed copy makes no request at all.
+ */
+if (isFramed({ win: window })) {
+  if (root) root.textContent = t('blockFramed')
+} else {
+  void settleContext(
+    () => platform.runtime.send('block/context', {}).catch(() => null),
+    paint,
+    (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    { abandoned: () => acted },
+  )
+}

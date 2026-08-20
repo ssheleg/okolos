@@ -291,6 +291,9 @@
   "blockThisSite": {
     "message": "a page on this site"
   },
+  "blockFramed": {
+    "message": "This is an Okolos page, and the site around it embedded it. We do not draw it here: its buttons belong to a different address, and a click could switch off a block you did not ask to lift."
+  },
   "blockTitle": {
     "message": "This page was blocked before it loaded"
   },

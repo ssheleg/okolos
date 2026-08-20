@@ -8,6 +8,7 @@
 **Elements, in the order the renderer emits them.** Each is addressable as
 `[data-role=<name>]`, which is also how the tests reach them.
 
+- `also`
 - `error`
 - `retry`
 - `panel`

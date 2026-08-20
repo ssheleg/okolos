@@ -371,13 +371,16 @@ See [foundation.md](foundation.md) → Personas.
   1. System detects the delta -> the extensions screen surfaces it at the top and the toolbar badge increments
   2. User opens the delta -> system lists permissions added and removed, the version dates, and the publisher
   3. User clicks "Disable" -> system disables the extension and journals the action
-- **Expected result:** a permission escalation is seen and handled the day it happens
+- **Expected result:** a permission escalation is seen and handled the day it happens, and a removed extension is reported once — `db.delete('snapshots')` appeared nowhere in the repository until 2026-08-20, so "no longer installed" was raised on every run for the rest of the profile's life, naming the extension by its id because its name was never stored
 - **Alt paths:** user clicks "Trust this change" -> the delta is acknowledged and the baseline updated, and it is not raised again
 - **UI elements:** deltas section, permission diff list, version dates, publisher, "Disable" (primary), "Trust this change", "Inspect package"
 - **States covered:** loading, success, error
 - **Errors & recovery:** the extension cannot be disabled (policy-installed) -> system says why and offers the manual steps
+- **What the alt path promised and did not do, until 2026-08-20.** "Trust this change" wrote an `exceptions` row with `scope: 'extension'` and **nothing in the repository read it** — both readers filter for `scope === 'domain'`, correctly, since they build blocking rules and the trusted-domain list. The delta came back the next time the screen opened and the button was decoration. Acknowledging now means one thing and it is the thing the sentence above says: the stored state becomes the current one, for that extension alone
+- **Reading never writes; only a decision writes.** The comparison used to record the new state as the baseline, and three callers ran it — the daily alarm, the extensions screen, and **the area counter on the overview**. The counter and the screen share one handler, so whichever ran first consumed the difference: the counter said there were changes and the screen, opened half a second later, said there were none. A delta is now an unacknowledged fact, like a finding, and it keeps being reported until the user accepts it or disables the extension. Two consequences the user sees: the number and the screen always agree, and the same change is journalled **once** rather than once per visit
+- **Known limit — a snapshot taken before 2026-08-20 records less than the comparison needs.** Host permissions, the extension's name and its enabled state were not stored. A row without host permissions means *unknown*, and unknown is not compared against — read as an empty list, every extension holding host access looked as though it had just been granted it, `host-access-widened` at severity `critical`, on **every run for the life of the profile**. The one finding on this screen a user should never ignore was the one it always showed. Such a row still reports what it does record, and gains the missing fields the first time the user accepts anything about that extension
 - **Status:** implemented
-- **Coverage:** packages/core-extensions/src/diff.ts:diffInventory, packages/ui/src/extensions/extensions.ts:renderExtensions, e2e/scn-017.spec.ts
+- **Coverage:** packages/core-extensions/src/diff.ts:diffInventory, apps/extension/src/background/extensions.ts:compareInventory, packages/ui/src/extensions/extensions.ts:renderExtensions, e2e/scn-017.spec.ts
 
 ### SCN-018: Extension changed publisher, package unavailable
 - **Persona:** P-01

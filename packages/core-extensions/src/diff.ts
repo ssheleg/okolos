@@ -16,7 +16,17 @@ export interface ExtensionSnapshot {
   readonly name: string
   readonly version: string
   readonly permissions: readonly string[]
-  readonly hostPermissions: readonly string[]
+  /**
+   * The hosts it can read, or `null` for "nobody recorded them".
+   *
+   * Only a snapshot restored from storage can be `null`, and only one written
+   * before the field existed. The browser always tells us, so `after` is never
+   * null — but `before` can be, and the two must not be confused: read as an
+   * empty list, a stored row with no host permissions made every extension that
+   * holds any look like it had just been granted them, `critical`, every run.
+   * An absence is not a value to compare against.
+   */
+  readonly hostPermissions: readonly string[] | null
   readonly publisher: string | null
   readonly enabled: boolean
 }
@@ -101,7 +111,14 @@ export function diffInventory(
       })
     }
 
-    const widened = current.hostPermissions.filter((host) => !old.hostPermissions.includes(host))
+    // No comparison against an absence. A row from before host permissions were
+    // stored says nothing about what this extension could read, and saying
+    // "it can now read everything" on that basis is a false alarm every run.
+    const knownBefore = old.hostPermissions
+    const widened =
+      knownBefore === null
+        ? []
+        : (current.hostPermissions ?? []).filter((host) => !knownBefore.includes(host))
     if (widened.length > 0) {
       changes.push({
         kind: 'host-access-widened',

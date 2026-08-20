@@ -1322,9 +1322,6 @@
   "techniqueVisibilityHidden": {
     "message": "made invisible"
   },
-  "trustChangeAccepted": {
-    "message": "the user accepted this change"
-  },
   "trustContinuedPastBlock": {
     "message": "continued past a block"
   },

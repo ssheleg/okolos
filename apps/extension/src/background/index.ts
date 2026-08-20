@@ -21,7 +21,12 @@ import type {
 } from '@okolos/contracts'
 
 import { handleDownload } from './downloads.js'
-import { reviewInventory } from './extensions.js'
+import {
+  acceptInventoryChange,
+  compareInventory,
+  journalChanges,
+  type InventoryDeps,
+} from './extensions.js'
 import { CAVALIER, hibp, lookupLeaks } from './leaks.js'
 import { checkSubmittedPassword } from './password.js'
 import { createInferenceHost } from './inference.js'
@@ -562,15 +567,17 @@ async function extensionsState() {
     return { supported: false, changes: [], installed: [] }
   }
 
-  // The review is run here rather than read from a cache: opening the screen is
-  // exactly the moment the user wants the current answer, and the comparison is
-  // cheap next to the wait they would otherwise not understand.
-  const changes = await reviewInventory({
-    db: await openDb(),
-    list: () => platform.extensions.list(),
-    now: () => new Date().toISOString(),
-    selfId: platform.extensions.selfId(),
-  }).catch(() => [])
+  /**
+   * The comparison is run here rather than read from a cache: opening the screen
+   * is exactly the moment the user wants the current answer, and it is cheap next
+   * to the wait they would otherwise not understand.
+   *
+   * It does not record anything, which is the point. This handler serves both the
+   * extensions screen and the area counter on the overview, and while it recorded
+   * the new state the first of the two consumed the difference — the counter said
+   * "3 changes" and the screen said nothing had changed.
+   */
+  const changes = await compareInventory(inventoryDeps(await openDb())).catch(() => [])
 
   const installed = (await platform.extensions.list()).filter(
     (entry) => entry.id !== platform.extensions.selfId(),
@@ -613,16 +620,31 @@ async function disableExtension(payload: { id: string }): Promise<{ ok: boolean;
   return { ok: true }
 }
 
+/** One shape for the three callers, so none of them can differ by accident. */
+function inventoryDeps(db: Awaited<ReturnType<typeof openDb>>): InventoryDeps {
+  return {
+    db,
+    list: () => platform.extensions.list(),
+    now: () => new Date().toISOString(),
+    selfId: platform.extensions.selfId(),
+  }
+}
+
+/**
+ * Accepting a change, which means the stored state becomes the current one.
+ *
+ * It used to write an `exceptions` row with `scope: 'extension'` and nothing in
+ * the repository ever read it — both readers filter for `scope === 'domain'`, and
+ * correctly, since they build blocking rules and the trusted-domain list. So the
+ * change came back on the next screen open and the button was decoration. The
+ * record of the decision is the journal entry below; the mechanism is the
+ * baseline, and there is no row nobody reads.
+ */
 async function trustExtensionChange(payload: { id: string }): Promise<{ ok: true }> {
   try {
     const db = await openDb()
     const now = new Date().toISOString()
-    await db.put('exceptions', {
-      scope: 'extension',
-      ref: payload.id,
-      createdAt: now,
-      reasonKey: 'trustChangeAccepted',
-    })
+    await acceptInventoryChange(inventoryDeps(db), payload.id)
     await db.put('journal', {
       id: `extension-trusted:${payload.id}:${now}`,
       createdAt: now,
@@ -915,12 +937,11 @@ platform.downloads.onCreated((item) => {
 async function reviewExtensions(): Promise<void> {
   if (!platform.extensions.available()) return
   try {
-    await reviewInventory({
-      db: await openDb(),
-      list: () => platform.extensions.list(),
-      now: () => new Date().toISOString(),
-      selfId: platform.extensions.selfId(),
-    })
+    // Journals what it finds and records nothing else. Recording here would hide
+    // the change from the screen the user has not opened yet, which is the same
+    // defect on a twenty-four-hour clock.
+    const deps = inventoryDeps(await openDb())
+    await journalChanges(deps, await compareInventory(deps))
   } catch (cause) {
     console.warn('okolos: the extension review failed', cause)
   }

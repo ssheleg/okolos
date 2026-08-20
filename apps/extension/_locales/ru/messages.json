@@ -1322,9 +1322,6 @@
   "techniqueVisibilityHidden": {
     "message": "сделан невидимым"
   },
-  "trustChangeAccepted": {
-    "message": "вы приняли это изменение"
-  },
   "trustContinuedPastBlock": {
     "message": "вы продолжили, несмотря на блокировку"
   },

@@ -193,6 +193,25 @@ export interface SnapshotRecord {
   version: string
   permissions: readonly string[]
   publisher?: string
+  /**
+   * The extension's own name, so a removal can be reported in the words the
+   * user knows it by.
+   *
+   * Absent in rows written before 2026-08-20, and the reader must not invent
+   * one: it used to substitute the extension id, so "jhkfbmnopqrs is no longer
+   * installed" was the sentence a person got about the thing they had chosen.
+   */
+  name?: string
+  /**
+   * The hosts it could read. **Optional because it was not stored at all** until
+   * 2026-08-20, and the difference between "none" and "not recorded" is the whole
+   * defect: read as none, every extension holding host permissions was reported
+   * as having just widened its access, at severity `critical`, on every single
+   * run. A row without this field means unknown, and unknown is not a comparison.
+   */
+  hostPermissions?: readonly string[]
+  /** Whether it was enabled when the snapshot was taken. */
+  enabled?: boolean
 }
 
 export interface OkolosDB extends DBSchema {

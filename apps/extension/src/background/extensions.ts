@@ -4,9 +4,24 @@ import type { OkolosDatabase } from '@okolos/storage'
 /**
  * Keeping track of what the other extensions are allowed to do.
  *
- * The snapshot is written after the comparison, never before: writing first
- * would compare a state against itself and report nothing, forever, which is
- * the kind of bug that looks exactly like "nothing has changed".
+ * **Reading never writes. Only a decision writes.** That sentence is the whole
+ * design and it replaces a single function that did both, which broke three ways
+ * at once (measured 2026-08-20).
+ *
+ * The old `reviewInventory` compared, then recorded the new state as the
+ * baseline, and it was called from three places: the daily alarm, the extensions
+ * screen, and the area counter on the overview. The counter and the screen run
+ * off the same handler, so **the first of them consumed the difference** — the
+ * counter said "3 changes" and the screen, opened half a second later, said
+ * nothing had changed. It also journalled on every screen open, so one permission
+ * change became as many journal rows as the user had visits.
+ *
+ * A change is now an unacknowledged fact, exactly like a finding: it keeps being
+ * reported until the user accepts it, and accepting is the one operation that
+ * moves the baseline. Which also fixes what "Trust" did, or rather did not: it
+ * wrote an `exceptions` row with `scope: 'extension'` that **nothing in the
+ * repository ever read**, so the change came back on the next screen open and the
+ * button was decoration.
  */
 
 export interface InventoryDeps {
@@ -17,42 +32,102 @@ export interface InventoryDeps {
   readonly selfId: string
 }
 
-export async function reviewInventory(deps: InventoryDeps): Promise<InventoryChange[]> {
-  const current = (await deps.list()).filter((entry) => entry.id !== deps.selfId)
-  const stored = await deps.db.getAll('snapshots')
-
-  const before: ExtensionSnapshot[] = stored.map((row) => ({
+/** What the snapshot store says this extension looked like last time. */
+function restore(row: {
+  extensionId: string
+  version: string
+  permissions: readonly string[]
+  publisher?: string
+  name?: string
+  hostPermissions?: readonly string[]
+  enabled?: boolean
+}): ExtensionSnapshot {
+  return {
     id: row.extensionId,
-    name: row.extensionId,
+    // The id was used as the name until 2026-08-20, so a removal was reported as
+    // "jhkfbmnopqrs is no longer installed" — about a thing the user chose by name.
+    name: row.name ?? row.extensionId,
     version: row.version,
     permissions: [...row.permissions],
-    hostPermissions: [],
+    // `undefined` becomes `null`: not recorded, and not comparable.
+    hostPermissions: row.hostPermissions === undefined ? null : [...row.hostPermissions],
     publisher: row.publisher ?? null,
-    enabled: true,
-  }))
+    enabled: row.enabled ?? true,
+  }
+}
 
-  // Nothing to compare against on a first run: reporting every installed
-  // extension as "newly installed" would bury the one that matters.
-  const changes = stored.length === 0 ? [] : diffInventory(before, current)
+function stored(entry: ExtensionSnapshot, takenAt: string) {
+  return {
+    extensionId: entry.id,
+    takenAt,
+    name: entry.name,
+    version: entry.version,
+    permissions: [...entry.permissions],
+    hostPermissions: [...(entry.hostPermissions ?? [])],
+    enabled: entry.enabled,
+    ...(entry.publisher ? { publisher: entry.publisher } : {}),
+  }
+}
 
-  for (const entry of current) {
-    await deps.db.put('snapshots', {
-      extensionId: entry.id,
-      takenAt: deps.now(),
-      version: entry.version,
-      permissions: [...entry.permissions],
-      ...(entry.publisher ? { publisher: entry.publisher } : {}),
-    })
+/**
+ * Compares, and writes nothing — except the very first baseline.
+ *
+ * Recording a baseline where there was none consumes no difference, because
+ * there was nothing to compare against; without it a fresh install would wait
+ * for the daily alarm before it had anything to say.
+ */
+export async function compareInventory(deps: InventoryDeps): Promise<InventoryChange[]> {
+  const current = (await deps.list()).filter((entry) => entry.id !== deps.selfId)
+  const rows = await deps.db.getAll('snapshots')
+
+  if (rows.length === 0) {
+    const at = deps.now()
+    for (const entry of current) await deps.db.put('snapshots', stored(entry, at))
+    // Reporting every installed extension as "newly installed" would bury the
+    // one that matters under the twenty that do not.
+    return []
   }
 
+  return diffInventory(rows.map(restore), current)
+}
+
+/**
+ * Accepting a change: the stored state becomes the current one, for this
+ * extension only.
+ *
+ * Put for an extension that is still here, delete for one that is gone — the
+ * removal of a snapshot row is what makes "no longer installed" stop being
+ * reported, and it was never done anywhere, so a removal was reported forever.
+ * Both cases are the same sentence: make the record agree with the world.
+ */
+export async function acceptInventoryChange(deps: InventoryDeps, id: string): Promise<void> {
+  const current = (await deps.list()).find((entry) => entry.id === id)
+  if (current) await deps.db.put('snapshots', stored(current, deps.now()))
+  else await deps.db.delete('snapshots', id)
+}
+
+/**
+ * Writes each change to the journal once, however often it is seen.
+ *
+ * The id used to carry the timestamp, so the daily alarm wrote a new row for the
+ * same unaccepted change every day, and the screen wrote one per visit. One row
+ * per extension and kind, and its detail is refreshed only when it actually
+ * changed — otherwise `createdAt` would creep forward and the entry would claim
+ * the change had just happened.
+ */
+export async function journalChanges(
+  deps: InventoryDeps,
+  changes: readonly InventoryChange[],
+): Promise<void> {
   for (const change of changes) {
+    const id = `extension:${change.id}:${change.kind}`
+    const existing = await deps.db.get('journal', id)
+    if (existing && existing.detail?.explain === change.detail) continue
     await deps.db.put('journal', {
-      id: `extension:${change.id}:${deps.now()}`,
+      id,
       createdAt: deps.now(),
       kind: 'verdict',
       detail: { explain: change.detail, kind: change.kind, severity: change.severity },
     })
   }
-
-  return changes
 }

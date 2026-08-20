@@ -8,7 +8,7 @@ function ext(overrides: Partial<ExtensionSnapshot> = {}): ExtensionSnapshot {
     name: 'Colour Picker',
     version: '1.0.0',
     permissions: ['storage'],
-    hostPermissions: [],
+    hostPermissions: ['https://example.test/*'],
     publisher: 'Someone',
     enabled: true,
     ...overrides,
@@ -36,12 +36,12 @@ describe('the update nobody sees', () => {
   })
 
   it('reports host access widening to everything', () => {
-    const changes = diffInventory([ext()], [ext({ hostPermissions: ['<all_urls>'] })])
+    const changes = diffInventory([ext()], [ext({ hostPermissions: ['https://example.test/*', '<all_urls>'] })])
     expect(changes[0]).toMatchObject({ kind: 'host-access-widened', severity: 'critical' })
   })
 
   it('reports a narrower new host as major, not critical', () => {
-    const changes = diffInventory([ext()], [ext({ hostPermissions: ['https://example.test/*'] })])
+    const changes = diffInventory([ext()], [ext({ hostPermissions: ['https://example.test/*', 'https://other.test/*'] })])
     expect(changes[0]?.severity).toBe('major')
   })
 })
@@ -71,5 +71,33 @@ describe('the ordinary cases', () => {
       [ext({ publisher: 'New Owner', permissions: ['storage', 'tabs'] })],
     )
     expect(changes.map((change) => change.kind)).toEqual(['publisher-changed', 'permission-added'])
+  })
+})
+
+describe('a host list that was never recorded', () => {
+  it('is not compared against, because an absence is not a value', () => {
+    /**
+     * Measured 2026-08-20: the snapshot store did not hold host permissions at
+     * all, `before` was built with `[]`, and so every extension holding any host
+     * access looked as though it had just been granted it — `host-access-widened`
+     * at severity `critical`, on every run, for the life of the profile. The one
+     * finding on that screen a user should never ignore was the one it always
+     * showed.
+     */
+    const changes = diffInventory(
+      [ext({ hostPermissions: null })],
+      [ext({ hostPermissions: ['<all_urls>'] })],
+    )
+    expect(changes).toEqual([])
+  })
+
+  it('does not silence the fields that were recorded', () => {
+    // Silence about the unknown must not become silence about the known.
+    const changes = diffInventory(
+      [ext({ hostPermissions: null })],
+      [ext({ hostPermissions: ['<all_urls>'], publisher: 'New Owner' })],
+    )
+    expect(changes).toHaveLength(1)
+    expect(changes[0]).toMatchObject({ kind: 'publisher-changed' })
   })
 })

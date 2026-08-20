@@ -112,6 +112,12 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (двенадцатый)** — B-44; стадии 0–10. Единственный пишущий маршрут
+  сервиса получил потолок тела, проверку происхождения, лимит частоты,
+  непредсказуемую ссылку, шесть заголовков и путь чтения; свип удержания — пять
+  тестов вместо нуля; страница приватности впервые говорит об апелляциях. 1912
+  юнит-тестов в 120 файлах, девять плантов легли. Постоянных инструкций десять,
+  снятий нет. Вердикт REFINE.
 - **2026-08-20 (одиннадцатый)** — B-43; стадии 0–10. Три миграции получили тесты,
   которых у них не было; профиль из будущего распознан по имени и назван
   пользователю одной панелью вместо шести ошибок; путь восстановления не зависит
@@ -261,6 +267,66 @@ happens before adding.
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-20 — the form needed no preflight, so it needed no permission
+
+**Symptom.** `/appeal` accepted a POST from anywhere. No rate limit, no body cap
+— `request.text()` and `request.json()` read whatever a sender chose to send and
+the 2000-character cap came after — no origin check of any kind, and not one
+security header anywhere in the service: a grep for CSP,
+`x-content-type-options`, `referrer-policy`, HSTS or `x-frame-options` across the
+whole repository returned nothing. The form is `x-www-form-urlencoded`, which
+needs no preflight, so any page anywhere could file an appeal under any domain in
+a visitor's name with one HTML form and no JavaScript.
+
+And the reference was a 32-bit hash of the domain and the message **and** the
+primary key, so an attacker could compute the reference an owner's appeal would
+receive, file it first with their own contact, and the owner's submission came
+back "already filed" — contact never stored, nothing to tell them why.
+
+**Stage it surfaced at.** 0, from a filed row that had read the code carefully.
+
+**Stage that owned it.** 3. The service's own docstring says "everything it
+serves is either public or supplied by someone acting on their own behalf" — and
+that is a statement about *intent*, which a CSRF is precisely the violation of:
+the browser supplies it on the visitor's behalf without the visitor. A design note
+that describes who the caller ought to be reads, on a second pass, like a
+statement about who the caller is.
+
+**Root cause.** The one route that writes was designed as though it were the
+routes that read. Everything around it is public and cacheable and needs no
+protection, and `/appeal` sat in that neighbourhood and inherited its posture.
+
+**Fix, by grade.** Structural where it could be: the body is bounded as it
+arrives, with `content-length` checked first *and* a running total, because the
+header is optional and a chunked body has none; the reference comes from the
+CSPRNG so it cannot be predicted; a duplicate is domain, message and contact,
+read rather than collided with. Behavioural where a mechanism cannot decide:
+`Sec-Fetch-Site` or `Origin` must say the request came from this site, and the
+code says in as many words that this is a check about browsers and not
+authentication — a request carrying neither is not a browser, and what bounds a
+script is the body cap and the budget.
+
+**The decision worth naming.** A rate limiter that cannot be read returns
+*unknown*, not *over budget*. The count is a `SELECT` and it can fail, and turning
+a database hiccup into "your appeal was rejected" is a denial of service performed
+on the owner — the one person this route exists for. The limit is also keyed on the
+domain rather than on the sender, because nothing about a sender is stored and
+adding an address to make a limiter possible would trade the property for the
+protection.
+
+**What a test found that the row had not.** The HTML reply to a form post is built
+in its own function rather than through `json` or `HTML_HEADERS`, so adding six
+headers in one place left exactly that page without a policy — the page an owner
+reads after typing their contact details into a form. The test that caught it asked
+every response type the same question, which is the only kind of test that finds a
+response nobody remembered was a response.
+
+**And what nobody had filed at all.** The whole tree contained an `INSERT` and a
+`DELETE`. Appeals were written, swept after 180 days, and read by nobody, ever. A
+form that files a complaint into a table no one opens lies by existing — and the
+privacy page said nothing about appeals either, on a form that collects a contact
+address and keeps it for six months.
 
 ### 2026-08-20 — the test that looked like an upgrade test opened the same version twice
 

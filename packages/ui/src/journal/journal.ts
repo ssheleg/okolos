@@ -65,7 +65,10 @@ export function renderJournal(
       text(
         doc,
         'incomplete',
-        `${diff.unreadable} record${diff.unreadable === 1 ? '' : 's'} could not be read, so this view is incomplete.`,
+        // English pluralisation on a ru-default surface, and invisible to the sweep
+        // until its anchor learned to read a quote nested in a substitution (B-76).
+        // Worded so no agreement by number is needed: Russian has three forms.
+        t('journalIncomplete', String(diff.unreadable)),
       ),
     )
   }

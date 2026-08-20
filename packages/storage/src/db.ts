@@ -49,6 +49,9 @@ export class StorageUnavailable extends Error {
     readonly found: number | null,
     cause?: unknown,
   ) {
+    // i18n-exempt: an `Error.message`, and no screen renders it — the storage panel
+    // shows the browser's own `cause.message` or omits the line; this text reaches a
+    // console and a bug report, where `problem` is the part anyone acts on
     super(`okolos: the local store cannot be opened (${problem})`)
     this.name = 'StorageUnavailable'
     this.cause = cause

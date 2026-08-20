@@ -43,6 +43,9 @@ export function renderDataControls(
   // "nothing will be deleted" over a button that deletes everything. Refused
   // loudly at the seam rather than shown quietly.
   if (dataKinds.length === 0) {
+    // i18n-exempt: a programming mistake at a seam, thrown before anything renders and
+    // caught by nobody — the caller is a page in this repository, and the audience is
+    // whoever is holding the debugger when it fires
     throw new Error('renderDataControls: the wipe confirmation must name what it deletes')
   }
 

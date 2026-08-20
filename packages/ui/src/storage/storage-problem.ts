@@ -25,8 +25,16 @@ export interface StorageProblemProps {
   readonly found: number | null
   /** The version this build understands. */
   readonly expected: number
-  /** The underlying message, for the person who will report this. */
-  readonly detail: string
+  /**
+   * The browser's own message, for the person who will report this.
+   *
+   * Optional, and absent means absent. It used to fall back to `StorageUnavailable`'s
+   * own text — our sentence, in English, on a Russian screen, restating the `kind`
+   * already shown two lines above it. A diagnostic line whose content is our own
+   * summary tells the reader nothing and costs them the one line that would have
+   * carried the browser's words (B-76).
+   */
+  readonly detail?: string
 }
 
 export interface StorageProblemHandlers {
@@ -80,8 +88,11 @@ export function renderStorageProblem(
   }
 
   // Verbatim, and last: it is the sentence a bug report needs and the one a user
-  // should not have to read first.
-  section.append(line(doc, 'storage-detail', props.detail))
+  // should not have to read first. Omitted entirely when the browser said nothing,
+  // rather than filled with our own summary of what is already on the screen.
+  if (props.detail !== undefined && props.detail !== '') {
+    section.append(line(doc, 'storage-detail', props.detail))
+  }
 
   const actions = doc.createElement('div')
   actions.setAttribute('data-role', 'actions')

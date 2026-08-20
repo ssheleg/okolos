@@ -63,5 +63,8 @@ export function createOverlayHost(doc: Document, kind: string): OverlayHost {
   // Both attempts failed, which the second cannot do by name collision — so
   // something else is wrong and pretending otherwise would hand back a surface
   // with no root to draw in.
+  // i18n-exempt: quoted verbatim into one journal line beside the browser's own error
+  // messages (`noteScanFailed`), where the field is a diagnostic for whoever reports
+  // this and not a sentence written for a reader
   throw new Error('okolos: no shadow root could be attached for the overlay')
 }

@@ -952,6 +952,12 @@ async function download(): Promise<void> {
  * section stays that section's problem: replacing the whole page because the
  * journal could not be listed would hide seven working areas behind one.
  */
+/** The browser's own message, when there is one. An absent key, not an empty string. */
+function detailOf(cause: unknown): { detail?: string } {
+  const message = cause instanceof Error ? cause.message : undefined
+  return message === undefined || message === '' ? {} : { detail: message }
+}
+
 async function storageProblem(): Promise<HTMLElement | null> {
   try {
     await openDb()
@@ -964,7 +970,10 @@ async function storageProblem(): Promise<HTMLElement | null> {
         kind: cause.problem,
         found: cause.found,
         expected: DB_VERSION,
-        detail: String((cause.cause as Error | undefined)?.message ?? cause.message),
+        // The browser's words or nothing. `cause.message` is ours — see the field's note.
+        // Spread rather than `detail: undefined`, which `exactOptionalPropertyTypes`
+        // refuses and which would mean "present, and empty" rather than "absent".
+        ...detailOf(cause.cause),
       },
       {
         onRetry: () => void reload(),

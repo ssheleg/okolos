@@ -87,9 +87,6 @@ export function detectHidden(page: PageCandidates, ctx: DetectContext): Verdict[
       // Or a corroborating signal that matched in a form nothing innocent
       // produces: "use *your* browsing tool", a right-to-left override.
       report.strong.length > 0
-    // i18n-exempt: not copy at all — the sweep's three-word anchor reads
-    // `'high' as const` as a sentence. Counted as debt since B-51 and impossible to
-    // pay: the class is B-76.
     const confidence = standsAlone || decisive.length >= 2 ? ('high' as const) : ('medium' as const)
 
     const evidence = toEvidence(

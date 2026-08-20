@@ -39,6 +39,7 @@
 import { readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 
+import { isComment, sentencesIn } from './i18n-pattern.mjs'
 import { filesUnder } from './tree.mjs'
 
 /**
@@ -86,12 +87,6 @@ const ROOTS = ['apps/extension/src', 'packages']
  * `'data-role=x'` and selector soup, and a check that widens until it fails is not
  * stricter — it is broken.
  */
-const SENTENCE =
-  /(['"`])(\s*(?:\$\{[^}]*\}[\s,.:;!?-]*)*[A-Za-z][\w']*(?: [a-z][\w'-]*){2,}[^'"`]*)\1/g
-
-/** Values that look like prose and are not: paths, MIME types, URLs. */
-const NOISE = /^(data-|https?:|chrome-extension:|application\/|text\/|[a-z]+\/[a-z]+$)/
-
 /**
  * Sources this sweep reads: `.ts`, not a test.
  *
@@ -127,23 +122,8 @@ for (const base of ROOTS) {
     const used = new Set()
 
     lines.forEach((line, index) => {
-      const trimmed = line.trim()
-      // Comments explain; they are not shipped to anyone.
-      /**
-       * Comments explain; they are not shipped to anyone.
-       *
-       * `/*` is in the list because a **one-line** block comment starts with it and
-       * with nothing else — the first version checked only `*` (a continuation line)
-       * and `//`, so `/** the project's wrapper … *\/` was scanned as code and its
-       * apostrophe read as an opening quote. The gate refused a push over a doc
-       * comment, which is the kind of false positive that teaches people to reach for
-       * `OKOLOS_SKIP_GATES=1`.
-       */
-      if (trimmed.startsWith('*') || trimmed.startsWith('//') || trimmed.startsWith('/*')) return
-      for (const match of line.matchAll(SENTENCE)) {
-        const value = match[2]
-        if (NOISE.test(value)) continue
-
+      if (isComment(line)) return
+      for (const value of sentencesIn(line)) {
         // The line itself, or the three above it: a marker sits above the code it
         // explains as often as beside it, and a window of one made every reason a
         // trailing comment.
@@ -250,19 +230,23 @@ if (refusals > 0) {
 /**
  * The closing line says what this tool can support, and no more.
  *
- * With the ledger empty it used to claim "every user-facing sentence is in the
- * catalogue". It cannot know that. Two classes of sentence defeat its own anchor — a
- * first word ending in a colon, and a quote nested inside a template substitution — and
- * both were found by reading, after this tool had reported the files clean (B-76). Four
- * live strings were sitting in them at the time.
+ * With the ledger empty it once claimed "every user-facing sentence is in the
+ * catalogue". It cannot know that. Two classes of sentence used to defeat its own anchor
+ * — a first word ending in a colon, and a quote nested inside a template substitution —
+ * and both were found by reading, after this tool had called their files clean. Four live
+ * strings were sitting in them (B-76, closed 2026-08-20: the anchor reads both now, and
+ * `i18n-pattern.test.ts` keeps a case for each).
  *
- * So: "nothing I can see", with the name of the row that says what I cannot. When B-76
- * lands, this line becomes the stronger claim, because then it will be true.
+ * The line stays hedged anyway, because one limit is structural rather than a bug: this
+ * reads **quoted sentences in source**. Copy that travels as data — a value passed into
+ * a substitution, a field stored on a record and rendered later — looks like an argument
+ * from here and like English to the reader. Both real examples in the header were found
+ * from a screenshot, not from a count.
  */
 console.log(
   recorded === 0
-    ? '\n  OK — nothing the sweep can see is outside the catalogue.\n' +
-        '  Two classes it cannot see are open as B-76; this is not "every sentence".\n'
+    ? '\n  OK — no sentence outside the catalogue is written in the source.\n' +
+        '  Copy passed as data is invisible here by construction; see the header of this file.\n'
     : `\n  OK — nothing new, and the ${recorded} recorded still owe a translation (B-75).\n` +
         '  This is not "every sentence is in the catalogue": it is "the debt did not grow".\n',
 )

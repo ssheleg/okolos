@@ -1181,6 +1181,14 @@
   "journalEmpty": {
     "message": "Nothing to show yet — this is your first check."
   },
+  "journalIncomplete": {
+    "message": "Some records could not be read, so this view is incomplete. Unreadable: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
   "journalKindAction": {
     "message": "Actions"
   },

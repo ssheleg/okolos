@@ -1181,6 +1181,14 @@
   "journalEmpty": {
     "message": "Показывать пока нечего — это ваша первая проверка."
   },
+  "journalIncomplete": {
+    "message": "Часть записей не прочиталась, поэтому вид неполный. Не прочитано: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
   "journalKindAction": {
     "message": "Действия"
   },

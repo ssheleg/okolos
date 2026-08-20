@@ -77,6 +77,8 @@ export function createInferenceHost(deps: InferenceDeps): PreparedInference {
       } catch (cause) {
         // Every backend refused. Saying so beats reporting a classifier that
         // silently never fires.
+        // i18n-exempt: `deps.log` is wired to `console.warn` at its one site,
+        // `background/index.ts:170`, so this is a devtools line and not a surface
         deps.log?.(`okolos: no inference backend — ${String(cause)}`)
         return (status = 'no-backend')
       }

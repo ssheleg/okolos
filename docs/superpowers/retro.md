@@ -112,6 +112,16 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (сорок второй)** — B-72; стадии 0–10, строка **не закрыта** и это записано.
+  Код-слой графа пересобран (3221 → 3944 узла), документный требует LLM и упирается в
+  решение человека: скил говорит «MANDATORY: use the Agent tool», правила сессии
+  запрещают агентов без просьбы. Пересборка вскрыла три дефекта в гейте, писавшемся для
+  этой же строки: свежесть мерилась временем записи артефакта (проход только по коду
+  делает всё дерево старше файла — «ничего не менялось» поверх документов из 8 августа),
+  список каталогов-исключений был захардкожен и регулярка лишь фильтровала его, а шаблон
+  покрытия расходился с извлечением в обе стороны — включая `.githooks/pre-push`, про
+  который проверка не спрашивала вообще. 2232 юнит-теста в 140 файлах. Четыре планта, все
+  легли. Постоянных инструкций десять, снятий нет. Вердикт REFINE.
 - **2026-08-20 (сорок первый)** — B-76; стадии 0–10. Якорь свипа читает оба класса,
   которые его обходили. Расширение дало 26 попаданий: одна живая английская строка на
   экране журнала, двадцать аргументов `console.*` (исключены структурно, а не по префиксу
@@ -2096,6 +2106,67 @@ description.
   keeping. But a row closed with its verification outstanding is a row closed early, and
   the honest form is the one now in the board: closed on the second attempt, with the
   first attempt's failure written into it rather than tidied away.
+
+### 2026-08-20 — the artefact was rewritten, so everything looked older than it
+
+**Symptom.** `graph-check.mjs` asks whether the graph is stale by comparing `graph.json`'s
+mtime against the newest file it covers. A rebuild of the *code* half rewrote
+`graph.json`, so every source in the tree became older than the artefact and the gate
+printed `built from: 2612960 — nothing it covers has changed since` — over 27 documents
+last extracted twelve days earlier, which is precisely the row's own complaint.
+
+**Stage it surfaced at.** 5, on the first partial rebuild. Nothing surfaced it before
+because the graph had never been partially rebuilt: it was either whole or twelve days
+old, and both states the timestamp described correctly.
+
+**Stage that owned it.** 2 of the run that wrote the check. The design took "artefact
+newer than its inputs" as the definition of fresh, which holds only for an artefact built
+in one pass. graphify builds in two — an AST pass that is free and deterministic, and a
+semantic pass that needs an LLM — and the timestamp cannot see the seam.
+
+**Root cause.** A proxy measure that is exactly right for the whole and silently wrong for
+a part. The manifest — graphify's own record of which source was read at which hash — was
+sitting beside the graph the whole time, and it answers the real question per source.
+
+**Fix, by grade.** *Structural:* freshness is asked of the manifest, per source, in
+`tools/graph-freshness.mjs`, and names three states separately because they are unblocked
+differently — `awaiting meaning` needs an LLM, `changed since` and `never extracted` need
+a run. *Structural:* the timestamp is reported as a note and no longer decides; it could
+not tell a twelve-day-old graph from a file edited a minute ago, which on a working tree
+mid-task is every run. *Check:* the gate's test now writes a manifest beside the graph and
+plants each of the three states with the graph file stamped a day *ahead* of the tree — so
+a regression to the timestamp rule fails three assertions.
+
+**The check that catches it next time.** A gate whose subject is built in more than one
+pass must ask its question per part. The pattern to reach for is the builder's own
+manifest, not the artefact's mtime.
+
+### 2026-08-20 — the regex looked like the source of truth and an array was one
+
+**Symptom.** Adding `.tsc` to `NOT_A_SOURCE_DIR` in `build-age.mjs` changed nothing. 148
+files of `tsc` output kept being reported as covered sources the graph had never
+extracted, burying nine real documents in the same list.
+
+**Stage it surfaced at.** 5, immediately after the edit — the count did not move.
+
+**Stage that owned it.** 5 of the run that wrote `walk()`. It filtered a **hardcoded**
+candidate list, `['node_modules', 'dist']`, through the regex: a directory name absent
+from the array could never be skipped however the pattern read. The pattern was exported,
+documented and load-bearing in appearance; the array was load-bearing in fact.
+
+**Root cause.** The same rule written twice, in two shapes, with only one of them
+consulted. This module already carries a note about exactly that failure — two exclusions
+tested against two different strings — which is what makes this the second instance rather
+than the first.
+
+**Fix, by grade.** *Structural:* one list, `GENERATED_DIRS`, and the regex is built from
+it. *Check:* a test that walks the real tree and asserts no path under any name in that
+list appears, plus one that asserts the pattern is derived from the array rather than
+written beside it — so the shape cannot come back even if the names change.
+
+**The check that catches it next time.** When a constant is a list and a pattern of the
+same list, derive one from the other in the same expression. A plant confirms the derived
+half; nothing confirms two hand-written halves agreeing by luck.
 
 ### 2026-08-20 — the gate everything else is measured by had no test
 

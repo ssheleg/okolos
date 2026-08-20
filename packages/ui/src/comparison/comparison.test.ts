@@ -74,6 +74,29 @@ describe('showing the difference rather than asserting it', () => {
     expect(role(render({ ...PROPS, kind: 'tld-swap' }), 'why')?.textContent).toMatch(/окончание после последней точки/i)
   })
 
+  it('has a sentence for every kind the checker can produce', () => {
+    /**
+     * The gap this closes: a kind added to the checker and forgotten here rendered
+     * `[comparisonReason…]` — the resolver's fallback — on the one surface whose whole
+     * job is to explain. `Record<ComparisonProps['kind'], string>` fails the build on a
+     * missing entry, and this fails the test on a missing *message*, which is the other
+     * half: the key can exist and the catalogue can not have it.
+     */
+    const kinds: ReadonlyArray<ComparisonProps['kind']> = [
+      'mixed-script',
+      'homograph',
+      'typo',
+      'tld-swap',
+      'brand-subdomain',
+      'brand-under-login-word',
+    ]
+    for (const kind of kinds) {
+      const why = role(render({ ...PROPS, kind }), 'why')?.textContent ?? ''
+      expect(why, `${kind} has no sentence`).not.toBe('')
+      expect(why, `${kind} rendered the resolver's fallback`).not.toMatch(/^\[/)
+    }
+  })
+
   it('shows the address verbatim, not tidied up', () => {
     const el = render(PROPS)
     expect(el.querySelector('code')?.textContent).toBe('xn--pypal-4ve.com')

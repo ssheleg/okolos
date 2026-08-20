@@ -115,22 +115,54 @@ describe('what it does catch', () => {
     expect(checkLookalike('microsoft.co', WATCHLIST)).toMatchObject({ kind: 'tld-swap' })
   })
 
-  it('says nothing about the same name under an unrelated ending, and this is the cost', () => {
+  it('reports the brand under an ending that is itself a word about signing in', () => {
     /**
-     * `paypal.security` was asserted here as a swapped ending until 2026-08-20,
-     * and the rule that caught it — same label, any different ending — reported
-     * nine genuine hosts in a thirty-four-host sample: `google.de`, `yandex.com`,
-     * `github.io`, `stripe.dev`, `discord.gg`, `sberbank.com`, `telegram.me`,
-     * `vk.ru`, `ozon.by`. Every one is the real company on its own domain.
+     * The coverage recovered in B-67, and the shape of the recovery matters.
      *
-     * Nothing on the device separates a brand's country domain from a squatter's
-     * gTLD: ownership is not a fact a content script has. So the coverage is
-     * given up and written down here, rather than paid for with a warning on
-     * `google.de` — which is how a user learns to dismiss the next one. Recovering
-     * it needs data that can decide, and that is B-67.
+     * `paypal.security` was asserted here as a swapped ending until 2026-08-20, and the
+     * rule that caught it — same label, **any** different ending — reported nine genuine
+     * hosts in a thirty-four-host sample: `google.de`, `yandex.com`, `github.io`,
+     * `stripe.dev`, `discord.gg`, `sberbank.com`, `telegram.me`, `vk.ru`, `ozon.by`.
+     * Every one is the real company on its own domain, and a warning on `google.de` is
+     * how a person learns to dismiss the next one.
+     *
+     * Deciding by ownership needs data a content script does not have. What it does
+     * have is the **meaning of the ending**: `security`, `support`, `login` are words
+     * about accounts, and that is the second signal ADR-0012 asks for — the brand alone
+     * is a suspicion, the brand plus "sign in here" is a verdict.
      */
-    expect(checkLookalike('paypal.security', WATCHLIST)).toBeNull()
-    expect(checkLookalike('paypal.support', WATCHLIST)).toBeNull()
+    expect(checkLookalike('paypal.security', WATCHLIST)?.kind).toBe('brand-under-login-word')
+    expect(checkLookalike('paypal.support', WATCHLIST)?.kind).toBe('brand-under-login-word')
+    expect(checkLookalike('paypal.login', WATCHLIST)?.kind).toBe('brand-under-login-word')
+    expect(checkLookalike('paypal.verify', WATCHLIST)?.kind).toBe('brand-under-login-word')
+  })
+
+  it('still says nothing about an ending that is not about accounts, and that is the cost', () => {
+    /**
+     * The limit that remains, stated rather than left to be discovered. A real company
+     * may well own `paypal.shop`, and the false positive costs more than the miss —
+     * which is the whole reason the recovery is a word list and not an ending list.
+     */
+    expect(checkLookalike('paypal.shop', WATCHLIST)).toBeNull()
+    expect(checkLookalike('paypal.city', WATCHLIST)).toBeNull()
+  })
+
+  it('does not fire on the brand’s own ending, or on a registry suffix', () => {
+    // `id` is in the word list and `.id` is Indonesia's ccTLD; a brand there is a brand
+    // there. The rule needs the ending to be a single label the registrant chose, and a
+    // multi-label suffix is a registry's.
+    expect(checkLookalike('amazon.co.uk', WATCHLIST)).toBeNull()
+    expect(checkLookalike('paypal.com', WATCHLIST)).toBeNull()
+  })
+
+  it('needs the label to be exactly the brand, not merely similar to it', () => {
+    /**
+     * A name that only resembles the brand is already answered by the homograph and
+     * typo rules. Reading this one as "close enough" would stack two heuristics into
+     * one verdict, which is how a detector starts finding what it expects.
+     */
+    const verdict = checkLookalike('paypa1.security', WATCHLIST)
+    expect(verdict?.kind).not.toBe('brand-under-login-word')
   })
 
   it('a lookalike used as a subdomain of something else', () => {

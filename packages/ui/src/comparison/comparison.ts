@@ -30,7 +30,13 @@ export interface ComparisonProps {
   /** What it renders as, once decoded. Equal to `visited` for plain ASCII. */
   readonly decoded: string
   readonly resembles: string
-  readonly kind: 'mixed-script' | 'homograph' | 'typo' | 'tld-swap' | 'brand-subdomain'
+  readonly kind:
+    | 'mixed-script'
+    | 'homograph'
+    | 'typo'
+    | 'tld-swap'
+    | 'brand-subdomain'
+    | 'brand-under-login-word'
 }
 
 export interface ComparisonHandlers {
@@ -58,6 +64,7 @@ const EXPLANATION_KEY: Record<ComparisonProps['kind'], string> = {
   typo: 'comparisonReasonTypo',
   'tld-swap': 'comparisonReasonTldSwap',
   'brand-subdomain': 'comparisonReasonBrandSubdomain',
+  'brand-under-login-word': 'comparisonReasonLoginWord',
 }
 
 /**

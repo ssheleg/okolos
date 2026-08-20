@@ -309,6 +309,9 @@
   "comparisonReasonHomograph": {
     "message": "Some characters here only look like the letters they stand for."
   },
+  "comparisonReasonLoginWord": {
+    "message": "The name is the same, and the ending after the last dot is a word about signing in. Real companies do not name their main address that way."
+  },
   "comparisonReasonMixedScript": {
     "message": "This name is written with letters from more than one alphabet."
   },

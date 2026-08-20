@@ -71,6 +71,17 @@ const ATTACKS: ReadonlyArray<readonly [string, string, string]> = [
   ['g00gle.com', 'homograph', 'digits standing in for letters'],
   ['gooogle.com', 'typo', 'one letter too many'],
   ['wildberies.ru', 'typo', 'one letter too few, in the market this list serves'],
+  /**
+   * Recovered in B-67: the brand's own name under an ending that is itself a word
+   * about accounts. These three were named in SCN-006 as passing silently, and the
+   * rule that used to catch them flagged nine of the real hosts above.
+   */
+  ['paypal.security', 'brand-under-login-word', 'the ending is the phishing instruction'],
+  ['paypal.support', 'brand-under-login-word', 'the same, in the word a victim is looking for'],
+  ['paypal.login', 'brand-under-login-word', 'the same, said plainly'],
+  ['sberbank.verify', 'brand-under-login-word', 'a bank, in the market this list serves'],
+  ['gosuslugi.account', 'brand-under-login-word', 'the state portal'],
+  ['ozon.payment', 'brand-under-login-word', 'a marketplace, and the word is about money'],
 ]
 
 describe('what it must never do: flag the real thing', () => {

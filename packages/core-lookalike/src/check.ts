@@ -17,7 +17,13 @@ import { labelsAbove, publicSuffixOf, registrableLabel } from './suffix.js'
  */
 
 export interface LookalikeVerdict {
-  readonly kind: 'mixed-script' | 'homograph' | 'typo' | 'tld-swap' | 'brand-subdomain'
+  readonly kind:
+    | 'mixed-script'
+    | 'homograph'
+    | 'typo'
+    | 'tld-swap'
+    | 'brand-subdomain'
+    | 'brand-under-login-word'
   /** The host as the browser holds it — punycode included. */
   readonly visited: string
   /** What it renders as, once decoded. */
@@ -66,6 +72,17 @@ export function checkLookalike(
     // identical and only the ending differs, which "homograph" would not say.
     if (endingIsOneEditAway(decoded, target)) {
       return { kind: 'tld-swap', visited, decoded, resembles: target, distance: 0 }
+    }
+
+    // The brand's own name under an ending that means "sign in here".
+    if (brandUnderLoginWord(decoded, target)) {
+      return {
+        kind: 'brand-under-login-word',
+        visited,
+        decoded,
+        resembles: target,
+        distance: 0,
+      }
     }
 
     if (skeleton(label) === skeleton(targetLabel)) {
@@ -203,6 +220,67 @@ const GENERIC_LABELS: ReadonlySet<string> = new Set(['mail', 'office'])
  * `paypal.co` and `amazon.co` and gives up the rest — named as a limit rather
  * than paid for with a warning on `google.de`.
  */
+/**
+ * Endings that are themselves an instruction to sign in.
+ *
+ * **Why a list of squat words and not a list of endings brands own.** `paypal.security`,
+ * `paypal.support` and `paypal.login` passed silently, and the rule that used to catch
+ * them — same name, any different ending — flagged nine real companies out of a
+ * thirty-four-host sample: `google.de`, `yandex.com`, `sberbank.com`, `github.io`,
+ * `stripe.dev`, `discord.gg`, `telegram.me`, `vk.ru`, `ozon.by`. A warning on
+ * `google.de` is how a person learns to dismiss the next one (B-67, SCN-006).
+ *
+ * Deciding by ownership needs data a content script does not have. Deciding by "is
+ * this ending one a real company would use" needs a list that grows with every new
+ * gTLD and fails towards the false positive. This list fails the other way: it fires
+ * only when the ending is a **word about accounts**, which is the second signal
+ * ADR-0012 asks for — the brand alone is a suspicion, the brand plus "log in here" is
+ * a verdict.
+ *
+ * Measured against the recorded population: **none** of the thirty-four real hosts
+ * ends in one of these, and all three named squats do.
+ *
+ * **What it still misses, deliberately:** a brand under a word gTLD that is not about
+ * accounts — `paypal.shop`, `sberbank.city` — is not reported, because a real company
+ * may well own that and the false positive costs more than the miss. The list is a
+ * coverage claim, like the watchlist itself.
+ */
+const LOGIN_WORDS: ReadonlySet<string> = new Set([
+  'account',
+  'accounts',
+  'auth',
+  'billing',
+  'help',
+  'id',
+  'login',
+  'payment',
+  'payments',
+  'safety',
+  'secure',
+  'security',
+  'signin',
+  'support',
+  'update',
+  'verify',
+])
+
+/**
+ * Is this the watched brand's own label under an ending that means "sign in"?
+ *
+ * The label has to be **exactly** the brand's, not similar to it: a name that merely
+ * resembles the brand is already answered by the homograph and typo rules, and reading
+ * this one as "close enough" would stack two heuristics into one verdict.
+ */
+function brandUnderLoginWord(host: string, target: string): boolean {
+  const suffix = publicSuffixOf(host)
+  // Only a single-label ending: `paypal.security` is the shape, and a multi-label
+  // suffix like `co.uk` is a registry's, not a word anybody chose to mean anything.
+  if (suffix === '' || suffix.includes('.')) return false
+  if (!LOGIN_WORDS.has(suffix)) return false
+  if (publicSuffixOf(target) === suffix) return false
+  return registrableLabel(host) === registrableLabel(target)
+}
+
 function endingIsOneEditAway(host: string, target: string): boolean {
   const here = publicSuffixOf(host)
   const there = publicSuffixOf(target)

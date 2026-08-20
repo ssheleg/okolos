@@ -15,15 +15,16 @@ import { toQueueItems } from '../popup/state.js'
 import {
   renderDataControls,
   renderExtensions,
+  renderIncidentPicker,
   renderJournal,
   renderLeaks,
-  renderIncidentPicker,
   renderOverview,
   renderQueue,
   renderRecovery,
   renderSelfAudit,
   renderStorageProblem,
   renderTrusted,
+  shortTime,
   type AreaId,
   type AreaRow,
   type AttentionItem,
@@ -647,7 +648,12 @@ async function areaRows(): Promise<AreaRow[]> {
     }),
     count(async () => {
       const { lastCheck } = await readJournal()
-      return lastCheck === null ? t('areaStateJournalNever') : t('areaStateJournalSince', lastCheck)
+      // `shortTime`, not the stored value: this row said "Что изменилось с
+      // 2026-08-20T23:23:22.936Z" until 2026-08-21. It is the same fact the popup shows
+      // with the same rendering — a diff's baseline is a moment, not a day.
+      return lastCheck === null
+        ? t('areaStateJournalNever')
+        : t('areaStateJournalSince', shortTime(lastCheck))
     }),
     count(async () => {
       const result = await platform.runtime.send('extensions/state', {})
@@ -784,6 +790,11 @@ async function attentionItems(): Promise<AttentionItem[] | null> {
 }
 
 /** When the product last looked, for the sentence beside an empty band. */
+/** The stored instant as a person reads it, or null for "never". */
+function worded(iso: string | null): string | null {
+  return iso === null ? null : shortTime(iso)
+}
+
 async function lastCheckedAt(): Promise<string | null> {
   try {
     return (await readJournal()).lastCheck
@@ -1011,7 +1022,9 @@ async function overviewSection(route: Route): Promise<HTMLElement> {
         kind: 'ready',
         attention,
         areas: rows,
-        lastChecked: await lastCheckedAt(),
+        // Worded here, because that is what the field means (see `OverviewState`). It
+        // used to pass the journal's stored instant and the screen showed it.
+        lastChecked: worded(await lastCheckedAt()),
         ...(route.unrecognised === undefined ? {} : { unrecognised: route.unrecognised }),
       },
       overviewHandlers(),

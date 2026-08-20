@@ -84,3 +84,10 @@ export {
   type StorageProblemKind,
   type StorageProblemProps,
 } from './storage/storage-problem.js'
+
+/**
+ * How a stored instant reaches a person. Exported from the root rather than behind its own
+ * path: unlike `./words`, whose whole point is to stay out of the worker's graph, both
+ * consumers of this are surfaces that already pull the graph in.
+ */
+export { shortDate, shortTime } from './when.js'

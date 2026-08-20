@@ -1,4 +1,5 @@
 import { t } from '@okolos/i18n'
+import { shortTime } from '../when.js'
 
 import type { Queue } from '@okolos/core-queue'
 
@@ -123,14 +124,6 @@ function footer(doc: Document, handlers: PopupHandlers): HTMLElement {
   return el
 }
 
-function shortTime(iso: string): string {
-  // The timestamp itself stays language-neutral: digits and UTC read the same
-  // in both catalogues, and a half-localised date is worse than an unambiguous
-  // one. The sentence around it is not neutral, and that part now comes from
-  // the catalogue — the older comment justified leaving the whole line in
-  // English back when English was the language that shipped first. It is not.
-  return iso.replace('T', ' ').replace(/\.\d+Z$/, ' UTC')
-}
 
 function text(doc: Document, role: string, content: string): HTMLParagraphElement {
   const el = doc.createElement('p')

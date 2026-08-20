@@ -16,6 +16,7 @@
  */
 
 import { t } from '@okolos/i18n'
+import { shortDate } from '../when.js'
 
 export interface TrustedDomain {
   readonly domain: string
@@ -109,10 +110,6 @@ export function renderTrusted(
   return root
 }
 
-function shortDate(iso: string): string {
-  // Date only: the hour a decision was made is noise, the day is context.
-  return iso.slice(0, 10)
-}
 
 function text(doc: Document, role: string, content: string): HTMLParagraphElement {
   const el = doc.createElement('p')

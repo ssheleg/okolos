@@ -73,7 +73,8 @@ body:has([data-role='popup']) {
 [data-role='first-run'],
 [data-role='popup'],
 [data-role='interstitial'],
-[data-role='comparison'] {
+[data-role='comparison'],
+[data-role='overview'] {
   display: block;
   padding: var(--ok-space-4);
   background: var(--ok-colour-surface);
@@ -205,6 +206,44 @@ textarea {
   flex-wrap: wrap;
   gap: var(--ok-space-2);
   margin-block: var(--ok-space-3);
+}
+
+/* ------------------------------------------------------------- the overview */
+
+/*
+ * The dashboard, and the same defect one screen later.
+ *
+ * `overview` was built after this file was written and inherited none of it: no card, the
+ * browser's own bullets, and every row rendering as one word — "Что требует васничего не
+ * ждёт", because a link and its state span sit flush. The header of this file describes that
+ * exact failure from the previous time it happened, on the first-run screen. Found by
+ * regenerating the store screenshots and **looking** at them: three of the four are styled
+ * and this one was not, on an image a store reviewer sees first.
+ *
+ * Fixed here rather than in the renderer, which is this file's own rule: not one renderer
+ * changed to gain a visual layer.
+ */
+[data-role='attention'] {
+  margin-block: var(--ok-space-3);
+}
+
+/* A navigation list, so the browser's bullets are noise rather than structure. */
+[data-role='area-list'] {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+[data-role='area'] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ok-space-2);
+  margin-block: var(--ok-space-2);
+}
+
+[data-role='area-state'] {
+  color: var(--ok-colour-text-muted);
 }
 
 /* -------------------------------------------------------------- the defect */

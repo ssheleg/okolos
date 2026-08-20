@@ -65,6 +65,17 @@ export type OverviewState =
       readonly attention: readonly AttentionItem[]
       readonly areas: readonly AreaRow[]
       /** When the product last looked. Shown when the band is empty. */
+      /**
+       * A **worded** when, not a stored instant — and the distinction cost a screenshot.
+       *
+       * This renderer puts the value straight into a sentence, and its own test passes
+       * "сегодня в 9:00", so the contract has always been "already readable". The caller
+       * passed the journal's raw `lastCheck`, and the dashboard read "Последняя проверка:
+       * 2026-08-20T23:20:07.156Z." on one of the four store screenshots (2026-08-21).
+       * Formatting here would be the wrong fix: it would truncate an input that already
+       * honoured the contract. `@okolos/ui`'s `shortDate`/`shortTime` are what a caller
+       * uses; `null` means never, which is a different sentence.
+       */
       readonly lastChecked: string | null
       /** The address that was not understood, when the user arrived by one. */
       readonly unrecognised?: string

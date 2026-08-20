@@ -69,7 +69,11 @@ describe('reading the age of a build', () => {
     const answer = buildTooOld(dir, 'pnpm build:e2e')
     expect(answer).not.toBeNull()
     expect(answer).toContain('pnpm build:e2e')
-    expect(answer).toMatch(/\.(ts|html|json)/)
+    // `css` belongs here: `apps/extension/src/pages.css` is a source, and this assertion
+    // failed the first time that file happened to be the newest one (2026-08-21). A
+    // pattern that cannot name every kind of source it might report is a pattern that
+    // reddens on a legitimate edit.
+    expect(answer).toMatch(/\.(ts|html|json|css)/)
     // The two directories are the whole defect, so the message names both.
     expect(answer).toContain('dist/chrome-e2e')
   })

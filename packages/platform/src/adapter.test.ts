@@ -15,6 +15,9 @@ type OptionalSection =
   | 'webNavigation'
   | 'downloads'
   | 'management'
+  // Supplied whole or not at all, like the others: a half-stubbed icon would let a
+  // test assert about a badge while the title call silently did nothing.
+  | 'action'
 type ApiOverrides = {
   [K in Exclude<keyof WebExtensionApi, OptionalSection>]?: Partial<WebExtensionApi[K]>
 } & { [K in OptionalSection]?: WebExtensionApi[K] }
@@ -54,8 +57,15 @@ function fakeApi(overrides: ApiOverrides = {}): WebExtensionApi {
   // Merged one level deep on purpose. With a flat spread, adding a capability
   // to Platform forced every test that stubs one runtime method to restate all
   // of them — churn that hides what each test actually cares about.
-  const { offscreen, declarativeNetRequest, webNavigation, downloads, management, ...sections } =
-    overrides
+  const {
+    offscreen,
+    declarativeNetRequest,
+    webNavigation,
+    downloads,
+    management,
+    action,
+    ...sections
+  } = overrides
   return {
     ...base,
     ...sections,
@@ -64,6 +74,7 @@ function fakeApi(overrides: ApiOverrides = {}): WebExtensionApi {
     ...(webNavigation ? { webNavigation } : {}),
     ...(downloads ? { downloads } : {}),
     ...(management ? { management } : {}),
+    ...(action ? { action } : {}),
     runtime: { ...base.runtime, ...overrides.runtime },
     tabs: { ...base.tabs, ...overrides.tabs },
     storage: { ...base.storage, ...overrides.storage },
@@ -522,5 +533,63 @@ describe('who a message came from', () => {
       tabId: 2,
       frameId: 1,
     })
+  })
+})
+
+describe('marking the extension\'s own icon', () => {
+  /**
+   * The one surface a page cannot reach.
+   *
+   * Every other surface this product draws lives inside the page, so a page that
+   * deletes our host from the document takes all of them at once — measured, and the
+   * last open item in ADR-0001 until B-68. This is the escalation channel.
+   */
+  function icon() {
+    return {
+      setBadgeText: vi.fn(async () => undefined),
+      setBadgeBackgroundColor: vi.fn(async () => undefined),
+      setTitle: vi.fn(async () => undefined),
+    }
+  }
+
+  it('marks the tab the finding is about, not the browser', async () => {
+    // A global badge would still be there on the next site, saying something wrong
+    // about a page that has nothing wrong with it.
+    const action = icon()
+    const platform = createPlatform('chrome', fakeApi({ action }))
+
+    await expect(platform.tabs.mark(7, '!', 'something on this page')).resolves.toBe(true)
+    expect(action.setBadgeText).toHaveBeenCalledWith({ text: '!', tabId: 7 })
+    expect(action.setTitle).toHaveBeenCalledWith({ title: 'something on this page', tabId: 7 })
+  })
+
+  it('answers "nothing to mark" rather than throwing when there is no icon', async () => {
+    // A browser without the API, or a test double that has no reason to carry it.
+    const platform = createPlatform('firefox', fakeApi())
+    await expect(platform.tabs.mark(1, '!', 'x')).resolves.toBe(false)
+  })
+
+  it('still marks when the colour is unsupported', async () => {
+    /**
+     * `setBadgeBackgroundColor` is optional in this shape on purpose. A browser that
+     * lacks it must still get the text: a red badge is nicer, a badge is the point.
+     */
+    const action = icon()
+    const withoutColour = {
+      setBadgeText: action.setBadgeText,
+      setTitle: action.setTitle,
+    }
+    const platform = createPlatform('firefox', fakeApi({ action: withoutColour }))
+    await expect(platform.tabs.mark(3, '!', 'x')).resolves.toBe(true)
+    expect(action.setBadgeText).toHaveBeenCalled()
+  })
+
+  it('treats a closed tab as nobody to tell', async () => {
+    // The tab can close between the finding and the mark, and a rejected badge must
+    // not become an unhandled rejection inside a content-script give-up.
+    const action = icon()
+    action.setBadgeText.mockRejectedValue(new Error('No tab with id: 9'))
+    const platform = createPlatform('chrome', fakeApi({ action }))
+    await expect(platform.tabs.mark(9, '!', 'x')).resolves.toBe(false)
   })
 })

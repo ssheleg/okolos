@@ -225,6 +225,9 @@
   "bannerDismiss": {
     "message": "Dismiss"
   },
+  "badgeSurfaceRemoved": {
+    "message": "The warning on this page was removed by the page itself. Open Okolos to read it."
+  },
   "bannerRetry": {
     "message": "Try again"
   },
@@ -1052,6 +1055,14 @@
     "message": "You stopped trusting $DOMAIN$; the checks apply to it again.",
     "placeholders": {
       "domain": {
+        "content": "$1"
+      }
+    }
+  },
+  "noteSurfaceRemoved": {
+    "message": "This page removed the warning $COUNT$ time(s). It could not be shown on the page.",
+    "placeholders": {
+      "count": {
         "content": "$1"
       }
     }

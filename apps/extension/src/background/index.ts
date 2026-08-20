@@ -53,7 +53,7 @@ useResolver((key, substitutions) => platform.message(key, substitutions))
 import { spaceAwareWrite } from './audit-space.js'
 import { canVerify, createVerifier, FEED_PUBLIC_KEY, updateFeed } from './feeds.js'
 import { syncFeed } from './feed-sync.js'
-import { useResolver } from '@okolos/i18n'
+import { t, useResolver } from '@okolos/i18n'
 import { reuseOf } from '@okolos/core-credential'
 
 import { recordPageRequest } from './page-requests.js'
@@ -116,14 +116,16 @@ platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>, from: RpcSe
     case 'trust/add':
       return addTrusted(message.payload as { domain: string }) as Promise<RpcMap[T]['res']>
     case 'page/note':
+      // The sender travels with it for one of the five kinds: `surface-removed` also
+      // marks the icon, and the icon is per tab because "something is wrong here" is
+      // a fact about this page and not about the browser.
       return notePageEvent(
         message.payload as {
-          kind: 'restore' | 'frame-unreported' | 'gate-unread' | 'password-unchecked'
+          kind: 'restore' | 'frame-unreported' | 'gate-unread' | 'password-unchecked' | 'surface-removed'
           explain: string
         },
-      ) as Promise<
-        RpcMap[T]['res']
-      >
+        from,
+      ) as Promise<RpcMap[T]['res']>
     case 'gate/decision':
       return handleGateDecision(message.payload as GateDecision) as Promise<RpcMap[T]['res']>
     default:
@@ -384,10 +386,29 @@ async function allowBlocked(payload: { url: string }): Promise<{ url: string } |
  * defect this exists to close — a restore that could not finish now leaves a
  * record as well as a sentence on screen.
  */
-async function notePageEvent(payload: {
-  kind: 'restore' | 'frame-unreported' | 'gate-unread' | 'password-unchecked'
-  explain: string
-}): Promise<{ ok: true }> {
+async function notePageEvent(
+  payload: {
+    kind: 'restore' | 'frame-unreported' | 'gate-unread' | 'password-unchecked' | 'surface-removed'
+    explain: string
+  },
+  from?: { tabId?: number },
+): Promise<{ ok: true }> {
+  /**
+   * One kind also leaves the page: `surface-removed` means every in-page surface has
+   * been deleted from the document by the page itself, so a journal line is the only
+   * record and the journal is a screen the user has to go and open. The icon is the
+   * one channel the page does not own (ADR-0001), and it is marked first — before the
+   * write that may fail — because the badge is what the person will actually see.
+   */
+  if (payload.kind === 'surface-removed' && typeof from?.tabId === 'number') {
+    await platform.tabs
+      // `t`, not `platform.message`: the resolver is installed with the second and
+      // every key in this codebase is read with the first, which is also the shape the
+      // locale gate recognises. Two call shapes would make live keys read as dead.
+      .mark(from.tabId, '!', t('badgeSurfaceRemoved'))
+      .catch(() => false)
+  }
+
   try {
     const db = await openDb()
     await db.put('journal', {

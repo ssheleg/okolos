@@ -167,10 +167,15 @@ export interface RpcMap {
    * embedding it, after nine seconds of trying. A silent return there would hide the
    * one case where the product found something and nobody was told — which is the
    * whole defect the retry exists to fix, arriving by a different road.
+   *
+   * `surface-removed` is the give-up of a page-level warning the page kept deleting
+   * from the document. It is the one note that also **marks the extension's icon**,
+   * because at that point every surface inside the page has been lost and the icon is
+   * a channel the page does not own (ADR-0001).
    */
   'page/note': {
     req: {
-      kind: 'restore' | 'frame-unreported' | 'gate-unread' | 'password-unchecked'
+      kind: 'restore' | 'frame-unreported' | 'gate-unread' | 'password-unchecked' | 'surface-removed'
       explain: string
     }
     res: { ok: true }

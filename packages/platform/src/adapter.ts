@@ -269,6 +269,33 @@ export function createPlatform(kind: Platform['kind'], api: WebExtensionApi): Pl
         await api.tabs.create({ url })
       },
 
+      async mark(tabId: number, text: string, title: string): Promise<boolean> {
+        /**
+         * The one surface a page cannot reach.
+         *
+         * Everything else this product draws lives inside the page, so a page that
+         * deletes our host from the document takes all of it at once — measured, and
+         * the last open item in ADR-0001. The icon is outside; the badge needs no
+         * permission beyond the `action` key the popup already requires.
+         *
+         * Per tab, not global: "something is wrong" is a fact about the page in front
+         * of the user, and a global badge would still be there on the next site.
+         */
+        const action = api.action
+        if (!action) return false
+        try {
+          await action.setBadgeText({ text, tabId })
+          // Colour is best-effort on its own: Firefox has it, and a browser that does
+          // not must still get the text rather than nothing.
+          await action.setBadgeBackgroundColor?.({ color: '#b3261e', tabId })
+          await action.setTitle({ title, tabId })
+          return true
+        } catch {
+          // The tab closed between the finding and the mark. Nobody to tell.
+          return false
+        }
+      },
+
       async sendToFrame<T extends RpcType>(
         type: T,
         payload: RpcMap[T]['req'],

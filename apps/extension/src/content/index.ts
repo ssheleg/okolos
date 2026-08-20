@@ -28,6 +28,7 @@ import { watchCredentialFields } from './credential.js'
 import { showDownloadVerdict } from './download.js'
 import { watchForTraps } from './traps.js'
 import { Sanitiser } from './sanitize.js'
+import { keepSurfaceMounted, type WatchHandle } from './keep-surface.js'
 
 /**
  * The content script: collect, ask the background for a verdict, warn.
@@ -121,6 +122,59 @@ let lastVerdicts: Verdict[] = []
 let banner: BannerHandle | null = null
 let inspector: InspectorHandle | null = null
 let gate: GateHandle | null = null
+
+/**
+ * The watch that puts the banner back when the page deletes it from the document.
+ *
+ * One at a time, and always stopped before we destroy the banner ourselves: the user
+ * closing it also takes the host out of the DOM, and fighting that would be this
+ * defect pointed at the person instead of the page (`keep-surface.ts`).
+ */
+let surfaceWatch: WatchHandle | null = null
+
+/** Replaces the banner, and the watch that guards it, as one operation. */
+function setBanner(mount: () => BannerHandle): BannerHandle {
+  dropBanner()
+  const handle = mount()
+  banner = handle
+  surfaceWatch = keepSurfaceMounted({
+    present: () => handle.host.isConnected,
+    remount: () => {
+      // The same host, put back where it was. Building a new one would lose the
+      // panel's state — an expanded inspector, a typed reason — and would race the
+      // page for the element name all over again.
+      try {
+        document.body.append(handle.host)
+        return handle.host.isConnected
+      } catch {
+        return false
+      }
+    },
+    onChange: (react) => {
+      const observer = new MutationObserver(react)
+      observer.observe(document.documentElement, { childList: true, subtree: true })
+      return () => observer.disconnect()
+    },
+    wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    escalate: async (removals) => {
+      await platform.runtime
+        .send('page/note', {
+          kind: 'surface-removed',
+          explain: t('noteSurfaceRemoved', String(removals)),
+        })
+        .catch(() => undefined)
+    },
+  })
+  return handle
+}
+
+/** Stops the watch first, then destroys — in that order, or a dismissal reads as an attack. */
+function dropBanner(): void {
+  surfaceWatch?.stop()
+  surfaceWatch = null
+  banner?.destroy()
+  banner = null
+}
 
 
 /**
@@ -269,7 +323,8 @@ function showFrameFinding(finding: { origin: string; summary: string; count: num
   const where = finding.origin === '' ? t('warnFrameUnnamed') : finding.origin
   const more = finding.count > 1 ? t('warnFrameMore', String(finding.count - 1)) : ''
 
-  banner = mountBanner(
+  banner = setBanner(() =>
+    mountBanner(
     document,
     {
       variant: 'injection',
@@ -285,6 +340,7 @@ function showFrameFinding(finding: { origin: string; summary: string; count: num
       onDispute: resolveEverything,
       onDismiss: resolveEverything,
     },
+    ),
   )
 }
 
@@ -293,14 +349,14 @@ function openFrameJournal(): void {
 }
 
 function show(verdict: Verdict, total: number, partialScan: boolean, neutralised: number): void {
-  banner?.destroy()
 
   const others = total > 1 ? ` and ${total - 1} more on this page` : ''
   const scanNote = partialScan
     ? ' This page was too large to check in full, so there may be more.'
     : ''
 
-  banner = mountBanner(
+  banner = setBanner(() =>
+    mountBanner(
     document,
     {
       variant: 'injection',
@@ -321,6 +377,7 @@ function show(verdict: Verdict, total: number, partialScan: boolean, neutralised
         resolveEverything()
       },
     },
+    ),
   )
 }
 
@@ -328,8 +385,7 @@ function show(verdict: Verdict, total: number, partialScan: boolean, neutralised
 function resolveEverything(): void {
   unresolved = []
   armPageWatch(false)
-  banner?.destroy()
-  banner = null
+  dropBanner()
 }
 
 /**

@@ -130,6 +130,19 @@ export interface Inference {
 export interface Tabs {
   /** Origin and path only — the same rule the collector obeys. */
   activeUrl(): Promise<string | null>
+
+  /**
+   * Marks one tab's own icon — a surface the page cannot reach.
+   *
+   * Needed because everything else this product draws lives *inside* the page, and a
+   * page that deletes our host from the document takes all of it away at once
+   * (ADR-0001, B-68). The badge needs no permission the manifest does not already
+   * have: `action` is declared for the popup.
+   *
+   * Best effort by design: a tab that has closed, or a browser without the API, is
+   * "nobody to tell" rather than an error for the caller to handle.
+   */
+  mark(tabId: number, text: string, title: string): Promise<boolean>
   create(url: string): Promise<void>
   /**
    * Delivers a message to the content script in the tab the user is looking at,
@@ -218,6 +231,15 @@ export interface WebExtensionApi {
       message: unknown,
       options?: { frameId: number },
     ): Promise<unknown>
+  }
+  /**
+   * The extension's own icon. Optional for the same reason `sendMessage` is: a test
+   * double has no reason to carry it, and "no icon to mark" is an honest answer.
+   */
+  action?: {
+    setBadgeText(details: { text: string; tabId?: number }): Promise<void> | void
+    setBadgeBackgroundColor?(details: { color: string; tabId?: number }): Promise<void> | void
+    setTitle(details: { title: string; tabId?: number }): Promise<void> | void
   }
   declarativeNetRequest?: {
     getDynamicRules(): Promise<Array<{ id: number }>>

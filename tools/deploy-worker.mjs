@@ -161,6 +161,32 @@ await check('an unknown path is this worker\'s own 404', async () => {
   }
 })
 
+/**
+ * The three public pages, by their own words rather than by a status code.
+ *
+ * The ledger's V-10 said "the public pages are alive" and this smoke checked
+ * `/healthz`, `/status/domain` twice and `/nope` — none of them a page a person opens
+ * (B-60). A 200 is not enough either, for the reason the `/nope` check already gives:
+ * pointed at the wrong host, a status-code-only assertion passes against somebody
+ * else's site. So each page is identified by a string only it serves.
+ */
+const PAGES = [
+  ['/', 'Okolos — защита от скрытых инструкций'],
+  ['/privacy', 'Приватность — Okolos'],
+  ['/status', 'Статус домена'],
+]
+
+for (const [route, marker] of PAGES) {
+  await check(`${route} is served by this worker`, async () => {
+    const res = await fetch(`${base}${route}`)
+    if (res.status !== 200) throw new Error(`status ${res.status}`)
+    const body = await res.text()
+    if (!body.includes(marker)) {
+      throw new Error(`200, but the body does not carry "${marker}" — this is not our page`)
+    }
+  })
+}
+
 for (const [name, ok, detail] of checks) {
   console.log(`   ${ok ? 'ok  ' : 'FAIL'}  ${name}${detail ? ` — ${detail}` : ''}`)
 }

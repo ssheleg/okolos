@@ -112,6 +112,14 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (четырнадцатый)** — B-46, плюс долг: `e2e (chromium)` упал на
+  `3c37391` на одной проверке из 119, и бюджет монтирования получил одно
+  определение вместо десяти секунд в тринадцати файлах. Блок-лист перестал
+  зависеть от ручного списка имён: вопрос теперь «является ли хост публичным
+  суффиксом», по той же таблице, что и проверки двойников; список не сокращается
+  больше чем на треть. 1950 юнит-тестов в 121 файле, шесть плантов — четыре легли,
+  два нашли мёртвую защиту и невыраженный тест. Постоянных инструкций десять,
+  снятий нет. Вердикт REFINE.
 - **2026-08-20 (тринадцатый)** — B-45; стадии 0–10. Агент обновления фида лежит в
   репозитории и ставится одной командой; релиз отказывается собираться на
   блок-листе старше четырнадцати дней. Потолок поставлен туда, где вред, а гейт —
@@ -273,6 +281,69 @@ happens before adding.
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-20 — two plants stayed green, and they were not the same news
+
+**Symptom.** Six plants against the new blocklist guards. Four reddened the checks
+they were aimed at. Two did not, and the reasons were opposite.
+
+The first removed a `previousCount === 0` guard from the shrink threshold and
+nothing failed — because the line below it already returned for a first run: with
+nothing there, `lost` is negative. **Dead defence, the third this session**, and
+the shape has been identical every time: a second check written after a
+measurement, without asking whether the first one still had work. Deleted.
+
+The second removed the line *below* it — `lost <= 0` — and nothing failed either.
+That one was not dead. Zero from zero is a share of `0/0`, which is `NaN`, and
+`NaN <= limit` is **false**, so without that line two empty lists produce a refusal
+about nothing. The guard carried exactly one input and no test expressed it. Test
+written; the plant now reddens it.
+
+**Why the distinction matters.** Both plants stayed green and only one of them was
+telling me about the code. A green plant has at least three readings now — the
+guard is weak, the fixture cannot see it (B-35), or the guard is unreachable
+(B-39) — and this run adds the fourth: **the guard is reachable, load-bearing, and
+its one input is untested.** They are told apart by asking what the line actually
+decides, not by how the suite looked.
+
+**A third plant reddened nothing for a different reason again.** Removing the
+threshold's *call site* in `main` broke no test: the function was covered and its
+use was not. `main` fetches from the network, so the wiring is now checked by
+reading the source, the way `feed-age.test.ts` checks that the release command
+calls `feedTooOld` and dies on it. Reading source is a weaker claim than running
+it, and it rules out precisely what happened — a threshold nobody consulted.
+
+### 2026-08-20 — a hand-written list of names, guarding against a class of hosts
+
+**Symptom.** The blocklist's guard against blocking a whole platform was
+forty-eight exact host matches. Blocking rules are `||host^` and cover every
+subdomain, so an entry for `github.io` takes down every GitHub Pages site for
+everyone who installed the extension — and measured 2026-08-19, that day's source
+carried nine hosts under `github.io`, four under `backblazeb2.com`, and more under
+`trycloudflare.com`, `edgeone.dev`, `bolt.host` and `webflow.io`. **Not one of
+those platforms was on the list.** Eighteen of 281 entries were two labels, so the
+source does report apexes.
+
+**Stage it surfaced at.** 0, from a filed row.
+
+**Stage that owned it.** 2. The guard answered "is this host one of the ones we
+thought of" when the question is "is this host a suffix" — a membership test
+standing in for a property. A list of names cannot keep up with a class, and the
+class here is defined by somebody else's registry.
+
+**Fix, by grade.** Structural: `isPublicSuffix`, over the same table the lookalike
+checks already used — and the table became a JSON file, because it has two readers
+and one of them is plain Node that cannot import TypeScript. Two copies of a list
+agree with each other and with nothing else; this is the fourth time that shape
+has appeared this session, after the wipe confirmation, the severity order and the
+overlay tokens. The hand-written list keeps the job it is actually good for: real
+sites and shorteners that are not suffixes.
+
+**What stays a curated subset, and why the trade is the other way round.** The
+private section is not the whole Public Suffix List. In the lookalike checks a
+missing suffix loses a finding; here a missing suffix **blocks a platform**. So the
+list carries every platform the source has been observed to emit hosts under, the
+direction of the risk is written down, and vendoring the real list stays B-66.
 
 ### 2026-08-20 — a gate at the source's cycle would have been red on every commit
 

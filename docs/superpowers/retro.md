@@ -112,6 +112,12 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (восьмой)** — B-38; стадии 0–10. Обещание ADR-0001 «страница не
+  может скрыть предупреждение» стало проверенным вместо выведенного: измерено 6
+  работающих атак из 20, найдено ещё три вектора, которых в строке не было, и все
+  закрыты. 1833 юнит-теста в 117 файлах, `e2e/hostile-page.spec.ts` — 19 проверок,
+  четыре планта. Один вектор остался открытым и заведён (B-68). Постоянных
+  инструкций десять, снятий нет. Вердикт REFINE.
 - **2026-08-20 (седьмой)** — B-37; стадии 0–10. Инвентарь расширений разделён на
   чтение и решение: читать больше не значит писать, поэтому счётчик области и
   экран говорят одно и то же, а отсутствие host-прав в снимке перестало читаться
@@ -235,6 +241,66 @@ happens before adding.
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-20 — the promise was derived from the cascade, and the cascade says the opposite
+
+**Symptom.** ADR-0001 says the page can neither read, modify nor hide the
+in-page warning, and named `attachShadow({ mode: 'closed' })` as the reason. Two
+of the three held. Measured in Chromium, twenty hostile declarations against the
+host element, **six of them hid the warning completely** — including
+`okolos-banner { display: none }`, which needs no importance and no cleverness and
+removes all three surfaces at once.
+
+**Stage it surfaced at.** 0, from a row an audit had filed by reading the cascade
+rather than running it. What the row named was `display`, `visibility` and the
+inheritance of `visibility` into the shadow. What running it found was those plus
+`opacity`, plus two that work by a different mechanism entirely, plus three
+vectors that are not one declaration on the host at all.
+
+**Stage that owned it.** 1. `:host { all: initial }` is a real reset and it reads
+like a wall; per CSS Scoping, when two declarations come from different tree
+contexts the **outer** tree wins for normal declarations. The ADR asserted the
+consequence of a rule it had half of. Nothing in the repository tested the half it
+was missing, because the claim was believed.
+
+**Root cause.** A security property stated as an inference from a specification,
+with no measurement anywhere. The same specification sentence that broke it also
+fixes it — for *important* declarations the inner tree wins — so the fix is one
+word repeated, and it could have been found the first time by reading to the end
+of the paragraph or by opening a browser once.
+
+**What the measurement found that reading would not.** Two of the six worked
+without hiding anything: `transform` and `filter` on the host make it a
+**containing block for fixed descendants**, and the panel inside is
+`position: fixed`. That is why the forced-back list includes `perspective`,
+`contain`, `will-change`, `backdrop-filter` and `container-type` — none of which
+hides an element, all of which let the page move one it does not own. No amount of
+staring at `all: initial` produces that list.
+
+**And three vectors nobody had filed.** The design tokens were declared normally,
+so `--ok-colour-text: transparent` left a panel of the right size holding two
+hundred and twenty-eight characters nobody could read. `--ok-size-popup` was not
+declared at all — four of five token groups were written out by hand beside the
+`GROUPS` array that lists all five, and an undeclared custom property is one the
+page supplies. And three lines of script registering `okolos-banner` as a custom
+element whose constructor attaches its own shadow root made the extension's
+`attachShadow` throw, which deleted every surface the product has.
+
+**Fix, by grade.** Structural: `OVERLAY_ARMOUR`, one constant in the module all
+three surfaces already share, forcing back every property that hides or contains;
+tokens derived from `GROUPS` rather than listed beside it; `createOverlayHost`
+trying the canonical element name and falling back to one carrying eight hex
+characters from the CSPRNG, since a page cannot pre-register a name it cannot
+predict. Behavioural where a fight cannot be won: deleting the host node with
+script still works, and that is B-68 with the reason it needs a bounded policy
+rather than a patch.
+
+**The check that catches it next time.** `e2e/hostile-page.spec.ts`, in a browser,
+with a readability predicate that is deliberately not `isVisible()` — which knows
+about `display` and `visibility` and nothing about a panel scaled to nothing,
+carried off screen, clipped away or printed in transparent ink. Four of the
+eighteen attacks pass `isVisible()` and hide the warning entirely. A test built on
+the convenient assertion would have gone green against four live holes.
 
 ### 2026-08-20 — one function read and wrote, and three callers made that a bug
 

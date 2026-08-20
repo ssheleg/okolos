@@ -116,3 +116,43 @@ describe('the wipe names everything the wipe clears', () => {
     }
   })
 })
+
+/**
+ * A retention window that nothing enforces is a promise, not a window.
+ *
+ * `RETENTION_DAYS` is a published table: the privacy page reads from the same numbers, and
+ * a gate above already requires every store to have a line there. What nothing checked is
+ * the other half — that each window has code sweeping to it. `pruneExpired` is written by
+ * hand, one block per case, so a key added to the table and forgotten in the sweep would be
+ * a number a person reads and a product that keeps the data anyway.
+ *
+ * Measured 2026-08-20: all four keys are enforced, and five of the nine stores are swept by
+ * nothing — each of those five for a reason the privacy page states (a blocklist and a model
+ * cache replaced wholesale, one snapshot per extension overwritten on each review, the
+ * user's own exceptions which a window would silently revoke, and the password-reuse index,
+ * where ageing a row would understate reuse — the direction this product refuses). So the
+ * check is on the table, not on the store list: a store with no window is a decision that
+ * the privacy-page gate already reads, while a window with no sweep is nobody's decision.
+ */
+describe('every retention window has something enforcing it', () => {
+  it('reads the table and the sweep, and finds both', () => {
+    const schema = readFileSync(path.join(root, 'packages/storage/src/schema.ts'), 'utf8')
+    const sweep = readFileSync(path.join(root, 'packages/storage/src/retention.ts'), 'utf8')
+    expect(schema).toContain('RETENTION_DAYS')
+    expect(sweep).toContain('RETENTION_DAYS')
+  })
+
+  it('sweeps to every window the table declares', () => {
+    const schema = readFileSync(path.join(root, 'packages/storage/src/schema.ts'), 'utf8')
+    const sweep = readFileSync(path.join(root, 'packages/storage/src/retention.ts'), 'utf8')
+    const table = /export const RETENTION_DAYS = \{([\s\S]*?)\n\} as const/.exec(schema)?.[1]
+    expect(table, 'schema.ts no longer declares RETENTION_DAYS as one block').toBeDefined()
+
+    const windows = [...(table ?? '').matchAll(/^\s*([A-Za-z_]+):\s*\d+/gm)].map((m) => m[1])
+    expect(windows.length, 'no windows found — the extraction broke').toBeGreaterThan(2)
+
+    const unenforced = windows.filter((key) => !sweep.includes(`RETENTION_DAYS.${key}`))
+    expect(unenforced, 'these windows are published and swept by nothing').toEqual([])
+  })
+})
+

@@ -112,6 +112,13 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (одиннадцатый)** — B-43; стадии 0–10. Три миграции получили тесты,
+  которых у них не было; профиль из будущего распознан по имени и назван
+  пользователю одной панелью вместо шести ошибок; путь восстановления не зависит
+  от того, что сломалось. Предел найден написанием тестов: схему нельзя починить
+  на той же версии, поэтому форма проверяется после открытия. 1871 юнит-тест в 118
+  файлах, пять плантов легли. SCN-032, SCR-20. Постоянных инструкций десять,
+  снятий нет. Вердикт REFINE.
 - **2026-08-20 (десятый)** — B-42; стадии 0–10. Стирание и выгрузка перестали
   терять отказ, и `e2e/scn-023` — гейт, который REQ-32 называл с 4 августа, —
   написан. По дороге: дефект в собственной правке, найденный собственным тестом;
@@ -254,6 +261,53 @@ happens before adding.
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-20 — the test that looked like an upgrade test opened the same version twice
+
+**Symptom.** `db.test.ts` had a block called "upgrading an installed profile"
+whose body opened the database, wrote a finding, closed it, and opened it again —
+at the same version. `upgrade` never ran the second time, so what it asserted was
+that a fresh install has the stores a fresh install has. **Three migrations were
+covered by nothing**, and the schema had been through four versions.
+
+**Stage it surfaced at.** 0, from a filed row that had read the test.
+
+**Stage that owned it.** 6. The test was written when there was one version to
+upgrade from and it was true of nothing even then; it survived three schema
+changes because its name described what a reader wanted it to be.
+
+**Root cause.** Opening the same database twice is what an upgrade *looks* like
+from the calling side — close, reopen, and the new stores are there. What makes it
+an upgrade is a profile the current build did not make, and producing one takes
+raw `indexedDB` and about twenty lines. The shortcut is available, reads correctly,
+and asserts nothing.
+
+**Fix, by grade.** Structural where the migration logic was concerned: the version
+ladder is gone, replaced by a table of stores and indexes and a function that
+creates what is absent. The ladder's fall-through branch threw `ConstraintError`
+the moment any store already existed, which aborted the whole transaction and left
+the product with no database — reachable from a half-finished upgrade, and now
+unreachable, because "create what is missing" describes an install and an upgrade
+with one sentence.
+
+**What writing the tests found that reading the code would not.** A profile
+**already at the current version** cannot be repaired. IndexedDB changes a schema
+only inside a version-change transaction, so a store or an index a half-finished
+upgrade left out simply stays missing — `upgrade` does not run and nothing may
+create anything. My own test asserted the index would be added and it was not.
+`reuse` without `by-tag` answers "where else was this password used" with nothing,
+quietly, forever. So the shape is verified *after* opening and the gap is named by
+store and index, because wrong is better than silent and the remedy is real.
+
+**And the failure nobody had named.** `openDB` was called with no `catch`, no
+`blocked`, no `blocking`, no `terminated`. A profile from a newer build answers
+every call with `VersionError`, which propagated into all six sections that read
+the store, each rendering the browser's sentence about requested and existing
+versions — in a page otherwise empty, with no way out, because `wipeAll` needs the
+connection that is missing. Recognised by `name` rather than by message, since the
+message is a browser's wording and this product ships on two. One panel, two
+sentences for two different remedies, and `resetStorage` that does not depend on
+the thing that failed.
 
 ### 2026-08-20 — the requirement named its gate, and the gate was a filename
 

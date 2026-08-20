@@ -27,6 +27,12 @@ export default tseslint.config(
   {
     ignores: [
       '**/dist/**',
+      // The extension's `tsc` emit. It used to land in `dist/` and be ignored by
+      // that entry; moving it out (B-63) put 391 lint errors into the tree, because
+      // compiler output is not source and was never meant to be linted. The pre-push
+      // hook caught it — after a `pnpm lint` that had been green against a tree
+      // where this directory did not exist yet.
+      '**/.tsc/**',
       '**/node_modules/**',
       '**/.wrangler/**',
       '**/coverage/**',

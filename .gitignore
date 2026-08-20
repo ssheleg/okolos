@@ -43,3 +43,4 @@ keys/
 .vscode/*
 !.vscode/extensions.json
 apps/extension/dist/
+apps/extension/.tsc/

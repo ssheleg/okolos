@@ -6,7 +6,7 @@
   "license": "AGPL-3.0-only",
   "description": "The extension itself: collectors, background wiring, surfaces.",
   "scripts": {
-    "build": "echo 'build lands with T10'"
+    "build": "node ../../tools/build.mjs"
   },
   "dependencies": {
     "@okolos/contracts": "workspace:*",

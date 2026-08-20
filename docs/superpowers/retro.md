@@ -112,6 +112,14 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (пятидесятый)** — B-49; стадии 0–10. `pnpm bench` выходил с кодом 1 неделями
+  при четырёх REQ, называвших бенч критерием, — и на первом же прогоне после написания нашёл
+  четырёхкратную несоразмерность: сборка правил с пятьюдесятью исключениями стоила дороже
+  всей сборки, потому что множество исключений разворачивалось на каждое из 5000 правил.
+  20 мс → 5.4 мс. Критерии переписаны на то, что меряется; A-4 получил один статус вместо
+  двух противоречащих. Бенч сообщает, а не гейтит — потолок по настенным часам в CI это
+  флейк. 2295 юнит-тестов в 142 файлах. Три планта, легли все. Постоянных инструкций десять,
+  снятий нет. Вердикт REFINE.
 - **2026-08-20 (сорок девятый)** — B-56; стадии 0–10. Extension Guard: 3 из 13 → 7 из 13.
   Три отметки не стояли при работающем коде, потому что строки описывали **невозможный**
   способ получения — «разбор CRX», которого браузер не даёт и не даст. Построены два
@@ -2168,6 +2176,66 @@ description.
   keeping. But a row closed with its verification outstanding is a row closed early, and
   the honest form is the one now in the board: closed on the second attempt, with the
   first attempt's failure written into it rather than tidied away.
+
+### 2026-08-20 — a command that always fails is a command nobody runs
+
+**Symptom.** `pnpm bench` printed vitest's "no benchmark files found" and exited 1. Four
+requirements named a benchmark as their acceptance criterion, three of them marked DONE.
+The tree contained no `*.bench.*` file at all.
+
+**Stage it surfaced at.** 0, running the script the row named.
+
+**Stage that owned it.** 7 of whichever run added the script. A command wired into
+`package.json` and the runbook, failing from the day it was added, is worse than an absent
+one: an absent command prompts a question, and a failing one trains everybody to skip it —
+including the person who later wonders whether the budgets still hold.
+
+**Root cause.** The script was written as an intention. Nothing connected "this command
+exists" to "this command has something to run", and the four requirements that cited it
+were satisfied by other measurements nobody re-read.
+
+**Fix, by grade.** *Structural:* two benchmark files over the paths the numbers were about
+— the first stage over a page, and rule building over a feed. *Structural:* the criteria
+now name the tool that holds each budget, so a requirement cannot cite a measurement that
+does not exist. *Judgement:* they report and do not gate. A wall-clock ceiling in CI is the
+flake this project keeps out of the gate chain everywhere else, and the number a person
+experiences is held in a browser by `e2e/budget.spec.ts`.
+
+**What it found immediately.** Building rules with fifty exceptions cost 20 ms against
+4.9 ms with none — four times the whole build, because the excused set was spread into an
+array, filtered and sorted once per kept rule, five thousand times. It is an index built
+once now: 5.4 ms. That path runs on every accepted feed update and every time a person
+marks a site legitimate.
+
+**The check that catches it next time.** A command in `package.json` that cannot succeed is
+a broken gate wearing a script's clothes. The first run of any new benchmark is worth
+reading rather than filing — this one paid for itself in one afternoon.
+
+### 2026-08-20 — two documents disagreed about one fact for two weeks
+
+**Symptom.** REQ-03 and REQ-10 carried "FP <1% on the top 1000" and "render-diff over the
+top 1000" as satisfied acceptance criteria. `docs/ux/foundation.md` carried the same claim
+as A-4: an untested assumption, high risk, with the test written out and never run.
+
+**Stage it surfaced at.** 0, following B-49's own pointer to both files.
+
+**Stage that owned it.** 9 of the run that marked those requirements DONE. Each criterion
+was a compound — a measurable clause and an unmeasurable one — and closing the row closed
+both. The assumption table was written by a different pass and never reconciled.
+
+**Root cause.** A criterion with two clauses has one status, and the status follows the
+clause you can check. Nothing forced the other clause to say the same thing in the other
+document, so the optimistic reading survived in the place people plan from.
+
+**Fix, by grade.** *Structural:* the unmeasurable clause is removed from both requirements
+and named where it belongs — an assumption that needs a network and a browser over a
+thousand live sites, which no gate here can do. Both rows now say what is measured and what
+is not. *Process:* a criterion that cannot be checked by anything in this repository is an
+assumption, and it goes in the assumption table rather than in a row somebody can tick.
+
+**The check that catches it next time.** When a requirement is marked done, each clause
+gets its own evidence. A clause with no evidence is not a smaller done — it is a different
+document's problem, and it has to be carried there.
 
 ### 2026-08-20 — the row described a mechanism that cannot exist, so it stayed empty
 

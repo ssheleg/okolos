@@ -95,14 +95,24 @@ const ROOTS = ['apps/extension/src', 'packages']
  * stricter — it is broken.
  */
 /**
- * Sources this sweep reads: `.ts`, not a test.
+ * Sources this sweep reads: `.ts` that ships. Not a test, not a benchmark.
  *
  * The walk is `tree.mjs`'s — twelve gates and four tools each wrote their own, and one
  * of them read a directory's *entries* as if they were its directories (B-58). The
- * test-file filter stays here, because it is this sweep's rule.
+ * filter stays here, because which files ship is this sweep's rule.
+ *
+ * `.bench.ts` joined `.test.ts` on 2026-08-20, when the first benchmarks were written
+ * and this gate refused a push over their fixtures — a page of "ordinary text nobody is
+ * trying to hide" and a `describe` label (B-49). Both kinds are found by a runner,
+ * by name, and nothing in either reaches a person. The reachability gate needed the same
+ * sentence on the same afternoon, which is the tell that "a file a runner loads" is a
+ * category this repository has, and each gate had been spelling it out one suffix at a
+ * time.
  */
 function walk(dir) {
-  return filesUnder(dir, '.ts').filter((file) => !file.endsWith('.test.ts'))
+  return filesUnder(dir, '.ts').filter(
+    (file) => !file.endsWith('.test.ts') && !file.endsWith('.bench.ts'),
+  )
 }
 
 /** A reason long enough to be one. `i18n-exempt: no` explains nothing. */

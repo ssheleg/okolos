@@ -75,10 +75,11 @@ export function buildRules(
   }
 
   const kept = wanted.slice(0, RULE_LIMIT)
+  const below = indexTrusted(excused)
 
   return {
     rules: kept.map((entry, index) => {
-      const excusedBelow = trustedUnder(entry, excused)
+      const excusedBelow = trustedUnder(entry, below)
       return {
         id: index + 1,
         priority: 1,
@@ -98,6 +99,37 @@ export function buildRules(
 }
 
 /**
+ * Every excused host, grouped by the listings it sits under.
+ *
+ * Built once per rule set instead of scanned once per rule. The scan spread the whole
+ * excused set into an array, filtered it and sorted the result — for each of up to 5000
+ * kept entries. `pnpm bench` measured what that costs the moment it existed: 5000 entries
+ * with **50** exceptions took 20 ms against 4.9 ms with none, four times the whole build
+ * for a list of fifty (B-49). This path runs on every accepted feed update and every time
+ * a person marks a site legitimate.
+ *
+ * The grouping reproduces the old predicate exactly. `host.endsWith('.' + entry)` is true
+ * for precisely the proper parent suffixes of `host`, so each excused host is filed under
+ * each of them: `www.shop.test` under `shop.test` and under `test`.
+ */
+function indexTrusted(excused: ReadonlySet<string>): ReadonlyMap<string, string[]> {
+  const below = new Map<string, string[]>()
+  for (const host of excused) {
+    let cut = host.indexOf('.')
+    while (cut !== -1) {
+      const parent = host.slice(cut + 1)
+      const group = below.get(parent)
+      if (group) group.push(host)
+      else below.set(parent, [host])
+      cut = host.indexOf('.', cut + 1)
+    }
+  }
+  // Sorted once per group rather than once per rule, and the order is the same.
+  for (const group of below.values()) group.sort()
+  return below
+}
+
+/**
  * Trusted hosts this listing would otherwise stop.
  *
  * Only downwards. A listing on `shop.test` reaches `www.shop.test`, so an
@@ -105,7 +137,7 @@ export function buildRules(
  * trusting `shop.test` must not excuse a listing on `evil.shop.test`, because
  * subdomain takeover is exactly how that would be abused.
  */
-function trustedUnder(entry: string, excused: ReadonlySet<string>): string[] {
+function trustedUnder(entry: string, below: ReadonlyMap<string, string[]>): string[] {
   if (entry.includes('/')) return []
-  return [...excused].filter((host) => host.endsWith(`.${entry}`)).sort()
+  return below.get(entry) ?? []
 }

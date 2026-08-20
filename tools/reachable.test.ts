@@ -54,7 +54,18 @@ function sourceFiles(): string[] {
   // The walk is `filesUnder`'s; "not a test, not a declaration" is this gate's rule.
   return ['packages', 'apps']
     .flatMap((dir) => filesUnder(path.join(root, dir), '.ts'))
-    .filter((file) => !file.endsWith('.test.ts') && !file.endsWith('.d.ts'))
+    /**
+     * A file a runner loads is not a file something imports.
+     *
+     * `.test.ts` was here from the start; `.bench.ts` joined it on 2026-08-20, when the
+     * first benchmarks were written and this gate reported both as orphans (B-49). Same
+     * class, same reason: vitest finds them by name, so an import of them cannot exist
+     * and their absence from the graph is the design rather than a hole in it.
+     */
+    .filter(
+      (file) =>
+        !file.endsWith('.test.ts') && !file.endsWith('.bench.ts') && !file.endsWith('.d.ts'),
+    )
 }
 
 // ---------------------------------------------------------------------------

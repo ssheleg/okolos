@@ -308,7 +308,7 @@ its owner** ([evidence/06](../evidence/06-competitors.md) §6.3).
 | A-1 | P-01 will accept broad host permissions from a security extension because the source is open | desirability | high — it is our install funnel | Store listing copy test; ask 5 target users to read the permission screen aloud |
 | A-2 | Users read and value the self-audit panel rather than merely liking that it exists | usability | medium — it is our main differentiator | Instrument nothing; ask 5 users to answer "what did it send this week?" using only the UI |
 | A-3 | Hidden-instruction findings on ordinary browsing are frequent enough to feel useful, not rare enough to feel decorative | viability | high | Measure finding rate on the personal browsing of 3 testers over 2 weeks |
-| A-4 | Automatic neutralisation never visibly breaks a page | feasibility | high | Run the sanitiser over the top-1000 domains, diff rendered output |
+| A-4 | Automatic neutralisation never visibly breaks a page | feasibility | high | Run the sanitiser over the top-1000 domains, diff rendered output. **Untested, and now says so in both places (B-49):** REQ-03 and REQ-10 carried this as a closed acceptance criterion while this table carried it as an open assumption — two documents disagreeing about one fact. It needs network and a browser over a thousand live sites, which no gate in this repository can do; what *is* measured is reversibility (SCN-005) and the three refusals a page can force |
 | A-5 | The carer segment (JTBD-07) exists at all | desirability | low — gated behind ST-020 `could` | Kill criteria on ST-020 |
 
 ## Monetization

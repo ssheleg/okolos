@@ -158,3 +158,57 @@ describe('an exception must cover what the block covers', () => {
     expect(set.excluded).toBe(1)
   })
 })
+
+describe('the trusted-below index answers exactly what the scan did', () => {
+  /**
+   * The optimisation `pnpm bench` paid for (B-49): `trustedUnder` spread the whole
+   * excused set and filtered it once per kept rule, which cost four times the whole
+   * build for a list of fifty exceptions. It is a map now, built once.
+   *
+   * These assert the *predicate*, not the speed: only downwards, every level, and never
+   * upwards — trusting `shop.test` must not excuse a listing on `evil.shop.test`, which
+   * is how subdomain takeover would be laundered through the exception list.
+   */
+  const feed = (entries: readonly string[]): FeedSnapshot => ({
+    name: 'phishing',
+    version: 1,
+    updatedAt: '2026-08-20T00:00:00.000Z',
+    entries,
+  })
+
+  const excusedBelow = (listing: string, exceptions: readonly string[]): readonly string[] =>
+    buildRules(feed([listing]), exceptions, '/blocked').rules[0]?.condition.excludedRequestDomains ?? []
+
+  it('reaches a host one level under the listing', () => {
+    expect(excusedBelow('shop.test', ['www.shop.test'])).toEqual(['www.shop.test'])
+  })
+
+  it('reaches one several levels under it', () => {
+    expect(excusedBelow('test', ['a.b.c.test'])).toEqual(['a.b.c.test'])
+    expect(excusedBelow('c.test', ['a.b.c.test'])).toEqual(['a.b.c.test'])
+  })
+
+  it('never reaches upwards', () => {
+    // The whole reason this is "below" and not "related to".
+    expect(excusedBelow('evil.shop.test', ['shop.test'])).toEqual([])
+  })
+
+  it('does not treat the listing itself as below itself', () => {
+    // `endsWith('.' + entry)` was false for the entry itself, and the map must agree:
+    // an exception *on* the listing excludes it entirely, higher up in `buildRules`.
+    expect(excusedBelow('shop.test', ['other.test'])).toEqual([])
+  })
+
+  it('returns every match, sorted, as the scan did', () => {
+    expect(excusedBelow('shop.test', ['z.shop.test', 'a.shop.test', 'm.shop.test'])).toEqual([
+      'a.shop.test',
+      'm.shop.test',
+      'z.shop.test',
+    ])
+  })
+
+  it('says nothing for a listing that carries a path', () => {
+    // A path listing is not a host, so nothing sits under it.
+    expect(excusedBelow('shop.test/deals', ['www.shop.test'])).toEqual([])
+  })
+})

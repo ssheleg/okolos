@@ -1059,6 +1059,14 @@
       }
     }
   },
+  "noteScanFailed": {
+    "message": "The page check did not finish: $CAUSE$. That does not mean the page is clean — it means it was not checked.",
+    "placeholders": {
+      "cause": {
+        "content": "$1"
+      }
+    }
+  },
   "noteSecondWarning": {
     "message": "A second warning ($KIND$, $SEVERITY$) was not shown on the page: the panel already holds a more serious finding.",
     "placeholders": {

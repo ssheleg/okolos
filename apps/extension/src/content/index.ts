@@ -31,6 +31,7 @@ import { showDownloadVerdict } from './download.js'
 import { watchForTraps } from './traps.js'
 import { Sanitiser } from './sanitize.js'
 import { createSurfaceSlot } from './surface-slot.js'
+import { failOpen } from './fail-open.js'
 
 /**
  * The content script: collect, ask the background for a verdict, warn.
@@ -463,14 +464,23 @@ function rescanSoon(): void {
   pacer.request()
 }
 
+/** The project's fail-open wrapper, wired to this frame's console and journal. */
 async function safely(work: () => Promise<void>): Promise<void> {
-  try {
-    await work()
-  } catch (cause) {
-    // Fail open, always: a detector fault must never break the page a person
-    // is trying to use.
-    console.warn('okolos: scan failed', cause)
-  }
+  await failOpen(work, {
+    warn: (cause) => {
+      console.warn('okolos: scan failed', cause)
+    },
+    note: async (cause) => {
+      /**
+       * The journal, not the badge: a worker restart is ordinary, and an icon that
+       * cries wolf on every one of them is how a badge stops meaning anything.
+       */
+      await platform.runtime.send('page/note', {
+        kind: 'scan-failed',
+        explain: t('noteScanFailed', String(cause)),
+      })
+    },
+  })
 }
 
 /**

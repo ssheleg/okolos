@@ -168,6 +168,10 @@ export interface RpcMap {
    * one case where the product found something and nobody was told — which is the
    * whole defect the retry exists to fix, arriving by a different road.
    *
+   * `scan-failed` is the one that covers the **main** path: a page whose scan threw
+   * or was refused produced no banner and no record, so it was indistinguishable from
+   * a page with nothing hidden on it. Fail open is right; fail silent is not.
+   *
    * `surface-removed` is the give-up of a page-level warning the page kept deleting
    * from the document. It is the one note that also **marks the extension's icon**,
    * because at that point every surface inside the page has been lost and the icon is
@@ -175,7 +179,13 @@ export interface RpcMap {
    */
   'page/note': {
     req: {
-      kind: 'restore' | 'frame-unreported' | 'gate-unread' | 'password-unchecked' | 'surface-removed'
+      kind:
+        | 'restore'
+        | 'frame-unreported'
+        | 'gate-unread'
+        | 'password-unchecked'
+        | 'surface-removed'
+        | 'scan-failed'
       explain: string
     }
     res: { ok: true }

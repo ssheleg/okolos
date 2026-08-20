@@ -56,6 +56,16 @@ async function withDeadline<T>(work: Promise<T>, ms: number, message: string): P
   }
 }
 
+/** The envelope the receiver sends instead of a result when it cannot produce one. */
+function isErrorAnswer(answer: unknown): answer is { error: string; detail?: unknown } {
+  return (
+    typeof answer === 'object' &&
+    answer !== null &&
+    'error' in answer &&
+    typeof (answer as { error: unknown }).error === 'string'
+  )
+}
+
 export function createPlatform(kind: Platform['kind'], api: WebExtensionApi): Platform {
   // Resolved lazily and cached: `getSelf` is async, and every caller of
   // `selfId` is on a path that must not await for it.
@@ -101,13 +111,39 @@ export function createPlatform(kind: Platform['kind'], api: WebExtensionApi): Pl
         // caller above treats an unsettled call as work still in progress —
         // which is a spinner with no end and no way out. The same reasoning
         // gave leak sources a deadline; the message itself needs one too.
-        return (await withDeadline(
+        const answer = await withDeadline(
           api.runtime.sendMessage(envelope),
           RPC_TIMEOUT_MS,
           `the background service did not answer "${type}" within ${Math.round(
             RPC_TIMEOUT_MS / 1000,
           )} seconds`,
-        )) as RpcMap[T]['res']
+        )
+
+        /**
+         * An error answer is a failure, not a result — and it used to be handed back
+         * as one.
+         *
+         * The receiver answers `{ v: 1, error: 'failed', detail }` when a handler
+         * throws and `{ v: 1, error: 'unsupported' }` for a type it does not know.
+         * Both were returned to the caller as if they were the response, and the
+         * caller read the field it wanted off them: `response?.verdicts ?? []` in the
+         * page scan turned a **failed scan into a clean page**. Nothing was logged,
+         * because nothing threw. Found by reading a CI trace whose console held eight
+         * preload warnings and not one line from this product (B-74).
+         *
+         * Rejecting here means every caller's existing `catch` covers it, which is
+         * where the decision belongs: the scan journals a give-up, a notification
+         * shrugs, and neither has to know the envelope's shape.
+         */
+        if (isErrorAnswer(answer)) {
+          throw new Error(
+            `the background service refused "${type}": ${answer.error}` +
+              (typeof answer.detail === 'string' && answer.detail !== ''
+                ? ` — ${answer.detail}`
+                : ''),
+          )
+        }
+        return answer as RpcMap[T]['res']
       },
       onInstalled(handler: () => void): void {
         api.runtime.onInstalled.addListener((details) => {

@@ -121,7 +121,13 @@ platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>, from: RpcSe
       // a fact about this page and not about the browser.
       return notePageEvent(
         message.payload as {
-          kind: 'restore' | 'frame-unreported' | 'gate-unread' | 'password-unchecked' | 'surface-removed'
+          kind:
+            | 'restore'
+            | 'frame-unreported'
+            | 'gate-unread'
+            | 'password-unchecked'
+            | 'surface-removed'
+            | 'scan-failed'
           explain: string
         },
         from,
@@ -388,7 +394,13 @@ async function allowBlocked(payload: { url: string }): Promise<{ url: string } |
  */
 async function notePageEvent(
   payload: {
-    kind: 'restore' | 'frame-unreported' | 'gate-unread' | 'password-unchecked' | 'surface-removed'
+    kind:
+      | 'restore'
+      | 'frame-unreported'
+      | 'gate-unread'
+      | 'password-unchecked'
+      | 'surface-removed'
+      | 'scan-failed'
     explain: string
   },
   from?: { tabId?: number },

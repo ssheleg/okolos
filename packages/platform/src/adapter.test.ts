@@ -593,3 +593,74 @@ describe('marking the extension\'s own icon', () => {
     await expect(platform.tabs.mark(9, '!', 'x')).resolves.toBe(false)
   })
 })
+
+describe('an error answer is a failure, not a result', () => {
+  /**
+   * The receiver answers `{ v: 1, error: 'failed', detail }` when a handler throws and
+   * `{ v: 1, error: 'unsupported' }` for a type it does not know. Both were handed back
+   * as if they were the response, and every caller then read the field it wanted off
+   * them — so `response?.verdicts ?? []` in the page scan turned a **failed scan into
+   * a clean page**, with nothing logged because nothing threw.
+   *
+   * Found by reading a CI trace: eight console entries, all extension-chunk preload
+   * warnings, and not one line from this product (B-74).
+   */
+  it('rejects when the receiver says it failed, and says what it said', async () => {
+    const platform = createPlatform(
+      'chrome',
+      fakeApi({
+        runtime: {
+          sendMessage: vi.fn(async () => ({ v: 1, error: 'failed', detail: 'openDb: closing' })),
+        },
+      }),
+    )
+    await expect(platform.runtime.send('page/candidates', {} as never)).rejects.toThrow(
+      /refused "page\/candidates".*failed.*openDb/,
+    )
+  })
+
+  it('rejects an unsupported type rather than answering nothing found', async () => {
+    // A version skew is the case this shape exists for, and the caller must be able to
+    // tell "this build does not know that message" from "there is nothing to report".
+    const platform = createPlatform(
+      'chrome',
+      fakeApi({
+        runtime: { sendMessage: vi.fn(async () => ({ v: 1, error: 'unsupported' })) },
+      }),
+    )
+    await expect(platform.runtime.send('page/candidates', {} as never)).rejects.toThrow(
+      /unsupported/,
+    )
+  })
+
+  it('still returns an ordinary answer, including an empty one', async () => {
+    /**
+     * The other side of the same guard. An empty result is a real answer — most pages
+     * have nothing hidden on them — and a check that could not tell an empty result
+     * from an error would have replaced one silent failure with a loud false one.
+     */
+    const platform = createPlatform(
+      'chrome',
+      fakeApi({
+        runtime: { sendMessage: vi.fn(async () => ({ verdicts: [] })) },
+      }),
+    )
+    await expect(platform.runtime.send('page/candidates', {} as never)).resolves.toEqual({
+      verdicts: [],
+    })
+  })
+
+  it('does not mistake a result that happens to carry an error field of its own', async () => {
+    // `error: string` is the envelope's shape. A payload whose own field is called
+    // `error` and is not a string must not be read as a refusal.
+    const platform = createPlatform(
+      'chrome',
+      fakeApi({
+        runtime: { sendMessage: vi.fn(async () => ({ verdicts: [], error: { code: 7 } })) },
+      }),
+    )
+    await expect(platform.runtime.send('page/candidates', {} as never)).resolves.toMatchObject({
+      verdicts: [],
+    })
+  })
+})

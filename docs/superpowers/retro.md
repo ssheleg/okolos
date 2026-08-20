@@ -112,6 +112,14 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (пятьдесят шестой)** — B-25; стадии 0–10, кроме одного шага, который по
+  решению проекта принадлежит владельцу машины. «Список стареет за часы» превращено в
+  измерение: живой фид 7.5 суток, из 253 сегодняшних хостов **250 в нём отсутствуют**,
+  пересечение — 3. Механизм проверен целиком, включая то, на чём launchd отваливается
+  молча (ключ из файла, а не из окружения; `env -i /bin/sh -lc` находит pnpm; первая
+  половина refresh прогнана в пустом окружении). Публикация в прод намеренно не
+  запускалась, артефакт после пробы возвращён. Постоянных инструкций десять, снятий нет.
+  Вердикт REFINE.
 - **2026-08-20 (пятьдесят пятый)** — B-20, B-21, B-22; стадии 0–10. Две строки оказались
   устаревшими и закрыты с доказательством, а не на слово: работа по B-20 сделана 13 августа
   (пять зелёных тестов в `scn-030.spec.ts`), B-21 поглощена B-72. B-22 закрыта первой веткой:
@@ -2218,6 +2226,38 @@ description.
   keeping. But a row closed with its verification outstanding is a row closed early, and
   the honest form is the one now in the board: closed on the second attempt, with the
   first attempt's failure written into it rather than tidied away.
+
+### 2026-08-20 — "ages in hours" was a phrase; the number is one percent
+
+**Symptom.** B-25 said a fresh phishing list ages in hours, which is the kind of sentence
+everyone nods at and nobody acts on. The live feed is seven and a half days old.
+
+**The measurement.** Fetched the live feed (v5, 248 hosts, 2026-08-13) and ran an ingest at
+the same moment (253 hosts). Of today's 253, **250 are absent from the live list**; 245 of
+the live list's 248 are no longer reported by any source. The overlap is three hosts —
+about one percent.
+
+**What that means for the product.** After a week the blocking feature is not "slightly
+stale". It blocks almost exclusively what has already moved on, and almost nothing that is
+live. A rule set of 248 entries that stops three of the current campaigns is a feature
+running empty while reporting itself as working.
+
+**Stage it surfaced at.** 0, measuring the row's own claim instead of restating it.
+
+**What I could do and did.** The mechanism was already one command — `pnpm feed:agent`,
+written for this row. What was missing was proof it would survive launchd, where things
+fail silently: the signing key is read from a file rather than an interactive environment,
+the Cloudflare credentials likewise, `env -i /bin/sh -lc 'pnpm --version'` answers 11.10.0,
+and the first half of the refresh ran to completion in that same bare environment.
+
+**What I did not do, deliberately.** The second half signs and publishes to production. I
+ran the ingest as a probe, it rewrote the tracked feed file, and I restored it — a probe
+that publishes is not a probe. And installing a launchd agent is a persistent change to
+someone's machine, which this project's own ADR-0010 note puts with the machine's owner.
+
+**The lesson.** A claim in a backlog row is a hypothesis with a date. Measuring it took one
+fetch and one ingest, and turned "we should get around to this" into a number that decides
+the priority by itself.
 
 ### 2026-08-20 — a gap recorded honestly is a gap that closes in an afternoon
 

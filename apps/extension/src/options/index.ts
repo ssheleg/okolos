@@ -8,29 +8,33 @@ import { toQueueItems } from '../popup/state.js'
 import {
   renderDataControls,
   renderExtensions,
-  renderQueue,
-  renderTrusted,
-  type ExtensionsState,
-  type TrustedDomain,
-  renderLeaks,
-  type LeaksState,
   renderJournal,
+  renderLeaks,
+  renderOverview,
+  renderQueue,
   renderRecovery,
   renderSelfAudit,
-  renderOverview,
+  renderStorageProblem,
+  renderTrusted,
   type AreaId,
   type AreaRow,
   type AttentionItem,
+  type ExtensionsState,
+  type LeaksState,
   type OverviewHandlers,
   type PanelState,
+  type TrustedDomain,
 } from '@okolos/ui'
 import {
   DATA_KIND_KEY,
+  DB_VERSION,
+  RETENTION_DAYS,
+  StorageUnavailable,
   exportAll,
   openDb,
-  RETENTION_DAYS,
-  wipeAll,
+  resetStorage,
   type JournalRecord,
+  wipeAll,
 } from '@okolos/storage'
 
 import { mapJournal } from '../popup/state.js'
@@ -677,6 +681,23 @@ function paint(route: Route): Promise<void> {
 async function renderRoute(route: Route): Promise<void> {
   if (!root) return
 
+  /**
+   * Before any area: can the local store be opened at all.
+   *
+   * Every section below reads it and each catches its own failure, so a profile
+   * written by a newer build used to render the browser's sentence about
+   * requested and existing versions six times over, in a page that was otherwise
+   * empty — and nothing said which of two different things had happened, or what
+   * to do about either. One panel, and the two things a person can actually do.
+   */
+  const problem = await storageProblem()
+  if (problem) {
+    keepingFocus(root, document, () => {
+      root.replaceChildren(problem)
+    })
+    return
+  }
+
   const body =
     route.view === 'overview' ? await overviewSection(route) : await areaSection(route)
 
@@ -852,6 +873,40 @@ async function download(): Promise<void> {
   link.download = 'okolos-export.json'
   link.click()
   URL.revokeObjectURL(url)
+}
+
+/**
+ * The storage panel, or `null` when there is nothing wrong.
+ *
+ * Only `StorageUnavailable` lands here. An ordinary read failure inside one
+ * section stays that section's problem: replacing the whole page because the
+ * journal could not be listed would hide seven working areas behind one.
+ */
+async function storageProblem(): Promise<HTMLElement | null> {
+  try {
+    await openDb()
+    return null
+  } catch (cause) {
+    if (!(cause instanceof StorageUnavailable)) return null
+    return renderStorageProblem(
+      document,
+      {
+        kind: cause.problem,
+        found: cause.found,
+        expected: DB_VERSION,
+        detail: String((cause.cause as Error | undefined)?.message ?? cause.message),
+      },
+      {
+        onRetry: () => void reload(),
+        onReset: () => {
+          void (async () => {
+            await resetStorage()
+            await reload()
+          })()
+        },
+      },
+    )
+  }
 }
 
 async function reload(): Promise<void> {

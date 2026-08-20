@@ -41,6 +41,7 @@ are specified once in [screens.md](screens.md).
 | SCN-029 | Acting inside an area keeps the place, the focus and the count | daily-use | P-01 | ST-015, FLW-17 | implemented | 2026-08-13 PASS |
 | SCN-030 | An unread count never renders as "nothing here" | daily-use | P-01 | ST-017, FLW-17 | implemented | 2026-08-13 PASS |
 | SCN-031 | A finding inside an embedded frame reaches the page that embeds it | ai-shield | P-01 | ST-001, FLW-02 | implemented | 2026-08-20 e2e |
+| SCN-032 | The local store was written by a newer build | recovery | P-01 | ST-019, FLW-14 | implemented | 2026-08-20 unit |
 
 ## Personas
 
@@ -615,6 +616,27 @@ See [foundation.md](foundation.md) → Personas.
 - **Errors & recovery:** playbook data missing -> system shows the broadest safe checklist and says that is what it is showing
 - **Status:** implemented
 - **Coverage:** packages/core-recovery/src/checklist.ts:buildChecklist, packages/ui/src/recovery/recovery.ts:renderRecovery, e2e/scn-025.spec.ts
+
+### SCN-032: The local store was written by a newer build
+- **Persona:** P-01
+- **Feature:** recovery
+- **Traces:** ST-019, FLW-14 (JTBD-05)
+- **Entry point:** any screen, on a profile the installed build cannot open
+- **Preconditions:** the profile holds a schema version this build does not know — an enterprise rollback, Chrome reverting an update, or a downgrade by hand
+- **Steps:**
+  1. User opens any area -> system says the local data cannot be opened, in one panel rather than in every panel
+  2. User reads why -> system names which of two things happened: the data was written by a newer version and is intact, or the store's shape is wrong and updating will not help
+  3. User chooses -> "Try again" for a store held by another window, or "Clear the local data" with what that destroys spelled out
+- **Expected result:** the user knows whether their data is recoverable and what to do, instead of reading a browser's sentence about requested and existing versions
+- **Alt paths:** the store is held by another copy of Okolos in the same profile -> the panel says so and trying again succeeds once that window closes
+- **UI elements:** SCR-20 — heading, the reason, the two version numbers, the underlying message verbatim, "Try again" (primary), "Clear the local data", and a note listing everything clearing destroys
+- **States covered:** error
+- **Errors & recovery:** **this scenario is the error path**, and it had none until 2026-08-20: `openDB` was called with no `catch`, so a `VersionError` propagated into each of the six sections that read the store, and each rendered the browser's own wording. Nothing in the repository recognised the error by name, nothing distinguished it from a damaged store, and there was no way back — `wipeAll` needs a connection, which is precisely what is missing. `resetStorage` deletes the store outright, so the recovery does not depend on the thing that failed
+- **Why refusing is right rather than a fallback:** the newer build may have added a store, an index or a field this one cannot describe, and writing into a schema we do not know is how a downgrade becomes data loss. The panel offers reinstalling that build first, because it is the remedy that keeps everything
+- **Known limit — a store already at the current version whose shape is wrong cannot be repaired.** A browser changes a schema only inside a version-change transaction, so a store or index a half-finished upgrade left out is simply missing: `upgrade` does not run and nothing may create anything. Measured while writing the migration tests. The shape is therefore **verified after opening** and the gap named, because `reuse` without its `by-tag` index answers "where else was this password used" with nothing, quietly and forever. The remedy is clearing, and the panel says so
+- **Telemetry:** none — no analytics events are emitted by this product
+- **Status:** implemented
+- **Coverage:** packages/storage/src/db.ts:openDb, packages/storage/src/db.ts:resetStorage, packages/ui/src/storage/storage-problem.ts:renderStorageProblem, packages/storage/src/db.test.ts (upgrades from versions 1, 2 and 3; a profile from version 9; a shape with a store and an index missing), packages/ui/src/storage/storage-problem.test.ts — unit only: a browser cannot be made to hold a future profile without writing one, which is what the unit tests do directly
 
 ## site-owner
 

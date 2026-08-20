@@ -1,4 +1,12 @@
-export { closeDb, openDb, type OkolosDatabase } from './db.js'
+export {
+  closeDb,
+  openDb,
+  resetStorage,
+  storedVersion,
+  StorageUnavailable,
+  type OkolosDatabase,
+  type StorageProblem,
+} from './db.js'
 export { EXPORT_NOTE, exportAll, wipeAll, type WipeResult } from './export.js'
 export {
   dueForSweep,

@@ -40,6 +40,7 @@ never updated, which is the same drift this file exists to catch.)
 | SCR-17 | Product landing page | none yet (gap) | - | built | apps/proxy/src/landing.test.ts |
 | SCR-18 | Privacy page | none yet (gap) | - | built | tools/privacy-page.mjs, tools/docs.test.ts |
 | SCR-19 | Lookalike comparison | FLW-05 | - | built | packages/ui/src/comparison/comparison.ts:mountComparison, e2e/scn-006.spec.ts, e2e/a11y-overlays.spec.ts |
+| SCR-20 | Local store unavailable | FLW-14 | - | built | packages/ui/src/storage/storage-problem.ts:renderStorageProblem |
 
 ## Design system
 
@@ -425,4 +426,21 @@ includes a redirect from `*.workers.dev`, not just a CNAME.
 - **Design system:** the shared overlay tokens, like the other three. It carries no palette of its own, and a test asserts there are no hex literals in its stylesheet — three surfaces once accumulated twenty-two hexes between them
 - **Coverage:** packages/ui/src/comparison/comparison.ts:mountComparison, packages/ui/src/comparison/comparison.test.ts, e2e/scn-006.spec.ts, e2e/a11y-overlays.spec.ts
 - **Scenarios:** SCN-006, SCN-024
+- **Status:** built
+
+### SCR-20: Local store unavailable
+- **Used by:** FLW-14 (in place of every area, when the store cannot be opened)
+- **Purpose:** say which of two different things happened, and offer the two things a person can do about it
+- **Elements:** heading; `[data-role=storage-why]` — one sentence per problem, and the sentences differ because the remedies do; `[data-role=storage-versions]` — the profile's version and this build's, absent rather than invented when the profile could not be read at all; `[data-role=storage-detail]` — the underlying message verbatim, last, because it is what a bug report needs and not what a user should read first; **primary action "Попробовать снова"**, "Очистить локальные данные", and `[data-role=storage-reset-note]` listing everything clearing destroys
+- **States:**
+  | State | Trigger | Figma frame | Behavior |
+  |-------|---------|-------------|----------|
+  | from a newer version | the profile's schema version is higher than this build's | - | says the data is intact and reinstalling the newer build opens it |
+  | shape incomplete | the store opened and lacks a store or an index | - | says updating will not fix it, because a browser changes a schema only on a version change |
+  | blocked | another copy of Okolos holds the store | - | says to close the other window; trying again then works |
+  | unknown | anything else | - | says the reason is below, and shows it |
+- **Replaces six errors with one panel.** Every section of the options page reads the store and catches its own failure, so a profile written by a newer build rendered the browser's sentence about requested and existing versions once per panel, in a page that was otherwise empty. The check runs before any area is built
+- **There is no confirmation behind "Clear the local data" — this panel is the confirmation.** The note carries what the wipe dialog's list carries, because a user agreeing to a word is not a user who agreed
+- **Coverage:** packages/ui/src/storage/storage-problem.ts:renderStorageProblem, packages/ui/src/storage/storage-problem.test.ts, apps/extension/src/options/index.ts:storageProblem
+- **Scenarios:** SCN-032
 - **Status:** built

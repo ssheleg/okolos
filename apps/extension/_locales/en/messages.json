@@ -1549,5 +1549,40 @@
         "content": "$1"
       }
     }
+  },
+  "storageHeading": {
+    "message": "The local data cannot be opened"
+  },
+  "storageNewerVersion": {
+    "message": "This data was written by a newer version of Okolos. Install that one again — the data is intact and will open. Or clear the local data and start over."
+  },
+  "storageShapeIncomplete": {
+    "message": "The store opened, and it is not the shape this version expects: some of the data cannot be read. Updating will not fix it — a browser changes a store’s shape only when its version changes."
+  },
+  "storageBlocked": {
+    "message": "The store is held by another copy of Okolos in this profile. Close the extension’s other windows and try again."
+  },
+  "storageUnknown": {
+    "message": "The store did not open. The reason is below — you will need it if you report this."
+  },
+  "storageVersions": {
+    "message": "The profile holds version $FOUND$; this build understands $EXPECTED$.",
+    "placeholders": {
+      "found": {
+        "content": "$1"
+      },
+      "expected": {
+        "content": "$2"
+      }
+    }
+  },
+  "storageRetry": {
+    "message": "Try again"
+  },
+  "storageReset": {
+    "message": "Clear the local data"
+  },
+  "storageResetNote": {
+    "message": "Clearing removes everything Okolos kept on this device: findings, the journal, the network audit, exceptions, settings, extension snapshots, the model, the feeds and the password-reuse index. It cannot be undone."
   }
 }

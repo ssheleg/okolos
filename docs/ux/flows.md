@@ -410,12 +410,14 @@ flowchart TD
   B_err -->|retry| B
 ```
 
+- **When the store cannot be opened at all**, every area is replaced by SCR-20: the reason, the two version numbers, and the two remedies. Recorded as SCN-032, and it is the flow's error path rather than a separate journey — owning your data includes being told when the product cannot reach it
 - **Screens traversed:**
   | Screen | States used here |
   |--------|------------------|
   | SCR-12 Settings | success, error |
   | SCR-16 Trusted domains | success, empty |
   | SCR-01 First-run check | success |
+  | SCR-20 Local store unavailable | error |
 
 ### FLW-15: Site owner checks and appeals a verdict
 - **Traces:** ST-016 (JTBD-08)

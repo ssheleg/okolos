@@ -72,3 +72,9 @@ export {
 } from './settings/data-controls.js'
 export { shadowMode } from './shadow.js'
 export { createOverlayHost, type OverlayHost } from './host.js'
+export {
+  renderStorageProblem,
+  type StorageProblemHandlers,
+  type StorageProblemKind,
+  type StorageProblemProps,
+} from './storage/storage-problem.js'

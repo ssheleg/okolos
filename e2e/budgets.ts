@@ -28,3 +28,19 @@
  * none.
  */
 export const SURFACE_MOUNT_MS = 20_000
+
+/**
+ * How long the `extensionId` fixture waits for the service worker to register.
+ *
+ * `waitForEvent('serviceworker')` had no budget of its own, so it inherited the
+ * 30 s per-test timeout — and when it ran out, Playwright reported *"Test timeout
+ * of 30000ms exceeded while setting up extensionId"* over
+ * `browserContext.waitForEvent: Target page, context or browser has been closed`.
+ * That reads as a broken fixture. It is not: it is a worker that had not booted
+ * yet. Observed 2026-08-20 on `scn-030.spec.ts` with a unit suite running on the
+ * same machine — the same spec passes alone in 563 ms.
+ *
+ * Below the test timeout on purpose, so the failure is this wait running out, with
+ * a sentence naming what did not happen, rather than a timeout naming nothing.
+ */
+export const WORKER_REGISTER_MS = 20_000

@@ -85,6 +85,55 @@ describe('the workflow runs what the project has', () => {
     }
   })
 
+  /**
+   * And the direction nobody was checking: a gate CI runs that the local chain does not.
+   *
+   * The two assertions above walk `pnpm gates` and demand that CI and the hook run each
+   * step. Walking only that way makes the local chain the ceiling — and it was not:
+   * `package:check` ran in CI and in neither of the other two, so `pnpm gates` returned
+   * green on a tree CI could still redden, which is the version of this defect that costs
+   * somebody an evening rather than a minute (measured 2026-08-21).
+   *
+   * The exceptions are named rather than pattern-matched, because "CI does this and you
+   * should not have to" is a decision. Both are the browser suites: minutes each, a real
+   * browser, and the local chain is meant to be the thing you run before every push.
+   */
+  const CI_ONLY: Readonly<Record<string, string>> = {
+    'test:e2e': 'minutes in a real browser — CI owns it, the local chain stays runnable',
+    'test:e2e:firefox': 'the same, and it needs geckodriver to be installed',
+    package: 'builds the archive; `package:check` validates its shape and that is in the chain',
+  }
+
+  it('runs no gate the local chain has never heard of', () => {
+    const runs = commandsIn(workflow)
+    const localChain = gateSteps()
+    const missing: string[] = []
+
+    for (const [name, body] of Object.entries(scripts)) {
+      // Only the project's own checks: a build, a bench and a watcher are not gates.
+      if (!/^(?:lint|typecheck|test|.*:(?:lint|check|sweep))$/.test(name)) continue
+      if (localChain.includes(name)) continue
+      if (CI_ONLY[name] !== undefined) continue
+      const ran = runs.includes(`pnpm ${name}`) || (body !== '' && shares(runs, body))
+      if (ran) missing.push(name)
+    }
+
+    expect(
+      missing,
+      'CI runs these and `pnpm gates` does not — add them to the chain, or name them CI-only with a reason',
+    ).toEqual([])
+  })
+
+  it('names nothing CI-only that CI does not actually run', () => {
+    // An exemption outliving its case is how a list stops describing the thing.
+    const runs = commandsIn(workflow)
+    const stale = Object.keys(CI_ONLY).filter((name) => {
+      const body = scripts[name] ?? ''
+      return !(runs.includes(`pnpm ${name}`) || (body !== '' && shares(runs, body)))
+    })
+    expect(stale, 'these exemptions no longer describe anything CI does').toEqual([])
+  })
+
   it('does not pin a Playwright build number', () => {
     // A path carrying one turns an unrelated dependency bump into a red Firefox
     // job, which is the pressure that gets a browser dropped from CI.

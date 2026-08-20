@@ -23,7 +23,7 @@
     "lint": "eslint .",
     "ux:lint": "python3 docs/ux/lint.py",
     "brand:lint": "node tools/brand-gate.mjs",
-    "gates": "pnpm lint && pnpm typecheck && pnpm build && pnpm test && pnpm ux:lint && pnpm brand:lint && pnpm i18n:sweep",
+    "gates": "pnpm lint && pnpm typecheck && pnpm build && pnpm test && pnpm ux:lint && pnpm brand:lint && pnpm i18n:sweep && pnpm package:check",
     "build:e2e": "node tools/build.mjs --with-test-hooks",
     "test:e2e:firefox": "pnpm build && node tools/firefox-e2e.mjs",
     "wireframes": "node tools/wireframes.mjs",

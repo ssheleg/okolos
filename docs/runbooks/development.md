@@ -44,7 +44,7 @@ pnpm build             # dist/chrome и dist/firefox
 Перед пушем всё сразу — той же командой, что гоняет CI:
 
 ```bash
-pnpm gates             # lint → typecheck → build → test → ux:lint → brand:lint → i18n:sweep
+pnpm gates             # lint → typecheck → build → test → ux:lint → brand:lint → i18n:sweep → package:check
 ```
 
 `pnpm gates` — это `&&`-цепочка: первый упавший шаг останавливает остальные, и

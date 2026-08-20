@@ -45,6 +45,10 @@ run unit      'pnpm -s test'
 run ux        'python3 docs/ux/lint.py'
 run brand     'node tools/brand-gate.mjs'
 run i18n      'node tools/i18n-sweep.mjs'
+# After the build, for the same reason the unit step is: it reads what `dist/`
+# contains. CI ran this and the local chain did not, so `pnpm gates` returned
+# green on a tree CI could still redden (2026-08-21).
+run package   'node tools/package.mjs --check'
 
 if [ "$fail" -ne 0 ]; then
     echo

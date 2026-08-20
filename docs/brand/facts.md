@@ -77,9 +77,13 @@ Contract: brand-contract v1
 
 ## Разрешения, которые запрашивает расширение
 
-`storage`, `alarms`, `activeTab`, `offscreen`, `declarativeNetRequest`,
-`webNavigation`, `downloads`, `management`, плюс доступ к `http://*/*` и
-`https://*/*`.
+`storage`, `alarms`, `activeTab`, `declarativeNetRequest`, `webNavigation`,
+`downloads`, `management`, плюс доступ к `http://*/*` и `https://*/*`.
+
+**`offscreen` снят 2026-08-20.** Он существовал ради третьей ступени, которая не
+выпускается ([ADR-0006](../adr/0006-third-stage-not-shipped.md)), и уезжал в ревью
+магазина без единого применения. Разрешение, которое ни разу не используется, — это
+цена без пользы, и особенно у продукта, чей аргумент в том, что он берёт мало.
 
 Широкий доступ к страницам нужен потому, что скрытый текст ищется **на любой
 странице**, а не на списке избранных. Это же разрешение делает продукт

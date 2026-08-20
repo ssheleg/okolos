@@ -118,7 +118,6 @@ describe('every message type is both served and sent', () => {
   const CONTENT_ENTRY = 'apps/extension/src/content/index.ts'
   const sources = [
     'apps/extension/src/background/index.ts',
-    'apps/extension/src/offscreen/index.ts',
     CONTENT_ENTRY,
   ]
     .map((file) => readFileSync(path.join(root, file), 'utf8'))

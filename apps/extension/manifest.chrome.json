@@ -45,7 +45,6 @@
     "storage",
     "alarms",
     "activeTab",
-    "offscreen",
     "declarativeNetRequest",
     "webNavigation",
     "downloads",

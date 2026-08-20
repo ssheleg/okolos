@@ -187,7 +187,17 @@ describe('install-time wiring goes through the adapter too', () => {
 })
 
 describe('where a model may run', () => {
-  it('uses an offscreen document in Chrome, because a worker has no DOM', async () => {
+  it('reports no host on Chrome, and creates nothing to find that out', async () => {
+    /**
+     * This used to create an offscreen document and answer `'offscreen'`, which made
+     * `prepare()` report `ready`, which opened the third stage's gate, which sent every
+     * unresolved candidate on a round trip that came back `null` (B-50).
+     *
+     * The third stage is not shipped — measured 2026-08-08, REQ-37: nine false positives
+     * of thirty-four at 0.97–1.00 confidence, while the first stage's rules give 100%
+     * recall with none. So there is nowhere to run one on Chrome, and saying so costs a
+     * document per wake-up and a permission in the store listing less than pretending.
+     */
     const created: unknown[] = []
     const platform = createPlatform('chrome', fakeApi({
       offscreen: {
@@ -198,18 +208,8 @@ describe('where a model may run', () => {
       },
     }))
 
-    await expect(platform.inference.ensureHost()).resolves.toBe('offscreen')
-    expect(created).toHaveLength(1)
-  })
-
-  it('does not create a second offscreen document when one is already there', async () => {
-    const createDocument = vi.fn(async () => undefined)
-    const platform = createPlatform('chrome', fakeApi({
-      offscreen: { hasDocument: async () => true, createDocument },
-    }))
-
-    await expect(platform.inference.ensureHost()).resolves.toBe('offscreen')
-    expect(createDocument).not.toHaveBeenCalled()
+    await expect(platform.inference.ensureHost()).resolves.toBe('none')
+    expect(created, 'a document was created for a classifier that is not shipped').toEqual([])
   })
 
   it('runs on the background page in Firefox, which has one', async () => {

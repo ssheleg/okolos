@@ -37,7 +37,17 @@ const ALLOWED_PERMISSIONS = [
   // Reading what the other extensions may do, to notice the update that widens it.
   'management',
 ]
-const CHROME_ONLY_PERMISSIONS = ['offscreen']
+/**
+ * Permissions Chrome's manifest may hold and Firefox's may not.
+ *
+ * `offscreen` was the only entry and it is gone: the third stage is not shipped, so the
+ * document it would have hosted is not either, and a permission that reaches store review
+ * without being used is a cost with no benefit (B-50). The list stays because the *rule*
+ * is what this gate is about — the two manifests differ on purpose and the difference is
+ * named here — and an empty list says "no exceptions today" rather than "we stopped
+ * checking".
+ */
+const CHROME_ONLY_PERMISSIONS: readonly string[] = []
 
 describe('what the extension asks for', () => {
   for (const browser of ['chrome', 'firefox'] as const) {

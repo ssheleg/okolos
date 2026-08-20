@@ -112,6 +112,14 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (пятьдесят первый)** — B-50; стадии 0–10. Решение «третья ступень не
+  выпускается» было принято 8 августа и **исполнено наполовину**: на Chrome воркер создавал
+  offscreen-документ на каждое пробуждение, объявлял классификатор `ready`, гейт открывался,
+  и каждый нерешённый кандидат ехал в round-trip за `null`. Разрешение `offscreen` уезжало в
+  ревью магазина без единого применения. Снято всё, что существует только ради ступени;
+  пакет 26 → 22 файла. Комментарий в воркере утверждал обратное ровно там, где было неверно.
+  2294 юнит-теста в 142 файлах. Два планта, легли оба. Постоянных инструкций десять, снятий
+  нет. Вердикт REFINE.
 - **2026-08-20 (пятидесятый)** — B-49; стадии 0–10. `pnpm bench` выходил с кодом 1 неделями
   при четырёх REQ, называвших бенч критерием, — и на первом же прогоне после написания нашёл
   четырёхкратную несоразмерность: сборка правил с пятьюдесятью исключениями стоила дороже
@@ -2176,6 +2184,40 @@ description.
   keeping. But a row closed with its verification outstanding is a row closed early, and
   the honest form is the one now in the board: closed on the second attempt, with the
   first attempt's failure written into it rather than tidied away.
+
+### 2026-08-20 — the decision was recorded, and half of it was carried out
+
+**Symptom.** ADR-0006 says the third stage is not shipped, with the measurement behind it:
+nine false positives of thirty-four at 0.97–1.00 confidence, against first-stage rules
+that give 100% recall with none. The stage did not ship. Everything that exists only to
+host it did: an `offscreen` permission in the Chrome manifest, an offscreen page in the
+package, and `ensureHost()` creating that document on **every worker wake-up** — after
+which `prepare()` reported `ready`, the stage-3 gate opened, and each unresolved candidate
+made a round trip that returned `null`.
+
+**Stage it surfaced at.** 0, tracing the row's four claims through the code before acting.
+
+**Stage that owned it.** 10 of the run that recorded the decision. "Not shipped" was
+written about the *stage* and read as a statement about the model artefact, so the
+scaffolding stayed — plausibly, as the thing you keep for when the decision reverses.
+
+**Root cause.** A decision names what it stops. Nothing in the writing of it enumerates
+what existed only because of what it stopped, so the parts survive individually, each
+looking reasonable, and together they keep the behaviour the decision was meant to end.
+
+**Fix, by grade.** *Structural:* the permission, the page, its module and its build entry
+are gone; `ensureHost()` answers `none` on Chrome and creates nothing to find that out.
+*Structural:* what stays — `ClassifierSession`, `ModelManager` — stays as library code with
+its tests, and the ADR says why: if the stage ever ships, one function changes. *Docs:* the
+ADR carries a "what left with the stage" section, and `facts.md`'s public permission list
+lost `offscreen` with the reason, because a permission that is never used is a cost with no
+benefit — especially for a product whose argument is that it takes little.
+
+**The check that catches it next time.** A decision to stop shipping something closes with
+a list: what existed only for it, and what happened to each. Three exemption lists named
+the deleted module and all three said so on the next run — the gates were the ones that
+noticed, which is what they are for, but they notice after the fact rather than at the
+decision.
 
 ### 2026-08-20 — a command that always fails is a command nobody runs
 

@@ -48,8 +48,6 @@ const EXEMPT: Record<string, string> = {
     'entry point: paints on import and asks the background what is available; the screen it draws is tested in packages/ui/src/first-run.',
   'apps/extension/src/interstitial/index.ts':
     'entry point: paints on import from the blocked URL in the query string; the screen is tested in packages/ui/src/interstitial.',
-  'apps/extension/src/offscreen/index.ts':
-    'entry point: hosts the model runtime on import; the session it wraps is tested in packages/model.',
   'apps/proxy/src/index.ts': 'entry point: the worker fetch handler; router.ts beside it is tested.',
 
   'packages/contracts/src/rpc.ts':

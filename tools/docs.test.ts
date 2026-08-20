@@ -5,6 +5,9 @@ import { describe, expect, it } from 'vitest'
 
 import { directoriesIn } from './tree.mjs'
 import { SCREENS } from './wireframes.mjs'
+// A relative path, not the package name: `tools/` is not a workspace member, so
+// vitest cannot resolve `@okolos/net` from here. The file is what matters anyway.
+import { DESTINATIONS } from '../packages/net/src/destinations.js'
 
 /**
  * The navigation layer, held to the same standard as the code.
@@ -521,9 +524,36 @@ describe('the privacy policy describes the code, not an intention', () => {
     }
   })
 
-  it('names every host the extension can actually reach', () => {
-    // Destinations, taken from the source rather than from memory. A policy
-    // that omits one is worse than no policy: it is a specific false claim.
+  it('names every host the product is allowed to reach', () => {
+    /**
+     * From the enforced list, not from a sweep of source literals.
+     *
+     * This used to scan `https://` literals under `apps/extension/src` and require
+     * each to appear in the policy — and there were three ways past it, none
+     * exotic: a literal in `packages/` (where the model manager's and the leak
+     * lookup's own URLs live), a URL assembled from parts, and anything not
+     * spelled `https://`. Now `packages/net/src/destinations.ts` decides at run
+     * time who may reach what, so the comparison is between the thing that
+     * enforces and the thing that claims.
+     */
+    const allowed = [...Object.values(DESTINATIONS).flat()]
+    expect(allowed.length, 'no destinations found — the import broke').toBeGreaterThan(2)
+    for (const host of allowed) {
+      expect(policy, `${host} is an allowed destination and absent from the policy`).toContain(host)
+    }
+  })
+
+  it('finds no reachable host that the enforced list does not know', () => {
+    /**
+     * The other direction, and now over `packages/` as well — which is where two
+     * of the three real hosts were written, in the very directory the old sweep
+     * did not read.
+     *
+     * A literal scan still cannot see a URL built from parts; that case is covered
+     * by the run-time check rather than here, and the division is the point. This
+     * catches a new endpoint typed into a file; the check in `request` catches one
+     * assembled at the moment of sending.
+     */
     const hosts = new Set<string>()
     const walk = (dir: string): void => {
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -538,15 +568,25 @@ describe('the privacy policy describes the code, not an intention', () => {
       }
     }
     walk(path.join(root, 'apps/extension/src'))
+    walk(path.join(root, 'packages'))
+    expect(hosts.size, 'no hosts found — the walk broke').toBeGreaterThan(2)
 
-    for (const host of hosts) {
-      // `.invalid` is reserved and unreachable by definition — the model
-      // endpoint that exists in the type and is never called.
-      if (host.endsWith('.invalid')) continue
-      expect(policy, `${host} is reachable from the extension and absent from the policy`).toContain(
-        host,
-      )
-    }
+    const allowed = new Set(Object.values(DESTINATIONS).flat())
+    const unknown = [...hosts].filter((host) => {
+      // Reserved and unreachable by definition, and the documentation's own
+      // examples: `.invalid` never resolves, `.test` is what every fixture uses.
+      if (host.endsWith('.invalid') || host.endsWith('.test')) return false
+      // Addresses that appear as text rather than as destinations: a standard's
+      // URL in a docstring, a well-known path a page is sent to.
+      if (['www.w3.org', 'developer.mozilla.org', 'github.com', 'tools.ietf.org'].includes(host)) {
+        return false
+      }
+      return !allowed.has(host)
+    })
+    expect(
+      unknown,
+      'these appear in the source and are not in the enforced destination list',
+    ).toEqual([])
   })
 
   it('states the retention the schema enforces, for every store that has one', () => {

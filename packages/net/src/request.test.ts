@@ -70,6 +70,9 @@ describe('request — the audit entry is a precondition, not a record', () => {
   })
 
   it('logs a host, never a path with parameters', async () => {
+    // A real destination, because the destination is checked now: the test used
+    // `feeds.example.test` with the password-range purpose, which reads fine on a
+    // page and is a host that purpose may not reach.
     const written: AuditEntry[] = []
     const d = deps({
       writeAudit: async (entry) => {
@@ -77,9 +80,9 @@ describe('request — the audit entry is a precondition, not a record', () => {
       },
     })
 
-    await request(spec({ url: 'https://feeds.example.test/chunk/17?v=3' }), d)
+    await request(spec({ url: 'https://api.pwnedpasswords.com/range/5BAA6?v=3' }), d)
 
-    expect(written[0]?.destination).toBe('feeds.example.test')
+    expect(written[0]?.destination).toBe('api.pwnedpasswords.com')
   })
 })
 

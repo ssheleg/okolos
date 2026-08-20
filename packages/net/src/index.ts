@@ -1,10 +1,12 @@
 export {
   AuditWriteError,
+  DestinationError,
   RedactionError,
   request,
   type RequestDeps,
   type RequestSpec,
 } from './request.js'
+export { allowedDestination, DESTINATIONS } from './destinations.js'
 export {
   findForbiddenContent,
   userFilledParts,

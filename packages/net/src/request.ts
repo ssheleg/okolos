@@ -1,5 +1,6 @@
 import type { AuditEntry, Purpose } from '@okolos/contracts'
 
+import { allowedDestination, DESTINATIONS } from './destinations.js'
 import { findForbiddenContent, type Carries, type RedactionFinding } from './redactor.js'
 import { transport as defaultTransport, type TransportSpec } from './transport.js'
 
@@ -48,6 +49,22 @@ export class RedactionError extends Error {
   }
 }
 
+export class DestinationError extends Error {
+  constructor(
+    readonly purpose: string,
+    readonly destination: string,
+  ) {
+    const allowed = DESTINATIONS[purpose as Purpose]
+    super(
+      `Refused to send: '${purpose}' may not reach ${destination}. ` +
+        (allowed && allowed.length > 0
+          ? `It may reach ${allowed.join(', ')}.`
+          : `It has no destinations at all — see packages/net/src/destinations.ts for why.`),
+    )
+    this.name = 'DestinationError'
+  }
+}
+
 export class AuditWriteError extends Error {
   constructor(cause: unknown) {
     super('Refused to send: the audit entry could not be written')
@@ -91,6 +108,24 @@ export async function request(spec: RequestSpec, deps: RequestDeps): Promise<Res
   if (forbidden) {
     await deps.writeAudit(entry('blocked-by-redactor'))
     throw new RedactionError(forbidden)
+  }
+
+  /**
+   * Is this purpose allowed to reach this host.
+   *
+   * After the redactor and before anything leaves. The order between the two
+   * refusals is a choice: when both are true, the leak is the more urgent fact,
+   * because it names the user's own data and the destination does not. Either way
+   * the attempt is recorded — both write the audit entry before throwing, which is
+   * what makes "the product tried to send somewhere it may not" a line somebody
+   * can read.
+   *
+   * The destination used to be computed for the journal and for nothing else, so
+   * any URL with a valid purpose and a clean payload went to any host.
+   */
+  if (!allowedDestination(spec.purpose, destination)) {
+    await deps.writeAudit(entry('blocked-by-redactor'))
+    throw new DestinationError(spec.purpose, destination)
   }
 
   try {

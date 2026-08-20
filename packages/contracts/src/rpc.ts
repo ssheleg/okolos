@@ -49,6 +49,22 @@ export type FrameFinding =
       /** What is known and what is not, in the order the surface should read them. */
       readonly lines: readonly FrameLine[]
     }
+  | {
+      readonly kind: 'password'
+      readonly origin: string
+      /** What the check found, then where else the password is used. */
+      readonly lines: readonly FrameLine[]
+      /**
+       * Which source answered — the local corpus or the k-anonymity range query.
+       *
+       * A boolean rather than a worded source line, for the same reason the lines are
+       * keys: the surface says it. And no `severity` here, unlike a credential finding,
+       * because a leak verdict has one — a password in a breach is `major` and there is
+       * no second grade of it. Carrying a field whose value never varies invites a
+       * reader to look for the case where it does.
+       */
+      readonly offline: boolean
+    }
 
 /** Everything that may leave the device, named so the audit log can say why. */
 export type Purpose =
@@ -242,6 +258,22 @@ export interface RpcMap {
   'page/request': { req: { method: string; host: string }; res: { ok: true } }
   'recovery/open': { req: { kind: string }; res: { ok: true } }
   /**
+   * Opens the site's own change-password page, and takes a **host** rather than a URL.
+   *
+   * A content script cannot open a tab — `chrome.tabs` is not in its API surface — so
+   * the in-page banner's "Сменить пароль" had four handlers returning `undefined` and a
+   * label with nothing behind it (B-80). It has to ask the background, and what it is
+   * allowed to ask for is deliberately narrow: a host, not an address. The background
+   * composes `/.well-known/change-password` itself
+   * (`packages/core-credential/src/change-url.ts`), so no caller can hand this an
+   * arbitrary destination, and the published path has one definition instead of one per
+   * caller.
+   *
+   * `opened: false` when the host cannot become an address the browser would agree
+   * names that host — a refusal said out loud rather than a tab that goes somewhere else.
+   */
+  'password/change': { req: { host: string }; res: { opened: boolean } }
+  /**
    * `domains` is kept for callers that only need the names — the lookalike
    * check asks on every navigation and has no use for the rest. `entries`
    * carries when and why, which the settings list needs and the hot path
@@ -303,6 +335,15 @@ export interface RpcMap {
          * relay leaves no other trace of what was suppressed.
          */
         | 'credential-unreported'
+        /**
+         * A frame's leak verdict never reached the page that embeds it.
+         *
+         * A third kind rather than a shared one, because the journal is *queried* by
+         * kind: "the pause before a password was suppressed" and "a verdict on a
+         * password already sent was suppressed" are different events with different
+         * remedies, and merging them under one kind is what makes a filter lie.
+         */
+        | 'password-unreported'
       explain: string
     }
     res: { ok: true }

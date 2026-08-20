@@ -1023,6 +1023,17 @@
       }
     }
   },
+  "passwordUnreported": {
+    "message": "a leak verdict from this frame could not be reported to the page it is embedded in, after $ATTEMPTS$ attempts over $SECONDS$ seconds",
+    "placeholders": {
+      "attempts": {
+        "content": "$1"
+      },
+      "seconds": {
+        "content": "$2"
+      }
+    }
+  },
   "gateAction": {
     "message": "Attempted: $ACTION$",
     "placeholders": {
@@ -2174,6 +2185,14 @@
   },
   "warnPasswordHeadline": {
     "message": "This password has appeared in a breach"
+  },
+  "warnPasswordFrameHeadline": {
+    "message": "The password sent to $WHERE$ has appeared in a breach",
+    "placeholders": {
+      "where": {
+        "content": "$1"
+      }
+    }
   },
   "warnPasswordReuse": {
     "message": "The same password has been seen on $COUNT$ other site(s): $HOSTS$.",

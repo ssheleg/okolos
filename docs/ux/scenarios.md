@@ -44,6 +44,7 @@ are specified once in [screens.md](screens.md).
 | SCN-032 | The local store was written by a newer build | recovery | P-01 | ST-019, FLW-14 | implemented | 2026-08-20 unit |
 | SCN-033 | Deciding whether to install, from pages that run nothing | pre-install | P-01 | ST-021, FLW-18 | implemented | 2026-08-20 unit+gate |
 | SCN-034 | A login form inside an embedded frame is checked | web-guard | P-02 | ST-010, FLW-09 | implemented | 2026-08-20 e2e |
+| SCN-035 | A password submitted from an embedded frame is checked | credentials | P-01 | ST-011, FLW-10 | implemented | 2026-08-20 e2e |
 
 ## Personas
 
@@ -350,7 +351,7 @@ See [foundation.md](foundation.md) → Personas.
 - **Steps:**
   1. User submits a login form -> system hashes the password inside the page context and checks the local corpus first
   2. User sees the banner -> system states the password appears in known leaks and how the check was performed
-  3. User clicks "Change password" -> system opens the site's change-password endpoint
+  3. User clicks "Change password" -> system opens the site's change-password endpoint. **Until 2026-08-20 this step described a control that did nothing** (B-80): the in-page banner's four handlers all returned `undefined`, because a content script cannot open a tab — `chrome.tabs` is not in its API surface — and the failure was silent, so the scenario read as covered. The banner now asks the background, which composes the address itself
 - **Expected result:** the user learns the password is compromised, and no password or full hash ever left the device
 - **Alt paths:** not found locally -> system performs a padded k-anonymity query with a 5-character prefix and shows the result; user clicks "Where else do I use it" -> **not built**: there is no local reuse index, and the control was removed rather than left answering from nothing (see SCN-016)
 - **UI elements:** banner (password variant), "how this was checked" line, "Change password" (primary), "Where else do I use it", "This is wrong"
@@ -358,7 +359,30 @@ See [foundation.md](foundation.md) → Personas.
 - **Errors & recovery:** network unavailable during the k-anonymity step -> system reports the local-only result and says the online check did not run; the journal records the prefix sent, or that nothing was sent. **And when the digest itself cannot be taken, the journal says that too** — which it did not until 2026-08-20: the hash came from `crypto.subtle`, which is `[SecureContext]`, and the manifest matches plain-HTTP pages, so on every one of them the digest threw and a silent `catch` swallowed it. **The breach and reuse check simply did not run**, on exactly the pages where a password sent in the clear matters most, and a check that did not run was indistinguishable from a password that came back clean
 - **The digest is the product's own, and that is a portability decision rather than a cryptographic one.** SHA-1 is chosen by Have I Been Pwned's range protocol, not by us; only five characters of it leave the device, and the property SHA-1 has lost — collision resistance — is one nothing here depends on. `packages/core-credential/src/sha1.ts` is checked against the FIPS 180-4 vectors *and* against the platform's own `crypto.subtle` digest on twelve inputs including the padding boundaries and non-ASCII, so "the same answer with one fewer requirement" is a test rather than a hope
 - **Status:** implemented
-- **Coverage:** apps/extension/src/background/password.ts:checkSubmittedPassword, packages/core-credential/src/guard.ts:guardCredentialEntry, packages/core-credential/src/sha1.ts:sha1Hex, packages/net/src/request.ts:request (unit only — a real password submission in Playwright would have to carry a real credential, so the k-anonymity path is exercised against a stubbed range endpoint instead)
+- **Behaviour notes:** this scenario is the form **on the page itself**. A form inside an embedded frame is SCN-035, and until 2026-08-20 it was covered by neither: the submit listener stood under `if (isTopFrame)` and this entry did not say so
+- **Known limit, measured 2026-08-20 (B-82):** the check runs after submission, deliberately — and a form that navigates takes the document with it while the check is in flight, so the verdict is lost whenever the navigation wins. Nothing is shown and nothing is journalled about it. The race has always been here; it was found from the frame side, where a small frame navigates faster than a full page and so loses more often
+- **Coverage:** apps/extension/src/background/password.ts:checkSubmittedPassword, apps/extension/src/background/index.ts:openChangePassword, packages/core-credential/src/change-url.ts:changePasswordUrl, packages/core-credential/src/guard.ts:guardCredentialEntry, packages/core-credential/src/sha1.ts:sha1Hex, packages/net/src/request.ts:request (unit only for the range query — a real password submission in Playwright would have to carry a real credential, so the k-anonymity path is exercised against a stubbed range endpoint; the offline path is end-to-end in e2e/scn-035.spec.ts, whose fixture submits a password from the shipped common list)
+
+### SCN-035: A password submitted from an embedded frame is checked
+- **Persona:** P-01
+- **Feature:** credentials
+- **Traces:** ST-011, FLW-10 (JTBD-04, JTBD-05, JRN-02/#1)
+- **Entry point:** a login form inside a frame the page embeds from another origin is submitted
+- **Preconditions:** local corpus loaded; the frame's own site is the one that receives the password
+- **Steps:**
+  1. User submits the form inside the frame -> the digest is taken **in that frame**, and the host that travels with it is the frame's own: the frame's site is the one that received the password, and the one "where else do I use this" has to be answered about
+  2. The verdict says the password is in a breach -> the frame hands the two facts upward as catalogue keys and draws nothing itself
+  3. The top frame shows one warning naming the frame's site -> "this password has appeared in a breach" and "the password sent to sso.partner.test has appeared in a breach" are different sentences, and only the second says which login is affected
+  4. User clicks "Сменить пароль" -> the background opens that site's own change-password page
+- **Expected result:** a password typed into the ordinary shape of a login — an OAuth or payment form in an iframe — is checked, and the person can act on the verdict from the page they are looking at
+- **Alt paths:** the pause before the password is already up for the same frame -> the leak verdict is `major` against the pause's `minor`, so it takes the one panel and the pause becomes a line on it (the slot rule, SCN-031); the password is not in a breach -> nothing is shown, and the pause, if it was up, stays where it is
+- **UI elements:** in-page banner (password variant) in the **top** frame, headline naming the frame's site, the verdict and the reuse line, "Сменить пароль" (primary), "Это неверно", "Скрыть"
+- **States covered:** success
+- **Errors & recovery:** the top frame's content script has not started yet -> the frame retries, twelve attempts 750 ms apart, then journals `password-unreported` naming the count and the duration; the frame has no address of its own (`srcdoc`, `about:blank`) -> there is no site whose change-password page could be opened, so the primary offers the journal instead of a button that would navigate to `https:///…` and fail silently; the digest cannot be taken -> `password-unchecked` in the journal, as on the page's own form
+- **Known limit, measured 2026-08-20 (B-82):** a form that **navigates** on submit tears down the frame's content script while the check is in flight, and the verdict is then lost — nothing is shown and nothing is journalled about it. This is not a property of frames: the page's own form (SCN-014) loses it the same way and always has, only less often, because a full page load is slower than a small frame's. The end-to-end fixture here submits a form that stays on the page, which is the common modern shape and is the honest limit of what this spec proves
+- **Behaviour notes:** the frame reports and never draws, for the reason SCN-034 gives. **The address the primary opens is composed by the background from the origin it stamped itself**, and the content script may ask only for a host — `packages/core-credential/src/change-url.ts` refuses a host that would hand the authority elsewhere (`good.test@evil.test` loads `evil.test` while the banner says `good.test`), and the published `/.well-known/change-password` path has one definition rather than one per caller. **Two defects met here** (B-80): the check itself stood under `if (isTopFrame)`, so a password submitted from an iframe was never compared against a breach and never counted towards reuse; and the banner it would have drawn had four handlers that all returned `undefined`, so its primary was a label with nothing behind it — invisible because a content script's `chrome.tabs` call rejects and nobody was listening
+- **Status:** implemented
+- **Coverage:** apps/extension/src/content/index.ts:tellEmbeddingPageOfLeak, showFramePassword and claimPasswordBanner, apps/extension/src/content/password-words.ts:passwordLines, packages/contracts/src/rpc.ts:FrameFinding (the `password` kind) and `password/change`, apps/extension/src/background/index.ts:openChangePassword, packages/core-credential/src/change-url.ts:changePasswordUrl, e2e/scn-035.spec.ts (three checks, including the address the primary requests), apps/extension/src/content/password-words.test.ts, packages/core-credential/src/change-url.test.ts
 
 ### SCN-015: Leak inventory with one source unavailable
 - **Persona:** P-01

@@ -57,7 +57,7 @@ import { gateExplain } from './gate-words.js'
 import { canVerify, createVerifier, FEED_PUBLIC_KEY, updateFeed } from './feeds.js'
 import { syncFeed } from './feed-sync.js'
 import { explained, t, useResolver } from '@okolos/i18n'
-import { reuseOf } from '@okolos/core-credential'
+import { changePasswordUrl, reuseOf } from '@okolos/core-credential'
 
 import { recordPageRequest } from './page-requests.js'
 import { optionsPageFor } from '../options/views.js'
@@ -111,6 +111,10 @@ platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>, from: RpcSe
       return journalTrap(message.payload as { kind: string; signals: string }) as Promise<RpcMap[T]['res']>
     case 'recovery/open':
       return openRecovery(message.payload as { kind: string }) as Promise<RpcMap[T]['res']>
+    case 'password/change':
+      return openChangePassword(message.payload as { host: string }) as Promise<
+        RpcMap[T]['res']
+      >
     case 'trust/list':
       return listTrusted() as Promise<RpcMap[T]['res']>
     case 'trust/revoke':
@@ -851,6 +855,27 @@ async function openRecovery(payload: { kind: string }): Promise<{ ok: true }> {
   // and goes somewhere real rather than being a control that does nothing.
   await platform.tabs.create(platform.runtime.getUrl(optionsPageFor('recovery', payload.kind)))
   return { ok: true }
+}
+
+/**
+ * Opens a site's own change-password page, or says it would not.
+ *
+ * The host arrives from a content script, which cannot open a tab itself, and the
+ * address is composed here rather than there: a caller that could pass a URL could pass
+ * any URL, and the published path deserves one definition rather than one per caller.
+ * `changePasswordUrl` refuses a host that would hand the authority to somebody else.
+ */
+async function openChangePassword(payload: { host: string }): Promise<{ opened: boolean }> {
+  const url = changePasswordUrl(payload.host)
+  if (url === null) return { opened: false }
+  try {
+    await platform.tabs.create(url)
+    return { opened: true }
+  } catch {
+    // The browser refused to open a tab. The banner stays where it is, and nothing
+    // claims the page was opened.
+    return { opened: false }
+  }
 }
 
 async function listTrusted(): Promise<{

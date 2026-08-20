@@ -301,9 +301,17 @@ flowchart TD
   E -->|network unavailable| E_err[Inline: could not check online - local result only]
   E_err --> G
   D --> H[Screen: In-page banner - password variant + Change password]
-  H -->|change now| I[Site's change-password endpoint opened]
+  D -->|the form was inside an embedded frame| F2[Frame reports its verdict upward, draws nothing]
+  F2 -->|background stamps the frame's origin| H
+  H -->|change now| I[Background composes the address and opens that site's change-password page]
   H -->|where else do I use it| J[Screen: Leaks and repair - reuse list]
 ```
+
+**Two things about the last arrow.** The address is composed by the **background**, from a
+host rather than a URL: a content script cannot open a tab at all, and a caller that could
+pass a URL could pass any URL. And the host is the one whose form received the password —
+the frame's, when the form was in a frame — so the page that opens is the login the verdict
+is about rather than the page that happened to embed it.
 
 - **Screens traversed:**
   | Screen | States used here |

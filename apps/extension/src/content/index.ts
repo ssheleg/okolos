@@ -29,6 +29,7 @@ import { reportToEmbeddingPage } from './report-frame.js'
 import { collect, DEFAULT_BUDGET } from './collect.js'
 import { warnIfLookalike } from './lookalike.js'
 import { credentialDetail } from './credential-words.js'
+import { passwordDetail, passwordLines, passwordSourceKey } from './password-words.js'
 import { watchCredentialFields } from './credential.js'
 import { showDownloadVerdict } from './download.js'
 import { watchForTraps } from './traps.js'
@@ -392,6 +393,10 @@ function showFrameFinding(finding: FrameFinding): void {
     showFrameCredential(finding, where)
     return
   }
+  if (finding.kind === 'password') {
+    showFramePassword(finding, where)
+    return
+  }
 
   const more = finding.count > 1 ? t('warnFrameMore', String(finding.count - 1)) : ''
 
@@ -456,6 +461,87 @@ function showFrameCredential(
         }
         resolveEverything()
       },
+      onDismiss: resolveEverything,
+    },
+  })
+}
+
+/**
+ * A leak verdict about a password submitted from a frame, drawn on the page a person is
+ * looking at.
+ *
+ * The primary action is the one this banner promised and did not perform for two
+ * releases: it opens the site's change-password page. `/.well-known/change-password` is a
+ * published standard — a site that supports it redirects to its real page, and one that
+ * does not shows its own 404, which is still the site's answer rather than ours. The
+ * options page has always done this (`options/index.ts`); the in-page banner had four
+ * handlers that all returned `undefined`, so "Сменить пароль" was a label with nothing
+ * behind it (found while closing B-80).
+ *
+ * The host comes from the origin the **background** stamped, never from the frame: the
+ * password was sent to the site in the frame, so that is the site whose change-password
+ * page this opens, and a frame that could name itself could send somebody to a page of
+ * its choosing.
+ */
+function showFramePassword(
+  finding: Extract<FrameFinding, { kind: 'password' }>,
+  where: string,
+): void {
+  claimPasswordBanner({
+    detail: passwordDetail(finding.lines),
+    offline: finding.offline,
+    host: hostOf(finding.origin),
+    headline: t('warnPasswordFrameHeadline', where),
+  })
+}
+
+/**
+ * The one place the leak banner is built, for both the page's own form and a frame's.
+ *
+ * Shared rather than duplicated because the actions are the shared part: the surface
+ * differs only in whose host it is about and which headline says so.
+ */
+function claimPasswordBanner(finding: {
+  detail: string
+  offline: boolean
+  host: string | null
+  headline: string
+}): void {
+  slot.claim({
+    kind: 'password',
+    severity: 'major',
+    props: {
+      variant: 'password',
+      severity: 'major',
+      headline: finding.headline,
+      detail: finding.detail,
+      sourceLine: t('warnFoundBy', t(passwordSourceKey(finding.offline))),
+      /**
+       * A control that cannot do what it says must not say it.
+       *
+       * With no host — a `srcdoc` or `about:blank` frame — there is no change-password
+       * page to open, so the panel offers the journal instead of a button that would
+       * navigate to `https:///.well-known/change-password` and fail silently. Not the
+       * dismiss control, which the banner already draws: a second button labelled
+       * "Скрыть" is not an action, it is the same one twice.
+       */
+      ...(finding.host === null ? { primaryLabel: t('warnFrameJournal') } : {}),
+    },
+    handlers: {
+      onPrimary: () => {
+        if (finding.host === null) {
+          openFrameJournal()
+          return
+        }
+        // Asked of the background, not done here: `chrome.tabs` is not in a content
+        // script's API surface, so `platform.tabs.create` would reject and this control
+        // would go back to doing nothing — quietly, which is how it got here.
+        void platform.runtime
+          .send('password/change', { host: finding.host })
+          .catch(() => undefined)
+      },
+      onRetry: () => undefined,
+      onDispute: resolveEverything,
       onDismiss: resolveEverything,
     },
   })
@@ -867,43 +953,27 @@ function tellEmbeddingPageOfPassword(finding: {
 }
 
 /**
- * What the banner says about reuse, and the distinction it must not blur.
+ * A frame handing its leak verdict to the page that embeds it.
  *
- * "Not seen anywhere else" and "never seen at all" are different sentences.
- * A fresh install knows nothing, and a panel that reads its own emptiness as
- * reassurance is the reason the "Check reuse" control was removed for two
- * releases rather than left answering from a store that did not exist.
+ * Same policy as the other two reports — twelve attempts, nine seconds — because the
+ * receiver is absent rather than broken. Its own journal kind: the pause before a
+ * password and a verdict on a password already sent are different events with different
+ * remedies, and the journal is queried by kind.
  */
-/**
- * Why a password check answered what it did, in the reader's language.
- *
- * The package sent six English sentences across the RPC, one of them with the count
- * already formatted by `toLocaleString('en')` — an English thousands separator chosen
- * inside a package that has no business knowing the reader's locale (B-75). The count
- * travels as a number now and is formatted here, with no locale argument, so the
- * runtime's own is used.
- */
-const PASSWORD_EXPLAIN_KEY: Record<string, string> = {
-  'in-common-list': 'pwdExplainCommon',
-  unreachable: 'pwdExplainUnreachable',
-  unreadable: 'pwdExplainUnreadable',
-  absent: 'pwdExplainAbsent',
-  found: 'pwdExplainFound',
-}
-
-/** One explanation, in words. An unknown code shows itself rather than nothing. */
-function explainPassword(explain: { code: string; detail?: string; count?: number }): string {
-  const key = PASSWORD_EXPLAIN_KEY[explain.code]
-  if (key === undefined) return explain.code
-  if (explain.code === 'unreachable') return t(key, explain.detail ?? '')
-  if (explain.code === 'found') return t(key, (explain.count ?? 0).toLocaleString())
-  return t(key)
-}
-
-function reuseLine(verdict: { reusedOn: string[]; reuseUnknown: boolean }): string {
-  if (verdict.reuseUnknown) return t('warnPasswordReuseUnknown')
-  if (verdict.reusedOn.length === 0) return t('warnPasswordReuseNone')
-  return t('warnPasswordReuse', String(verdict.reusedOn.length), verdict.reusedOn.join(', '))
+function tellEmbeddingPageOfLeak(lines: FrameLine[], offline: boolean): void {
+  void reportToEmbeddingPage(
+    { kind: 'password', origin: '', lines, offline },
+    {
+      relay: (report) => platform.runtime.send('frame/report', report),
+      giveUp: async ({ attempts, seconds }) => {
+        await platform.runtime.send('page/note', {
+          kind: 'password-unreported',
+          explain: t('passwordUnreported', String(attempts), String(seconds)),
+        })
+      },
+      wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    },
+  ).catch(() => undefined)
 }
 
 /**
@@ -915,96 +985,90 @@ function reuseLine(verdict: { reusedOn: string[]; reuseUnknown: boolean }): stri
  * before they have finished typing interrupts a login they were going to
  * complete anyway.
  *
- * **Top frame only, and a password submitted from an iframe is therefore never checked
- * (B-80).** The reason the restriction was placed is still true — this claims a banner
- * slot, and a slot inside a frame nobody can see is not a warning — but it is no longer
- * the whole answer: the pause above used to say the same and now reports upward instead,
- * over a relay that carries a kind. This one has not been done. A leak verdict is a third
- * kind with its own payload (how many leaks, reuse, "change the password"), and adding it
- * is a change of its own rather than a line in somebody else's.
+ * **In every frame, and only the top frame draws** (B-80). This stood under
+ * `if (isTopFrame)` for two releases, so a password submitted from an iframe — an OAuth
+ * or payment form, the ordinary shape — was never checked against a breach and never
+ * counted towards reuse. The half of the restriction that was right is kept: a banner
+ * inside a frame nobody can see is not a warning, so a frame reports and the top frame
+ * draws, over the relay that carries a kind (`FrameFinding`).
+ *
+ * The digest is computed in the frame and `location.host` is the frame's own, which is
+ * correct twice over: the frame's site is the one that received the password, and it is
+ * the site "where else do I use this" has to be answered about.
  */
-if (isTopFrame) {
-  document.addEventListener(
-    'submit',
-    (event) => {
-      const form = event.target
-      if (!(form instanceof HTMLFormElement)) return
-      const field = form.querySelector<HTMLInputElement>('input[type=password]')
-      const value = field?.value
-      if (!value) return
+document.addEventListener(
+  'submit',
+  (event) => {
+    const form = event.target
+    if (!(form instanceof HTMLFormElement)) return
+    const field = form.querySelector<HTMLInputElement>('input[type=password]')
+    const value = field?.value
+    if (!value) return
 
-      void (async () => {
-        try {
-          /**
-           * Our own SHA-1, not the platform's.
-           *
-           * `crypto.subtle` is `[SecureContext]` and the manifest matches
-           * plain-HTTP pages, so on any of them this line used to throw and the
-           * `catch` below swallowed it: **the breach and reuse check did not run
-           * at all**, on exactly the pages where a password sent in the clear
-           * matters most. Nobody learned, because the catch says nothing.
-           * Measured 2026-08-20 by scanning the shipped bundle for
-           * secure-context APIs, which is now a gate.
-           *
-           * `packages/core-credential/src/sha1.ts` is checked against the
-           * standard vectors *and* against the platform's own digest, so
-           * "identical answer, one fewer requirement" is a test rather than a
-           * hope.
-           */
-          const sha1 = sha1Hex(value)
+    void (async () => {
+      try {
+        /**
+         * Our own SHA-1, not the platform's.
+         *
+         * `crypto.subtle` is `[SecureContext]` and the manifest matches
+         * plain-HTTP pages, so on any of them this line used to throw and the
+         * `catch` below swallowed it: **the breach and reuse check did not run
+         * at all**, on exactly the pages where a password sent in the clear
+         * matters most. Nobody learned, because the catch says nothing.
+         * Measured 2026-08-20 by scanning the shipped bundle for
+         * secure-context APIs, which is now a gate.
+         *
+         * `packages/core-credential/src/sha1.ts` is checked against the
+         * standard vectors *and* against the platform's own digest, so
+         * "identical answer, one fewer requirement" is a test rather than a
+         * hope.
+         */
+        const sha1 = sha1Hex(value)
 
-          // The host travels with the digest: it is what makes "where else do I use
-          // this" answerable, and it is already the address of the page the user
-          // is looking at.
-          const verdict = await platform.runtime.send('password/check', {
-            sha1,
-            host: location.host,
-          })
-          if (!verdict?.compromised) return
+        // The host travels with the digest: it is what makes "where else do I use
+        // this" answerable, and it is already the address of the page the user
+        // is looking at.
+        const verdict = await platform.runtime.send('password/check', {
+          sha1,
+          host: location.host,
+        })
+        if (!verdict?.compromised) return
 
-          slot.claim({
-            kind: 'password',
-            severity: 'major',
-            props: {
-              variant: 'password',
-              severity: 'major',
-              headline: t('warnPasswordHeadline'),
-              // The reuse line is appended rather than replacing the verdict:
-              // "this password is in a breach" and "you use it in four places"
-              // are two facts, and the second is what turns the first into
-              // something to do this evening.
-              detail: `${explainPassword(verdict.explain)} ${reuseLine(verdict)}`,
-              sourceLine: t(
-                'warnFoundBy',
-                verdict.offline ? t('warnPasswordSourceOffline') : t('warnPasswordSourceOnline'),
-              ),
-            },
-            handlers: {
-              onPrimary: () => undefined,
-              onRetry: () => undefined,
-              onDispute: () => undefined,
-              onDismiss: () => undefined,
-            },
-          })
-        } catch (cause) {
-          /**
-           * A failed check is not a clean password, and it is not a broken login
-           * either: the submission has already gone through. What it must not be
-           * is invisible — a check that did not run and a check that passed
-           * looked identical from here, for every password on every http page.
-           */
-          void platform.runtime
-            .send('page/note', {
-              kind: 'password-unchecked',
-              explain: t('logPasswordUnchecked', String(cause)),
-            })
-            .catch(() => undefined)
+        const lines = passwordLines(verdict)
+
+        // A frame reports rather than draws, and the words are not decided here: keys
+        // travel and the surface that draws them resolves them.
+        if (!isTopFrame) {
+          tellEmbeddingPageOfLeak(lines, verdict.offline)
+          return
         }
-      })()
-    },
-    true,
-  )
-}
+
+        claimPasswordBanner({
+          detail: passwordDetail(lines),
+          offline: verdict.offline,
+          // Normalised the way the frame's origin is: an empty host is "no host", not a
+          // host that happens to be the empty string, and `https:///…` goes nowhere.
+          host: location.host === '' ? null : location.host,
+          headline: t('warnPasswordHeadline'),
+        })
+      } catch (cause) {
+        /**
+         * A failed check is not a clean password, and it is not a broken login
+         * either: the submission has already gone through. What it must not be
+         * is invisible — a check that did not run and a check that passed
+         * looked identical from here, for every password on every http page.
+         */
+        void platform.runtime
+          .send('page/note', {
+            kind: 'password-unchecked',
+            explain: t('logPasswordUnchecked', String(cause)),
+          })
+          .catch(() => undefined)
+      }
+    })()
+  },
+  true,
+)
 
 /**
  * The worker judges a download and has nowhere to say so; this is where it is

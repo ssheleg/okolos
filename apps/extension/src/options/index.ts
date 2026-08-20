@@ -4,6 +4,7 @@ import {
   type PackageReport,
   type StandingFinding,
 } from '@okolos/core-extensions'
+import { changePasswordUrl } from '@okolos/core-credential'
 import { buildChecklist, type StepProgress } from '@okolos/core-recovery'
 import { diffSince } from '@okolos/core-queue'
 import { t, useResolver } from '@okolos/i18n'
@@ -164,10 +165,11 @@ function leaksSection(): HTMLElement {
         })()
       },
       onChangePassword: (leak) => {
-        // The well-known path is a published standard: a site that supports it
-        // redirects to its real change-password page, and one that does not
-        // lands the user on its own domain rather than on a guess of ours.
-        if (leak.domain) void platform.tabs.create(`https://${leak.domain}/.well-known/change-password`)
+        // The address is composed by `changePasswordUrl` rather than here: it was
+        // concatenated in two places, and a host is a string from somewhere — one
+        // containing `@` puts the user on a different site than the one named.
+        const url = leak.domain ? changePasswordUrl(leak.domain) : null
+        if (url !== null) void platform.tabs.create(url)
       },
       onResolve: (name) => {
         void (async () => {

@@ -1023,6 +1023,17 @@
       }
     }
   },
+  "passwordUnreported": {
+    "message": "Вердикт о пароле из встроенного фрейма не удалось передать странице, которая его встроила: попыток $ATTEMPTS$ за $SECONDS$ с.",
+    "placeholders": {
+      "attempts": {
+        "content": "$1"
+      },
+      "seconds": {
+        "content": "$2"
+      }
+    }
+  },
   "gateAction": {
     "message": "Попытка: $ACTION$",
     "placeholders": {
@@ -2174,6 +2185,14 @@
   },
   "warnPasswordHeadline": {
     "message": "Этот пароль встречался в утечке"
+  },
+  "warnPasswordFrameHeadline": {
+    "message": "Пароль, отправленный в $WHERE$, встречался в утечке",
+    "placeholders": {
+      "where": {
+        "content": "$1"
+      }
+    }
   },
   "warnPasswordReuse": {
     "message": "Этот же пароль видели ещё на $COUNT$ сайте(-ах): $HOSTS$.",

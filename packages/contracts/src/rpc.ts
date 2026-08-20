@@ -244,6 +244,8 @@ export interface RpcMap {
         | 'password-unchecked'
         | 'surface-removed'
         | 'scan-failed'
+        /** The budget ran out before anything was found: looked, could not finish. */
+        | 'scan-blinded'
       explain: string
     }
     res: { ok: true }

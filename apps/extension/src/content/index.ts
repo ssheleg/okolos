@@ -261,7 +261,31 @@ async function scan(): Promise<void> {
   performance.mark(MARK_END)
   performance.measure(MEASURE_COLLECT, MARK_START, MARK_END)
 
-  if (page.candidates.length === 0) return
+  if (page.candidates.length === 0) {
+    /**
+     * Nothing found is not the same fact as nothing to find.
+     *
+     * A page can spend the whole traversal allowance on markup that carries nothing —
+     * six thousand comments in `<head>` did exactly that — and the scan then returned
+     * zero candidates and exited without a word: no banner, no record, and a person
+     * believing the page had been checked (B-40).
+     *
+     * Journalled, not bannered. A banner on every large page would cry wolf, and the
+     * journal is the surface this product already uses for "we looked and could not
+     * finish" — `scan-failed` from B-74 is the same shape. Once per page, through the
+     * same `journal.record` that keeps a mutating page from writing the same line all
+     * afternoon.
+     */
+    if (page.truncated) {
+      void journal.record('scan-blinded', async () => {
+        await platform.runtime.send('page/note', {
+          kind: 'scan-blinded',
+          explain: t('noteScanBlinded'),
+        })
+      })
+    }
+    return
+  }
 
   // Through the platform adapter, not chrome.runtime directly: Firefox's
   // `chrome` namespace is callback-based, so awaiting it there returns

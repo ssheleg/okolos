@@ -59,9 +59,31 @@ export function collect(doc: Document, options: CollectOptions): PageCandidates 
   let nodeCount = 0
   let truncated = false
 
-  const outOfBudget = (): boolean =>
-    nodeCount >= budget.maxNodes ||
-    candidates.length >= budget.maxCandidates ||
+  /**
+   * The node budget, shared between two walks that must not starve each other.
+   *
+   * `nodeCount` is one counter across both, and the comment walk runs first — so a page
+   * with 6000 `<!-- -->` in its `<head>` spent the whole allowance before the element
+   * walk began. Measured: `candidates=0, nodeCount=5001, truncated=true`, and the same
+   * injection with the comments removed was found. Six kilobytes of markup blinded the
+   * scan (B-40).
+   *
+   * Half each, and the element walk inherits whatever the comment walk did not use. On an
+   * ordinary page the comments are few and nothing changes; on a hostile one, the half
+   * that carries the rendered document is still examined.
+   *
+   * **Both allowances are shared, and both had to be split.** Skipping empty comments
+   * fixed the node half and the attack simply moved down one floor: 6000 `<!--x-->` cost
+   * one node each and filled the *candidate* ceiling instead, so the element walk ran with
+   * nothing left to report. One carrier class must not be able to spend the whole
+   * allowance for all the others.
+   */
+  const nodeShare = Math.floor(budget.maxNodes / 2)
+  const candidateShare = Math.floor(budget.maxCandidates / 2)
+
+  const outOfBudget = (nodeLimit: number, candidateLimit: number): boolean =>
+    nodeCount >= nodeLimit ||
+    candidates.length >= candidateLimit ||
     options.elapsed() >= budget.maxMillis
 
   /**
@@ -103,8 +125,14 @@ export function collect(doc: Document, options: CollectOptions): PageCandidates 
   // injections live in them and in metadata rather than behind CSS.
   const comments = doc.createTreeWalker(doc, NodeFilter.SHOW_COMMENT)
   while (comments.nextNode()) {
+    /**
+     * An empty comment cannot carry anything, so examining it is free and counting it is
+     * not honest: the budget bounds the work of *examining*, and there is none here. Six
+     * thousand of them is the cheapest way to spend an allowance meant for a document.
+     */
+    if ((comments.currentNode.nodeValue ?? '').trim() === '') continue
     nodeCount += 1
-    if (outOfBudget()) {
+    if (outOfBudget(nodeShare, candidateShare)) {
       truncated = true
       break
     }
@@ -116,7 +144,7 @@ export function collect(doc: Document, options: CollectOptions): PageCandidates 
 
   while (current) {
     nodeCount += 1
-    if (outOfBudget()) {
+    if (outOfBudget(budget.maxNodes, budget.maxCandidates)) {
       truncated = true
       break
     }

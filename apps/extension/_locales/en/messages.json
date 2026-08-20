@@ -1475,6 +1475,9 @@
       }
     }
   },
+  "noteScanBlinded": {
+    "message": "The check of this page did not finish: there was more markup than the product will read in the time it allows itself, and it found nothing of note. That does not mean the page is clean — it means it was not checked in full."
+  },
   "noteScanFailed": {
     "message": "The page check did not finish: $CAUSE$. That does not mean the page is clean — it means it was not checked.",
     "placeholders": {

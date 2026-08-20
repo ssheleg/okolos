@@ -118,7 +118,7 @@ platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>, from: RpcSe
     case 'trust/add':
       return addTrusted(message.payload as { domain: string }) as Promise<RpcMap[T]['res']>
     case 'page/note':
-      // The sender travels with it for one of the five kinds: `surface-removed` also
+      // The sender travels with it for one of the seven kinds: `surface-removed` also
       // marks the icon, and the icon is per tab because "something is wrong here" is
       // a fact about this page and not about the browser.
       return notePageEvent(
@@ -130,6 +130,7 @@ platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>, from: RpcSe
             | 'password-unchecked'
             | 'surface-removed'
             | 'scan-failed'
+            | 'scan-blinded'
           explain: string
         },
         from,
@@ -404,6 +405,7 @@ async function notePageEvent(
       | 'password-unchecked'
       | 'surface-removed'
       | 'scan-failed'
+      | 'scan-blinded'
     explain: string
   },
   from?: { tabId?: number },

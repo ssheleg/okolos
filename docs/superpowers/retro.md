@@ -112,6 +112,14 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (пятьдесят третий)** — B-40; стадии 0–10. Шесть килобайт разметки ослепляли
+  сбор: обход комментариев выбирал общий бюджет узлов до того, как начинался обход
+  элементов. Пропуск пустых комментариев закрыл половину — и атака переехала этажом ниже,
+  на потолок кандидатов, поэтому делить пришлось обе доли. Вторая половина: исчерпание
+  бюджета при нуле кандидатов уходило в тишину, теперь пишется строка журнала. Моя же
+  e2e-фикстура не воспроизводила случай, ради которого писалась, и это поймал прогон.
+  2303 юнит-теста в 142 файлах, 4 e2e по бюджету. Четыре планта, легли все. Постоянных
+  инструкций десять, снятий нет. Вердикт REFINE.
 - **2026-08-20 (пятьдесят второй)** — B-41; стадии 0–10. Потолок кандидатов проверялся раз
   на узел, а один узел может порождать кандидатов без счёта: элемент с 20 000 `data-*`
   давал 20 000 кандидатов при `truncated: false` — потолок памяти обойдён, вердикт
@@ -2192,6 +2200,44 @@ description.
   keeping. But a row closed with its verification outstanding is a row closed early, and
   the honest form is the one now in the board: closed on the second attempt, with the
   first attempt's failure written into it rather than tidied away.
+
+### 2026-08-20 — the fix worked and the attack moved down one floor
+
+**Symptom.** Six thousand `<!-- -->` in `<head>` spent the whole traversal allowance
+before the element walk began: `candidates=0, nodeCount=5001, truncated=true`, and the
+same injection with the comments removed was found. Skipping empty comments fixed it —
+they carry nothing, so examining them is free and counting them is not honest.
+
+Then the same page with `<!--x-->` instead. One character costs one node **and one
+candidate**, so six thousand of them filled the candidate ceiling, and the element walk ran
+with nothing left to report. Identical blindness, one allowance down.
+
+**Stage it surfaced at.** 5, immediately after the first fix, because the measurement was
+re-run rather than assumed. The first fix was correct and insufficient, which is a state
+that looks exactly like "done" if you stop at the reproduction you started with.
+
+**Stage that owned it.** 2 of the run that wrote the collector. Two walks share both
+allowances and one runs first: whichever it is can spend everything. The shape is the
+defect, not the particular carrier — so a fix aimed at the carrier moves the problem
+rather than removing it.
+
+**Root cause.** A budget shared between producers with no floor for the later ones. The
+first producer is not adversarial by nature; it becomes adversarial the moment a page
+controls how much it produces.
+
+**Fix, by grade.** *Structural:* both allowances — nodes and candidates — are split
+between the walks, with the element walk inheriting whatever the comment walk did not use.
+One carrier class cannot spend the whole of either. *Behaviour:* a scan that spends
+everything and finds nothing writes a `scan-blinded` journal line rather than returning in
+silence, because zero candidates is not the same fact as nothing to find.
+
+**And my own e2e fixture was wrong.** I wrote it with `<!--x-->`, which after the first
+half *does* produce candidates — so it never exercised the zero-candidate case it existed
+for. The run caught it. The honest fixture is six thousand empty elements: more nodes than
+the budget allows, and no hidden text in any of them.
+
+**The check that catches it next time.** After fixing a resource-exhaustion defect, ask
+what the cheapest input is that still reaches the same end. Here it was one character.
 
 ### 2026-08-20 — the ceiling was checked where nothing was added
 

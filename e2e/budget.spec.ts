@@ -71,3 +71,39 @@ test('the warning still arrives on a page too large to scan in full', async ({ c
   // worst possible reading of "budget".
   await expect(p.locator('okolos-banner')).toHaveCount(1, { timeout: 15_000 })
 })
+
+test('a page that spends the whole budget on nothing is recorded, not passed over', async ({
+  context,
+  extensionId,
+}) => {
+  /**
+   * The second half of B-40. Six thousand comments in `<head>` used to spend the whole
+   * traversal allowance before the document was looked at, and the scan then returned
+   * zero candidates and exited without a word — no banner, no record, and a person
+   * believing the page had been checked.
+   *
+   * Journalled rather than bannered: a banner on every large page cries wolf, and the
+   * journal is the surface this product already uses for "we looked and could not
+   * finish". Asserted where a person would read it.
+   */
+  /**
+   * Empty elements, not comments. An empty comment carries nothing and is skipped without
+   * spending anything — that is the first half of this fix — so the case that still
+   * exhausts the allowance with nothing to show is a document with more nodes than the
+   * budget allows and no hidden text in any of them.
+   */
+  const wide = `<!doctype html><html><body>${'<span></span>'.repeat(6000)}</body></html>`
+  await serve(context, wide)
+
+  const p = await context.newPage()
+  await p.goto('https://fixture.test/')
+  // Nothing to warn about: the page carries no injection, only the markup that blinds.
+  await expect(p.locator('okolos-banner')).toHaveCount(0)
+
+  const journal = await context.newPage()
+  await journal.goto(`chrome-extension://${extensionId}/options.html#journal`)
+  const line = await journal.evaluate(() => chrome.i18n.getMessage('noteScanBlinded'))
+  await expect(journal.locator('[data-role=journal]')).toContainText(line.slice(0, 40), {
+    timeout: 10_000,
+  })
+})

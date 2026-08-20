@@ -1,6 +1,13 @@
 import { t } from '@okolos/i18n'
-import { guardCredentialEntry, type CredentialContext, type CredentialWarning } from '@okolos/core-credential'
+import {
+  guardCredentialEntry,
+  type CredentialContext,
+  type CredentialWarning,
+} from '@okolos/core-credential'
+import type { FrameLine } from '@okolos/contracts'
 import { mountBanner, type BannerHandle, type BannerHandlers, type BannerProps } from '@okolos/ui'
+
+import { credentialDetail, credentialLines } from './credential-words.js'
 
 /**
  * The pause before a password.
@@ -33,6 +40,19 @@ export interface CredentialDeps {
    * supplies the slot.
    */
   mountWarning?: (props: BannerProps, handlers: BannerHandlers) => BannerHandle
+  /**
+   * Where a warning goes when this frame is not the one a person is looking at.
+   *
+   * Present in a subframe, absent in the top frame, and never both: a frame that both
+   * draws and reports shows the warning twice. The facts travel, not the sentence —
+   * the surface that draws it owns the words (`credential-words.ts`).
+   *
+   * Why a separate dep rather than a `mountWarning` that relays: that one must return a
+   * `BannerHandle`, so a relaying implementation would have to fabricate a host element
+   * and a shadow root for something it never mounts. A seam that has to lie about its
+   * return value is the wrong seam.
+   */
+  report?: (finding: { severity: CredentialWarning['severity']; lines: FrameLine[] }) => void
 }
 
 export interface CredentialWatcher {
@@ -51,35 +71,6 @@ function isSensitive(element: Element): boolean {
   if (element.matches(SENSITIVE)) return true
   const name = `${element.getAttribute('name') ?? ''} ${element.getAttribute('id') ?? ''}`
   return /card(number|num)?|cardnumber/i.test(name)
-}
-
-/**
- * Credential facts and unknowns to catalogue keys.
- *
- * `*_KEY` tables rather than a computed key, because that is the form the locale gate
- * reads; a computed one would make all seven messages look dead to it (B-75).
- */
-const FACT_KEY: Record<string, string> = {
-  'not-encrypted': 'credFactNotEncrypted',
-  imitates: 'credFactImitates',
-  'posts-elsewhere': 'credFactPostsElsewhere',
-  'first-day': 'credFactFirstDay',
-  'seen-for-days': 'credFactSeenForDays',
-}
-
-const UNKNOWN_KEY: Record<string, string> = {
-  'how-long-visited': 'credUnknownHowLong',
-  'when-registered': 'credUnknownWhenRegistered',
-}
-
-/** One fact, in words. An unknown code shows itself: wrong and visible beats invisible. */
-function factSentence(fact: CredentialWarning['facts'][number]): string {
-  const key = FACT_KEY[fact.code]
-  if (key === undefined) return fact.code
-  if (fact.code === 'imitates') return t(key, fact.resembles)
-  if (fact.code === 'posts-elsewhere') return t(key, fact.postsTo, fact.host)
-  if (fact.code === 'seen-for-days') return t(key, String(fact.days))
-  return t(key)
 }
 
 /** The injected mount, or the real one when a caller did not supply a slot. */
@@ -118,27 +109,23 @@ export function watchCredentialFields(deps: CredentialDeps): CredentialWatcher {
     const warning = guardCredentialEntry({ ...context, postsTo: postsTo(field, host) })
     if (!warning) return
 
+    const lines = credentialLines(warning)
+
+    // A frame reports rather than draws, and it is the same decision the injection
+    // side already made: a banner inside a small frame is clipped, invisible, or
+    // drawn a dozen times across ad frames. The relay is the surface here, and it
+    // gets facts — the page that embeds this one words them.
+    if (deps.report) {
+      deps.report({ severity: warning.severity, lines })
+      return
+    }
+
     banner = mount(
       {
         variant: 'credential',
         severity: warning.severity,
         headline: t('warnCredentialHeadline'),
-        detail: [
-          ...warning.facts.map(factSentence),
-          warning.missing.length > 0
-            ? t(
-                'warnCredentialUnknown',
-                warning.missing
-                  .map((unknown) => {
-                    const key = UNKNOWN_KEY[unknown.code]
-                    return key === undefined ? unknown.code : t(key)
-                  })
-                  .join('; '),
-              )
-            : '',
-        ]
-          .filter(Boolean)
-          .join(' '),
+        detail: credentialDetail(lines),
         sourceLine: t('warnFoundBy', t('warnCredentialSource')),
       },
       {

@@ -21,15 +21,21 @@
  * thing being reported. The background sits outside the page.
  */
 
-export interface FrameReport {
-  readonly origin: string
-  readonly summary: string
-  readonly count: number
-}
+/**
+ * What travels is the contract's own payload, not a copy of it.
+ *
+ * This module used to declare `{origin, summary, count}` — the injection shape — and a
+ * password warning had nowhere to go because the channel it would have used was
+ * spelled for one kind of finding (B-79). The type now comes from `@okolos/contracts`,
+ * so a new kind is added in one place and every hop typechecks against it.
+ */
+export type { FrameFinding } from '@okolos/contracts'
+
+import type { FrameFinding } from '@okolos/contracts'
 
 export interface ReportDeps {
   /** Asks the background to relay, and says whether anyone was there. */
-  readonly relay: (report: FrameReport) => Promise<{ delivered: boolean } | undefined>
+  readonly relay: (report: FrameFinding) => Promise<{ delivered: boolean } | undefined>
   /**
    * Journalled when the budget runs out — a silent give-up is the defect returning.
    *
@@ -54,7 +60,7 @@ export const REPORT_ATTEMPTS = 12
 export const REPORT_GAP_MS = 750
 
 export async function reportToEmbeddingPage(
-  report: FrameReport,
+  report: FrameFinding,
   deps: ReportDeps,
 ): Promise<{ delivered: boolean; attempts: number }> {
   for (let attempt = 1; attempt <= REPORT_ATTEMPTS; attempt += 1) {

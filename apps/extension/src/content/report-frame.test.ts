@@ -4,7 +4,7 @@ import {
   REPORT_ATTEMPTS,
   REPORT_GAP_MS,
   reportToEmbeddingPage,
-  type FrameReport,
+  type FrameFinding,
   type ReportDeps,
 } from './report-frame.js'
 
@@ -18,7 +18,12 @@ import {
  * many times, how far apart, and what is said when the budget is gone.
  */
 
-const REPORT: FrameReport = { origin: 'https://ads.example.test', summary: 'hidden text', count: 2 }
+const REPORT: FrameFinding = {
+  kind: 'injection',
+  origin: 'https://ads.example.test',
+  summary: 'hidden text',
+  count: 2,
+}
 
 function deps(overrides: Partial<ReportDeps> = {}): ReportDeps & { waited: number[] } {
   const waited: number[] = []

@@ -258,12 +258,20 @@ flowchart TD
 ```mermaid
 flowchart TD
   A[Screen: Page with password or card field] -->|field focused, domain untrusted| B[Screen: In-page banner - credential variant, inline near field]
+  A2[Screen: Page embedding a frame with the field] -->|field focused inside the frame| F[Frame reports its facts upward, draws nothing]
+  F -->|background stamps the frame's origin| B
   B -->|why| C[State: domain age, first seen, brand similarity]
   C -->|leave| D[Back to previous page]
   C -->|I trust this site| E[Domain trusted; banner suppressed here on]
   E --> A
   B -->|ignore| A
 ```
+
+**The frame's branch is one screen, not two.** A banner inside an embedded frame is clipped
+or invisible, so the frame reports and the top frame draws — the same arrangement FLW-02
+uses for an injection found in a frame. The domain the banner names, and the domain the
+trust control records, is the **frame's**, taken from the origin the background stamped
+rather than from anything the frame said about itself.
 
 - **Screens traversed:**
   | Screen | States used here |

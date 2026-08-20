@@ -252,3 +252,77 @@ describe('the words for a fact', () => {
     expect(detail, 'the resolver fell back to a key').not.toMatch(/\[cred/)
   })
 })
+
+/**
+ * The frame's path, which for two releases did not exist.
+ *
+ * `watchCredentialFields` stood under `if (isTopFrame)` in the entry point, so an OAuth
+ * or payment form in an iframe — the ordinary shape — was watched by nobody (B-79). The
+ * watcher now reports instead of drawing when it is not the frame a person looks at, and
+ * these say what "instead" means: nothing is mounted, and the facts leave as keys.
+ */
+describe('when the warning has to leave the frame', () => {
+  it('reports the facts and mounts nothing', async () => {
+    const report = vi.fn()
+    watch({
+      report,
+      facts: async () => ({
+        trusted: false,
+        firstSeen: null,
+        secure: false,
+        postsTo: null,
+        resembles: 'paypal.com',
+      }),
+    })
+    field().dispatchEvent(new Event('focusin', { bubbles: true }))
+    await settle()
+
+    expect(banner()).toBeNull()
+    expect(report).toHaveBeenCalledTimes(1)
+    const finding = report.mock.calls[0]?.[0] as {
+      severity: string
+      lines: { explainKey: string; explainArgs: readonly string[] }[]
+    }
+    expect(finding.severity).toBe('critical')
+    expect(finding.lines.map((line) => line.explainKey)).toContain('credFactNotEncrypted')
+    const imitates = finding.lines.find((line) => line.explainKey === 'credFactImitates')
+    expect(imitates?.explainArgs).toEqual(['paypal.com'])
+  })
+
+  /**
+   * The plant this pair exists for: a report that carried the finished sentence would
+   * pass every assertion above about *whether* something was reported and hide that the
+   * frame decided the wording. Keys are checked because keys are the contract.
+   */
+  it('sends no finished sentence — the surface that draws owns the words', async () => {
+    const report = vi.fn()
+    watch({ report })
+    field().dispatchEvent(new Event('focusin', { bubbles: true }))
+    await settle()
+
+    const finding = report.mock.calls[0]?.[0] as { lines: { explainKey: string }[] }
+    for (const line of finding.lines) {
+      expect(line.explainKey).not.toContain(' ')
+      expect(CATALOGUE[line.explainKey]).toBeDefined()
+    }
+  })
+
+  it('says nothing about a site the user trusts, in a frame either', async () => {
+    const report = vi.fn()
+    watch({
+      report,
+      facts: async () => ({
+        trusted: true,
+        firstSeen: null,
+        secure: false,
+        postsTo: null,
+        resembles: null,
+      }),
+    })
+    field().dispatchEvent(new Event('focusin', { bubbles: true }))
+    await settle()
+
+    expect(report).not.toHaveBeenCalled()
+    expect(banner()).toBeNull()
+  })
+})

@@ -1012,6 +1012,17 @@
       }
     }
   },
+  "credentialUnreported": {
+    "message": "a password warning in this frame could not be reported to the page it is embedded in, after $ATTEMPTS$ attempts over $SECONDS$ seconds",
+    "placeholders": {
+      "attempts": {
+        "content": "$1"
+      },
+      "seconds": {
+        "content": "$2"
+      }
+    }
+  },
   "gateAction": {
     "message": "Attempted: $ACTION$",
     "placeholders": {
@@ -2027,6 +2038,17 @@
   },
   "warnCredentialSource": {
     "message": "what this device already knows about this site"
+  },
+  "warnCredentialFrameHeadline": {
+    "message": "Before you type a password into a form from $WHERE$",
+    "placeholders": {
+      "where": {
+        "content": "$1"
+      }
+    }
+  },
+  "warnCredentialFrameSource": {
+    "message": "what this device already knows about the site in the embedded frame"
   },
   "warnCredentialUnknown": {
     "message": "Not known: $LIST$.",

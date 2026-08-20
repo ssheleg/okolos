@@ -2,6 +2,54 @@ import type { GateDecision } from './gate.js'
 import type { PageCandidates } from './snapshot.js'
 import type { Verdict } from './verdict.js'
 
+/**
+ * One sentence a frame hands upward, as a key and its arguments rather than words.
+ *
+ * Structurally `Explained` from `@okolos/i18n`, declared here because this package has
+ * no dependencies and must not grow one for a shape three fields wide. The
+ * compatibility is not left to eyesight: `credential-words.test.ts` assigns a real
+ * `explained(...)` to this type, so a required field added there fails here.
+ *
+ * Why keys and not the finished sentence: the frame resolves nothing the reader has to
+ * live with. Every other cross-boundary sentence in this project already travels this
+ * way (B-75, B-77), and a frame is one more boundary — the words belong to whoever
+ * draws them.
+ */
+export interface FrameLine {
+  readonly explainKey: string
+  readonly explainArgs: readonly string[]
+  readonly explainArgKeys: readonly (string | null)[]
+}
+
+/**
+ * What a frame can report, and why the shape is a union rather than one widened record.
+ *
+ * The relay was built for injections and carried their shape — `{origin, summary,
+ * count}`. A password warning has facts and offers actions ("this is wrong", "leave",
+ * "trust this site"), and pushing it through a summary string loses exactly the part a
+ * person acts on. Widening the one record instead would give both kinds every other
+ * kind's fields, all optional, and no reader could tell which are populated.
+ *
+ * `origin` is stamped by the background from the sender, never by the frame: the frame
+ * is the thing being reported on, and the top frame must be able to tell an extension's
+ * report from a claim by the page inside it. Anything the surface acts on — the host it
+ * would trust — is derived from that stamped origin, not from a field the frame filled.
+ */
+export type FrameFinding =
+  | {
+      readonly kind: 'injection'
+      readonly origin: string
+      readonly summary: string
+      readonly count: number
+    }
+  | {
+      readonly kind: 'credential'
+      readonly origin: string
+      readonly severity: 'critical' | 'major' | 'minor'
+      /** What is known and what is not, in the order the surface should read them. */
+      readonly lines: readonly FrameLine[]
+    }
+
 /** Everything that may leave the device, named so the audit log can say why. */
 export type Purpose =
   | 'feed-update'
@@ -64,11 +112,11 @@ export interface RpcMap {
    * the receiver is not failing, it does not exist yet.
    */
   'frame/report': {
-    req: { origin: string; summary: string; count: number }
+    req: FrameFinding
     res: { delivered: boolean }
   }
   'frame/finding': {
-    req: { origin: string; summary: string; count: number }
+    req: FrameFinding
     res: { ok: true }
   }
   /**
@@ -246,6 +294,15 @@ export interface RpcMap {
         | 'scan-failed'
         /** The budget ran out before anything was found: looked, could not finish. */
         | 'scan-blinded'
+        /**
+         * A frame's password warning never reached the page that embeds it.
+         *
+         * Its own kind rather than `frame-unreported`, because nothing else is
+         * journalled about it: an injection that fails to relay was still neutralised
+         * in the frame and has rows of its own, while a password warning that fails to
+         * relay leaves no other trace of what was suppressed.
+         */
+        | 'credential-unreported'
       explain: string
     }
     res: { ok: true }

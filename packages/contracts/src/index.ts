@@ -24,7 +24,16 @@ export type {
 export type { ActionInput } from './policy.js'
 export { decideAction } from './policy.js'
 
-export type { AuditEntry, Envelope, Purpose, RpcError, RpcMap, RpcType } from './rpc.js'
+export type {
+  AuditEntry,
+  Envelope,
+  FrameFinding,
+  FrameLine,
+  Purpose,
+  RpcError,
+  RpcMap,
+  RpcType,
+} from './rpc.js'
 export { isEnvelope } from './rpc.js'
 export type {
   ActionKind,

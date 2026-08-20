@@ -1002,7 +1002,18 @@
     "message": "Что отправляется"
   },
   "frameUnreported": {
-    "message": "Находку в этом кадре не удалось передать странице, которая его встроила: попыток $ATTEMPTS$ за $SECONDS$ с.",
+    "message": "Находку в этом встроенном фрейме не удалось передать странице, которая его встроила: попыток $ATTEMPTS$ за $SECONDS$ с.",
+    "placeholders": {
+      "attempts": {
+        "content": "$1"
+      },
+      "seconds": {
+        "content": "$2"
+      }
+    }
+  },
+  "credentialUnreported": {
+    "message": "Предупреждение о пароле во встроенном фрейме не удалось передать странице, которая его встроила: попыток $ATTEMPTS$ за $SECONDS$ с.",
     "placeholders": {
       "attempts": {
         "content": "$1"
@@ -2027,6 +2038,17 @@
   },
   "warnCredentialSource": {
     "message": "то, что это устройство уже знает об этом сайте"
+  },
+  "warnCredentialFrameHeadline": {
+    "message": "Прежде чем вводить пароль в форму из $WHERE$",
+    "placeholders": {
+      "where": {
+        "content": "$1"
+      }
+    }
+  },
+  "warnCredentialFrameSource": {
+    "message": "то, что это устройство уже знает о сайте во встроенном фрейме"
   },
   "warnCredentialUnknown": {
     "message": "Не известно: $LIST$.",

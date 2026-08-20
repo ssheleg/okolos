@@ -15,6 +15,7 @@ import {
 } from '@okolos/storage'
 import type {
   Envelope,
+  FrameFinding,
   GateDecision,
   PageCandidates,
   RpcMap,
@@ -74,10 +75,9 @@ platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>, from: RpcSe
       // and it must not try — a `window.top.postMessage` hop goes through the page's
       // own window, where the page can forge it and the top frame cannot tell an
       // extension's report from a claim by the thing being reported.
-      return relayFrameFinding(
-        message.payload as { origin: string; summary: string; count: number },
-        from,
-      ) as Promise<RpcMap[T]['res']>
+      return relayFrameFinding(message.payload as FrameFinding, from) as Promise<
+        RpcMap[T]['res']
+      >
     case 'rules/refresh':
       return refreshBlockRules() as Promise<RpcMap[T]['res']>
     case 'block/context':
@@ -223,7 +223,7 @@ async function handleCandidates(page: PageCandidates): Promise<{ verdicts: Verdi
  * silence. That is why this returns a fact instead of nothing.
  */
 async function relayFrameFinding(
-  finding: { origin: string; summary: string; count: number },
+  finding: FrameFinding,
   from: RpcSender,
 ): Promise<{ delivered: boolean }> {
   if (typeof from.tabId !== 'number' || (from.frameId ?? 0) === 0) return { delivered: false }

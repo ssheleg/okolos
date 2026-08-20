@@ -43,6 +43,7 @@ are specified once in [screens.md](screens.md).
 | SCN-031 | A finding inside an embedded frame reaches the page that embeds it | ai-shield | P-01 | ST-001, FLW-02 | implemented | 2026-08-20 e2e |
 | SCN-032 | The local store was written by a newer build | recovery | P-01 | ST-019, FLW-14 | implemented | 2026-08-20 unit |
 | SCN-033 | Deciding whether to install, from pages that run nothing | pre-install | P-01 | ST-021, FLW-18 | implemented | 2026-08-20 unit+gate |
+| SCN-034 | A login form inside an embedded frame is checked | web-guard | P-02 | ST-010, FLW-09 | implemented | 2026-08-20 e2e |
 
 ## Personas
 
@@ -273,8 +274,28 @@ See [foundation.md](foundation.md) → Personas.
 - **UI elements:** inline banner (credential variant), "Why", domain facts, "Leave", "I trust this site"
 - **States covered:** success
 - **Errors & recovery:** domain age data unavailable -> the warning states which facts are missing rather than implying the domain is new. Registration age is never looked up at all: asking a server would send the address of every login page the user visits
+- **Behaviour notes:** this scenario is the form **on the page itself**. A form inside an embedded frame is SCN-034, and until 2026-08-20 it was covered by neither: the watcher stood under `if (isTopFrame)` and this entry did not say so, which is how a gap reads as covered
 - **Status:** implemented
 - **Coverage:** packages/core-credential/src/guard.ts:guardCredentialEntry, apps/extension/src/content/credential.ts:watchCredentialFields, e2e/scn-011.spec.ts
+
+### SCN-034: A login form inside an embedded frame is checked
+- **Persona:** P-02
+- **Feature:** web-guard
+- **Traces:** ST-010, FLW-09 (JTBD-02, JRN-03/#4)
+- **Entry point:** focus on a password or payment field inside a frame the page embeds from another origin
+- **Preconditions:** the frame's own domain is neither trusted nor established; the embedding page itself raises nothing
+- **Steps:**
+  1. User clicks into the password field inside the frame -> the watcher runs **in that frame** and asks what this device knows about the frame's own domain, not the page's
+  2. The frame has facts to state -> it hands them to the page that embeds it as keys, and draws nothing itself
+  3. The top frame shows one warning, naming the frame's domain -> "before you type a password here" and "before you type a password into a form from g00gle.com" are different sentences, and only the second says whose form it is
+- **Expected result:** the ordinary shape — an OAuth or payment form in an iframe — is checked, and the person sees the warning on the page they are looking at
+- **Alt paths:** user clicks "Это неверно" -> the **frame's** domain is trusted, because that is the domain the warning is about; user clicks "Уйти со страницы" -> the top frame goes back, which is what leaving a page carrying that form means; a banner is already up for a worse finding -> this becomes a line on it rather than a second panel (the slot rule, SCN-031)
+- **UI elements:** in-page banner (credential variant) in the **top** frame, headline naming the frame's domain, the domain's facts, "Уйти со страницы", "Это неверно", "Скрыть"
+- **States covered:** success
+- **Errors & recovery:** the top frame's content script has not started yet -> the frame retries, twelve attempts 750 ms apart, then journals `credential-unreported` naming the count and the duration, because a password warning that silently failed to arrive is worse than one that says so; a frame with no address of its own (`srcdoc`, `about:blank`) -> the banner says "встроенный фрейм без собственного адреса" and the trust control only hides the warning, because there is no domain to record a decision about
+- **Behaviour notes:** the frame reports and never draws, and both halves are deliberate. A banner inside a 300x200 frame is clipped and inside a hidden ad frame warns nobody — so drawing there is not warning. **The facts travel, not the sentence:** the frame sends catalogue keys and their arguments, and the surface that draws owns the words, which is the same rule the journal follows (B-75, B-77) and the reason one wording module serves both surfaces. **The domain the warning names comes from the origin the background stamped, never from a field the frame filled in:** the frame is the thing being reported on, so a frame that could name itself could name somebody else — and the trust control acts on that stamped domain for the same reason. **Until 2026-08-20 nothing watched this at all** (B-79): `watchCredentialFields` stood under `if (isTopFrame)` while the comment above it claimed a subframe's form "is warned about by the frame it is in", which that very condition prevented
+- **Status:** implemented
+- **Coverage:** apps/extension/src/content/index.ts:tellEmbeddingPageOfPassword and showFrameCredential, apps/extension/src/content/credential.ts:watchCredentialFields (the `report` seam), apps/extension/src/content/credential-words.ts:credentialLines, packages/contracts/src/rpc.ts:FrameFinding, apps/extension/src/background/index.ts:relayFrameFinding, e2e/scn-034.spec.ts, apps/extension/src/content/credential.test.ts (the frame path), apps/extension/src/content/credential-words.test.ts
 
 ### SCN-012: Download stopped by feed or hash
 - **Persona:** P-01

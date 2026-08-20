@@ -15,6 +15,8 @@ import {
 import { worstOf } from '@okolos/contracts'
 import type {
   AgentAction,
+  FrameFinding,
+  FrameLine,
   Severity,
   GateChoice,
   UnresolvedFinding,
@@ -26,6 +28,7 @@ import { createPacer } from './pace.js'
 import { reportToEmbeddingPage } from './report-frame.js'
 import { collect, DEFAULT_BUDGET } from './collect.js'
 import { warnIfLookalike } from './lookalike.js'
+import { credentialDetail } from './credential-words.js'
 import { watchCredentialFields } from './credential.js'
 import { showDownloadVerdict } from './download.js'
 import { watchForTraps } from './traps.js'
@@ -339,7 +342,12 @@ async function scan(): Promise<void> {
  */
 async function tellEmbeddingPage(verdicts: readonly Verdict[]): Promise<void> {
   await reportToEmbeddingPage(
-    { origin: '', summary: summarise(worst(verdicts)).slice(0, 160), count: verdicts.length },
+    {
+      kind: 'injection',
+      origin: '',
+      summary: summarise(worst(verdicts)).slice(0, 160),
+      count: verdicts.length,
+    },
     {
       relay: (report) => platform.runtime.send('frame/report', report),
       giveUp: async ({ attempts, seconds }) => {
@@ -378,8 +386,13 @@ function worst(verdicts: readonly Verdict[]): Verdict {
  * where to look. An empty origin — a `srcdoc` or `about:blank` frame, whose address
  * is not the frame's own — says "an embedded frame" instead of pretending to a name.
  */
-function showFrameFinding(finding: { origin: string; summary: string; count: number }): void {
+function showFrameFinding(finding: FrameFinding): void {
   const where = finding.origin === '' ? t('warnFrameUnnamed') : finding.origin
+  if (finding.kind === 'credential') {
+    showFrameCredential(finding, where)
+    return
+  }
+
   const more = finding.count > 1 ? t('warnFrameMore', String(finding.count - 1)) : ''
 
   slot.claim({
@@ -400,6 +413,62 @@ function showFrameFinding(finding: { origin: string; summary: string; count: num
       onDismiss: resolveEverything,
     },
   })
+}
+
+/**
+ * A password warning about a form that is not on this page, drawn on the page a person
+ * is looking at.
+ *
+ * The three actions are the same three the in-page warning offers, and each is
+ * expressible from here: "leave" goes back in the top frame, which is what leaving the
+ * page carrying that form means; "this is wrong" trusts the frame's site, which is the
+ * site the warning is about; "hide" resolves.
+ *
+ * The host is derived from the origin the **background** stamped, never from a field the
+ * frame filled in. The frame is the thing being reported on, so a host it supplied would
+ * let a poisoned frame nominate what gets trusted (`FrameFinding` in the contract says
+ * the same thing from the other end). An origin with no host — `about:blank`, a `data:`
+ * document — leaves nothing to trust, and the button then only hides the warning rather
+ * than pretending to record a decision.
+ */
+function showFrameCredential(
+  finding: Extract<FrameFinding, { kind: 'credential' }>,
+  where: string,
+): void {
+  const host = hostOf(finding.origin)
+
+  slot.claim({
+    kind: 'frame-credential',
+    severity: finding.severity,
+    props: {
+      variant: 'credential',
+      severity: finding.severity,
+      headline: t('warnCredentialFrameHeadline', where),
+      detail: credentialDetail(finding.lines),
+      sourceLine: t('warnFoundBy', t('warnCredentialFrameSource')),
+    },
+    handlers: {
+      onPrimary: () => history.back(),
+      onRetry: () => history.back(),
+      onDispute: () => {
+        if (host !== null) {
+          void platform.runtime.send('trust/add', { domain: host }).catch(() => undefined)
+        }
+        resolveEverything()
+      },
+      onDismiss: resolveEverything,
+    },
+  })
+}
+
+/** The host inside an origin, or null when the origin names no host. */
+function hostOf(origin: string): string | null {
+  try {
+    const host = new URL(origin).hostname
+    return host === '' ? null : host
+  } catch {
+    return null
+  }
 }
 
 function openFrameJournal(): void {
@@ -723,41 +792,78 @@ if (isTopFrame) {
 }
 
 /**
- * The password pause, top frame only — and nothing watches a login form in a frame.
+ * The password pause, in every frame — and only the top frame draws it.
  *
- * This comment used to say a subframe's form "is warned about by the frame it is in",
- * which the very condition below prevents: the content script runs in every frame, and in
- * a subframe `isTopFrame` is false, so this block is skipped there too. An OAuth or
- * payment form in an iframe — the ordinary shape, not the exotic one — is watched by
- * nobody (B-79).
+ * For two releases this stood under `if (isTopFrame)`, and the comment claimed a
+ * subframe's form "is warned about by the frame it is in" — which that very condition
+ * prevented: the content script runs in every frame, and in a subframe `isTopFrame` is
+ * false, so the block was skipped there too. An OAuth or payment form in an iframe —
+ * the ordinary shape, not the exotic one — was watched by nobody (B-79).
  *
- * The restriction itself is not wrong: this mounts a banner, and a banner inside a small
- * frame is clipped or invisible, which is exactly why the injection relay exists. What is
- * missing is that channel for a credential finding, and that is a feature rather than a
- * condition to delete.
+ * The restriction was half right, and the half that was right is kept. A banner inside a
+ * small frame is clipped, invisible, or drawn once per ad frame, so a frame must not
+ * draw. It can report, which is what the injection side has done since B-34, and the
+ * relay carries a kind now so a password warning keeps its facts on the way up.
+ *
+ * `trust` and `leave` are unreachable on the frame's path — `report` returns before the
+ * mount — and are passed anyway rather than stubbed: a dependency that lies about what it
+ * would do is worse than one nothing calls. The surface that does draw offers both, bound
+ * to the frame's site rather than to the frame.
  */
-if (isTopFrame) {
-  watchCredentialFields({
-    mountWarning: warningMount('credential', 'major'),
-    doc: document,
-    host: () => location.hostname,
-    now: () => new Date().toISOString(),
-    facts: async (host) => {
-      const known = await platform.runtime.send('site/facts', { host })
-      const trusted = (await platform.runtime.send('trust/list', {}))?.domains ?? []
-      return {
-        trusted: known?.trusted ?? trusted.includes(host),
-        firstSeen: known?.firstSeen ?? null,
-        secure: location.protocol === 'https:',
-        postsTo: null,
-        resembles: checkLookalike(host, [...DEFAULT_WATCHLIST, ...trusted])?.resembles ?? null,
-      }
+watchCredentialFields({
+  ...(isTopFrame
+    ? { mountWarning: warningMount('credential', 'major') }
+    : { report: tellEmbeddingPageOfPassword }),
+  doc: document,
+  host: () => location.hostname,
+  now: () => new Date().toISOString(),
+  facts: async (host) => {
+    const known = await platform.runtime.send('site/facts', { host })
+    const trusted = (await platform.runtime.send('trust/list', {}))?.domains ?? []
+    return {
+      trusted: known?.trusted ?? trusted.includes(host),
+      firstSeen: known?.firstSeen ?? null,
+      // The frame's own protocol and host, deliberately: the site asking for the
+      // password is the one inside the frame, and a page served over https can embed a
+      // login form that is not.
+      secure: location.protocol === 'https:',
+      postsTo: null,
+      resembles: checkLookalike(host, [...DEFAULT_WATCHLIST, ...trusted])?.resembles ?? null,
+    }
+  },
+  trust: async (host) => {
+    await platform.runtime.send('trust/add', { domain: host })
+  },
+  leave: () => history.back(),
+})
+
+/**
+ * A frame handing its password warning to the page that embeds it.
+ *
+ * Same policy as the injection report — twelve attempts, nine seconds — because the
+ * receiver is absent rather than broken, and a warning delivered to nobody is the
+ * silence this whole channel exists to end. What is different is the journal line when
+ * the budget runs out: "a finding could not be relayed" and "a password warning could
+ * not be relayed" are different losses, and a reader of the export must be able to tell
+ * which one happened.
+ */
+function tellEmbeddingPageOfPassword(finding: {
+  severity: 'critical' | 'major' | 'minor'
+  lines: FrameLine[]
+}): void {
+  void reportToEmbeddingPage(
+    { kind: 'credential', origin: '', severity: finding.severity, lines: finding.lines },
+    {
+      relay: (report) => platform.runtime.send('frame/report', report),
+      giveUp: async ({ attempts, seconds }) => {
+        await platform.runtime.send('page/note', {
+          kind: 'credential-unreported',
+          explain: t('credentialUnreported', String(attempts), String(seconds)),
+        })
+      },
+      wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     },
-    trust: async (host) => {
-      await platform.runtime.send('trust/add', { domain: host })
-    },
-    leave: () => history.back(),
-  })
+  ).catch(() => undefined)
 }
 
 /**
@@ -809,9 +915,13 @@ function reuseLine(verdict: { reusedOn: string[]; reuseUnknown: boolean }): stri
  * before they have finished typing interrupts a login they were going to
  * complete anyway.
  *
- * **Top frame only, and a password submitted from an iframe is therefore never checked**
- * — same gap as the pause above, same reason: this claims a banner slot, and a slot
- * inside a frame nobody can see is not a warning (B-79).
+ * **Top frame only, and a password submitted from an iframe is therefore never checked
+ * (B-80).** The reason the restriction was placed is still true — this claims a banner
+ * slot, and a slot inside a frame nobody can see is not a warning — but it is no longer
+ * the whole answer: the pause above used to say the same and now reports upward instead,
+ * over a relay that carries a kind. This one has not been done. A leak verdict is a third
+ * kind with its own payload (how many leaks, reuse, "change the password"), and adding it
+ * is a change of its own rather than a line in somebody else's.
  */
 if (isTopFrame) {
   document.addEventListener(
@@ -929,8 +1039,7 @@ if (isTopFrame) {
      * the panel that is up instead of a panel beside it.
      */
     if (message.type === 'frame/finding') {
-      const finding = message.payload as { origin: string; summary: string; count: number }
-      showFrameFinding(finding)
+      showFrameFinding(message.payload as FrameFinding)
       return Promise.resolve({ ok: true }) as never
     }
 

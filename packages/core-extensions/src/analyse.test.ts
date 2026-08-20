@@ -31,21 +31,31 @@ describe('what a package gives away in its text', () => {
   })
 
   it('notices heavy hex escaping', () => {
+    // Its own kind rather than `obfuscation`, which is where a decoder call lands: this
+    // is a measurement of the whole file, not a quotation from a line of it, and the
+    // two need different sentences on the screen.
     const report = analysePackage('\\x68\\x65\\x6c\\x6c\\x6f'.repeat(40))
-    expect(report.findings.some((finding) => finding.kind === 'obfuscation')).toBe(true)
+    expect(report.findings.some((finding) => finding.kind === 'hex-density')).toBe(true)
   })
 })
 
 describe('what it says about its own worth', () => {
-  it('admits a minified file proves little either way', () => {
+  /**
+   * The caveat itself is asserted on the surface that writes it — see
+   * `packages/ui/src/extensions/words.test.ts`. Here the fact it is keyed on: the two
+   * sentences never varied on anything else, and a package with no catalogue had no
+   * business composing either (B-75).
+   */
+  it('reports a minified file as minified, and says nothing in prose', () => {
     const report = analysePackage(`const a=1;${'x'.repeat(600)}`)
     expect(report.minified).toBe(true)
-    expect(report.note).toMatch(/proves little/i)
+    expect(report).not.toHaveProperty('note')
   })
 
-  it('says findings are not proof of intent', () => {
-    // eval appears in polyfills; a fetch to an API is what most extensions do.
-    expect(analysePackage('eval(x)').note).toMatch(/no.*proof of intent/i)
+  it('reports an ordinary file as readable, which is what the caveat turns on', () => {
+    // eval appears in polyfills; a fetch to an API is what most extensions do — and the
+    // sentence saying so is the surface's, keyed on this boolean.
+    expect(analysePackage('eval(x)').minified).toBe(false)
   })
 
   it('finds nothing in an ordinary file, and says so calmly', () => {
@@ -56,7 +66,28 @@ describe('what it says about its own worth', () => {
 
   it('keeps the evidence short enough to read', () => {
     const report = analysePackage(`importScripts("https://cdn.test/${'a'.repeat(500)}.js")`)
-    for (const finding of report.findings) expect(finding.evidence.length).toBeLessThanOrEqual(120)
+    // Only the kinds that quote the file have an excerpt to keep short; hex density is
+    // a measurement. Filtered rather than skipped inside the loop, so the assertion is
+    // not standing behind a branch.
+    const quoted = report.findings.filter((finding) => finding.kind !== 'hex-density')
+    expect(quoted.length).toBeGreaterThan(0)
+    for (const finding of quoted) expect(finding.evidence.length).toBeLessThanOrEqual(120)
+  })
+
+  it('reports hex density as a number, with no sentence around it', () => {
+    // It used to arrive as `"N hex escapes per 100 characters"` — English prose from a
+    // package with no catalogue, and the one finding here that is a measurement rather
+    // than a quotation from the file.
+    const report = analysePackage('\\x41\\x42\\x43\\x44\\x45')
+    const dense = report.findings.filter((finding) => finding.kind === 'hex-density')
+    // One row, and its shape asserted whole: a narrowing `if` around the number would
+    // skip in silence if the kind ever stopped arriving, and the test would still pass.
+    expect(dense).toHaveLength(1)
+    // Five escapes in twenty characters is twenty-five per hundred. The threshold's own
+    // division floors the denominator at one and would have called it five — true of
+    // nothing, and false in the exact words the screen puts around it.
+    expect(dense[0]).toMatchObject({ per100: 25, where: 'the package' })
+    expect(dense[0]).not.toHaveProperty('evidence')
   })
 })
 

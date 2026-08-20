@@ -40,6 +40,23 @@ describe('resolving one specifier', () => {
   })
 })
 
+  it('follows a package subpath through its exports map', () => {
+    // `@okolos/ui/words` exists so the worker can take a lookup table without pulling
+    // the whole UI graph in. The resolver assumed `src/index.ts` for every workspace
+    // specifier, so this resolved to nothing — the module read as unreachable, and
+    // everything it imports fell out of the graph with it.
+    const from = path.join(root, 'apps/extension/src/background/extensions.ts')
+    expect(resolve('@okolos/ui/words', from)).toBe(path.join(root, 'packages/ui/src/words.ts'))
+  })
+
+  it('throws on a workspace specifier nothing exports, rather than returning null', () => {
+    // `null` means "an npm dependency, outside this graph". A broken `@okolos/…` is a
+    // mistake in this repository, and answering it with the same value hides it inside
+    // every gate that walks imports.
+    const from = path.join(root, 'apps/extension/src/background/extensions.ts')
+    expect(() => resolve('@okolos/ui/nothing-like-this', from)).toThrow(/does not export/)
+  })
+
 describe('reading one file', () => {
   it('sees static, dynamic and side-effect imports alike', () => {
     const seen = specifiers(content)

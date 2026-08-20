@@ -1,5 +1,7 @@
 import { t } from '@okolos/i18n'
 
+import { analysisNote, changeSentence, findingEvidence } from './words.js'
+
 import type { InventoryChange, PackageReport } from '@okolos/core-extensions'
 
 /**
@@ -158,7 +160,7 @@ function analysisBlock(
       'analysis-summary',
       report.findings.length === 0
         ? t('extensionsNothingOfNote')
-        : `${report.findings.length} thing${report.findings.length === 1 ? '' : 's'} worth a look.`,
+        : t('extensionsWorthALook', String(report.findings.length)),
     ),
   )
 
@@ -166,13 +168,13 @@ function analysisBlock(
     const row = doc.createElement('article')
     row.setAttribute('data-role', 'finding')
     row.setAttribute('data-kind', finding.kind)
-    row.append(text(doc, 'evidence', finding.evidence))
+    row.append(text(doc, 'evidence', findingEvidence(finding)))
     block.append(row)
   }
 
   // The report's own caveat, shown rather than filed away: it is the difference
   // between evidence and an accusation.
-  block.append(text(doc, 'analysis-caveat', report.note))
+  block.append(text(doc, 'analysis-caveat', analysisNote(report)))
   return block
 }
 
@@ -185,7 +187,7 @@ function changeRow(
   row.setAttribute('data-role', 'change')
   row.setAttribute('data-kind', change.kind)
   row.setAttribute('data-severity', change.severity)
-  row.append(text(doc, 'detail', change.detail))
+  row.append(text(doc, 'detail', changeSentence(change)))
 
   const actions = doc.createElement('div')
   actions.setAttribute('data-role', 'change-actions')

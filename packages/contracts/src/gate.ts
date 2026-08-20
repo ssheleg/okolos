@@ -69,6 +69,22 @@ export interface GateDecision {
   readonly outcome: GateOutcome
   readonly reason: GateReason
   readonly findingIds: readonly string[]
-  /** A plain sentence, for the journal and for the user. Never empty. */
-  readonly explain: string
+  /**
+   * What the action was, for the sentence somebody writes about this decision.
+   *
+   * It used to be `explain: string` — a finished English sentence from a package with
+   * zero dependencies, journalled and exported for a reader whose interface is Russian
+   * (B-75). `reason` was already a code and the sentence merely restated it, so the
+   * sentence is gone and the words are written where the catalogue is:
+   * `handleGateDecision` in the background composes them from `reason` and this.
+   */
+  readonly describes: string
+  /**
+   * Why the confirmation could not be shown, when that is what happened.
+   *
+   * The one thing `reason` cannot carry: a browser's message about a surface that
+   * failed to open. It is the platform's own text and stays as it is — quoting it is
+   * honest, translating it invents a message no browser sent.
+   */
+  readonly detail?: string
 }

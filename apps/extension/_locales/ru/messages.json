@@ -594,6 +594,64 @@
   "extensionsAlreadyOff": {
     "message": "Уже отключено."
   },
+  "extensionsAnalysisMinified": {
+    "message": "Этот файл сжат, поэтому чтение мало что доказывает в любую сторону. Перечислено то, что было видно."
+  },
+  "extensionsAnalysisReadable": {
+    "message": "Перечислено то, что нашлось в тексте. Ничто из этого не доказывает умысла."
+  },
+  "extensionsChangeHosts": {
+    "message": "Расширение $NAME$ теперь может читать $WHERE$.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "where": {
+        "content": "$2"
+      }
+    }
+  },
+  "extensionsChangeInstalled": {
+    "message": "Расширение $NAME$ появилось со времени прошлой проверки.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "extensionsChangePermission": {
+    "message": "Расширение $NAME$ теперь просит $WHAT$ — раньше не просило.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "what": {
+        "content": "$2"
+      }
+    }
+  },
+  "extensionsChangePublisher": {
+    "message": "Расширение $NAME$ теперь выпускает $WHO$, раньше — $BEFORE$.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "who": {
+        "content": "$2"
+      },
+      "before": {
+        "content": "$3"
+      }
+    }
+  },
+  "extensionsChangeRemoved": {
+    "message": "Расширение $NAME$ больше не установлено.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
   "extensionsChooseFile": {
     "message": "Выберите файл пакета"
   },
@@ -630,6 +688,14 @@
       }
     }
   },
+  "extensionsHexDensity": {
+    "message": "экранированных байтов на 100 символов: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
   "extensionsInspectNote": {
     "message": "Ни один браузер не отдаёт одному расширению код другого, поэтому сам по себе здесь ничего не разобрать. Выберите скачанный пакет — он будет прочитан на этом устройстве, никуда ничего не уходит."
   },
@@ -659,6 +725,17 @@
   },
   "extensionsUnknownReason": {
     "message": "причина неизвестна"
+  },
+  "extensionsUnnamedParty": {
+    "message": "неназванная сторона"
+  },
+  "extensionsWorthALook": {
+    "message": "Стоит посмотреть: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
   },
   "feedFetchFailed": {
     "message": "Список блокировок не скачался: $CAUSE$. Остаётся тот, что уже действует.",
@@ -836,6 +913,47 @@
     "message": "Открыть $TARGET$",
     "placeholders": {
       "target": {
+        "content": "$1"
+      }
+    }
+  },
+  "gateReasonHumanGesture": {
+    "message": "Это действие начали вы, поэтому его не задерживали."
+  },
+  "gateReasonNoFinding": {
+    "message": "На этой странице нет нерешённых находок, поэтому действие не задерживали."
+  },
+  "gateReasonTimeout": {
+    "message": "Заблокировано: «$ACTION$» задержали для решения, и ответа не было.",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "gateReasonUnavailable": {
+    "message": "Заблокировано: действие задержали, но спросить вас не получилось ($CAUSE$).",
+    "placeholders": {
+      "cause": {
+        "content": "$1"
+      }
+    }
+  },
+  "gateReasonUnidentified": {
+    "message": "Заблокировано: на странице есть нерешённая находка, а что за действие пытались выполнить — определить не удалось."
+  },
+  "gateReasonUserAllowed": {
+    "message": "Разрешено один раз: вы пропустили «$ACTION$» со страницы, где есть нерешённая находка.",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "gateReasonUserBlocked": {
+    "message": "Заблокировано: вы остановили «$ACTION$».",
+    "placeholders": {
+      "action": {
         "content": "$1"
       }
     }

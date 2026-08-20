@@ -594,6 +594,64 @@
   "extensionsAlreadyOff": {
     "message": "Already off."
   },
+  "extensionsAnalysisMinified": {
+    "message": "This file is minified, so reading it proves little either way. What is listed is what was visible."
+  },
+  "extensionsAnalysisReadable": {
+    "message": "What is listed is what was found in the text. None of it is proof of intent."
+  },
+  "extensionsChangeHosts": {
+    "message": "$NAME$ can now read $WHERE$.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "where": {
+        "content": "$2"
+      }
+    }
+  },
+  "extensionsChangeInstalled": {
+    "message": "$NAME$ was added since the last check.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "extensionsChangePermission": {
+    "message": "$NAME$ now asks for $WHAT$, which it did not before.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "what": {
+        "content": "$2"
+      }
+    }
+  },
+  "extensionsChangePublisher": {
+    "message": "$NAME$ is now published by $WHO$, previously $BEFORE$.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "who": {
+        "content": "$2"
+      },
+      "before": {
+        "content": "$3"
+      }
+    }
+  },
+  "extensionsChangeRemoved": {
+    "message": "$NAME$ is no longer installed.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
   "extensionsChooseFile": {
     "message": "Choose a package file"
   },
@@ -630,6 +688,14 @@
       }
     }
   },
+  "extensionsHexDensity": {
+    "message": "$COUNT$ hex escapes per 100 characters",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
   "extensionsInspectNote": {
     "message": "No browser hands one extension another’s code, so nothing here can be analysed on its own. Choose a package you downloaded and it is read on this device — nothing is uploaded."
   },
@@ -659,6 +725,17 @@
   },
   "extensionsUnknownReason": {
     "message": "unknown reason"
+  },
+  "extensionsUnnamedParty": {
+    "message": "an unnamed party"
+  },
+  "extensionsWorthALook": {
+    "message": "Worth a look: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
   },
   "feedFetchFailed": {
     "message": "The blocking feed could not be fetched: $CAUSE$. The list already in force stays.",
@@ -836,6 +913,47 @@
     "message": "Open $TARGET$",
     "placeholders": {
       "target": {
+        "content": "$1"
+      }
+    }
+  },
+  "gateReasonHumanGesture": {
+    "message": "You started this action yourself, so it was not held."
+  },
+  "gateReasonNoFinding": {
+    "message": "Nothing on this page is unresolved, so the action was not held."
+  },
+  "gateReasonTimeout": {
+    "message": "Blocked: “$ACTION$” was held for a decision and none was given in time.",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "gateReasonUnavailable": {
+    "message": "Blocked: the action was held but you could not be asked ($CAUSE$).",
+    "placeholders": {
+      "cause": {
+        "content": "$1"
+      }
+    }
+  },
+  "gateReasonUnidentified": {
+    "message": "Blocked: this page has an unresolved finding and we could not determine what kind of action was being attempted."
+  },
+  "gateReasonUserAllowed": {
+    "message": "Allowed once: you let “$ACTION$” proceed from a page with an unresolved finding.",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "gateReasonUserBlocked": {
+    "message": "Blocked: you stopped “$ACTION$”.",
+    "placeholders": {
+      "action": {
         "content": "$1"
       }
     }

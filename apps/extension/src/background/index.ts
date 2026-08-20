@@ -51,6 +51,7 @@ const platform = detectPlatform()
  */
 useResolver((key, substitutions) => platform.message(key, substitutions))
 import { spaceAwareWrite } from './audit-space.js'
+import { gateExplain } from './gate-words.js'
 import { canVerify, createVerifier, FEED_PUBLIC_KEY, updateFeed } from './feeds.js'
 import { syncFeed } from './feed-sync.js'
 import { t, useResolver } from '@okolos/i18n'
@@ -250,7 +251,7 @@ async function handleGateDecision(decision: GateDecision): Promise<{ ok: true }>
         outcome: decision.outcome,
         reason: decision.reason,
         findings: decision.findingIds.join(','),
-        explain: decision.explain,
+        ...gateExplain(decision),
       },
     })
   } catch (cause) {

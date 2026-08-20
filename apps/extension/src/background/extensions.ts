@@ -1,3 +1,4 @@
+import { changeExplain } from '@okolos/ui/words'
 import { diffInventory, type ExtensionSnapshot, type InventoryChange } from '@okolos/core-extensions'
 import type { OkolosDatabase } from '@okolos/storage'
 
@@ -122,12 +123,27 @@ export async function journalChanges(
   for (const change of changes) {
     const id = `extension:${change.id}:${change.kind}`
     const existing = await deps.db.get('journal', id)
-    if (existing && existing.detail?.explain === change.detail) continue
+    const explained = changeExplain(change)
+    /**
+     * Compared on the values, not on the sentence they make.
+     *
+     * The row used to hold a finished sentence and this compared that — so once the
+     * words became the reader's (B-75), a browser switched to another language would
+     * have rewritten every unaccepted row and pushed `createdAt` to today, making each
+     * old change claim it had just happened. What changed is the key and its arguments.
+     */
+    if (
+      existing &&
+      existing.detail?.explainKey === explained.explainKey &&
+      String(existing.detail?.explainArgs) === String(explained.explainArgs)
+    ) {
+      continue
+    }
     await deps.db.put('journal', {
       id,
       createdAt: deps.now(),
       kind: 'verdict',
-      detail: { explain: change.detail, kind: change.kind, severity: change.severity },
+      detail: { ...explained, kind: change.kind, severity: change.severity },
     })
   }
 }

@@ -26,7 +26,7 @@ const CHANGE: InventoryChange = {
   kind: 'permission-added',
   id: 'abc',
   name: 'Colour Picker',
-  detail: 'Colour Picker now asks for cookies, which it did not before.',
+  permissions: ['cookies'],
   severity: 'critical',
 }
 
@@ -58,6 +58,9 @@ describe('the delta comes first', () => {
 
   it('says what the change actually was', () => {
     const el = render({ kind: 'ready', changes: [CHANGE], installed: [], analysis: null, analysisNote: NOTE })
+    // The permission name, unchanged — a person checking the extension's own listing
+    // has to find the same word there. The sentence around it is `changeSentence`'s,
+    // and `words.test.ts` holds it to the catalogue.
     expect(role(el, 'detail')?.textContent).toContain('cookies')
   })
 
@@ -134,7 +137,6 @@ describe('inspecting a package the user supplies', () => {
     ],
     endpoints: ['https://cdn.test'],
     minified: false,
-    note: 'What is listed is what was found in the text. None of it is proof of intent.',
   }
 
   it('explains why nothing can be analysed on its own', () => {
@@ -173,7 +175,12 @@ describe('inspecting a package the user supplies', () => {
       analysis: REPORT,
       analysisNote: NOTE,
     })
-    expect(role(el, 'analysis-caveat')?.textContent).toMatch(/no.*proof of intent/i)
+    // The caveat is the difference between evidence and an accusation, so it is shown
+    // rather than filed away. Its words come from the catalogue now (B-75), which is
+    // why this asserts the shipped message rather than an English phrase.
+    expect(role(el, 'analysis-caveat')?.textContent).toBe(
+      CATALOGUE['extensionsAnalysisReadable']?.message,
+    )
   })
 
   it('says plainly when a clean file is clean', () => {
@@ -181,7 +188,7 @@ describe('inspecting a package the user supplies', () => {
       kind: 'ready',
       changes: [],
       installed: [],
-      analysis: { findings: [], endpoints: [], minified: false, note: 'ok' },
+      analysis: { findings: [], endpoints: [], minified: false },
       analysisNote: NOTE,
     })
     expect(role(el, 'analysis-summary')?.textContent).toMatch(/ничего примечательного/i)

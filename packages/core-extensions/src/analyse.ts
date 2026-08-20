@@ -13,26 +13,52 @@
  * evidence beside it.
  */
 
-export interface PackageFinding {
-  readonly kind:
-    | 'remote-code'
-    | 'dynamic-eval'
-    | 'obfuscation'
-    | 'endpoint'
-    | 'credential-access'
-    /** A power over the browser itself: driving it, leaving it, rewriting its traffic. */
-    | 'browser-control'
-  /** Verbatim excerpt, short enough to read. */
-  readonly evidence: string
-  readonly where: string
-}
+/**
+ * A finding, and what it can show for itself.
+ *
+ * Five kinds quote the file: the excerpt is the browser's characters and the author's,
+ * and a person checking the claim has to be able to find the same ones. Hex density is
+ * not a quotation but a measurement, and it used to arrive as an English sentence with
+ * the number already inside it (B-75) — a sentence from a package with no catalogue, on
+ * a screen read in Russian. It carries the number now; `findingEvidence` in
+ * `@okolos/ui/words` puts the words around it.
+ */
+export type PackageFinding = { readonly where: string } & (
+  | {
+      readonly kind:
+        | 'remote-code'
+        | 'dynamic-eval'
+        | 'obfuscation'
+        | 'endpoint'
+        | 'credential-access'
+        /** A power over the browser itself: driving it, leaving it, rewriting its traffic. */
+        | 'browser-control'
+      /** Verbatim excerpt, short enough to read. */
+      readonly evidence: string
+    }
+  | {
+      readonly kind: 'hex-density'
+      /**
+       * Escaped bytes per 100 characters of the file, rounded.
+       *
+       * Measured over the real length, which is not the same division the threshold
+       * uses — see `analysePackage`. Reported only above that threshold.
+       */
+      readonly per100: number
+    }
+)
 
 export interface PackageReport {
   readonly findings: readonly PackageFinding[]
   readonly endpoints: readonly string[]
-  /** True when the file is minified enough that reading it proves little. */
+  /**
+   * True when the file is minified enough that reading it proves little.
+   *
+   * The caveat the reader sees is derived from this and nothing else — it always was,
+   * and `note` said the same thing again in English prose. `analysisNote` in
+   * `@okolos/ui/words` is where the two sentences live now.
+   */
   readonly minified: boolean
-  readonly note: string
 }
 
 const REMOTE_CODE =
@@ -70,7 +96,7 @@ const DECODERS = /(\batob\s*\(|String\.fromCharCode\s*\(|\bunescape\s*\()/gi
 
 export function analysePackage(source: string, where = 'the package'): PackageReport {
   const findings: PackageFinding[] = []
-  const add = (kind: PackageFinding['kind'], evidence: string) => {
+  const add = (kind: Exclude<PackageFinding['kind'], 'hex-density'>, evidence: string) => {
     findings.push({ kind, evidence: evidence.slice(0, 120), where })
   }
 
@@ -89,16 +115,27 @@ export function analysePackage(source: string, where = 'the package'): PackageRe
   const longestLine = source.split('\n').reduce((max, line) => Math.max(max, line.length), 0)
   const minified = longestLine > 500
 
-  if (hexRatio > 1) add('obfuscation', `${Math.round(hexRatio)} hex escapes per 100 characters`)
-
-  return {
-    findings,
-    endpoints,
-    minified,
-    note: minified
-      ? 'This file is minified, so reading it proves little either way. What is listed is what was visible.'
-      : 'What is listed is what was found in the text. None of it is proof of intent.',
+  /**
+   * Above the threshold the density is a finding of its own: a number, not a quotation,
+   * and the only finding here without an excerpt behind it.
+   *
+   * Two divisions, deliberately. `hexRatio` floors the denominator at one, so a very
+   * short file cannot clear the threshold on two escapes — that is the flagging rule and
+   * it is unchanged. The number *shown* divides by the real length, because the sentence
+   * around it says "per 100 characters" and the floored ratio made that false on any
+   * file under a hundred: five escapes in twenty characters was reported as five per
+   * hundred, which is a fifth of the truth in the one place a reader is looking.
+   */
+  const escapes = source.match(HEX_STRINGS)?.length ?? 0
+  if (hexRatio > 1) {
+    findings.push({
+      kind: 'hex-density',
+      per100: Math.round((escapes * 100) / Math.max(1, source.length)),
+      where,
+    })
   }
+
+  return { findings, endpoints, minified }
 }
 
 function origin(url: string): string | null {

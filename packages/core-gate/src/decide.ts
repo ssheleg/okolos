@@ -53,38 +53,31 @@ export function assessAction(
   unresolved: readonly UnresolvedFinding[],
 ): GateAssessment {
   const findingIds = unresolved.map((finding) => finding.id)
-  const settle = (outcome: GateOutcome, reason: GateReason, explain: string): GateAssessment => ({
+  /**
+   * `reason` is the code and it was always the code; the sentence beside it merely said
+   * the same thing in English, inside a package with no catalogue (B-75). The words are
+   * the background's now — it journals them — and what travels is what a sentence needs.
+   */
+  const settle = (outcome: GateOutcome, reason: GateReason): GateAssessment => ({
     ask: false,
-    decision: { actionId: action.id, outcome, reason, findingIds, explain },
+    decision: { actionId: action.id, outcome, reason, findingIds, describes: action.description },
   })
 
   if (unresolved.length === 0) {
-    return settle(
-      'ungated',
-      'no-finding',
-      'Nothing on this page is unresolved, so the action was not held.',
-    )
+    return settle('ungated', 'no-finding')
   }
 
   // A trusted event is evidence of a person only in a browser nobody is
   // driving. Under automation the same event means the thing driving pressed
   // the button, which is the case this gate exists for.
   if (action.humanGesture && action.automated !== true) {
-    return settle(
-      'ungated',
-      'human-gesture',
-      'You started this action yourself, so it was not held.',
-    )
+    return settle('ungated', 'human-gesture')
   }
 
   if (action.kind === 'unknown' || action.description.trim() === '') {
     // There is no honest question to put to the user here: a modal that cannot
     // say what it is about invites a reflexive "allow".
-    return settle(
-      'blocked',
-      'unidentified',
-      'Blocked: this page has an unresolved finding and we could not determine what kind of action was being attempted.',
-    )
+    return settle('blocked', 'unidentified')
   }
 
   return { ask: true, action, findings: unresolved }
@@ -107,12 +100,13 @@ export async function resolveGate(
 
   const { action, findings } = assessment
   const findingIds = findings.map((finding) => finding.id)
-  const decide = (outcome: GateOutcome, reason: GateReason, explain: string): GateDecision => ({
+  const decide = (outcome: GateOutcome, reason: GateReason, detail?: string): GateDecision => ({
     actionId: action.id,
     outcome,
     reason,
     findingIds,
-    explain,
+    describes: action.description,
+    ...(detail === undefined ? {} : { detail }),
   })
 
   let choice: GateChoice | typeof TIMED_OUT
@@ -121,26 +115,14 @@ export async function resolveGate(
   } catch (cause) {
     // The surface could not be shown. A gate that fails open is not a gate.
     const detail = cause instanceof Error ? cause.message : String(cause)
-    return decide(
-      'blocked',
-      'unavailable',
-      `Blocked: the action was held but the confirmation could not be shown (${detail}).`,
-    )
+    return decide('blocked', 'unavailable', detail)
   }
 
   if (choice === TIMED_OUT) {
-    return decide(
-      'blocked',
-      'timeout',
-      `Blocked: "${action.description}" was held for a decision and none was given in time.`,
-    )
+    return decide('blocked', 'timeout')
   }
 
   return choice === 'allow-once'
-    ? decide(
-        'allowed-once',
-        'user-allowed',
-        `Allowed once: you let "${action.description}" proceed from a page with an unresolved finding.`,
-      )
-    : decide('blocked', 'user-blocked', `Blocked: you stopped "${action.description}".`)
+    ? decide('allowed-once', 'user-allowed')
+    : decide('blocked', 'user-blocked')
 }

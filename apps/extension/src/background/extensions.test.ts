@@ -109,10 +109,9 @@ describe('what a comparison reports', () => {
 
   it('names a removed extension by its name, not by its id', async () => {
     await compare([ext()])
-    expect((await compare([]))[0]).toMatchObject({
-      kind: 'removed',
-      detail: 'Colour Picker is no longer installed.',
-    })
+    // The name travels; the sentence it goes into belongs to the surface (B-75), and
+    // `packages/ui/src/extensions/words.test.ts` holds that end.
+    expect((await compare([]))[0]).toMatchObject({ kind: 'removed', name: 'Colour Picker' })
   })
 })
 
@@ -246,6 +245,13 @@ describe('the journal', () => {
       (entry) => String(entry.detail?.kind) === 'permission-added',
     )
     expect(rows).toHaveLength(1)
-    expect(String(rows[0]?.detail?.explain)).toContain('history')
+    /**
+     * The refresh is what this is about: one row per extension and kind, rewritten when
+     * what changed changed. It is compared on `explainArgs` rather than on a sentence —
+     * a sentence would be rewritten by a change of language alone, pushing `createdAt`
+     * to today and making an old change claim it had just happened.
+     */
+    expect(String(rows[0]?.detail?.explainArgs)).toContain('history')
+    expect(rows[0]?.detail?.explainKey).toBe('extensionsChangePermission')
   })
 })

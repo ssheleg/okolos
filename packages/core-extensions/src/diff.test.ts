@@ -19,7 +19,10 @@ describe('the update nobody sees', () => {
   it('reports a permission that was not there before', () => {
     const changes = diffInventory([ext()], [ext({ permissions: ['storage', 'cookies'] })])
     expect(changes[0]).toMatchObject({ kind: 'permission-added', severity: 'critical' })
-    expect(changes[0]?.detail).toContain('cookies')
+    // The permission travels as itself; the sentence around it is the surface's.
+    // Asserted through `toMatchObject` rather than behind a narrowing `if`, which would
+    // skip silently on any other kind and still pass.
+    expect(changes[0]).toMatchObject({ kind: 'permission-added', permissions: ['cookies'] })
   })
 
   it('treats a harmless new permission as worth mentioning, not alarming', () => {
@@ -32,7 +35,9 @@ describe('the update nobody sees', () => {
     // everyone else.
     const changes = diffInventory([ext()], [ext({ publisher: 'Someone Else' })])
     expect(changes[0]).toMatchObject({ kind: 'publisher-changed', severity: 'critical' })
-    expect(changes[0]?.detail).toContain('Someone Else')
+    // Both parties, because the sentence a person reads names both — and a change that
+    // reported only the new one could not be checked against anything.
+    expect(changes[0]).toMatchObject({ publisher: 'Someone Else', previousPublisher: 'Someone' })
   })
 
   it('reports host access widening to everything', () => {

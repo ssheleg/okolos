@@ -183,6 +183,70 @@ let queueExpanded = false
 /** The last package the user asked about. Nothing is kept across a reload. */
 let lastAnalysis: PackageReport | null = null
 
+/**
+ * Why the last package could not be read, when that is what happened.
+ *
+ * A file that would not open used to become a report with no findings and a note beside
+ * it — and a panel showing "nothing of note" about a file nobody managed to read says
+ * the opposite of what happened. The report stays absent; the reason takes the slot the
+ * panel already had for it.
+ */
+let lastAnalysisFailure: string | null = null
+
+/** What the worker sent about one changed extension, before it is narrowed. */
+type WireChange = {
+  kind: string
+  id: string
+  name: string
+  severity: string
+  publisher?: string | null
+  previousPublisher?: string | null
+  permissions?: string[]
+  hosts?: string[]
+}
+
+/**
+ * The wire shape is loose — strings, not unions — so a newer worker cannot break an
+ * older page. This is the one place it is narrowed, and a row it cannot narrow is
+ * dropped rather than forced.
+ *
+ * Dropped, not defaulted: a `permission-added` row that arrived without its permissions
+ * would render as "now asks for" and then nothing, which reads as an extension asking
+ * for something unnameable. A row missing is visible in the count; a sentence with a
+ * hole in it is read as a fact.
+ */
+function narrowChange(change: WireChange): InventoryChange | null {
+  const severity = change.severity
+  const base = { id: change.id, name: change.name }
+  const major = severity === 'critical' || severity === 'major' ? severity : null
+
+  switch (change.kind) {
+    case 'newly-installed':
+      return { ...base, kind: 'newly-installed', severity: 'minor' }
+    case 'removed':
+      return { ...base, kind: 'removed', severity: 'minor' }
+    case 'publisher-changed':
+      return {
+        ...base,
+        kind: 'publisher-changed',
+        severity: 'critical',
+        publisher: change.publisher ?? null,
+        previousPublisher: change.previousPublisher ?? null,
+      }
+    case 'permission-added':
+      return change.permissions && change.permissions.length > 0 && major
+        ? { ...base, kind: 'permission-added', severity: major, permissions: change.permissions }
+        : null
+    case 'host-access-widened':
+      return change.hosts && change.hosts.length > 0 && major
+        ? { ...base, kind: 'host-access-widened', severity: major, hosts: change.hosts }
+        : null
+    default:
+      // A kind this page has never heard of. A newer worker is allowed to have one.
+      return null
+  }
+}
+
 async function queueSection(): Promise<HTMLElement> {
   const container = document.createElement('section')
   container.setAttribute('data-role', 'queue-section')
@@ -252,17 +316,10 @@ async function extensionsSection(): Promise<HTMLElement> {
         kind: 'ready',
         // The wire shape is deliberately loose (strings, not unions) so a newer
         // background cannot break an older page; it is narrowed here, once.
-        changes: result.changes.map((change) => ({
-          kind: change.kind as InventoryChange['kind'],
-          id: change.id,
-          name: change.name,
-          detail: change.detail,
-          severity: change.severity as InventoryChange['severity'],
-        })),
+        changes: result.changes.flatMap((change) => narrowChange(change) ?? []),
         installed: result.installed,
         analysis: lastAnalysis,
-        analysisNote:
-          t('extensionsInspectNote'),
+        analysisNote: lastAnalysisFailure ?? t('extensionsInspectNote'),
       }
     }
   } catch (cause) {
@@ -292,13 +349,11 @@ async function extensionsSection(): Promise<HTMLElement> {
             // Read here, in the page, and analysed here. The file never reaches
             // the background, let alone the network.
             lastAnalysis = analysePackage(await file.text(), file.name)
+            lastAnalysisFailure = null
           } catch (cause) {
-            lastAnalysis = {
-              findings: [],
-              endpoints: [],
-              minified: false,
-              note: t('extensionsFileUnread', String(cause)),
-            }
+            // No report at all, rather than an empty one: see `lastAnalysisFailure`.
+            lastAnalysis = null
+            lastAnalysisFailure = t('extensionsFileUnread', String(cause))
           }
           await reload()
         })()

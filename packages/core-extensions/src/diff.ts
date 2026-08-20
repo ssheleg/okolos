@@ -38,14 +38,41 @@ export type ChangeKind =
   | 'newly-installed'
   | 'removed'
 
-export interface InventoryChange {
-  readonly kind: ChangeKind
-  readonly id: string
-  readonly name: string
-  /** One sentence, in the words the user will see. */
-  readonly detail: string
-  readonly severity: 'critical' | 'major' | 'minor'
-}
+/**
+ * What changed, in values rather than in a sentence.
+ *
+ * Each kind used to arrive with `detail`: one finished English sentence, composed in a
+ * package with no catalogue and shown to a reader whose interface is Russian (B-75).
+ * The kind was already the code; what a sentence needs beyond it is the party, the
+ * permissions or the hosts, and those are what travel now. `changeExplain` in
+ * `@okolos/ui/words` is where they become words.
+ *
+ * A union rather than five optional fields: `host-access-widened` without its hosts is
+ * a sentence with a hole in it, and the compiler should be the one to say so.
+ */
+export type InventoryChange = { readonly id: string; readonly name: string } & (
+  | { readonly kind: 'newly-installed'; readonly severity: 'minor' }
+  | { readonly kind: 'removed'; readonly severity: 'minor' }
+  | {
+      readonly kind: 'publisher-changed'
+      readonly severity: 'critical'
+      /** `null` where the store names no party — worded on the surface, not here. */
+      readonly publisher: string | null
+      readonly previousPublisher: string | null
+    }
+  | {
+      readonly kind: 'permission-added'
+      readonly severity: 'critical' | 'major'
+      /** Manifest permission names. Identifiers the browser owns, never translated. */
+      readonly permissions: readonly string[]
+    }
+  | {
+      readonly kind: 'host-access-widened'
+      readonly severity: 'critical' | 'major'
+      /** Match patterns, as the manifest writes them. */
+      readonly hosts: readonly string[]
+    }
+)
 
 /** Permissions whose addition changes what an extension can do to the user. */
 export const RISKY_PERMISSIONS: ReadonlySet<string> = new Set([
@@ -81,7 +108,6 @@ export function diffInventory(
         kind: 'newly-installed',
         id: current.id,
         name: current.name,
-        detail: `${current.name} was added since the last check.`,
         severity: 'minor',
       })
       continue
@@ -94,7 +120,8 @@ export function diffInventory(
         kind: 'publisher-changed',
         id: current.id,
         name: current.name,
-        detail: `${current.name} is now published by ${current.publisher ?? 'an unnamed party'}, previously ${old.publisher ?? 'an unnamed party'}.`,
+        publisher: current.publisher,
+        previousPublisher: old.publisher,
         severity: 'critical',
       })
     }
@@ -106,7 +133,7 @@ export function diffInventory(
         kind: 'permission-added',
         id: current.id,
         name: current.name,
-        detail: `${current.name} now asks for ${added.join(', ')}, which it did not before.`,
+        permissions: added,
         severity: risky.length > 0 ? 'critical' : 'major',
       })
     }
@@ -124,7 +151,7 @@ export function diffInventory(
         kind: 'host-access-widened',
         id: current.id,
         name: current.name,
-        detail: `${current.name} can now read ${widened.join(', ')}.`,
+        hosts: widened,
         severity: widened.some(isEverywhere) ? 'critical' : 'major',
       })
     }
@@ -135,7 +162,6 @@ export function diffInventory(
       kind: 'removed',
       id: gone.id,
       name: gone.name,
-      detail: `${gone.name} is no longer installed.`,
       severity: 'minor',
     })
   }

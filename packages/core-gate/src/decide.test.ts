@@ -135,10 +135,13 @@ describe('an action nobody can identify', () => {
     expect(decision.reason).toBe('unidentified')
   })
 
-  it('says what could not be determined rather than failing mutely', () => {
-    expect(settled(assessAction(action({ kind: 'unknown' }), [FINDING])).explain).toMatch(
-      /what kind of action/i,
-    )
+  it('names the reason as a code, leaving the sentence to whoever has a locale', () => {
+    // The words for this used to be here, in a package with no catalogue (B-75). What
+    // the sentence says is now asserted where it is written — see the background's
+    // `gateSentence` test — and what travels is the code the surface looks up.
+    const decision = settled(assessAction(action({ kind: 'unknown' }), [FINDING]))
+    expect(decision.reason).toBe('unidentified')
+    expect(decision).not.toHaveProperty('explain')
   })
 
   it('treats a blank description the same way', () => {
@@ -172,7 +175,9 @@ describe('the default is Block', () => {
 
     expect(decision.outcome).toBe('blocked')
     expect(decision.reason).toBe('unavailable')
-    expect(decision.explain).toContain('no window to draw in')
+    // The browser's own words about a surface that would not open: the one thing the
+    // reason code cannot carry, so it travels beside it rather than as prose.
+    expect(decision.detail).toContain('no window to draw in')
   })
 
   it('never turns a timeout into an allow, even if the answer arrives late', async () => {
@@ -232,7 +237,10 @@ describe('every decision is journallable', () => {
     expect(decision.findingIds).toEqual(['f1', 'f2'])
   })
 
-  it('always explains itself in a sentence', async () => {
+  it('always carries what a sentence about it will need', async () => {
+    // Every decision was required to explain itself in a sentence, and it still is —
+    // one level up, where the catalogue is. Here the requirement is what that sentence
+    // cannot be written without: a reason to look up and the action to name.
     const outcomes = await Promise.all([
       resolveGate(assessAction(action(), [FINDING]), async () => 'block', pending),
       resolveGate(assessAction(action(), [FINDING]), async () => 'allow-once', pending),
@@ -240,7 +248,10 @@ describe('every decision is journallable', () => {
       resolveGate(assessAction(action({ kind: 'unknown' }), [FINDING]), never, pending),
       resolveGate(assessAction(action(), []), never, pending),
     ])
-    for (const decision of outcomes) expect(decision.explain.length).toBeGreaterThan(10)
+    for (const decision of outcomes) {
+      expect(decision.reason).toBeTruthy()
+      expect(decision.describes).toBe(action().description)
+    }
   })
 })
 

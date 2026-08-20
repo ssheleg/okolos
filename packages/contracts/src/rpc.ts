@@ -138,7 +138,22 @@ export interface RpcMap {
     req: Record<string, never>
     res: {
       supported: boolean
-      changes: Array<{ kind: string; id: string; name: string; detail: string; severity: string }>
+      /**
+       * Deliberately loose — strings, not unions — so a newer worker cannot break an
+       * older page. `detail` used to carry a finished English sentence composed in
+       * `core-extensions` (B-75); what crosses now is the kind and the values a
+       * sentence needs, and the page words them from its own catalogue.
+       */
+      changes: Array<{
+        kind: string
+        id: string
+        name: string
+        severity: string
+        publisher?: string | null
+        previousPublisher?: string | null
+        permissions?: string[]
+        hosts?: string[]
+      }>
       installed: Array<{ id: string; name: string; version: string; permissions: string[]; enabled: boolean }>
     }
   }

@@ -25,9 +25,19 @@ const buildScript = () => readFileSync(path.join(root, 'tools/build.mjs'), 'utf8
 
 /**
  * Resolve one specifier. Two forms matter: workspace packages
- * (`@okolos/x` → `packages/x/src/index.ts`) and relative paths written with the
- * `.js` extension TypeScript's NodeNext resolution requires, which name a `.ts`
+ * (`@okolos/x`, and subpaths like `@okolos/ui/words`) and relative paths written with
+ * the `.js` extension TypeScript's NodeNext resolution requires, which name a `.ts`
  * file on disk.
+ *
+ * The workspace form reads the package's own `exports` map rather than assuming
+ * `src/index.ts`. It assumed it until 2026-08-20, so `@okolos/ui/words` — a second
+ * entry point added so the worker could take a lookup table without the whole UI graph —
+ * resolved to nothing: the module it named was reported unreachable, and everything that
+ * module imports fell out of the graph with it.
+ *
+ * A workspace specifier that resolves to nothing throws rather than returning `null`.
+ * `null` is for an npm dependency, which is genuinely outside this graph; a broken
+ * `@okolos/…` is a mistake in this repository, and the silent version of it cost an hour.
  *
  * @param {string} spec
  * @param {string} from
@@ -35,8 +45,23 @@ const buildScript = () => readFileSync(path.join(root, 'tools/build.mjs'), 'utf8
  */
 export function resolve(spec, from) {
   if (spec.startsWith('@okolos/')) {
-    const index = path.join(root, 'packages', spec.slice('@okolos/'.length), 'src/index.ts')
-    return existsSync(index) ? index : null
+    const [pkg, ...rest] = spec.slice('@okolos/'.length).split('/')
+    const dir = path.join(root, 'packages', String(pkg))
+    const manifest = path.join(dir, 'package.json')
+    if (!existsSync(manifest)) return null
+    const subpath = rest.length === 0 ? '.' : `./${rest.join('/')}`
+    const map = JSON.parse(readFileSync(manifest, 'utf8')).exports ?? { '.': './src/index.ts' }
+    const target = typeof map[subpath] === 'string' ? map[subpath] : null
+    if (target === null) {
+      throw new Error(
+        `${path.relative(root, from)} imports "${spec}", which packages/${String(pkg)}/package.json does not export`,
+      )
+    }
+    const file = path.join(dir, target)
+    if (!existsSync(file)) {
+      throw new Error(`"${spec}" points at ${path.relative(root, file)}, which does not exist`)
+    }
+    return file
   }
   if (!spec.startsWith('.')) return null // npm or platform dependency
 

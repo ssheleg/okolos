@@ -1,6 +1,6 @@
 import { t } from '@okolos/i18n'
 import { checkLookalike, DEFAULT_WATCHLIST, type LookalikeVerdict } from '@okolos/core-lookalike'
-import { mountBanner, renderComparison, type BannerHandle } from '@okolos/ui'
+import { mountBanner, mountComparison, type BannerHandle, type ComparisonHandle } from '@okolos/ui'
 
 /**
  * The lookalike warning, shown on the page it is about.
@@ -29,6 +29,16 @@ export interface LookalikeWarning {
   readonly verdict: LookalikeVerdict
   /** The banner's shadow root — the surface itself, for whoever mounted it. */
   readonly root: ShadowRoot
+  /**
+   * The comparison's shadow root while it is open, and `null` while it is not.
+   *
+   * The same reason `root` is here: both surfaces are closed to the page, so the
+   * only way to reach either is from whoever mounted it. Before 2026-08-20 the
+   * comparison needed no accessor because it sat in the page's own body, which is
+   * the defect this replaced — and its tests found it with
+   * `document.querySelector`, which is another way of saying the page could too.
+   */
+  comparisonRoot(): ShadowRoot | null
   dismiss(): void
 }
 
@@ -46,18 +56,20 @@ export async function warnIfLookalike(deps: LookalikeDeps): Promise<LookalikeWar
 
 function show(deps: LookalikeDeps, verdict: LookalikeVerdict): LookalikeWarning {
   let banner: BannerHandle | null = null
-  let comparison: HTMLElement | null = null
+  let comparison: ComparisonHandle | null = null
 
   const close = () => {
-    comparison?.remove()
+    comparison?.destroy()
     comparison = null
     banner?.destroy()
     banner = null
   }
 
   const openComparison = () => {
-    comparison?.remove()
-    comparison = renderComparison(
+    // The comparison owns its host now, so opening it twice is a replacement
+    // rather than two surfaces stacked in the page's body.
+    comparison?.destroy()
+    comparison = mountComparison(
       deps.doc,
       {
         visited: verdict.visited,
@@ -75,12 +87,11 @@ function show(deps: LookalikeDeps, verdict: LookalikeVerdict): LookalikeWarning 
           close()
         },
         onClose: () => {
-          comparison?.remove()
+          comparison?.destroy()
           comparison = null
         },
       },
     )
-    deps.doc.body.append(comparison)
   }
 
   const mounted = mountBanner(
@@ -104,5 +115,10 @@ function show(deps: LookalikeDeps, verdict: LookalikeVerdict): LookalikeWarning 
   )
   banner = mounted
 
-  return { verdict, root: mounted.root, dismiss: close }
+  return {
+    verdict,
+    root: mounted.root,
+    comparisonRoot: () => comparison?.root ?? null,
+    dismiss: close,
+  }
 }

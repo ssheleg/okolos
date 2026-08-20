@@ -5,7 +5,8 @@ import { expect, serve, test } from './hooks.js'
 /**
  * REQ-29 for the three surfaces that render over somebody else's page.
  *
- * SCR-03 (warning banner), SCR-04 (finding inspector) and SCR-06 (agent gate)
+ * SCR-03 (warning banner), SCR-04 (finding inspector), SCR-06 (agent gate) and
+ * SCR-19 (lookalike comparison)
  * live in a shadow root, and the accessibility sweep skipped all three: it
  * visits the four extension pages, which are the surfaces axe could reach
  * before the test-hook build existed. The note explaining that in a11y.spec.ts
@@ -85,6 +86,23 @@ function assertScanned(results: AxeResults, what: string): void {
     `axe evaluated no rules against ${what} — it did not reach the surface`,
   ).toBeGreaterThan(0)
 
+  /**
+   * And no violations, which this file did not assert until 2026-08-20.
+   *
+   * It checked that the scan reached the surface and that colour-contrast was
+   * decided rather than left incomplete — both worth checking, and neither says
+   * the surface passed. A fourth surface added the missing line and the first
+   * thing it caught was a contrast of 1.22 on its own primary button, from a
+   * custom property whose name I had invented: `--ok-colour-on-accent`, where the
+   * palette's token is `accent-text`. An undeclared custom property inherits in
+   * silence, so dark text sat on a dark accent in the surface whose whole job is
+   * to be read.
+   */
+  expect(
+    results.violations.map((rule) => rule.id),
+    `${what} has accessibility violations on a page built to ruin it`,
+  ).toEqual([])
+
   const decided = results.passes.some((rule) => rule.id === 'color-contrast')
   expect(
     decided,
@@ -118,6 +136,41 @@ test('SCR-04 — the finding inspector is auditable where the user opens it', as
   const results = await auditOverlay(page, 'okolos-inspector')
   assertScanned(results, 'the inspector')
   expect(results.violations).toEqual([])
+})
+
+test('SCR-19 — the lookalike comparison, the fourth surface and the one nobody audited', async ({
+  context,
+}) => {
+  /**
+   * It was a bare `<section>` in the page's own body until 2026-08-20: no shadow
+   * root, no stylesheet, not one line of CSS in its module. On this very fixture
+   * — whose `*` rule sets six-pixel grey on grey — it rendered exactly that, and
+   * no test looked, because this file audited the three surfaces ADR-0001 names
+   * and the comparison was the fourth.
+   *
+   * The lookalike host carries the test: `g00gle.com` is the finding, and the
+   * hostile stylesheet comes with the page it serves.
+   */
+  // No hidden injection in this fixture, on purpose: a page that is *both* a
+  // lookalike and poisoned mounts two banners at the same coordinates, one over
+  // the other — measured here and filed as B-69. This test is about the
+  // comparison, so it uses the one finding it needs.
+  const HOSTILE_ONLY = `<!doctype html>
+<html lang="en"><head><title>Fixture</title><style>${HOSTILE_CSS}</style></head>
+<body><h1>Sign in</h1><p>Ordinary page text.</p></body></html>`
+  await context.route('https://g00gle.com/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: HOSTILE_ONLY }),
+  )
+  const page = await context.newPage()
+  await page.goto('https://g00gle.com/signin')
+
+  const banner = page.locator('okolos-banner')
+  await expect(banner).toHaveCount(1, { timeout: 10_000 })
+  await banner.locator('[data-role=primary]').click()
+  await expect(page.locator('[data-okolos=comparison]')).toHaveCount(1)
+
+  const results = await auditOverlay(page, '[data-okolos=comparison]')
+  assertScanned(results, 'the comparison')
 })
 
 test('SCR-06 — the agent gate, the one surface a user meets mid-decision', async ({ context }) => {

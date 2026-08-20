@@ -153,6 +153,7 @@ flowchart TD
   | Screen | States used here |
   |--------|------------------|
   | SCR-03 In-page warning banner | success |
+  | SCR-19 Lookalike comparison | success, no decoding |
   | SCR-12 Settings | success |
   | SCR-16 Trusted domains | success, empty |
 

@@ -39,6 +39,7 @@ never updated, which is the same drift this file exists to catch.)
 | SCR-16 | Trusted domains | FLW-05, FLW-14 | - | built | packages/ui/src/trusted/trusted.ts:renderTrusted, e2e/scn-024.spec.ts |
 | SCR-17 | Product landing page | none yet (gap) | - | built | apps/proxy/src/landing.test.ts |
 | SCR-18 | Privacy page | none yet (gap) | - | built | tools/privacy-page.mjs, tools/docs.test.ts |
+| SCR-19 | Lookalike comparison | FLW-05 | - | built | packages/ui/src/comparison/comparison.ts:mountComparison, e2e/scn-006.spec.ts, e2e/a11y-overlays.spec.ts |
 
 ## Design system
 
@@ -409,4 +410,19 @@ includes a redirect from `*.workers.dev`, not just a CNAME.
 - **Coverage:** apps/proxy/src/router.ts:privacyPage, tools/privacy-page.mjs, tools/docs.test.ts
 - **Scenarios:** none — same reason as SCR-17. `tools/docs.test.ts` holds the page against its sources meanwhile
 - **Resources:** `docs/privacy.md` (the source), the outbound-log contract
+- **Status:** built
+
+### SCR-19: Lookalike comparison
+- **Used by:** FLW-05 (from the lookalike banner)
+- **Purpose:** show the visited address beside the one it imitates, so the user sees the difference instead of being told about it
+- **Elements:** the address as the bar holds it (`[data-role=visited]`); its decoded spelling when the two differ (`[data-role=decoded]`); the name it resembles (`[data-role=resembles]`); one sentence naming the technique (`[data-role=why]`); **primary action "Уйти"**, "Это настоящий сайт", "Закрыть"; a note saying the decision is reversible in settings (`[data-role=trust-note]`)
+- **States:**
+  | State | Trigger | Figma frame | Behavior |
+  |-------|---------|-------------|----------|
+  | success | opened from the banner | - | both spellings side by side, the address at full size |
+  | no decoding | the address is plain ASCII | - | the decoded row is absent rather than repeating the visited one |
+- **Recorded here on 2026-08-20, having been built long before.** It was the fourth in-page surface and the only one outside [ADR-0001](../adr/0001-closed-shadow-root.md): a bare `<section>` appended to the page's own `body`, with no shadow root and **no stylesheet at all** — not one line of CSS in its module. The page it warns about could read it, restyle it and delete it, and it did not need to try: on the hostile fixture the accessibility suite already ships, a `*` rule rendered it as six-pixel grey on grey. The suite audited the three surfaces the ADR names, so nothing looked. A screen with no record is a screen nobody compares against anything
+- **Design system:** the shared overlay tokens, like the other three. It carries no palette of its own, and a test asserts there are no hex literals in its stylesheet — three surfaces once accumulated twenty-two hexes between them
+- **Coverage:** packages/ui/src/comparison/comparison.ts:mountComparison, packages/ui/src/comparison/comparison.test.ts, e2e/scn-006.spec.ts, e2e/a11y-overlays.spec.ts
+- **Scenarios:** SCN-006, SCN-024
 - **Status:** built

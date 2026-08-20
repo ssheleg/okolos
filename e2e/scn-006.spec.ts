@@ -34,7 +34,9 @@ test('the comparison shows both spellings side by side', async ({ context }) => 
   await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: 10_000 })
 
   await page.locator('okolos-banner [data-role=primary]').click()
-  const comparison = page.locator('[data-role=comparison]')
+  // Inside its own shadow root since 2026-08-20 — Playwright's CSS engine
+  // pierces an open one, and the production build keeps it closed to the page.
+  const comparison = page.locator('[data-okolos=comparison] [data-role=comparison]')
   await expect(comparison.locator('[data-role=visited]')).toContainText('g00gle.com')
   await expect(comparison.locator('[data-role=resembles]')).toContainText('google.com')
 })

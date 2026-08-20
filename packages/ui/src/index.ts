@@ -35,7 +35,8 @@ export { renderQueue, type QueueHandlers } from './queue/queue.js'
 export { renderLeaks, hibpAttribution, type LeaksHandlers, type LeaksState } from './leaks/leaks.js'
 export { renderRecovery, type RecoveryHandlers } from './recovery/recovery.js'
 export {
-  renderComparison,
+  mountComparison,
+  type ComparisonHandle,
   type ComparisonHandlers,
   type ComparisonProps,
 } from './comparison/comparison.js'

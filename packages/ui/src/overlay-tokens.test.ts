@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { OVERLAY_ARMOUR, OVERLAY_TOKENS } from './overlay-tokens.js'
 import { mountBanner } from './banner/banner.js'
 import { mountGate } from './gate/gate.js'
+import { mountComparison } from './comparison/comparison.js'
 import { mountInspector } from './inspector/inspector.js'
 
 /**
@@ -50,6 +51,23 @@ function stylesheetsOfEverySurface(): string {
   )
   grab(inspector.root)
 
+  /**
+   * The fourth surface, and the reason this list is a list.
+   *
+   * It was absent here while it was absent from ADR-0001, so the check that every
+   * token an overlay uses is declared inside its own shadow simply never looked
+   * at it — and the first thing it found when it did was `--ok-colour-on-accent`,
+   * a name I had invented for a palette whose token is `accent-text`. An
+   * undeclared custom property inherits in silence: dark text on a dark accent,
+   * contrast 1.22, in the surface whose whole job is to be read.
+   */
+  const comparison = mountComparison(
+    document,
+    { visited: 'g00gle.com', decoded: 'g00gle.com', resembles: 'google.com', kind: 'typo' },
+    { onLeave: () => {}, onTrust: () => {}, onClose: () => {} },
+  )
+  grab(comparison.root)
+
   return texts.join('\n')
 }
 
@@ -82,9 +100,9 @@ describe('the tokens the page cannot supply', () => {
 describe('the armour', () => {
   it('is part of what every surface ships, not a constant nobody applied', () => {
     const css = stylesheetsOfEverySurface()
-    // Three surfaces, three stylesheets, and the armour in each of them.
+    // Four surfaces, four stylesheets, and the armour in each of them.
     const occurrences = css.split('display: block !important').length - 1
-    expect(occurrences).toBe(3)
+    expect(occurrences).toBe(4)
   })
 
   it('forces back every property that can hide an element or contain a fixed child', () => {

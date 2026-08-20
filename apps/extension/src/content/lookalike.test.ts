@@ -14,14 +14,23 @@ function deps(overrides: Partial<LookalikeDeps> = {}): LookalikeDeps {
   }
 }
 
-/** The surface is closed to the page, so the handle is how a test reaches it. */
-let root: ShadowRoot | null = null
-const shadow = () => root
-const comparison = () => document.querySelector('[data-role=comparison]')
+/**
+ * Both surfaces are closed to the page, so the handle is how a test reaches them.
+ *
+ * The comparison used to be found with `document.querySelector` — which was true,
+ * and was the defect: a surface a test can find in the page's own tree is a
+ * surface the page can find there too. It mounts into its own shadow root now,
+ * and the warning hands that root back for the same reason it hands back the
+ * banner's.
+ */
+let warning: import('./lookalike.js').LookalikeWarning | null = null
+const shadow = () => warning?.root ?? null
+const comparison = () =>
+  warning?.comparisonRoot()?.querySelector<HTMLElement>('[data-role=comparison]') ?? null
 
 beforeEach(() => {
   document.body.innerHTML = ''
-  root = null
+  warning = null
 })
 
 describe('when the address imitates a known one', () => {
@@ -32,14 +41,14 @@ describe('when the address imitates a known one', () => {
   })
 
   it('opens the comparison on request', async () => {
-    root = (await warnIfLookalike(deps()))?.root ?? null
+    warning = await warnIfLookalike(deps())
     shadow()?.querySelector<HTMLElement>('[data-role=primary]')?.click()
     expect(comparison()).not.toBeNull()
   })
 
   it('leaves the page when the user chooses to', async () => {
     const leave = vi.fn()
-    root = (await warnIfLookalike(deps({ leave })))?.root ?? null
+    warning = await warnIfLookalike(deps({ leave }))
     shadow()?.querySelector<HTMLElement>('[data-role=primary]')?.click()
     comparison()?.querySelector<HTMLElement>('[data-role=leave]')?.click()
     expect(leave).toHaveBeenCalledTimes(1)
@@ -47,14 +56,14 @@ describe('when the address imitates a known one', () => {
 
   it('remembers a site the user says is legitimate', async () => {
     const trust = vi.fn(async () => undefined)
-    root = (await warnIfLookalike(deps({ trust })))?.root ?? null
+    warning = await warnIfLookalike(deps({ trust }))
     shadow()?.querySelector<HTMLElement>('[data-role=primary]')?.click()
     comparison()?.querySelector<HTMLElement>('[data-role=trust]')?.click()
     expect(trust).toHaveBeenCalledWith('g00gle.com')
   })
 
   it('takes the warning away once the user has decided', async () => {
-    root = (await warnIfLookalike(deps()))?.root ?? null
+    warning = await warnIfLookalike(deps())
     shadow()?.querySelector<HTMLElement>('[data-role=primary]')?.click()
     comparison()?.querySelector<HTMLElement>('[data-role=trust]')?.click()
     expect(document.querySelector('okolos-banner')).toBeNull()

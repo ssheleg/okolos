@@ -1,7 +1,7 @@
 /** @vitest-environment happy-dom */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { renderComparison, type ComparisonHandlers, type ComparisonProps } from './comparison.js'
+import { mountComparison, type ComparisonHandlers, type ComparisonProps } from './comparison.js'
 
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
@@ -28,15 +28,28 @@ function handlers(overrides: Partial<ComparisonHandlers> = {}): ComparisonHandle
   return { onLeave: vi.fn(), onTrust: vi.fn(), onClose: vi.fn(), ...overrides }
 }
 
+/**
+ * Mounts and hands back the panel *inside the shadow root*.
+ *
+ * The tests below all reach for `[data-role=…]`, and every one of them used to
+ * find those in the page's own body — which is exactly what was wrong with the
+ * surface. Reading them out of the shadow root is the same set of assertions
+ * about the same markup, in the place it now lives.
+ */
 function render(props: ComparisonProps, h = handlers()): HTMLElement {
-  const el = renderComparison(document, props, h)
-  document.body.append(el)
-  return el
+  const mounted = mountComparison(document, props, h)
+  mountedHandles.push(mounted)
+  const panel = mounted.root.querySelector<HTMLElement>('[data-role=comparison]')
+  if (!panel) throw new Error('the comparison mounted without its panel')
+  return panel
 }
+
+const mountedHandles: Array<{ destroy(): void }> = []
 
 const role = (root: HTMLElement, name: string) => root.querySelector<HTMLElement>(`[data-role=${name}]`)
 
 beforeEach(() => {
+  for (const handle of mountedHandles.splice(0)) handle.destroy()
   document.body.innerHTML = ''
 })
 
@@ -82,5 +95,63 @@ describe('what the user can do', () => {
 
   it('is a dialog to assistive technology', () => {
     expect(render(PROPS).getAttribute('role')).toBe('dialog')
+  })
+})
+
+describe('the surface the page does not own', () => {
+  /**
+   * Until 2026-08-20 this was a bare `<section>` in `document.body`: no shadow
+   * root, no stylesheet, not one line of CSS in the module. The page it warns
+   * about could read it, restyle it and remove it — and it did not need to try,
+   * because the a11y fixture's own `* { font-size: 6px; color: #eee }` already
+   * rendered it as grey on grey. ADR-0001 named three surfaces and this was the
+   * fourth.
+   */
+  it('mounts into a shadow root of its own rather than into the page', () => {
+    const mounted = mountComparison(document, PROPS, handlers())
+    mountedHandles.push(mounted)
+    expect(mounted.root).toBeTruthy()
+    // Nothing of the comparison is reachable from the page's own tree.
+    expect(document.querySelector('[data-role=comparison]')).toBeNull()
+    expect(document.querySelector('[data-okolos=comparison]')).toBe(mounted.host)
+  })
+
+  it('brings its own stylesheet, so the page’s cascade decides nothing', () => {
+    const mounted = mountComparison(document, PROPS, handlers())
+    mountedHandles.push(mounted)
+    const css = mounted.root.querySelector('style')?.textContent ?? ''
+    expect(css.length, 'the module shipped no CSS at all until this existed').toBeGreaterThan(200)
+    // The tokens, and therefore the armour that comes with them.
+    expect(css).toContain('--ok-colour-text')
+    expect(css).toContain('display: block !important')
+  })
+
+  it('draws itself only from the shared tokens, with no palette of its own', () => {
+    // Three surfaces once accumulated twenty-two hexes between them, a second
+    // palette that resembled the first closely enough to drift unnoticed.
+    const css = mountComparison(document, PROPS, handlers()).root.querySelector('style')
+      ?.textContent ?? ''
+    const body = css.slice(css.indexOf('[data-role=comparison]'))
+    expect(body.match(/#[0-9a-f]{3,8}\b/gi) ?? []).toEqual([])
+  })
+
+  it('keeps the address at full size, since one character is the whole finding', () => {
+    const css = mountComparison(document, PROPS, handlers()).root.querySelector('style')
+      ?.textContent ?? ''
+    expect(css).toMatch(/code \{[^}]*font-size: var\(--ok-type-size-base\)/)
+  })
+
+  it('replaces itself rather than stacking when opened twice', () => {
+    const first = mountComparison(document, PROPS, handlers())
+    first.destroy()
+    const second = mountComparison(document, PROPS, handlers())
+    mountedHandles.push(second)
+    expect(document.querySelectorAll('[data-okolos=comparison]')).toHaveLength(1)
+  })
+
+  it('leaves nothing behind when it closes', () => {
+    const mounted = mountComparison(document, PROPS, handlers())
+    mounted.destroy()
+    expect(document.querySelector('[data-okolos=comparison]')).toBeNull()
   })
 })

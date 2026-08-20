@@ -112,6 +112,16 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (сорок третий)** — B-71 плюс красный CI от прошлого прогона; стадии 0–10.
+  CI упал на моём же тесте, читавшем `graphify-out/manifest.json` — артефакт в
+  `.gitignore`, на CI его нет: тест про мою машину в одежде теста про правило, и я написал
+  его **после** того, как прочитал в том же файле заметку про ровно эту форму. Измерение
+  записано списком с датой и командой, живая сверка отдельным утверждением, которое
+  говорит, что не может выполниться. B-71: обход импортов на один шаг переехал из гейта в
+  генератор, вайрфрейм получил два раздела с честными заголовками, составным оказался один
+  экран из шестнадцати. 2237 юнит-тестов в 140 файлах. Четыре планта; один не лёг и
+  заставил вынести охрану в чистую функцию — случая для неё в дереве нет. Постоянных
+  инструкций десять, снятий нет. Вердикт REFINE.
 - **2026-08-20 (сорок второй)** — B-72; стадии 0–10, строка **не закрыта** и это записано.
   Код-слой графа пересобран (3221 → 3944 узла), документный требует LLM и упирается в
   решение человека: скил говорит «MANDATORY: use the Agent tool», правила сессии
@@ -2106,6 +2116,39 @@ description.
   keeping. But a row closed with its verification outstanding is a row closed early, and
   the honest form is the one now in the board: closed on the second attempt, with the
   first attempt's failure written into it rather than tidied away.
+
+### 2026-08-20 — I read the note about this failure and then wrote it again
+
+**Symptom.** CI red on `7828cb2`: `ENOENT … graphify-out/manifest.json`. The assertion I
+had just added read the graphify manifest to check that the covered-file pattern agrees
+with what the extraction reads. `graphify-out/` is git-ignored, so on a runner it does not
+exist.
+
+**Stage it surfaced at.** 7, on CI, one push after the local suite went green.
+
+**Stage that owned it.** 6. The full suite passed here because the artefact is here. And
+the file I was editing — `graph-check.test.ts` — carries, in its own header, the note about
+the previous instance: `git rev-parse HEAD~1` failing on a shallow clone, "a test about the
+tool that turned out to be a test about the clone". I read that paragraph in this same run,
+to understand why the freshness check no longer asks git, and then wrote the same class of
+test twelve lines below it.
+
+**Root cause.** A note explains the instance it was written about. It does not fire on the
+next one, because nothing compares a new test against it — the reader has to make the
+connection, and a reader mid-task making a connection is not a control.
+
+**Fix, by grade.** *Structural:* the extraction's file types are a recorded measurement in
+the test, with the command that produced it and its date; the live cross-check is a second
+assertion that asserts the artefact's absence rather than returning quietly, because a
+skipped assertion is how a recorded list rots into decoration. *Verification:* reproduced
+the CI condition locally by moving `graphify-out/` aside — 23 tests pass, and the live half
+states which world it is in.
+
+**The check that catches it next time.** Before a new test reads a path, the question is
+"is this path in `.gitignore`" and it takes one command. `git check-ignore <path>` answers
+it. The three untracked artefact roots in this repository are `graphify-out/`, `dist/` and
+`node_modules/`; a test that reads any of them either builds it first or asserts its
+absence out loud.
 
 ### 2026-08-20 — the artefact was rewritten, so everything looked older than it
 

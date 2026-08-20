@@ -95,6 +95,44 @@ describe('every script does what its name says', () => {
     ).toBe(true)
   })
 
+  /**
+   * A script that would rewrite the tree in a style the tree is not written in.
+   *
+   * `"format": "prettier --write ."` lived here with **no prettier configuration at
+   * all**, so it applied prettier's defaults — double quotes, semicolons, width 80 —
+   * against a codebase written with single quotes and no semicolons. Measured
+   * 2026-08-20: even at the settings closest to the real style
+   * (`--single-quote --no-semi --print-width 100`) **175 of 402** TypeScript files
+   * differ, so prettier does not reproduce this style and a config could not describe
+   * it. `pnpm lint` does not look at quotes or semicolons, so such a run would pass
+   * every gate and leave a diff across the repository — and shift every `file:line`
+   * this project's documentation cites.
+   *
+   * Worse per-file: `prettier --write <one file>` expands objects onto several lines
+   * and a second run does **not** collapse them back (`objectWrap: preserve`, the
+   * default since prettier 3.5), so the edit is not reversible by re-formatting. That
+   * is how `apps/extension/src/content/index.ts` came to be restored from HEAD.
+   *
+   * The check is on the **scripts**, not on the dependency: a formatter reachable only
+   * by typing its name in full is a choice somebody makes, while one wired into
+   * `pnpm <verb>` is a keystroke. If this project ever wants prettier, both this test
+   * and its reason have to be edited, out loud.
+   */
+  it('has no script that reformats the tree in a style the tree does not use', () => {
+    const rewriting: string[] = []
+    for (const file of manifests()) {
+      const manifest = JSON.parse(readFileSync(file, 'utf8')) as {
+        scripts?: Record<string, string>
+      }
+      for (const [name, body] of Object.entries(manifest.scripts ?? {})) {
+        if (/\bprettier\b/.test(body)) {
+          rewriting.push(`${path.relative(root, file)} → ${name}: ${body}`)
+        }
+      }
+    }
+    expect(rewriting, 'these would reformat files nobody is editing').toEqual([])
+  })
+
   it('ships from a directory the packaging and the upload agree on', () => {
     // If these two ever name different roots, the archive and the artefact stop being
     // the same thing — and the one nobody installs is the one that gets tested.

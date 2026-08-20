@@ -64,6 +64,15 @@ function filesIn(pattern: string): string[] {
  *
  * Stripping literals is the third option, and it narrows nothing: every real
  * call still shows up, as the planted-defect check below asserts.
+ *
+ * **Only on source, never on a minified bundle.** The regex-literal pass has to
+ * guess where a regex starts, and minified output is full of division and of
+ * slashes inside surviving strings — so a false opening runs to the next slash
+ * and deletes everything between. Measured 2026-08-20: a gate that read a bundle
+ * through this helper stayed green with `crypto.randomUUID()` plainly present in
+ * the file, because the span containing it had been eaten. The bundle checks in
+ * this file read the raw text for exactly that reason, and a token found in a
+ * bundle's string literal is rare enough to name as an exception when it happens.
  */
 function executable(source: string): string {
   return source
@@ -357,5 +366,71 @@ describe('every address in the shipped bundle is one the options page resolves',
     expect(text, 'no bundle mentions the options page at all').toContain('options.html')
     const missing = KNOWN_HASHES.filter((hash) => !text.includes(hash))
     expect(missing, 'the shipped build is missing addresses the table declares').toEqual([])
+  })
+})
+
+describe('nothing that runs on a page may need a secure context', () => {
+  /**
+   * The manifest matches plain-HTTP pages, and a `[SecureContext]` API is
+   * `undefined` on one. Measured 2026-08-20: the agent gate's first act was
+   * `crypto.randomUUID()`, taken **before** `preventDefault` and outside any
+   * `try` — so on every `http://` page the description threw `TypeError`, the
+   * exception left the capture-phase listener, and a listener that throws does not
+   * cancel its event. The gate was a total no-op on exactly the pages a poisoned
+   * document is cheapest to serve from.
+   *
+   * The bundles, not the sources: what runs on a page is what was shipped, and a
+   * dependency can bring one of these in without anybody in this repository
+   * typing it.
+   */
+  const SECURE_ONLY = [
+    'randomUUID',
+    'crypto.subtle',
+    'navigator.locks',
+    'requestStorageAccess',
+    'navigator.serviceWorker',
+  ]
+
+  /** The bundles a content script actually injects into somebody's page. */
+  const inPage = () =>
+    [...filesIn('apps/extension/dist/chrome/*.js'), ...filesIn('apps/extension/dist/firefox/*.js')]
+      .filter((file) => ['content.js', 'page-watch.js'].includes(path.basename(file)))
+
+  it('is looking at bundles that exist', () => {
+    // Two targets, two bundles each. An empty list would make every assertion
+    // below pass by having nothing to read.
+    expect(inPage().length, 'no in-page bundle was found to scan').toBe(4)
+  })
+
+  it('calls no secure-context API from a bundle that runs on any page', () => {
+    const offenders: string[] = []
+    for (const file of inPage()) {
+      /**
+       * Raw, not through `executable`. That helper's regex-literal pass guesses
+       * where a regex begins, and on minified output a false opening eats
+       * everything to the next slash — this gate first stayed green with
+       * `crypto.randomUUID()` sitting in the bundle for precisely that reason.
+       */
+      const source = readFileSync(file, 'utf8')
+      for (const api of SECURE_ONLY) {
+        if (source.includes(api)) offenders.push(`${path.relative(root, file)}: ${api}`)
+      }
+    }
+    expect(
+      offenders,
+      'these are undefined on an http page, and the manifest matches http pages',
+    ).toEqual([])
+  })
+
+  it('still uses the randomness that is available there', () => {
+    // The replacement, asserted so this does not become "no ids at all". The gate
+    // needs an id per action or its journal cannot tell two actions apart.
+    const content = inPage().filter((f) => path.basename(f) === 'content.js')
+    expect(content.length).toBe(2)
+    for (const file of content) {
+      expect(readFileSync(file, 'utf8'), `${path.relative(root, file)}`).toContain(
+        'getRandomValues',
+      )
+    }
   })
 })

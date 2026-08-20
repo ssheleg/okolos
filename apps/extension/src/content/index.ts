@@ -1,3 +1,4 @@
+import { sha1Hex } from '@okolos/core-credential'
 import { checkLookalike, DEFAULT_WATCHLIST } from '@okolos/core-lookalike'
 import { planSanitisation } from '@okolos/core-sanitizer'
 import { t, useResolver } from '@okolos/i18n'
@@ -90,7 +91,30 @@ const GATE_TIMEOUT_MS = 30_000
  * agreement that the page is hostile, so the gate stays on — as does restoring
  * the text, which puts the instruction back.
  */
-let unresolved: UnresolvedFinding[] = []
+/**
+ * Findings on this page the user has not handled — `null` until the page has been
+ * read at all.
+ *
+ * `[]` and "not asked yet" used to be the same value, and the gate read the
+ * second as the first: between `document_idle` and the verdict returning it
+ * answered "nothing unresolved here", which is an unrun check reported as a
+ * passed one. The window is short and it is the window a page controls — it can
+ * fire its scripted click on the first line of its own body.
+ */
+let unresolved: UnresolvedFinding[] | null = null
+
+/**
+ * Sixteen random hex characters, from an API that exists on an insecure page.
+ *
+ * `crypto.randomUUID` is `[SecureContext]`; `crypto.getRandomValues` is not.
+ * That difference was a total fail-open on every `http://` page, because the id
+ * was taken before the action was held.
+ */
+function randomId(): string {
+  const bytes = new Uint8Array(8)
+  crypto.getRandomValues(bytes)
+  return [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('')
+}
 /** Kept so the gate can open the evidence for the finding it is asking about. */
 let lastVerdicts: Verdict[] = []
 
@@ -182,6 +206,8 @@ async function scan(): Promise<void> {
   // The gate arms in every frame too. An agent acting on an instruction it read
   // in an iframe submits that iframe's form, and the top frame never sees it.
   lastVerdicts = verdicts
+  // Assigned even when empty: this is the moment "not asked yet" becomes "asked,
+  // and there is nothing", and those are different answers to the gate.
   unresolved = verdicts.map((verdict) => ({ id: verdict.id, summary: summarise(verdict) }))
   armPageWatch(unresolved.length > 0)
 
@@ -403,6 +429,22 @@ async function safely(work: () => Promise<void>): Promise<void> {
 new AgentGate({
   doc: document,
   unresolved: () => unresolved,
+  /**
+   * An action that went through before this page had been read.
+   *
+   * Not held: holding every click on every page for the length of a scan is how
+   * an extension becomes the thing that broke the web. Recorded, because the
+   * third option — passing silently, as though the page had been read and found
+   * clean — is the one ADR-0004 forbids.
+   */
+  noteUnread: (action) => {
+    void platform.runtime
+      .send('page/note', {
+        kind: 'gate-unread',
+        explain: t('logGateUnread', action.description),
+      })
+      .catch(() => undefined)
+  },
   // Read at the moment of the action, not once at load: a page cannot change
   // this, but reading it late costs nothing and keeps the fact current.
   automated: () => navigator.webdriver === true,
@@ -421,7 +463,16 @@ new AgentGate({
       // The journal is best-effort; the decision has already been enforced.
     })
   },
-  newId: () => crypto.randomUUID(),
+  /**
+   * An id that exists on an insecure page too.
+   *
+   * `crypto.randomUUID` is `[SecureContext]` and the manifest matches
+   * plain-HTTP pages, so this used to throw `TypeError` on every plain-HTTP page —
+   * inside `#describe`, before `preventDefault`, which meant the gate let the
+   * action through on exactly the pages a poisoned document is cheapest to serve
+   * from. `getRandomValues` carries no such restriction.
+   */
+  newId: () => randomId(),
 }).install()
 
 function askTheUser(
@@ -570,11 +621,23 @@ if (isTopFrame) {
 
       void (async () => {
         try {
-          const digest = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(value))
-          const sha1 = [...new Uint8Array(digest)]
-            .map((byte) => byte.toString(16).padStart(2, '0'))
-            .join('')
-            .toUpperCase()
+          /**
+           * Our own SHA-1, not the platform's.
+           *
+           * `crypto.subtle` is `[SecureContext]` and the manifest matches
+           * plain-HTTP pages, so on any of them this line used to throw and the
+           * `catch` below swallowed it: **the breach and reuse check did not run
+           * at all**, on exactly the pages where a password sent in the clear
+           * matters most. Nobody learned, because the catch says nothing.
+           * Measured 2026-08-20 by scanning the shipped bundle for
+           * secure-context APIs, which is now a gate.
+           *
+           * `packages/core-credential/src/sha1.ts` is checked against the
+           * standard vectors *and* against the platform's own digest, so
+           * "identical answer, one fewer requirement" is a test rather than a
+           * hope.
+           */
+          const sha1 = sha1Hex(value)
 
           // The host travels with the digest: it is what makes "where else do I use
           // this" answerable, and it is already the address of the page the user
@@ -608,9 +671,19 @@ if (isTopFrame) {
               onDismiss: () => undefined,
             },
           )
-        } catch {
-          // A failed check is not a clean password, and it is not a broken
-          // login either: the submission has already gone through.
+        } catch (cause) {
+          /**
+           * A failed check is not a clean password, and it is not a broken login
+           * either: the submission has already gone through. What it must not be
+           * is invisible — a check that did not run and a check that passed
+           * looked identical from here, for every password on every http page.
+           */
+          void platform.runtime
+            .send('page/note', {
+              kind: 'password-unchecked',
+              explain: t('logPasswordUnchecked', String(cause)),
+            })
+            .catch(() => undefined)
         }
       })()
     },

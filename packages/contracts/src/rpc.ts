@@ -169,7 +169,10 @@ export interface RpcMap {
    * whole defect the retry exists to fix, arriving by a different road.
    */
   'page/note': {
-    req: { kind: 'restore' | 'frame-unreported'; explain: string }
+    req: {
+      kind: 'restore' | 'frame-unreported' | 'gate-unread' | 'password-unchecked'
+      explain: string
+    }
     res: { ok: true }
   }
   /** Rebuilds blocking rules from the feed in force. */

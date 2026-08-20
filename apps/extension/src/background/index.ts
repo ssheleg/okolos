@@ -114,7 +114,12 @@ platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>, from: RpcSe
     case 'trust/add':
       return addTrusted(message.payload as { domain: string }) as Promise<RpcMap[T]['res']>
     case 'page/note':
-      return notePageEvent(message.payload as { kind: 'restore' | 'frame-unreported'; explain: string }) as Promise<
+      return notePageEvent(
+        message.payload as {
+          kind: 'restore' | 'frame-unreported' | 'gate-unread' | 'password-unchecked' | 'password-unchecked'
+          explain: string
+        },
+      ) as Promise<
         RpcMap[T]['res']
       >
     case 'gate/decision':
@@ -378,7 +383,7 @@ async function allowBlocked(payload: { url: string }): Promise<{ url: string } |
  * record as well as a sentence on screen.
  */
 async function notePageEvent(payload: {
-  kind: 'restore' | 'frame-unreported'
+  kind: 'restore' | 'frame-unreported' | 'gate-unread' | 'password-unchecked'
   explain: string
 }): Promise<{ ok: true }> {
   try {

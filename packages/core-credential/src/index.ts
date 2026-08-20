@@ -12,3 +12,4 @@ export {
   type RangeResponse,
 } from './password.js'
 export { reuseOf, recordUse, type Reuse, type ReuseEntry } from './reuse.js'
+export { sha1, sha1Hex } from './sha1.js'

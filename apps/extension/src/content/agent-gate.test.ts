@@ -353,3 +353,182 @@ describe('the page survives us', () => {
     await expect(settle()).resolves.toBeUndefined()
   })
 })
+
+describe('describing an action may not be a way of letting it happen', () => {
+  /**
+   * `#describe` runs before `preventDefault`, so anything it throws leaves the
+   * interceptor — and **a listener that throws does not cancel its event.** The
+   * action proceeded, ungated, with an exception in the console.
+   *
+   * Not hypothetical: `newId` was `crypto.randomUUID()`, which is
+   * `[SecureContext]`, and the manifest matches plain-HTTP pages. On any of them
+   * the description's first line threw `TypeError`, so the gate was a no-op on
+   * exactly the pages a poisoned document is cheapest to serve from.
+   */
+  it('holds the action when the id cannot be made, which is the http case', async () => {
+    const { journal } = install({
+      newId: () => {
+        throw new TypeError('crypto.randomUUID is not a function')
+      },
+      automated: () => false,
+    })
+    const event = scripted('submit')
+    form().dispatchEvent(event)
+    await settle()
+
+    expect(event.defaultPrevented, 'the gate let a scripted submit through').toBe(true)
+    expect(journal.map((d) => d.outcome)).toEqual(['blocked'])
+  })
+
+  it('blocks rather than asking, because a modal that says nothing invites a reflexive allow', async () => {
+    /**
+     * The fallback action is `kind: 'unknown'`, and `assessAction` already had a
+     * considered answer for that: block, do not ask, and journal the reason. That
+     * is stronger than what this test first asserted — I expected a modal, and the
+     * decision logic was right and I was not.
+     */
+    const { ask, journal } = install({
+      newId: () => {
+        throw new TypeError('no randomUUID here')
+      },
+    })
+    form().dispatchEvent(scripted('submit'))
+    await settle()
+
+    expect(ask).not.toHaveBeenCalled()
+    expect(journal[0]).toMatchObject({ outcome: 'blocked', reason: 'unidentified' })
+    // And the id is the fallback's own, so the record is about this event.
+    expect(journal[0]?.actionId).toMatch(/^fallback-\d+$/)
+  })
+
+  it('holds even when telling a person from a driver is what failed', async () => {
+    /**
+     * The recovery path may not depend on anything that could have broken. The
+     * first version of it called `env.newId()` again — and `newId` was what threw
+     * — so the fallback threw too and the action went through; my own test caught
+     * that, which is the argument for writing the test that supplies a failure.
+     *
+     * `automated` failing is the sharper case: if we cannot tell whether the
+     * browser is being driven, then guessing "a human did this" is the guess that
+     * lets the action out. It assumes driven.
+     */
+    const { journal } = install({
+      newId: () => {
+        throw new TypeError('nothing works')
+      },
+      automated: () => {
+        throw new TypeError('nothing works')
+      },
+    })
+    const event = human('submit')
+    form().dispatchEvent(event)
+    await settle()
+
+    expect(event.defaultPrevented, 'a trusted event with no way to check for a driver').toBe(true)
+    expect(journal.map((d) => d.outcome)).toEqual(['blocked'])
+  })
+
+  it('gives each invented description its own id', async () => {
+    // Two actions journalled under one id are one action in the record.
+    const { journal } = install({
+      newId: () => {
+        throw new TypeError('no randomUUID here')
+      },
+    })
+    form().dispatchEvent(scripted('submit'))
+    await settle()
+    form().dispatchEvent(scripted('submit'))
+    await settle()
+
+    const ids = journal.map((d) => d.actionId)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(ids.length).toBe(2)
+  })
+
+  it('does not let a throw escape into the page', async () => {
+    // An exception out of a capture-phase listener lands in the page's console
+    // and, on a page that installed its own handler, in the page's code.
+    const errors: unknown[] = []
+    const onError = (event: ErrorEvent) => errors.push(event.error)
+    window.addEventListener('error', onError)
+    install({
+      newId: () => {
+        throw new TypeError('no randomUUID here')
+      },
+    })
+    form().dispatchEvent(scripted('submit'))
+    await settle()
+    window.removeEventListener('error', onError)
+
+    expect(errors).toEqual([])
+  })
+})
+
+describe('before the page has been read at all', () => {
+  /**
+   * `[]` and "not asked yet" were the same value, and the gate read the second as
+   * the first: between `document_idle` and the verdict returning it answered
+   * "nothing unresolved here, nothing to weigh". That is an unrun check reported
+   * as a passed one — what ADR-0004 exists to forbid — and nothing was written
+   * down either. The window is short and it is the window a page controls: it can
+   * fire its scripted click on the first line of its own body.
+   */
+  it('records that an action went through, rather than passing in silence', async () => {
+    const notes: Array<{ description: string }> = []
+    const { ask } = install({
+      unresolved: () => null,
+      noteUnread: (action) => notes.push(action),
+    })
+    const event = scripted('submit')
+    form().dispatchEvent(event)
+    await settle()
+
+    // Not held: holding every click on every page for the length of a scan is how
+    // an extension becomes the thing that broke the web.
+    expect(event.defaultPrevented).toBe(false)
+    expect(ask).not.toHaveBeenCalled()
+    expect(notes, 'the action passed with nothing written down').toHaveLength(1)
+    expect(notes[0]?.description).toContain('Transfer')
+  })
+
+  it('says nothing at all once the page has been read and found clean', async () => {
+    // The distinction is the whole point: an empty list is an answer, and `null`
+    // is the absence of one. A note for every click on every clean page would be
+    // noise that teaches the reader to skip the journal.
+    const notes: unknown[] = []
+    install({ unresolved: () => [], noteUnread: () => notes.push(1) })
+    form().dispatchEvent(scripted('submit'))
+    await settle()
+    expect(notes).toEqual([])
+  })
+
+  it('works without a recorder, because the note is not what makes it safe', async () => {
+    // `noteUnread` is optional in the interface. A caller that does not supply it
+    // must not turn an unread page into a thrown exception inside a listener.
+    const errors: unknown[] = []
+    const onError = (event: ErrorEvent) => errors.push(event.error)
+    window.addEventListener('error', onError)
+    install({ unresolved: () => null })
+    form().dispatchEvent(scripted('submit'))
+    await settle()
+    window.removeEventListener('error', onError)
+    expect(errors).toEqual([])
+  })
+
+  it('gates normally once the verdict has arrived', async () => {
+    // The window closes. This is the assertion that the fix is a window and not
+    // a permanent hole.
+    let read = false
+    const { ask } = install({ unresolved: () => (read ? [FINDING] : null) })
+    form().dispatchEvent(scripted('submit'))
+    await settle()
+    expect(ask).not.toHaveBeenCalled()
+
+    read = true
+    const second = scripted('submit')
+    form().dispatchEvent(second)
+    await settle()
+    expect(second.defaultPrevented).toBe(true)
+    expect(ask).toHaveBeenCalledTimes(1)
+  })
+})

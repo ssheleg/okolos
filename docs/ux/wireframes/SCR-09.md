@@ -23,6 +23,7 @@ addressable as `[data-role=<name>]`, which is also how the tests reach them.
 - `no-changes`
 - `name`
 - `permissions`
+- `standing`
 - `disable`
 - `disabled`
 - `none-installed`

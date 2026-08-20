@@ -227,3 +227,74 @@ describe('when there is nothing to watch', () => {
     expect(role(el, 'permissions')?.textContent).not.toContain('Can use')
   })
 })
+
+describe('what is true of an extension as it stands', () => {
+  it('says a sideload is not from the store, on the row itself', () => {
+    /**
+     * The panel reported deltas and nothing else, so an extension that arrived by
+     * sideload was reported exactly once: never, because arriving is not a change (B-56).
+     */
+    const el = render({
+      kind: 'ready',
+      changes: [],
+      installed: [
+        {
+          ...ROW,
+          standing: [
+            {
+              kind: 'not-from-store',
+              id: ROW.id,
+              name: ROW.name,
+              severity: 'critical',
+              installType: 'sideload',
+            },
+          ],
+        },
+      ],
+      analysis: null,
+      analysisNote: NOTE,
+    })
+
+    const note = el.querySelector('[data-standing=not-from-store]')
+    expect(note?.textContent).toBe(CATALOGUE['extensionsNotFromStoreSideload']?.message)
+    expect(note?.getAttribute('data-severity')).toBe('critical')
+  })
+
+  it('names both permissions of a pair, in the manifest\'s own words', () => {
+    // A person checking the extension's listing has to find the same words there.
+    const el = render({
+      kind: 'ready',
+      changes: [],
+      installed: [
+        {
+          ...ROW,
+          standing: [
+            {
+              kind: 'reads-everything-and-more',
+              id: ROW.id,
+              name: ROW.name,
+              severity: 'critical',
+              pair: ['cookies', 'webRequest'],
+              everywhere: true,
+            },
+          ],
+        },
+      ],
+      analysis: null,
+      analysisNote: NOTE,
+    })
+
+    const note = el.querySelector('[data-standing=reads-everything-and-more]')
+    expect(note?.textContent).toContain('cookies')
+    expect(note?.textContent).toContain('webRequest')
+    // And the sentence that says the pair is held everywhere rather than on one site.
+    expect(note?.textContent).toContain(CATALOGUE['extensionsRiskyEverywhere']?.message)
+  })
+
+  it('leaves an ordinary row unmarked', () => {
+    // The common case must stay silent, or the screen is noise and the one row that
+    // matters is lost in it.
+    const el = render({ kind: 'ready', changes: [], installed: [ROW], analysis: null, analysisNote: NOTE })
+    expect(el.querySelector('[data-standing]')).toBeNull()
+  })
+})

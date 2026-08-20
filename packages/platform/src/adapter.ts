@@ -219,7 +219,15 @@ export function createPlatform(kind: Platform['kind'], api: WebExtensionApi): Pl
           // The store does not expose an author field, so the update URL is
           // the closest thing to "who ships this" the browser will tell us —
           // and a change of it is exactly the event worth reporting.
-          publisher: entry.updateUrl ?? entry.installType ?? null,
+          //
+          // `installType` used to stand in for it when there was no update URL, which
+          // conflated two different facts: a sideloaded extension's "publisher" was the
+          // word `sideload`, and moving from the store to a sideload read as a change of
+          // publisher rather than as what it is. It is its own field now (B-56).
+          publisher: entry.updateUrl ?? null,
+          // Spread, not `installType: undefined`: `exactOptionalPropertyTypes` refuses
+          // that, and it would mean "present and unknown" where the field means absent.
+          ...(entry.installType === undefined ? {} : { installType: entry.installType }),
           enabled: entry.enabled,
         }))
       },

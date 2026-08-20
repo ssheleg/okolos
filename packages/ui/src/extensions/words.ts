@@ -1,4 +1,9 @@
-import type { InventoryChange, PackageFinding, PackageReport } from '@okolos/core-extensions'
+import type {
+  InventoryChange,
+  PackageFinding,
+  PackageReport,
+  StandingFinding,
+} from '@okolos/core-extensions'
 import { explained, t, type ExplainArg, type Explained } from '@okolos/i18n'
 
 /**
@@ -98,4 +103,36 @@ export function findingEvidence(finding: PackageFinding): string {
   return finding.kind === 'hex-density'
     ? t('extensionsHexDensity', String(finding.per100))
     : finding.evidence
+}
+
+/**
+ * One key per standing fact, and the sideload case takes two.
+ *
+ * How an extension arrived is one signal with two readings: another program put it there
+ * without being asked, or a person loaded an unpacked folder themselves. One sentence for
+ * both would have to be vague about which, on the screen where "who did this" is the
+ * question.
+ */
+export const STANDING_KEY = {
+  sideload: 'extensionsNotFromStoreSideload',
+  development: 'extensionsNotFromStoreDev',
+  pair: 'extensionsRiskyPair',
+  everywhere: 'extensionsRiskyEverywhere',
+} as const
+
+/**
+ * What a standing finding says on the screen.
+ *
+ * Permission names are the manifest's own and are not translated — a person checking the
+ * extension's listing has to find the same words there.
+ */
+export function standingSentence(finding: StandingFinding): string {
+  if (finding.kind === 'not-from-store') {
+    return t(
+      finding.installType === 'sideload' ? STANDING_KEY.sideload : STANDING_KEY.development,
+    )
+  }
+  const pair = finding.pair ?? ['', '']
+  const said = t(STANDING_KEY.pair, pair[0] ?? '', pair[1] ?? '')
+  return finding.everywhere === true ? `${said} ${t(STANDING_KEY.everywhere)}` : said
 }

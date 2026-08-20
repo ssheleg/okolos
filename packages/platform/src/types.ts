@@ -40,6 +40,14 @@ export interface Extensions {
       permissions: readonly string[]
       hostPermissions: readonly string[]
       publisher: string | null
+      /**
+       * How it got onto the machine: `normal` is the store, and everything else is not.
+       *
+       * Optional because a browser without `management` reports nothing, and "we could
+       * not tell" is not "it came from the store" — which is the whole point of the
+       * signal (B-56).
+       */
+      installType?: string
       enabled: boolean
     }>
   >

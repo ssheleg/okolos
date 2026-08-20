@@ -1,8 +1,8 @@
 import { t } from '@okolos/i18n'
 
-import { analysisNote, changeSentence, findingEvidence } from './words.js'
+import { analysisNote, changeSentence, findingEvidence, standingSentence } from './words.js'
 
-import type { InventoryChange, PackageReport } from '@okolos/core-extensions'
+import type { InventoryChange, PackageReport, StandingFinding } from '@okolos/core-extensions'
 
 /**
  * SCR-09 — the extensions watch.
@@ -32,6 +32,14 @@ export interface ExtensionRow {
   readonly version: string
   readonly permissions: readonly string[]
   readonly enabled: boolean
+  /**
+   * What is true of this extension as it stands, apart from what changed about it.
+   *
+   * The panel reported deltas and nothing else, so an extension that was sideloaded — or
+   * that held a surveillance-grade permission pair on day one — was reported exactly
+   * once: never, because neither is a change (B-56).
+   */
+  readonly standing?: readonly StandingFinding[]
 }
 
 export type ExtensionsState =
@@ -116,6 +124,19 @@ export function renderExtensions(
           : t('extensionsCanUse', entry.permissions.join(', ')),
       ),
     )
+    /**
+     * Standing facts before the button, because they are the reason to press it.
+     *
+     * Marked `data-standing` with the kind, so a screen reader and a test both reach the
+     * same thing the eye does: this row is not ordinary.
+     */
+    for (const finding of entry.standing ?? []) {
+      const note = text(doc, 'standing', standingSentence(finding))
+      note.setAttribute('data-standing', finding.kind)
+      note.setAttribute('data-severity', finding.severity)
+      row.append(note)
+    }
+
     if (entry.enabled) row.append(button(doc, 'disable', t('extensionsDisable'), () => handlers.onDisable(entry.id)))
     else row.append(text(doc, 'disabled', t('extensionsAlreadyOff')))
     list.append(row)

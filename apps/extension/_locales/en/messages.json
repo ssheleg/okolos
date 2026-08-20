@@ -752,6 +752,12 @@
   "extensionsNoneInstalled": {
     "message": "No other extensions are installed, so there is nothing to watch."
   },
+  "extensionsNotFromStoreDev": {
+    "message": "Not from the store: an unpacked folder, loaded by hand."
+  },
+  "extensionsNotFromStoreSideload": {
+    "message": "Not from the store: another program on this device installed it."
+  },
   "extensionsNotVisible": {
     "message": "This browser does not let an extension read the others, so nothing can be watched here."
   },
@@ -760,6 +766,20 @@
   },
   "extensionsReading": {
     "message": "Reading what is installed…"
+  },
+  "extensionsRiskyEverywhere": {
+    "message": "And it applies on every site."
+  },
+  "extensionsRiskyPair": {
+    "message": "Holds $ONE$ and $TWO$ together — ordinary permissions apart, together they read your sessions and change what leaves the browser.",
+    "placeholders": {
+      "one": {
+        "content": "$1"
+      },
+      "two": {
+        "content": "$2"
+      }
+    }
   },
   "extensionsTitle": {
     "message": "What changed in your extensions"

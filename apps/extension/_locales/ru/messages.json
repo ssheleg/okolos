@@ -752,6 +752,12 @@
   "extensionsNoneInstalled": {
     "message": "Других расширений не установлено — следить не за чем."
   },
+  "extensionsNotFromStoreDev": {
+    "message": "Поставлено не из магазина: это распакованная папка, загруженная вручную."
+  },
+  "extensionsNotFromStoreSideload": {
+    "message": "Поставлено не из магазина: его установила другая программа на этом устройстве."
+  },
   "extensionsNotVisible": {
     "message": "Этот браузер не даёт расширению читать другие, поэтому следить здесь не за чем."
   },
@@ -760,6 +766,20 @@
   },
   "extensionsReading": {
     "message": "Читаем, что установлено…"
+  },
+  "extensionsRiskyEverywhere": {
+    "message": "И действует на всех сайтах."
+  },
+  "extensionsRiskyPair": {
+    "message": "Держит вместе $ONE$ и $TWO$ — по отдельности это обычные разрешения, вместе они дают читать сессии и менять то, что уходит из браузера.",
+    "placeholders": {
+      "one": {
+        "content": "$1"
+      },
+      "two": {
+        "content": "$2"
+      }
+    }
   },
   "extensionsTitle": {
     "message": "Что изменилось в ваших расширениях"

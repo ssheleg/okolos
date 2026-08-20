@@ -154,7 +154,29 @@ export interface RpcMap {
         permissions?: string[]
         hosts?: string[]
       }>
-      installed: Array<{ id: string; name: string; version: string; permissions: string[]; enabled: boolean }>
+      installed: Array<{
+        id: string
+        name: string
+        version: string
+        permissions: string[]
+        enabled: boolean
+        /**
+         * What is true of it as it stands, computed in the worker (B-56).
+         *
+         * The page never sees `installType` or host permissions, so it cannot work these
+         * out for itself — and they are the reason some of these rows are worth reading.
+         * Loose on the wire, like `changes`: a newer worker must not break an older page.
+         */
+        standing?: Array<{
+          kind: string
+          id: string
+          name: string
+          severity: string
+          installType?: string
+          pair?: string[]
+          everywhere?: boolean
+        }>
+      }>
     }
   }
   'extensions/disable': { req: { id: string }; res: { ok: boolean; why?: string } }

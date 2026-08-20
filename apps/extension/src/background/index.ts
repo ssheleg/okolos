@@ -1,3 +1,4 @@
+import { standingFindings } from '@okolos/core-extensions'
 import { classifyUndecided, detectHidden } from '@okolos/core-injection'
 import { detectPlatform, type RpcSender } from '@okolos/platform'
 import { buildRules, matchUrl, type FeedSnapshot,
@@ -638,6 +639,33 @@ async function extensionsState() {
       version: entry.version,
       permissions: [...entry.permissions],
       enabled: entry.enabled,
+      /**
+       * What is true of it as it stands, not what changed about it (B-56).
+       *
+       * Computed here rather than on the page because the page never sees `installType`
+       * or the host permissions — the wire shape carries what a person is shown, and
+       * these two facts are the reason some of them are worth showing.
+       */
+      // Mapped onto the wire shape rather than sent as-is: `pair` is a readonly tuple
+      // here and a plain array there, and the wire is deliberately the looser of the two.
+      standing: standingFindings({
+        id: entry.id,
+        name: entry.name,
+        version: entry.version,
+        permissions: entry.permissions,
+        hostPermissions: entry.hostPermissions,
+        publisher: entry.publisher,
+        enabled: entry.enabled,
+        ...(entry.installType === undefined ? {} : { installType: entry.installType }),
+      }).map((finding) => ({
+        kind: finding.kind,
+        id: finding.id,
+        name: finding.name,
+        severity: finding.severity,
+        ...(finding.installType === undefined ? {} : { installType: finding.installType }),
+        ...(finding.pair === undefined ? {} : { pair: [...finding.pair] }),
+        ...(finding.everywhere === undefined ? {} : { everywhere: finding.everywhere }),
+      })),
     })),
   }
 }

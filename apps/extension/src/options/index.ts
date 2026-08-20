@@ -1,4 +1,9 @@
-import { analysePackage, type InventoryChange, type PackageReport } from '@okolos/core-extensions'
+import {
+  analysePackage,
+  type InventoryChange,
+  type PackageReport,
+  type StandingFinding,
+} from '@okolos/core-extensions'
 import { buildChecklist, type StepProgress } from '@okolos/core-recovery'
 import { diffSince } from '@okolos/core-queue'
 import { t, useResolver } from '@okolos/i18n'
@@ -202,6 +207,38 @@ let lastAnalysis: PackageReport | null = null
  */
 let lastAnalysisFailure: string | null = null
 
+/**
+ * A standing fact about an extension, before it is narrowed.
+ *
+ * Dropped rather than defaulted when the kind is unknown: a note whose sentence this page
+ * cannot write would render as an empty line under an extension's name, which reads as
+ * "something is wrong and we will not say what".
+ */
+function narrowStanding(finding: {
+  kind: string
+  id: string
+  name: string
+  severity: string
+  installType?: string
+  pair?: string[]
+  everywhere?: boolean
+}): StandingFinding | null {
+  const severity = finding.severity === 'critical' ? 'critical' : 'major'
+  const base = { id: finding.id, name: finding.name, severity } as const
+  if (finding.kind === 'not-from-store') {
+    return finding.installType === 'sideload' || finding.installType === 'development'
+      ? { ...base, kind: 'not-from-store', installType: finding.installType }
+      : null
+  }
+  if (finding.kind === 'reads-everything-and-more') {
+    const [one, two] = finding.pair ?? []
+    return one !== undefined && two !== undefined
+      ? { ...base, kind: 'reads-everything-and-more', pair: [one, two], everywhere: finding.everywhere === true }
+      : null
+  }
+  return null
+}
+
 /** What the worker sent about one changed extension, before it is narrowed. */
 type WireChange = {
   kind: string
@@ -326,7 +363,17 @@ async function extensionsSection(): Promise<HTMLElement> {
         // The wire shape is deliberately loose (strings, not unions) so a newer
         // background cannot break an older page; it is narrowed here, once.
         changes: result.changes.flatMap((change) => narrowChange(change) ?? []),
-        installed: result.installed,
+        // Narrowed here, once, like `changes` above: the wire is loose so a newer worker
+        // cannot break an older page, and a standing finding whose kind this page does not
+        // know is dropped rather than rendered as an unlabelled note.
+        installed: result.installed.map((entry) => ({
+          id: entry.id,
+          name: entry.name,
+          version: entry.version,
+          permissions: entry.permissions,
+          enabled: entry.enabled,
+          standing: (entry.standing ?? []).flatMap((finding) => narrowStanding(finding) ?? []),
+        })),
         analysis: lastAnalysis,
         analysisNote: lastAnalysisFailure ?? t('extensionsInspectNote'),
       }

@@ -112,6 +112,14 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (сорок девятый)** — B-56; стадии 0–10. Extension Guard: 3 из 13 → 7 из 13.
+  Три отметки не стояли при работающем коде, потому что строки описывали **невозможный**
+  способ получения — «разбор CRX», которого браузер не даёт и не даст. Построены два
+  сигнала о **состоянии**, а не об изменении: sideload (`installType` браузер отдавал
+  даром и читался только как запасной вариант для издателя) и опасные комбинации прав
+  именованными парами. По четырём оставшимся записан отказ с причиной, веха снята. 2286
+  юнит-тестов в 142 файлах, 15 e2e. Три планта, легли все. Постоянных инструкций десять,
+  снятий нет. Вердикт REFINE.
 - **2026-08-20 (сорок восьмой)** — B-59, часть четвёртая, строка закрыта; стадии 0–10.
   Оба оставшихся «вопроса к дизайну» опять оказались долгом — третий раз подряд: `loading` у
   инспектора невозможен по устройству, а выбор инцидента был записан **дважды** (SCR-13
@@ -2160,6 +2168,65 @@ description.
   keeping. But a row closed with its verification outstanding is a row closed early, and
   the honest form is the one now in the board: closed on the second attempt, with the
   first attempt's failure written into it rather than tidied away.
+
+### 2026-08-20 — the row described a mechanism that cannot exist, so it stayed empty
+
+**Symptom.** Three rows of the coverage matrix — obfuscation, `eval`, remote code — stood
+unmarked while `analysePackage` implemented all three and the extensions panel reached them
+from a control a person can press. B-56 called this "the matrix understates", which is
+true and not the interesting part.
+
+**Stage it surfaced at.** 0, comparing each row's "Как получаем" column against the code.
+
+**Stage that owned it.** 2 of the run that wrote the matrix. The rows say the signal comes
+from "разбор CRX" — parsing the installed extension's package. No browser hands one
+extension another's code, and none will: the mechanism is not missing, it is impossible.
+What the product actually built is the same three checks over a package the *user*
+supplies, which is a different mechanism reaching the same answer.
+
+**Root cause.** A plan written as "signal ← mechanism" cannot be marked done when the
+mechanism turns out to be unavailable, even after the signal is delivered another way. The
+row and the code were both right and could never agree.
+
+**Fix, by grade.** *Structural:* each row now states the mechanism that exists, with the
+impossible one named as impossible so nobody re-plans it. *Also:* two rows whose mechanism
+was available all along got built in the same pass — `installType` was already in the API
+response, read only as a fallback for the publisher field.
+
+**The check that catches it next time.** When a matrix row stays unmarked while its subject
+looks handled, the question is not "is it built" but "does the row describe the way it would
+be built here". Three of the four remaining Extension Guard rows failed the same question
+and are now recorded as declined, with the reason, rather than left as work nobody will do.
+
+### 2026-08-20 — a product that reports only changes never reports what was always true
+
+**Symptom.** An extension installed by another program on the machine — a sideload, one of
+the strongest single signals available — had never once been mentioned to the user. Not
+because the datum was missing: `chrome.management` returns `installType` and the adapter
+already read it. Because the extensions feature answers "what changed since last time", and
+arriving is not a change.
+
+**Stage it surfaced at.** 0 of this run, reading the matrix row against the adapter.
+
+**Stage that owned it.** 2 of the run that designed the feature. "The core of the risk is
+change over time" is true — seven years of trust turned into spyware by a quiet update — and
+it became the *only* question asked. A permission pair that was alarming on day one is
+equally invisible: it never changes either.
+
+**Root cause.** A correct framing applied past its edge. The delta is where most of the risk
+is, so the code was shaped as a diff, and a fact with no "before" has nowhere to live in a
+diff.
+
+**Fix, by grade.** *Structural:* `standingFindings(entry)` — a pure function of one snapshot,
+answering "what is true of this now", beside `diffInventory`'s "what moved". Two facts to
+start: not from the store, and a permission pair with no innocent reading. *Design:* it
+returns an empty list for an ordinary extension, and `admin` installs are deliberately
+silent — an alarm a person cannot act on is noise on a screen whose whole worth is that
+every line can be acted on.
+
+**The check that catches it next time.** For any feature built as a diff, ask what is true
+on first sight. If the answer is "we would never say", the diff is the whole design and it
+should not be.
 
 ### 2026-08-20 — three times in a row, the "design question" was a debt
 

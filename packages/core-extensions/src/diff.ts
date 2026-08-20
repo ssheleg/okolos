@@ -28,6 +28,13 @@ export interface ExtensionSnapshot {
    */
   readonly hostPermissions: readonly string[] | null
   readonly publisher: string | null
+  /**
+   * How it got here, as `chrome.management` reports it.
+   *
+   * Optional because a snapshot stored before this field existed has none, and "we did
+   * not record it" is not "it came from the store" — the whole point of the signal.
+   */
+  readonly installType?: string
   readonly enabled: boolean
 }
 

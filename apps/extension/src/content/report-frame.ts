@@ -30,8 +30,16 @@ export interface FrameReport {
 export interface ReportDeps {
   /** Asks the background to relay, and says whether anyone was there. */
   readonly relay: (report: FrameReport) => Promise<{ delivered: boolean } | undefined>
-  /** Journalled when the budget runs out — a silent give-up is the defect returning. */
-  readonly giveUp: (explain: string) => Promise<void>
+  /**
+   * Journalled when the budget runs out — a silent give-up is the defect returning.
+   *
+   * Facts, not a sentence. The note lands in the journal, and the journal is
+   * dumped verbatim into the file the user downloads, so a sentence composed here
+   * would be English copy on a surface a person reads — in a product whose
+   * audience reads Russian. The wording belongs to the caller, which can reach the
+   * catalogue; the numbers belong here, which is where the budget is decided.
+   */
+  readonly giveUp: (facts: { attempts: number; seconds: number }) => Promise<void>
   readonly wait: (ms: number) => Promise<void>
 }
 
@@ -58,11 +66,6 @@ export async function reportToEmbeddingPage(
   }
 
   const seconds = Math.round((REPORT_ATTEMPTS * REPORT_GAP_MS) / 1000)
-  await deps
-    .giveUp(
-      `a finding in this frame could not be reported to the page it is embedded in, ` +
-        `after ${REPORT_ATTEMPTS} attempts over ${seconds} seconds`,
-    )
-    .catch(() => undefined)
+  await deps.giveUp({ attempts: REPORT_ATTEMPTS, seconds }).catch(() => undefined)
   return { delivered: false, attempts: REPORT_ATTEMPTS }
 }

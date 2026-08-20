@@ -229,8 +229,14 @@ async function tellEmbeddingPage(verdicts: readonly Verdict[]): Promise<void> {
     { origin: '', summary: summarise(worst(verdicts)).slice(0, 160), count: verdicts.length },
     {
       relay: (report) => platform.runtime.send('frame/report', report),
-      giveUp: async (explain) => {
-        await platform.runtime.send('page/note', { kind: 'frame-unreported', explain })
+      giveUp: async ({ attempts, seconds }) => {
+        // Worded here, counted there: the note is dumped verbatim into the export
+        // the user downloads, so it goes through the catalogue like any other
+        // sentence they will read.
+        await platform.runtime.send('page/note', {
+          kind: 'frame-unreported',
+          explain: t('frameUnreported', String(attempts), String(seconds)),
+        })
       },
       wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     },

@@ -124,6 +124,8 @@ export function hashFor(view: ViewId, kind?: string): string {
     return `#recovery=${encodeURIComponent(kind)}`
   }
   const entry = Object.entries(VIEW_FOR_HASH).find(([, id]) => id === view)
+  // i18n-exempt: unreachable for any ViewId the table covers — a programming
+  // mistake reported to whoever is holding the debugger, not to a user.
   if (entry === undefined) throw new Error(`no address for view ${view}`)
   return entry[0]
 }

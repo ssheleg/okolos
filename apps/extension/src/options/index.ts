@@ -508,6 +508,8 @@ async function areaRows(): Promise<AreaRow[]> {
       const { incidents, unreadable } = await openIncidents()
       // A row that cannot see every incident says so rather than naming a
       // number that is missing some of them.
+      // i18n-exempt: a control-flow signal, not copy — `count()` catches this and
+      // renders nothing, so no eye ever sees the string.
       if (unreadable > 0) throw new Error('recovery progress unreadable')
       return incidents.length === 0
         ? t('areaStateNoIncidents')

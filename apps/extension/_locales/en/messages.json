@@ -661,6 +661,17 @@
   "firstRunWhatSends": {
     "message": "What this sends"
   },
+  "frameUnreported": {
+    "message": "a finding in this frame could not be reported to the page it is embedded in, after $ATTEMPTS$ attempts over $SECONDS$ seconds",
+    "placeholders": {
+      "attempts": {
+        "content": "$1"
+      },
+      "seconds": {
+        "content": "$2"
+      }
+    }
+  },
   "gateAction": {
     "message": "Attempted: $ACTION$",
     "placeholders": {

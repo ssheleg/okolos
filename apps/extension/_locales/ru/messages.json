@@ -661,6 +661,17 @@
   "firstRunWhatSends": {
     "message": "Что отправляется"
   },
+  "frameUnreported": {
+    "message": "Находку в этом кадре не удалось передать странице, которая его встроила: попыток $ATTEMPTS$ за $SECONDS$ с.",
+    "placeholders": {
+      "attempts": {
+        "content": "$1"
+      },
+      "seconds": {
+        "content": "$2"
+      }
+    }
+  },
   "gateAction": {
     "message": "Попытка: $ACTION$",
     "placeholders": {

@@ -83,19 +83,32 @@ describe('a frame reporting to the page that embeds it', () => {
     expect(d.waited).toHaveLength(REPORT_ATTEMPTS - 1)
   })
 
-  it('says so in the journal when it gives up, naming the count and the duration', async () => {
+  it('hands the journal the numbers, not a sentence about them', async () => {
     /**
      * A silent give-up is the original defect arriving by another road: the product
-     * found something and nobody was told. The numbers are in the sentence because
-     * "could not report" leaves a reader unable to tell a slow page from a broken one.
+     * found something and nobody was told. The numbers travel because "could not
+     * report" leaves a reader unable to tell a slow page from a broken one.
+     *
+     * Facts rather than prose, and that is not a style choice: the note is written
+     * into the journal, and `exportAll` dumps the journal verbatim into the file the
+     * user downloads. A sentence composed in here was English copy on a surface a
+     * person reads, in a product whose audience reads Russian. The wording is the
+     * caller's, which can reach the catalogue.
      */
     const d = deps({ relay: vi.fn(async () => ({ delivered: false })) })
     await reportToEmbeddingPage(REPORT, d)
 
     expect(d.giveUp).toHaveBeenCalledTimes(1)
-    const explain = vi.mocked(d.giveUp).mock.calls[0]?.[0] ?? ''
-    expect(explain).toContain(String(REPORT_ATTEMPTS))
-    expect(explain).toContain('9 seconds')
+    expect(vi.mocked(d.giveUp).mock.calls[0]?.[0]).toEqual({
+      attempts: REPORT_ATTEMPTS,
+      seconds: 9,
+    })
+  })
+
+  it('says nine seconds because that is what the budget multiplies out to', () => {
+    // The duration is derived, so the assertion above would keep agreeing with the
+    // module if both drifted. This one holds the arithmetic to the two constants.
+    expect(Math.round((REPORT_ATTEMPTS * REPORT_GAP_MS) / 1000)).toBe(9)
   })
 
   it('treats a thrown relay as "not delivered" and keeps its budget', async () => {

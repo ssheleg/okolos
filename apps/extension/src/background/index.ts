@@ -118,7 +118,7 @@ platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>, from: RpcSe
     case 'page/note':
       return notePageEvent(
         message.payload as {
-          kind: 'restore' | 'frame-unreported' | 'gate-unread' | 'password-unchecked' | 'password-unchecked'
+          kind: 'restore' | 'frame-unreported' | 'gate-unread' | 'password-unchecked'
           explain: string
         },
       ) as Promise<

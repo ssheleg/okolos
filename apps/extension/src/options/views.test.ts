@@ -67,10 +67,18 @@ describe('an address nobody understands says so', () => {
     expect(routeFor('#nowhere')).toEqual({ view: 'overview', unrecognised: '#nowhere' })
   })
 
-  it('treats a recovery address with no incident as unrecognised', () => {
-    // `#recovery=` names no incident. Opening the recovery view on it would
-    // show a checklist for nothing.
-    expect(routeFor('#recovery=')).toEqual({ view: 'overview', unrecognised: '#recovery=' })
+  it('opens the recovery view with no kind, which is where a person starts one', () => {
+    /**
+     * This used to be unrecognised, and the reason was sound at the time: opening the
+     * recovery view on it would have shown a checklist for nothing. The screen has
+     * something to show now — SCR-13's `empty` state is the incident picker, and
+     * SCN-025's entry point has always read "the recovery entry in the popup" (B-59).
+     *
+     * Both spellings are the same address: the difference between `#recovery` and
+     * `#recovery=` is invisible to a reader and neither names an incident.
+     */
+    expect(routeFor('#recovery=')).toEqual({ view: 'recovery' })
+    expect(routeFor('#recovery')).toEqual({ view: 'recovery' })
   })
 
   it('never leaves the view unset — an unrecognised address still lands somewhere', () => {
@@ -122,11 +130,17 @@ describe('the producing half and the reading half are one table', () => {
     expect(ALL_VIEWS.length).toBe(KNOWN_HASHES.length + 2) // + overview + recovery
   })
 
-  it('refuses to produce a recovery address with no incident', () => {
-    // Producing one would produce a link that resolves to the overview: a
-    // broken link, minted by the helper that exists to prevent them.
-    expect(() => hashFor('recovery')).toThrow(/incident kind/)
-    expect(() => hashFor('recovery', '')).toThrow(/incident kind/)
+  it('produces the picker address when there is no incident to name', () => {
+    /**
+     * This refused, and the refusal was right at the time: a kindless recovery address
+     * resolved to the overview, so producing one would have minted a broken link from the
+     * helper that exists to prevent them. It names the incident picker now (B-59), so the
+     * link is real — and the popup's footer is the caller that needs it.
+     */
+    expect(hashFor('recovery')).toBe('#recovery')
+    expect(hashFor('recovery', '')).toBe('#recovery')
+    // And it still round-trips: the address this produces is one `routeFor` resolves.
+    expect(routeFor(hashFor('recovery'))).toEqual({ view: 'recovery' })
   })
 
   it('encodes an incident kind that needs it, and reads it back whole', () => {

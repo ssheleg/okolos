@@ -37,7 +37,7 @@ export interface PopupHandlers {
   readonly onResolve: (itemId: string) => void
   readonly onDefer: (itemId: string) => void
   readonly onWhatChanged: () => void
-  readonly onOpen: (target: 'self-audit' | 'journal' | 'settings') => void
+  readonly onOpen: (target: 'self-audit' | 'journal' | 'settings' | 'recovery') => void
   readonly onRepair: () => void
 }
 
@@ -107,6 +107,17 @@ function footer(doc: Document, handlers: PopupHandlers): HTMLElement {
   el.append(
     button(doc, 'self-audit', t('popupSelfAudit'), () => handlers.onOpen('self-audit')),
     button(doc, 'journal', t('popupJournal'), () => handlers.onOpen('journal')),
+    /**
+     * The way in for someone the product did not warn in time.
+     *
+     * SCN-025's entry point has read "the recovery entry in the popup" since it was
+     * written, and there was none: every checklist opened because a detector fired, so a
+     * person who ran the pasted command and realised afterwards had nowhere to go. It sits
+     * in the footer rather than in the verdict area on purpose — it is not about this
+     * page, and putting it where verdicts go would make every clean page look like an
+     * invitation to worry (B-59).
+     */
+    button(doc, 'recovery', t('popupRecovery'), () => handlers.onOpen('recovery')),
     button(doc, 'settings', t('popupSettings'), () => handlers.onOpen('settings')),
   )
   return el

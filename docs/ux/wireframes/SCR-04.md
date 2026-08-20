@@ -26,7 +26,6 @@ addressable as `[data-role=<name>]`, which is also how the tests reach them.
 
 **States**
 
-- **loading** — opening details
 - **success** — evidence available
 - **error** — evidence lost (page mutated)
 

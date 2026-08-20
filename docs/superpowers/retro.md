@@ -112,6 +112,15 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (сорок восьмой)** — B-59, часть четвёртая, строка закрыта; стадии 0–10.
+  Оба оставшихся «вопроса к дизайну» опять оказались долгом — третий раз подряд: `loading` у
+  инспектора невозможен по устройству, а выбор инцидента был записан **дважды** (SCR-13
+  `empty` и SCN-025 Entry point) и не построен ни разу. Человек, понявший через час, что
+  выполнил вставленную команду, попасть в чек-лист не мог вообще. Построены экран выбора и
+  вход в подвале попапа. Соглашение об именах ключевых таблиц перестало быть фольклором —
+  правило нашло существовавший экземпляр на первом прогоне. 2271 юнит-тест в 141 файле, 28
+  e2e по затронутым экранам. Четыре планта, легли все. Постоянных инструкций десять, снятий
+  нет. Вердикт REFINE.
 - **2026-08-20 (сорок седьмой)** — B-59, части вторая и третья; стадии 0–10. Оболочка обзора
   рисуется до первого `await`; `TrustedState` внёс ошибочное состояние в рендерер, где его
   может достать тест и axe-свип; SCR-09 научился отличать пустую машину от тихой недели. Два
@@ -2151,6 +2160,68 @@ description.
   keeping. But a row closed with its verification outstanding is a row closed early, and
   the honest form is the one now in the board: closed on the second attempt, with the
   first attempt's failure written into it rather than tidied away.
+
+### 2026-08-20 — three times in a row, the "design question" was a debt
+
+**Symptom.** B-59's remaining findings were classified as interface decisions needing the
+UX chain: five states recorded and not built. Opened one at a time, four of the five turned
+out to have their answer already on file — the settings shell, SCR-16's error state,
+SCR-09's empty statement, and SCR-13's picker, which is recorded in *two* places. Only
+SCR-04's `loading` was genuinely undecided, and it resolved the other way: it cannot exist,
+because the inspector is mounted with its evidence already in hand.
+
+**Stage it surfaced at.** 0, three iterations running, each time by reading the record
+before acting on the row.
+
+**Stage that owned it.** 10 of the iteration that filed the classification. I sorted the
+five by shape — "a state that does not exist is an interface question" — and the shape does
+not carry the answer. Whether a record already decided something is one read per finding,
+and I skipped it for all five at once.
+
+**Root cause.** Categorising is cheaper than checking, and it produces a routing decision
+that *looks* justified. The cost is asymmetric: routing a settled question through the
+deciding route invites re-deciding what was decided carefully, which is how a record loses
+its authority — and the SCR-13 case shows what the delay costs, since the missing entry
+point had been recorded twice and unbuilt for weeks.
+
+**Fix, by grade.** *Process:* before routing a finding as a design question, read its
+screen record and its scenario. Written there, it is a debt and goes straight to code with
+the record as the specification. *Recorded:* each of the three instances is in the row with
+its evidence, so the pattern is visible rather than three separate surprises.
+
+**The check that catches it next time.** The question is one grep: does the record or the
+scenario already say what should happen? It answered "yes" four times out of five.
+
+### 2026-08-20 — I broke the same naming convention twice in one session
+
+**Symptom.** `tools/locales.test.ts` reads catalogue keys out of `t('literal')`, out of
+fields ending in `Key`, and out of tables named `*_KEY`. Twice today I wrote something
+outside that: `{ key: … }` for the journal-argument convention, and `INCIDENT_LABEL` for the
+picker's table. Both times four or five live messages read as translated-and-never-shown,
+and both times the gate caught it — the second time after I had written the note about the
+first.
+
+**Stage it surfaced at.** 6, both times.
+
+**Stage that owned it.** 5, and the deeper owner is the convention itself: it is enforced by
+a name, and a name is exactly the kind of thing a careful author reinvents while thinking
+about something else.
+
+**Root cause.** A rule that lives in a regex and a comment has to be remembered at the
+moment of writing. Mine is a good rule — a looser one would let a stray `key:` keep a dead
+message alive — but "remember to name it right" is not a control.
+
+**Fix, by grade.** *Structural:* the convention checks itself. A `const` table whose values
+are **all** catalogue keys is a table of catalogue keys whatever it is called, and the gate
+now requires it to be named `*_KEY`. A table of ordinary strings does not match — every one
+of its values would have to coincide with a message name. *Evidence it was worth it:* on its
+first run the rule found a pre-existing instance, `SEVERITY_WORD` in the overview, which had
+been sitting outside the convention and only stayed harmless because another file happened
+to reference the same four keys.
+
+**The check that catches it next time.** It is the check. The lesson is the shape: when a
+gate depends on a naming convention, the gate can usually recognise the *content* the name
+was standing in for, and then the convention becomes checkable instead of remembered.
 
 ### 2026-08-20 — the state existed, one file away from where its record pointed
 

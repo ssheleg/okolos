@@ -11,6 +11,7 @@ import {
   renderExtensions,
   renderJournal,
   renderLeaks,
+  renderIncidentPicker,
   renderOverview,
   renderQueue,
   renderRecovery,
@@ -42,7 +43,14 @@ import { mapJournal } from '../popup/state.js'
 import { answered } from './answered.js'
 import { keepingFocus, markFocus } from './keep-focus.js'
 import { whilePending } from './pending.js'
-import { loadingRows, optionsPageFor, recoveryHref, routeFor, type Route } from './views.js'
+import {
+  hashFor,
+  loadingRows,
+  optionsPageFor,
+  recoveryHref,
+  routeFor,
+  type Route,
+} from './views.js'
 import '../pages.css'
 
 /**
@@ -480,10 +488,25 @@ async function readJournal(): Promise<{
  */
 async function recoverySection(kind: string): Promise<HTMLElement> {
   const container = document.createElement('div')
-  // An address with no incident never reaches here — `routeFor` calls it
-  // unrecognised and opens the overview — but the guard stays, because a
-  // checklist for no incident is a screen with nothing on it.
-  if (!kind) return container
+  /**
+   * No incident named: the picker, which is what SCR-13's `empty` state has always said.
+   *
+   * This used to return an empty `div` and `routeFor` used to make sure nothing reached
+   * it — a defensible pair while there was nothing to show, and a dead end for anyone who
+   * realised after the fact that they had run the pasted command (B-59).
+   */
+  if (!kind) {
+    container.append(
+      renderIncidentPicker(document, {
+        onPick: (picked) => {
+          // A navigation, so back works and the address names the incident — the same
+          // address the ClickFix warning produces.
+          location.hash = hashFor('recovery', picked)
+        },
+      }),
+    )
+    return container
+  }
 
   let progress: StepProgress[] = []
   try {

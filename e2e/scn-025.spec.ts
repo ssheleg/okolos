@@ -108,3 +108,48 @@ test('an address nobody could have produced still renders the checklist', async 
     await page.close()
   }
 })
+
+test('a person who was never warned can start a checklist themselves', async ({
+  context,
+  extensionId,
+}) => {
+  /**
+   * SCN-025's other entry point, written into the scenario from the start and built on
+   * 2026-08-20 (B-59). Every checklist until then opened because a detector fired — a
+   * ClickFix warning, a trap, a journal link — so someone who ran the pasted command and
+   * realised afterwards had no way in: `#recovery` with no kind opened the overview and
+   * reported itself as an address nobody understood.
+   */
+  const page = await context.newPage()
+  await page.goto(`chrome-extension://${extensionId}/options.html#recovery`)
+
+  const picker = page.locator('[data-role=incident-picker]')
+  await expect(picker).toHaveCount(1)
+  // Four choices, one per playbook, and the honest answer is a real option rather than
+  // the one you reach by giving up — so it is last.
+  await expect(picker.locator('[data-role=pick]')).toHaveCount(4)
+  await expect(picker.locator('[data-role=pick]').last()).toHaveAttribute('data-kind', 'not-sure')
+
+  await picker.locator('[data-role=pick][data-kind="called-number"]').click()
+
+  // A navigation, so the address names the incident and back works.
+  await expect(page).toHaveURL(/#recovery=called-number$/)
+  const recovery = page.locator('[data-role=recovery]')
+  await expect(recovery).toHaveCount(1)
+  await expect(recovery.locator('[data-role=step]').first()).toHaveAttribute(
+    'data-step',
+    'remote-access',
+  )
+})
+
+test('the popup carries the way in, for a page that is fine', async ({ context, extensionId }) => {
+  // In the footer, not in the verdict area: it is not about this page, and putting it
+  // where verdicts go would make every clean page look like an invitation to worry.
+  const page = await context.newPage()
+  await page.goto(`chrome-extension://${extensionId}/popup.html`)
+
+  const entry = page.locator('[data-role=footer] [data-role=recovery]')
+  await expect(entry).toHaveCount(1)
+  const label = await page.evaluate(() => chrome.i18n.getMessage('popupRecovery'))
+  await expect(entry).toHaveText(label)
+})

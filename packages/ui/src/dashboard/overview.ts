@@ -101,7 +101,7 @@ const SEVERITY_MARK: Readonly<Record<Severity, string>> = {
  * `critical | major | minor | info` everywhere else in this codebase and the
  * banner already says those words aloud.
  */
-const SEVERITY_WORD: Readonly<Record<Severity, string>> = {
+const SEVERITY_WORD_KEY: Readonly<Record<Severity, string>> = {
   critical: 'bannerSeverityCritical',
   major: 'bannerSeverityMajor',
   minor: 'bannerSeverityMinor',
@@ -207,7 +207,7 @@ function attentionRow(doc: Document, item: AttentionItem, handlers: OverviewHand
 
   const word = doc.createElement('span')
   word.setAttribute('data-role', 'attention-severity')
-  word.textContent = t(SEVERITY_WORD[item.severity])
+  word.textContent = t(SEVERITY_WORD_KEY[item.severity])
 
   const what = doc.createElement('span')
   what.setAttribute('data-role', 'attention-what')

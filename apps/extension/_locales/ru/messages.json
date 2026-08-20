@@ -1647,6 +1647,9 @@
   "popupQueueOpen": {
     "message": "Открыть страницу"
   },
+  "popupRecovery": {
+    "message": "Что-то случилось"
+  },
   "popupRepair": {
     "message": "Починить хранилище"
   },
@@ -1713,6 +1716,24 @@
   },
   "recoveryElsewhere": {
     "message": "Этот шаг нельзя сделать в этом браузере."
+  },
+  "recoveryPickAsk": {
+    "message": "Выберите, что произошло. Список шагов зависит от этого — и если не уверены, так и скажите: тогда список будет самым широким из безопасных."
+  },
+  "recoveryPickCalled": {
+    "message": "Я позвонил по номеру со страницы или дал доступ к экрану"
+  },
+  "recoveryPickPassword": {
+    "message": "Я ввёл пароль там, где не следовало"
+  },
+  "recoveryPickPasted": {
+    "message": "Я выполнил команду, скопированную со страницы"
+  },
+  "recoveryPickTitle": {
+    "message": "С чего начать восстановление"
+  },
+  "recoveryPickUnsure": {
+    "message": "Не уверен, что именно произошло"
   },
   "recoveryPortableAfterCall": {
     "message": "Что делать после звонка по номеру из предупреждения"

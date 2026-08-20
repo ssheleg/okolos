@@ -616,10 +616,10 @@ See [foundation.md](foundation.md) → Personas.
 - **Persona:** P-02
 - **Feature:** recovery
 - **Traces:** ST-015, FLW-16 (JTBD-06, JRN-03/#5)
-- **Entry point:** "I already ran it" from a ClickFix warning, or the recovery entry in the popup
+- **Entry point:** "I already ran it" from a ClickFix warning, or the recovery entry in the popup — **the second was written here from the start and built on 2026-08-20** (B-59). Until then every checklist opened because a detector fired, so a person who ran the pasted command and realised afterwards had no way in at all
 - **Preconditions:** none
 - **Steps:**
-  1. User states what happened -> system builds the checklist for pasted commands, most damaging step first
+  1. User states what happened -> system builds the checklist for pasted commands, most damaging step first. Arriving with no incident named (`#recovery`, the popup's entry) shows the picker: four choices, one per playbook that exists, with "not sure" last so it is not what a hurried person picks to skip the question
   2. User works through the steps -> system tracks progress per step and keeps it across restarts
   3. User finishes -> system archives the incident with its date
 - **Expected result:** the user completes a concrete recovery sequence instead of searching for advice of unknown quality

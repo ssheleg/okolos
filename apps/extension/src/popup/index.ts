@@ -13,10 +13,12 @@ import { optionsPageFor, type ViewId } from '../options/views.js'
  * A table rather than a conditional, because the conditional is what broke:
  * one target was handled and the rest fell through to a fragment-less URL.
  */
-const FOOTER_VIEW: Readonly<Record<'self-audit' | 'journal' | 'settings', ViewId>> = {
+const FOOTER_VIEW: Readonly<Record<'self-audit' | 'journal' | 'settings' | 'recovery', ViewId>> = {
   'self-audit': 'audit',
   journal: 'journal',
   settings: 'data',
+  // With no kind: the picker, which is how a person names what happened themselves.
+  recovery: 'recovery',
 }
 
 /**

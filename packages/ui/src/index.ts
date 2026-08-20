@@ -71,6 +71,12 @@ export {
   type WipeOutcome,
 } from './settings/data-controls.js'
 export { shadowMode } from './shadow.js'
+export {
+  renderIncidentPicker,
+  INCIDENT_LABEL_KEY,
+  PICK_ORDER,
+  type PickerHandlers,
+} from './recovery/picker.js'
 export { createOverlayHost, type OverlayHost } from './host.js'
 export {
   renderStorageProblem,

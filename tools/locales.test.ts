@@ -239,3 +239,60 @@ describe('the catalogue in the format the browser will actually parse', () => {
     }
   })
 })
+
+describe('the naming convention this file depends on is a rule, not folklore', () => {
+  /**
+   * Keys are read out of tables whose name ends in `_KEY`, and out of nothing looser — so
+   * that a stray `key:` somewhere cannot keep a dead message alive. The cost is that a
+   * table of real keys under any other name makes its messages read as
+   * translated-and-never-shown, and the author finds out only when this file refuses.
+   *
+   * That happened twice on 2026-08-20: `{ key: … }` instead of `{ messageKey: … }`, then
+   * `INCIDENT_LABEL` instead of `INCIDENT_LABEL_KEY`. Both were caught, both cost a
+   * round trip, and the second one after writing the note about the first.
+   *
+   * So the convention checks itself: a table whose values are *all* catalogue keys is a
+   * table of catalogue keys, whatever it is called, and it has to be named accordingly.
+   * A table of ordinary strings does not match — the values would have to coincide with
+   * message names, all of them.
+   */
+  const catalogueKeys = new Set(Object.keys(read('ru')))
+
+  /** The same tree `keysAsked` reads: packages and the extension's own source. */
+  const sources = (): string[] =>
+    [path.join(root, 'packages'), path.join(root, 'apps/extension/src')]
+      .flatMap((dir) => filesUnder(dir, '.ts'))
+      .filter((file) => !file.endsWith('.test.ts'))
+
+  it('finds no table of keys hiding under a name this file cannot read', () => {
+    const offenders: string[] = []
+    for (const file of sources()) {
+      const text = readFileSync(file, 'utf8')
+      for (const block of text.matchAll(/const (\w+)(?::[^=]*)? = \{([\s\S]*?)\n\}/g)) {
+        const name = block[1] as string
+        if (name.endsWith('_KEY')) continue
+        const values = [...(block[2] as string).matchAll(/:\s*'([a-zA-Z0-9_.]+)'/g)].map(
+          (m) => m[1] as string,
+        )
+        if (values.length < 2) continue
+        if (values.every((value) => catalogueKeys.has(value))) {
+          offenders.push(`${path.relative(root, file)}: ${name}`)
+        }
+      }
+    }
+    expect(
+      offenders,
+      'a table of catalogue keys must be named `*_KEY`, or this file reads its messages as dead',
+    ).toEqual([])
+  })
+
+  it('is looking at real tables, so an empty scan cannot pass', () => {
+    // The check above answers "none" both when the convention holds and when the walk is
+    // broken. This one separates the two.
+    let tables = 0
+    for (const file of sources()) {
+      tables += [...readFileSync(file, 'utf8').matchAll(/const \w+_KEY(?::[^=]*)? = \{/g)].length
+    }
+    expect(tables, 'no `*_KEY` table was found at all — the walk is broken').toBeGreaterThan(4)
+  })
+})

@@ -154,7 +154,7 @@ includes a redirect from `*.workers.dev`, not just a CNAME.
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|
-  | loading | opening details | - | skeleton, evidence arrives in one pass |
+  | ~~loading~~ | — | - | **removed 2026-08-20.** The inspector is mounted with the verdict's evidence already in hand, so opening details waits on nothing: there is no state to build and a skeleton would be a wait the product does not have. The row described an architecture this product never had (B-59) |
   | success | evidence available | - | text + technique + location + stage |
   | error | evidence lost (page mutated) | - | says the page changed, offers a re-scan |
   | refused | restore pressed on a node the page has taken over | - | the panel stays and `[data-role=restore-note]` names which of the two happened; **every further press repeats the same sentence.** Until 2026-08-20 the second press answered "nothing to do" and the panel closed as after a success, because the executor dropped its holds whatever the outcome |
@@ -302,17 +302,17 @@ includes a redirect from `*.workers.dev`, not just a CNAME.
 ### SCR-13: Recovery checklist
 - **Used by:** FLW-06, FLW-07, FLW-16
 - **Purpose:** turn "I already did the bad thing" into an ordered, finishable list
-- **Elements:** incident type picker (ran a pasted command / entered credentials / installed something / not sure); ordered steps, most damaging first, each with why; per-step done state; "Продолжить на другом устройстве" instructions; **primary action: the current step**
+- **Elements:** incident type picker (ran a pasted command / entered a password / called a number or gave screen access / not sure); ordered steps, most damaging first, each with why; per-step done state; "Продолжить на другом устройстве" instructions; **primary action: the current step**
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|
   | loading | building the checklist | - | brief; steps are local |
-  | empty | no incident selected | - | the picker, nothing else |
+  | empty | no incident selected | - | the picker, nothing else. **Built 2026-08-20:** every checklist opened because a detector fired, so someone who ran the pasted command and realised afterwards had no way in — `#recovery` with no kind opened the overview and reported itself unrecognised (B-59) |
   | success | checklist active | - | one current step highlighted, rest visible |
   | success (broad) | the incident name is not one we have a playbook for — including an address this product never produces | - | the "not sure" list, with the fallback stated on screen rather than implied |
-- **Behavior notes:** no time estimates, no reassurance copy, no scare copy; progress survives a browser restart. **A malformed address renders the broad list, it does not render nothing** — `#recovery=%E0%A4%A` (a broken escape) and `#recovery=constructor` (a name off `Object.prototype`) each left this screen completely blank until 2026-08-20, which is the worst place in the product for a blank screen
+- **Behavior notes:** no time estimates, no reassurance copy, no scare copy; progress survives a browser restart. **The picker offers one choice per playbook that exists, and "not sure" is last.** It listed a fifth until 2026-08-20 — a kind `core-recovery` has no steps for — and a choice whose answer is the broad list under a specific name is the screen claiming to know more than it does. Last rather than first because put at the top it is what a hurried person picks to skip the question, and the checklist they get is the broad one when a specific one existed. **A malformed address renders the broad list, it does not render nothing** — `#recovery=%E0%A4%A` (a broken escape) and `#recovery=constructor` (a name off `Object.prototype`) each left this screen completely blank until 2026-08-20, which is the worst place in the product for a blank screen
 - **Wireframe:** wireframes/SCR-13.md
-- **Coverage:** packages/ui/src/recovery/recovery.ts:renderRecovery, packages/core-recovery/src/checklist.ts:buildChecklist, packages/core-recovery/src/portable.ts:toPortable, e2e/scn-025.spec.ts
+- **Coverage:** packages/ui/src/recovery/picker.ts:renderIncidentPicker, packages/ui/src/recovery/recovery.ts:renderRecovery, packages/core-recovery/src/checklist.ts:buildChecklist, packages/core-recovery/src/portable.ts:toPortable, e2e/scn-025.spec.ts
 - **Scenarios:** SCN-025
 - **Resources:** playbook definitions, incident store
 - **Status:** built

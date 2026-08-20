@@ -18,6 +18,7 @@ addressable as `[data-role=<name>]`, which is also how the tests reach them.
 - `verdict`
 - `self-audit`
 - `journal`
+- `recovery`
 - `settings`
 
 **Elements it shows through the components it composes.** Addressable on this screen in

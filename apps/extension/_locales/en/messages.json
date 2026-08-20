@@ -1647,6 +1647,9 @@
   "popupQueueOpen": {
     "message": "Open the page"
   },
+  "popupRecovery": {
+    "message": "Something happened"
+  },
   "popupRepair": {
     "message": "Repair storage"
   },
@@ -1713,6 +1716,24 @@
   },
   "recoveryElsewhere": {
     "message": "This one cannot be done in this browser."
+  },
+  "recoveryPickAsk": {
+    "message": "Choose what happened. The steps depend on it — and if you are not sure, say so: the list will be the broadest safe one."
+  },
+  "recoveryPickCalled": {
+    "message": "I called a number from a page, or gave someone my screen"
+  },
+  "recoveryPickPassword": {
+    "message": "I entered a password somewhere I should not have"
+  },
+  "recoveryPickPasted": {
+    "message": "I ran a command I copied from a page"
+  },
+  "recoveryPickTitle": {
+    "message": "Where to start"
+  },
+  "recoveryPickUnsure": {
+    "message": "I am not sure what happened"
   },
   "recoveryPortableAfterCall": {
     "message": "What to do after calling a number from a warning"

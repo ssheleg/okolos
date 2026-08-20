@@ -67,7 +67,7 @@ export const VIEW_FOR_HASH: Readonly<Record<string, Exclude<ViewId, 'recovery'>>
 }
 
 /** `#recovery=<kind>`, the one address that carries a value. */
-const RECOVERY = /^#recovery=(.*)$/
+const RECOVERY = /^#recovery(?:=(.*))?$/
 
 /**
  * The area an address opens.
@@ -95,10 +95,19 @@ export function routeFor(hash: string): Route {
       // Keep the raw value: it is what the link actually said, and the
       // checklist will report it as an unknown kind rather than pretend.
     }
-    // `#recovery=` with nothing after it names no incident. That is an address
-    // this product does not produce, so it is unrecognised rather than a
-    // recovery view with an empty kind.
-    if (kind === '') return { view: 'overview', unrecognised: hash }
+    /**
+     * No incident named means "I want to start one", which is a real address.
+     *
+     * It used to open the overview and report the hash as unrecognised, because the
+     * screen had nothing to show without a kind. It does now: SCR-13's `empty` state is
+     * the picker, and SCN-025's entry point has always read "the recovery entry in the
+     * popup" — a person who suspects something has to be able to start a checklist
+     * without waiting for the product to detect it for them (B-59).
+     *
+     * `#recovery` and `#recovery=` are the same address for this purpose. The difference
+     * between them is invisible to a reader and neither names an incident.
+     */
+    if (kind === '') return { view: 'recovery' }
     return { view: 'recovery', kind }
   }
 
@@ -119,11 +128,15 @@ export const KNOWN_HASHES: readonly string[] = Object.keys(VIEW_FOR_HASH)
 export function hashFor(view: ViewId, kind?: string): string {
   if (view === 'overview') return ''
   if (view === 'recovery') {
-    // A recovery address with no incident resolves to the overview, so
-    // producing one would be producing a broken link.
-    if (kind === undefined || kind === '') {
-      throw new Error('hashFor("recovery") needs an incident kind')
-    }
+    /**
+     * No kind is an address now, and it used to throw.
+     *
+     * The old rule was right at the time: a kindless recovery address resolved to the
+     * overview, so producing one would have been producing a broken link. It names the
+     * incident picker since B-59 — the way in for a person who realised after the fact —
+     * so the link is real and the popup's footer produces it.
+     */
+    if (kind === undefined || kind === '') return '#recovery'
     return `#recovery=${encodeURIComponent(kind)}`
   }
   const entry = Object.entries(VIEW_FOR_HASH).find(([, id]) => id === view)

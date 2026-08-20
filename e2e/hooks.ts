@@ -2,6 +2,8 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium, test as base, type BrowserContext } from '@playwright/test'
 
+import { buildTooOld } from '../tools/build-age.mjs'
+
 const here = path.dirname(fileURLToPath(import.meta.url))
 
 /**
@@ -10,6 +12,19 @@ const here = path.dirname(fileURLToPath(import.meta.url))
  * production build never carries the flag — see REQ-35.
  */
 const BUILD = path.join(here, '..', 'apps', 'extension', 'dist', 'chrome-e2e')
+
+
+/**
+ * Refuses before a browser starts, rather than reporting a green from an old build.
+ *
+ * The two harnesses load two directories and `pnpm build:e2e` refreshes one of
+ * them, so "I rebuilt" and "the build under this spec is current" were different
+ * facts that looked like one. A planted defect stayed green across three checks on
+ * exactly that difference (B-42). Checked here rather than remembered: the habit
+ * that caught it twice is not a mechanism.
+ */
+const stale = buildTooOld(BUILD, 'pnpm build:e2e')
+if (stale !== null) throw new Error(`e2e: ${stale}`)
 
 export const test = base.extend<{ context: BrowserContext }>({
   // eslint-disable-next-line no-empty-pattern

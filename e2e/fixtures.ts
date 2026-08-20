@@ -2,8 +2,25 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium, test as base, type BrowserContext } from '@playwright/test'
 
+import { buildTooOld } from '../tools/build-age.mjs'
+
+import { WORKER_REGISTER_MS } from './budgets.js'
+
 const here = path.dirname(fileURLToPath(import.meta.url))
 const BUILD = path.join(here, '..', 'apps', 'extension', 'dist', 'chrome')
+
+
+/**
+ * Refuses before a browser starts, rather than reporting a green from an old build.
+ *
+ * The two harnesses load two directories and `pnpm build:e2e` refreshes one of
+ * them, so "I rebuilt" and "the build under this spec is current" were different
+ * facts that looked like one. A planted defect stayed green across three checks on
+ * exactly that difference (B-42). Checked here rather than remembered: the habit
+ * that caught it twice is not a mechanism.
+ */
+const stale = buildTooOld(BUILD, 'pnpm build')
+if (stale !== null) throw new Error(`e2e: ${stale}`)
 
 /**
  * Loads the built extension the way a user would, then serves the test pages
@@ -71,7 +88,24 @@ export const test = base.extend<{ context: BrowserContext; extensionId: string }
 
   extensionId: async ({ context }, use) => {
     let [worker] = context.serviceWorkers()
-    if (!worker) worker = await context.waitForEvent('serviceworker')
+    if (!worker) {
+      /**
+       * A named wait with its own sentence, because the unnamed one blamed the
+       * fixture. Running out of the per-test timeout here printed "Test timeout of
+       * 30000ms exceeded while setting up extensionId" — which sends the reader to
+       * look for a broken fixture, when the fact is that the worker had not
+       * registered yet on a loaded machine.
+       */
+      worker = await context
+        .waitForEvent('serviceworker', { timeout: WORKER_REGISTER_MS })
+        .catch(() => {
+          throw new Error(
+            `the extension's service worker did not register within ` +
+              `${WORKER_REGISTER_MS / 1000}s — the extension may have failed to load, or this ` +
+              `machine is busy enough that a fresh browser plus an extension load takes longer`,
+          )
+        })
+    }
     await use(worker.url().split('/')[2] as string)
   },
 })

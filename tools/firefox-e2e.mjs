@@ -34,6 +34,8 @@ import { Builder, By, until } from 'selenium-webdriver'
 import { existsSync, readdirSync } from 'node:fs'
 import { Options } from 'selenium-webdriver/firefox.js'
 
+import { buildTooOld } from './build-age.mjs'
+
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const BUILD = path.join(root, 'apps/extension/dist/firefox')
 /**
@@ -197,6 +199,13 @@ try {
     .setFirefoxOptions(options)
     .build()
 
+  const shipStale = buildTooOld(BUILD, 'pnpm build')
+  if (shipStale !== null) {
+    // Before the browser rather than inside it: a stale build under a Firefox run
+    // is a green about an extension nobody is shipping.
+    console.error(`\n  ${shipStale}\n`)
+    process.exit(1)
+  }
   const addonId = await driver.installAddon(BUILD, true)
   check('the extension installs into Firefox', Boolean(addonId), 'installAddon returned nothing')
 
@@ -296,8 +305,20 @@ try {
     )
     .build()
 
+  /**
+   * Present is not current, and this harness only ever asked the first question.
+   *
+   * `pnpm test:e2e:firefox` runs `pnpm build` and nothing else, so `dist/firefox`
+   * is fresh and `dist/firefox-e2e` is whatever the last `pnpm build:e2e` left —
+   * arbitrarily old, and passing this check the whole time, because the check asked
+   * whether the directory exists. The same shape that let a plant stay green across
+   * three Chromium specs (B-70).
+   */
   const openBuild = path.join(root, 'apps/extension/dist/firefox-e2e')
-  const openId = existsSync(openBuild) ? await driver.installAddon(openBuild, true) : null
+  const openStale = buildTooOld(openBuild, 'pnpm build:e2e')
+  check('the test-hook build is current', openStale === null, openStale ?? '')
+  const openId =
+    openStale === null && existsSync(openBuild) ? await driver.installAddon(openBuild, true) : null
   check(
     'the test-hook build installs too',
     Boolean(openId),

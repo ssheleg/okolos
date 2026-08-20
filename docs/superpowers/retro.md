@@ -112,6 +112,12 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (тринадцатый)** — B-45; стадии 0–10. Агент обновления фида лежит в
+  репозитории и ставится одной командой; релиз отказывается собираться на
+  блок-листе старше четырнадцати дней. Потолок поставлен туда, где вред, а гейт —
+  туда, где его можно починить. 1927 юнит-тестов в 121 файле, шесть плантов легли,
+  включая один против самого релизного гейта. Постоянных инструкций десять, снятий
+  нет. Вердикт REFINE.
 - **2026-08-20 (двенадцатый)** — B-44; стадии 0–10. Единственный пишущий маршрут
   сервиса получил потолок тела, проверку происхождения, лимит частоты,
   непредсказуемую ссылку, шесть заголовков и путь чтения; свип удержания — пять
@@ -267,6 +273,49 @@ happens before adding.
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-20 — a gate at the source's cycle would have been red on every commit
+
+**Symptom.** The row asked for a gate that reddens when `feeds/phishing.json` is
+older than the threshold ADR-0010 names. ADR-0010 names twelve hours — the
+source's own cycle — and a gate at twelve hours would have been red on almost
+every commit in this repository, because publishing the feed is a local step by
+ADR-0002: the signing key never leaves the machine, and moving it into CI is the
+trade that decision refused.
+
+**Stage it surfaced at.** 2, while deciding where to put the check. Writing it as
+asked would have produced a gate nobody could satisfy from where they were
+standing — and this project has already paid a day for that exact thing: B-26 was
+a load-bearing gate red on every developer machine, whose own refusal message
+offered `OKOLOS_SKIP_GATES=1`.
+
+**What was actually wrong, as opposed to what was asked for.** Two different
+questions had been folded into one. *How often should the feed be refreshed* is
+the source's cycle, twelve hours, and the answer is a schedule. *How old may a
+feed be before shipping it claims a protection that does not exist* is a question
+about harm, and the measurement in the row answers it: after six days, one of 248
+shipped hosts was still live. Past fourteen days a list is not stale, it is
+abandoned.
+
+**Fix, by grade.** The schedule became an artefact — a launchd agent in the
+repository, installed by one command — so the twelve hours are enforced by
+something that runs rather than by a gate that complains. The ceiling became a
+release check: `pnpm package:check` refuses to build an archive around a feed
+older than fourteen days, with a sentence naming the command that fixes it.
+Releases are deliberate and rare, so a refusal there lands on somebody who can
+act on it.
+
+**The number lives in one place and the document is required to agree.**
+`FEED_MAX_AGE_DAYS` is in `tools/feed-age.mjs`; a test reads ADR-0010 and fails if
+the ADR does not name the same figure. Two copies of a threshold agree with each
+other and with nothing else — the wipe confirmation, the severity order and the
+overlay token list were all that shape this session.
+
+**And the placeholder that stays a placeholder.** The committed plist keeps
+`REPO_PATH` rather than an absolute path, because an absolute path in a
+repository is correct on exactly one machine and silently wrong on every other —
+launchd would fail every twelve hours with nothing on any screen. A test forbids
+`/Users/` in that file, which is the only way that stays true.
 
 ### 2026-08-20 — the form needed no preflight, so it needed no permission
 

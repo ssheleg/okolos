@@ -7,7 +7,6 @@
     "apps/extension/src/background/leaks.ts": 1,
     "packages/core-credential/src/guard.ts": 6,
     "packages/core-credential/src/password.ts": 4,
-    "packages/core-download/src/judge.ts": 8,
     "packages/core-extensions/src/analyse.ts": 3,
     "packages/core-extensions/src/diff.ts": 3,
     "packages/core-feeds/src/apply.ts": 3,
@@ -16,5 +15,5 @@
     "packages/core-injection/src/stage1.ts": 1,
     "packages/storage/src/export.ts": 4
   },
-  "paidSoFar": "core-recovery closed 2026-08-20: 18 step sentences and 6 portable lines moved to _locales. The package keeps the id, the order and `elsewhere` — the facts it actually decides — and `packages/ui/src/recovery/recovery.ts` maps id to key through two `*_KEY` tables, which is the shape the locale gate reads: a computed key would make all eighteen messages look dead to it. The assertions about the words moved to the surface's test rather than being deleted with the words."
+  "paidSoFar": "core-recovery closed 2026-08-20: 18 step sentences and 6 portable lines moved to _locales. The package keeps the id, the order and `elsewhere` — the facts it actually decides — and `packages/ui/src/recovery/recovery.ts` maps id to key through two `*_KEY` tables, which is the shape the locale gate reads: a computed key would make all eighteen messages look dead to it. The assertions about the words moved to the surface's test rather than being deleted with the words. core-download closed the same day: five headlines and five shape sentences became codes, and the codes now cross the `download/verdict` RPC — the background used to compose English and send it. `reasons` deliberately stayed words, because those come from the checks and whoever ran them had already resolved them through the catalogue."
 }

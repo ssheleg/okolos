@@ -57,7 +57,7 @@ curl -sI https://huggingface.co/protectai/deberta-v3-small-prompt-injection-v2/r
 нет уже сейчас.
 
 Артефакт скачан, `sha256` сошёлся с записанным выше. Прогон по корпусу
-`corpora/injections` (41 положительных, 65 отрицательных, 9 подозрений, оба языка),
+`corpora/injections` (41 положительных, 69 отрицательных, 10 подозрений, оба языка),
 воспроизводится через `tools/model/evaluate.py`:
 
 | Порог | Язык | Recall | Ложных срабатываний |

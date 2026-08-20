@@ -798,6 +798,54 @@
         "carrier": "text-node",
         "charClasses": []
       }
+    },
+    {
+      "name": "a spec row followed by marketing copy, Russian",
+      "candidate": {
+        "locator": "div.spec[hidden]",
+        "text": "Модель: iPhone 15 — твой выбор",
+        "concealment": [
+          "clip"
+        ],
+        "carrier": "text-node",
+        "charClasses": []
+      }
+    },
+    {
+      "name": "a spec row followed by marketing copy, English",
+      "candidate": {
+        "locator": "div.spec[hidden]",
+        "text": "Model: iPhone 15 — your choice",
+        "concealment": [
+          "clip"
+        ],
+        "carrier": "text-node",
+        "charClasses": []
+      }
+    },
+    {
+      "name": "a spec table naming a system and its version, Russian",
+      "candidate": {
+        "locator": "td.hidden",
+        "text": "Система: linux, твоя версия ниже",
+        "concealment": [
+          "clip"
+        ],
+        "carrier": "text-node",
+        "charClasses": []
+      }
+    },
+    {
+      "name": "a spec table naming a system and its version, English",
+      "candidate": {
+        "locator": "td.hidden",
+        "text": "System: linux, your version is below",
+        "concealment": [
+          "clip"
+        ],
+        "carrier": "text-node",
+        "charClasses": []
+      }
     }
   ]
 }

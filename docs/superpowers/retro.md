@@ -112,6 +112,13 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (пятьдесят седьмой)** — B-78, частично; стадии 0–10. Из трёх возможных
+  правок выбрана та, что не двигает ни одного числа: после срабатывания дедлайна RPC
+  баннер не появится никогда, а поднимать сам дедлайн — портить продукт. Отказ сделан
+  **читаемым**: продукт ставит `performance.mark('okolos:scan-failed')` в fail-open, отчёт
+  её читает и называет случай вслух. Пятисекундный запас получил смысл (место для пути
+  сдачи) и правило в `budgets.test.ts`. 2308 юнит-тестов в 142 файлах. Два планта, легли
+  оба. Постоянных инструкций десять, снятий нет. Вердикт REFINE.
 - **2026-08-20 (пятьдесят шестой)** — B-25; стадии 0–10, кроме одного шага, который по
   решению проекта принадлежит владельцу машины. «Список стареет за часы» превращено в
   измерение: живой фид 7.5 суток, из 253 сегодняшних хостов **250 в нём отсутствуют**,
@@ -2226,6 +2233,41 @@ description.
   keeping. But a row closed with its verification outstanding is a row closed early, and
   the honest form is the one now in the board: closed on the second attempt, with the
   first attempt's failure written into it rather than tidied away.
+
+### 2026-08-20 — three ways to fix a flake, and the right one moved no numbers
+
+**Symptom.** A spec waits 35 s for a banner and sometimes does not get one. The RPC
+deadline is 30 s. So on a slow worker the sequence is fixed: the deadline fires, the scan
+fails open, the check is journalled as unfinished — and the remaining five seconds of
+waiting are spent on something that can no longer happen.
+
+**The three candidates.** Raise the wait: useless, because a banner cannot arrive after the
+deadline however long you wait. Raise the deadline: makes the product worse — thirty seconds
+of waiting for the background is already the edge of what a person tolerates, not slack.
+Accept that thirty seconds without an answer *is* a failure: then the work is not to delay
+it but to make it impossible to mistake for something else.
+
+**Stage it surfaced at.** 0, from a local reproduction one iteration earlier where the
+improved diagnosis named the link — "the content script scanned in 0.8 ms, so the verdict
+is what did not arrive".
+
+**Fix, by grade.** *Product:* `performance.mark('okolos:scan-failed')` in the fail-open
+path, beside `okolos:collect`. A mark rather than a journal read, because the journal lives
+in the extension's database and opening a page to read it changes what is being diagnosed —
+and a mark is readable by the e2e report and by anyone with devtools open. *Diagnosis:* the
+report says the scan gave up, that the check was journalled, and that no banner can arrive
+after that — so waiting longer is visibly not the fix. *Invariant:* the five-second margin
+now has a meaning (room for catch → mark → journal) and a rule, because raising
+`RPC_TIMEOUT_MS` to `SURFACE_MOUNT_MS` satisfies the old check and silently removes it.
+
+**Verified by forcing the failure, not by reading the code.** A planted throw before the
+send produced the report's new lines; removing the mark made the report unable to tell the
+two cases apart.
+
+**The lesson.** When a flake's mechanism is understood, the choice is usually between
+hiding it behind a bigger number and making it legible. The first is cheaper today and
+costs every future reader; the second is the only one that leaves the next failure worth
+reading.
 
 ### 2026-08-20 — "ages in hours" was a phrase; the number is one percent
 

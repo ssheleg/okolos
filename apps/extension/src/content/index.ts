@@ -191,6 +191,21 @@ const MARK_END = 'okolos:collect:end'
 export const MEASURE_COLLECT = 'okolos:collect'
 
 /**
+ * The mark a scan leaves when it gave up rather than finished.
+ *
+ * The product already degrades honestly here — the RPC deadline fires, `failOpen`
+ * journals "the check did not finish", and no banner appears. What was missing is a fact
+ * an observer can read *in the page*: from outside, "no banner" looks the same whether
+ * the relay is broken or the worker was too slow to answer (B-78).
+ *
+ * A mark rather than a journal line, because the journal lives in the extension's
+ * database and reading it means opening another page — which changes what is being
+ * diagnosed. This sits beside `okolos:collect`, in the same place, readable by the e2e
+ * diagnosis and by anyone with devtools open.
+ */
+export const MARK_SCAN_FAILED = 'okolos:scan-failed'
+
+/**
  * From the navigation to the warning being on screen — the number SCN-003 promises in
  * words and nothing measured.
  *
@@ -546,6 +561,9 @@ function rescanSoon(): void {
 async function safely(work: () => Promise<void>): Promise<void> {
   await failOpen(work, {
     warn: (cause) => {
+      // A fact in the page, next to `okolos:collect`, so "no banner" can be told from
+      // "the check never finished" by anyone reading from outside (B-78).
+      performance.mark(MARK_SCAN_FAILED)
       console.warn('okolos: scan failed', cause)
     },
     note: async (cause) => {

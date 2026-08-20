@@ -65,6 +65,15 @@ async function diagnose(page: Page, context?: BrowserContext): Promise<string> {
        * already on the page and nobody asked for it.
        */
       scanned: performance.getEntriesByName('okolos:collect')[0]?.duration ?? null,
+      /**
+       * Did the scan give up rather than finish?
+       *
+       * The product marks this when its fail-open wrapper catches — which on a slow
+       * worker means the RPC deadline fired and the check was journalled as unfinished.
+       * From outside, that looks identical to a broken relay: no banner either way. This
+       * is the fact that separates them (B-78).
+       */
+      gaveUp: performance.getEntriesByName('okolos:scan-failed').length > 0,
     }))
     lines.push(`  - page ${page_.url} (${page_.ready}), ${page_.nodes} nodes`)
     lines.push(
@@ -72,6 +81,21 @@ async function diagnose(page: Page, context?: BrowserContext): Promise<string> {
         ? '  - the content script never finished a scan: it did not run, or it threw'
         : `  - the content script scanned in ${page_.scanned.toFixed(1)} ms, so the verdict is what did not arrive`,
     )
+    if (page_.gaveUp) {
+      /**
+       * Then this is not a broken relay. The background did not answer inside
+       * `RPC_TIMEOUT_MS`, the scan failed open and journalled "the check did not
+       * finish", and no banner can appear after that however long the wait is — which
+       * is why waiting longer is not the fix.
+       */
+      lines.push(
+        '  - the scan GAVE UP: the background did not answer within the RPC deadline,',
+      )
+      lines.push(
+        '    so the check was journalled as unfinished. A banner cannot arrive after that;',
+      )
+      lines.push('    this is the product degrading honestly on a worker that was too slow.')
+    }
     lines.push(
       `  - ${page_.hosts} okolos host element(s), ${page_.neutralised} neutralised node(s)`,
     )

@@ -42,6 +42,20 @@ describe('the waits an e2e test can stack', () => {
     expect(SURFACE_MOUNT_MS).toBeGreaterThan(RPC_TIMEOUT_MS)
   })
 
+  it('leaves room after that deadline for the give-up to become observable', () => {
+    /**
+     * The margin is not spare waiting — waiting longer cannot produce a banner once the
+     * RPC deadline has fired. It is the room for the fail-open path to run: catch,
+     * `performance.mark('okolos:scan-failed')`, journal. The diagnosis reads that mark
+     * and the failure then names itself instead of looking like a broken relay (B-78).
+     *
+     * A second is generous for three statements and one message; the assertion exists so
+     * that tuning `RPC_TIMEOUT_MS` up to `SURFACE_MOUNT_MS` — which satisfies the check
+     * above — cannot silently take the room away.
+     */
+    expect(SURFACE_MOUNT_MS - RPC_TIMEOUT_MS).toBeGreaterThanOrEqual(1000)
+  })
+
   it('gives a single test room for both of its waits', () => {
     /**
      * A test waits for the worker to register and then for the surface to mount.

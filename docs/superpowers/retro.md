@@ -112,6 +112,16 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (сорок первый)** — B-76; стадии 0–10. Якорь свипа читает оба класса,
+  которые его обходили. Расширение дало 26 попаданий: одна живая английская строка на
+  экране журнала, двадцать аргументов `console.*` (исключены структурно, а не по префиксу
+  `okolos: `), одно ложное срабатывание на моём же union-типе — и его внесла **первая же
+  версия починки**, потому что апостроф допускался в любой позиции слова и совпадение
+  вышло за границу литерала. Нашёл прогон по дереву, а не тест. У несущего гейта проекта
+  теста не было вообще: шаблон вынесен в `tools/i18n-pattern.mjs`, 15 проверок, в каждой
+  процитирована строка, обходившая прошлую версию. Заключительная строка ослаблена ещё раз
+  — копия, едущая данными, невидима по устройству. 2216 юнит-тестов в 139 файлах, 126 e2e.
+  Четыре планта, все легли. Постоянных инструкций десять, снятий нет. Вердикт REFINE.
 - **2026-08-20 (сороковой)** — B-75, часть пятая и последняя; стадии 0–10. Потолок долга
   11 → 0: `storage/export.ts` берёт слова у вызывающего, `core-feeds` отдал шесть отказов
   через union, две из одиннадцати «строк» переводом не были вообще — ложное срабатывание
@@ -2086,6 +2096,71 @@ description.
   keeping. But a row closed with its verification outstanding is a row closed early, and
   the honest form is the one now in the board: closed on the second attempt, with the
   first attempt's failure written into it rather than tidied away.
+
+### 2026-08-20 — the gate everything else is measured by had no test
+
+**Symptom.** `tools/i18n-sweep.mjs` is the load-bearing gate of this project: five rows on
+the board are scoped by its count, `.githooks/pre-push` refuses on it, and a whole
+five-instalment refactor was planned against the number it prints. It had no test. Its
+pattern was verified by running it over the tree and reading the output — which is how two
+classes of user-facing sentence stayed invisible for weeks, and how the fix for the first
+of them introduced a match that walked out of one string literal and into the next.
+
+**Stage it surfaced at.** 5, while widening the anchor: the widened pattern reported
+`"newly-installed'; readonly severity: "` as a sentence, out of a type declaration I had
+written the day before.
+
+**Stage that owned it.** 6 of every earlier run that touched this file. "The full suite
+green" was true each time, and the suite never contained a single assertion about the one
+regex the rest of the checks are calibrated against.
+
+**Root cause.** A script with side effects cannot be imported by a test — it scans, prints
+and exits — so the absence of a test read as a property of the tool rather than as a gap.
+The repository already had the answer three times over (`tree.mjs`, `imports.mjs`,
+`build-age.mjs`: a `.mjs` with a `.d.mts` and a test), and the shape was not applied to the
+one tool where being wrong is silent.
+
+**Fix, by grade.** *Structural:* the pattern is `tools/i18n-pattern.mjs` with a hand-written
+declaration and `i18n-pattern.test.ts` — 15 cases, one per class, each quoting the string
+that defeated the previous version. *Structural:* the console exclusion is by call shape,
+not by the `okolos: ` prefix a naming convention nobody enforces. *Correctness:* an
+apostrophe may only appear inside a word, which both killed the new false positive and
+retired an exemption written for an old one — the gate said `MARKS NOTHING` about it
+unprompted.
+
+**The check that catches it next time.** A tool whose output another gate or a board row
+depends on needs the `.mjs` + `.d.mts` + test shape before its output is quoted. The four
+tools that have it now are the precedent; the fifth was found by a plant landing in a place
+nobody was looking.
+
+### 2026-08-20 — the number did not go up, and that was worth checking
+
+**Symptom.** B-76's own done condition predicted the ceiling would rise: "число в потолке
+пересчитано (оно вырастет — это не регрессия, а признание)". It did not. Twenty-six new
+hits appeared and exactly one was untranslated copy.
+
+**Stage it surfaced at.** 5, immediately, and it would have been easy to read as the
+widening having failed.
+
+**Stage that owned it.** 2 of the run that filed the row. The prediction assumed the hidden
+classes were hiding the same kind of thing the visible ones were. They were hiding console
+lines, thrown diagnostics and one screen sentence — because a sentence whose first word ends
+in a colon is *usually* a log prefix, which is exactly why the anchor had been written to
+skip it.
+
+**Root cause.** A blind spot's contents are not a sample of what you can see. Estimating
+them from the visible population is the same error as estimating a total from a floor.
+
+**Fix, by grade.** *Process:* the row records why the number stayed flat, with the
+breakdown, rather than closing quietly on "both classes now caught" — a done condition that
+was wrong in its prediction is worth saying so about, because the next row's estimate is
+written by whoever reads this one. *Structural:* the twenty console lines are excluded by a
+rule with a reason, not exempted one by one, so the count stays meaningful.
+
+**The check that catches it next time.** When a row predicts a number, the closing note
+compares the prediction to the measurement. This is the second time in three runs that a
+claim about a tool was mistaken for a claim about the tree (standing instruction #7); the
+difference is that this time the prediction was mine and recent.
 
 ### 2026-08-20 — the ledger reached zero, and deleting it was the wrong move
 

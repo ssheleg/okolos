@@ -58,6 +58,21 @@ test('restore puts the page back exactly', async ({ context }) => {
   await expect(page.locator('#attack')).not.toHaveAttribute('data-okolos-neutralised', /.+/)
 })
 
+/**
+ * An extension page, for the two things a fixture page cannot answer.
+ *
+ * IndexedDB is per origin, so the journal has to be read from here; and the catalogue
+ * is reached through `chrome.i18n`, which a page has no access to.
+ */
+async function inspectorPage(
+  context: import('@playwright/test').BrowserContext,
+  extensionId: string,
+): Promise<import('@playwright/test').Page> {
+  const page = await context.newPage()
+  await page.goto(`chrome-extension://${extensionId}/options.html`)
+  return page
+}
+
 test('a refusal repeats on screen every press and is recorded once', async ({
   context,
   extensionId,
@@ -93,6 +108,28 @@ test('a refusal repeats on screen every press and is recorded once', async ({
   await expect(note, 'the first press said nothing about refusing').toBeAttached()
   const first = await note.textContent()
 
+  /**
+   * And its words come from the catalogue.
+   *
+   * The sentence was an English literal with English pluralisation — `1 passage was /
+   * 2 passages were`, `it / them` — and the i18n sweep could not see it, because the
+   * literal began with `${outcome.gone}` (B-51). A sweep that cannot see a string
+   * cannot guard it, so the guard is here.
+   *
+   * **Compared against `chrome.i18n`, not against Cyrillic.** The first version of this
+   * assertion demanded Russian letters and failed: Playwright launches Chromium with
+   * the machine's locale, so the catalogue resolves `en` here and `ru` on a Russian
+   * desktop. That assertion was about the browser's UI language; this one is about
+   * where the words came from.
+   */
+  const fromCatalogue = await inspectorPage(context, extensionId).then((tab) =>
+    tab.evaluate(() => chrome.i18n.getMessage('contentRestoreChanged', ['1'])),
+  )
+  expect(fromCatalogue, 'the catalogue has no wording for this refusal').not.toBe('')
+  expect(first ?? '', 'the refusal is not the sentence the catalogue holds').toContain(
+    fromCatalogue,
+  )
+
   // Press again: the same sentence, because the fact has not changed.
   await page.locator('okolos-inspector [data-role=restore]').click()
   await expect(page.locator('okolos-inspector [data-role=restore-note]')).toBeAttached()
@@ -102,8 +139,7 @@ test('a refusal repeats on screen every press and is recorded once', async ({
   ).toBe(first)
 
   // And once in the journal, whatever the presses.
-  const inspector = await context.newPage()
-  await inspector.goto(`chrome-extension://${extensionId}/options.html`)
+  const inspector = await inspectorPage(context, extensionId)
   const records = await inspector.evaluate(async () => {
     const open = indexedDB.open('okolos')
     const db = await new Promise<IDBDatabase>((resolve, reject) => {

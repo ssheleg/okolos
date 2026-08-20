@@ -26,11 +26,30 @@
  *     real ones, and the cost of a forged journal line is noise, not silence;
  *   - a page that caches `fetch` before this script runs is not seen. Running
  *     at `document_start` wins the ordinary race and loses the determined one.
+ *
+ * **The first of those was a claim the code contradicted until 2026-08-20.**
+ * There was a `disarm` message on the same channel, and the listener accepted it
+ * from `event.source === win` — which is exactly what the page's own
+ * `window.postMessage` satisfies. One line of page script and the watcher went
+ * quiet for the rest of the page's life: silence, purchased, by the thing being
+ * watched. The docstring above said forgery costs noise and the code sold
+ * silence.
+ *
+ * So there is no disarm any more. Arming is one-way and idempotent: a page can
+ * turn the watcher **on** — that is the noise the sentence above admits to — and
+ * has nothing to say about turning it off. What used to disarm now happens where
+ * the page cannot reach: the background drops a report for an origin that has no
+ * unresolved finding, and whether one is unresolved is a fact in the extension's
+ * own database.
  */
 
-/** Nothing is watched until the isolated world says a finding is unresolved. */
+/**
+ * Nothing is watched until the isolated world says a finding is unresolved.
+ *
+ * One message, in one direction. The pair used to include a `disarm`, and a
+ * two-way switch on a channel the page can post to is a switch the page owns.
+ */
 const ARM = 'okolos:page-watch:arm'
-const DISARM = 'okolos:page-watch:disarm'
 const REPORT = 'okolos:page-watch:report'
 
 export interface PageRequestReport {
@@ -144,11 +163,19 @@ export function watchPage(win: Window & typeof globalThis): void {
   }
 
   win.addEventListener('message', (event: MessageEvent) => {
-    // Only this window: a frame must not arm its parent's watcher.
+    /**
+     * Only this window: a frame must not arm its parent's watcher.
+     *
+     * Which is all this check can do. `event.source === win` is true of the
+     * page's own `postMessage` as well as the isolated world's — the two share a
+     * window and nothing in the MAIN world can tell them apart, because the MAIN
+     * world *is* the page's. Authenticating this channel is not available on this
+     * platform, so the design makes forgery unable to buy the thing worth having:
+     * arming is one-way, and there is nothing here that turns the watcher off.
+     */
     if (event.source !== win) return
     const data = event.data as { source?: unknown } | null
     if (data?.source === ARM) armed = true
-    if (data?.source === DISARM) armed = false
   })
 }
 

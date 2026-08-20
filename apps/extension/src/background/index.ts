@@ -53,6 +53,8 @@ import { canVerify, createVerifier, FEED_PUBLIC_KEY, updateFeed } from './feeds.
 import { syncFeed } from './feed-sync.js'
 import { useResolver } from '@okolos/i18n'
 import { reuseOf } from '@okolos/core-credential'
+
+import { recordPageRequest } from './page-requests.js'
 import { optionsPageFor } from '../options/views.js'
 
 const FEED_ALARM = 'okolos:feeds'
@@ -97,9 +99,10 @@ platform.runtime.onMessage(<T extends RpcType>(message: Envelope<T>, from: RpcSe
     case 'site/facts':
       return siteFacts(message.payload as { host: string }) as Promise<RpcMap[T]['res']>
     case 'page/request':
-      return journalPageRequest(message.payload as { method: string; host: string }) as Promise<
-        RpcMap[T]['res']
-      >
+      return journalPageRequest(
+        message.payload as { method: string; host: string },
+        from,
+      ) as Promise<RpcMap[T]['res']>
     case 'trap/warned':
       return journalTrap(message.payload as { kind: string; signals: string }) as Promise<RpcMap[T]['res']>
     case 'recovery/open':
@@ -735,20 +738,15 @@ const TRAP_KEY: Record<string, string> = {
  * have. Host and method only: a query string carries the very thing this
  * product exists to keep on the device.
  */
-async function journalPageRequest(payload: { method: string; host: string }): Promise<{ ok: true }> {
+async function journalPageRequest(
+  payload: { method: string; host: string },
+  from: RpcSender,
+): Promise<{ ok: true }> {
   try {
-    const db = await openDb()
-    const now = new Date().toISOString()
-    await db.put('journal', {
-      id: `page-request:${payload.host}:${now}`,
-      createdAt: now,
-      kind: 'verdict',
-      detail: {
-        explainKey: 'logPageRequest',
-        explainArgs: [payload.method, payload.host],
-        reason: 'page-request',
-      },
-    })
+    // The rule lives in `page-requests.ts`, where a test can reach it: this is
+    // the decision the page must not own, and it used to be a boolean inside the
+    // page's own world.
+    await recordPageRequest({ db: await openDb(), now: () => new Date().toISOString() }, payload, from.origin)
   } catch (cause) {
     console.warn('okolos: could not journal a page request', cause)
   }

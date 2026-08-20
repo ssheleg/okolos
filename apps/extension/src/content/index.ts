@@ -119,9 +119,23 @@ export const MEASURE_COLLECT = 'okolos:collect'
  * remove the real ones, and a forged journal line costs noise rather than
  * silence — which is the right way round for a record.
  */
+/**
+ * Arms the watcher, and has no way to disarm it.
+ *
+ * There used to be a `disarm` on the same channel, and the watcher accepted it
+ * from `event.source === window` — which the page's own `postMessage` satisfies.
+ * One line of page script bought silence for the rest of the page's life, in the
+ * one mechanism whose whole value is that a record exists. Arming stayed
+ * forgeable and that is fine: ADR-0009 says the cost of a forged line is noise.
+ *
+ * Turning the watch off is now the background's business, where the page has no
+ * vote: a report for an origin with no unresolved finding is dropped before
+ * anything is written.
+ */
 function armPageWatch(on: boolean): void {
+  if (!on) return
   try {
-    window.postMessage({ source: on ? 'okolos:page-watch:arm' : 'okolos:page-watch:disarm' }, '*')
+    window.postMessage({ source: 'okolos:page-watch:arm' }, '*')
   } catch {
     // The watcher stays as it was. It observes; nothing depends on it.
   }

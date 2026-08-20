@@ -112,6 +112,12 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (шестнадцатый)** — B-48; стадии 0–10. Гейт агента перестал выпускать
+  действие, если описание бросит, и «ещё не читали» перестало выдаваться за
+  «нечего держать». Новый гейт на secure-context-API нашёл второй fail-open той же
+  семьи — проверка пароля не выполнялась на http вовсе. 1995 юнит-тестов в 123
+  файлах, семь плантов легли. Постоянных инструкций десять, снятий нет. Вердикт
+  REFINE.
 - **2026-08-20 (пятнадцатый)** — B-47; стадии 0–10. Наблюдателя страницы больше
   нельзя выключить со страницы: `disarm` убран, а решение «стоит ли записывать»
   переехало в фон и опирается на origin отправителя. Аутентификация канала на этой
@@ -287,6 +293,77 @@ happens before adding.
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-20 — a secure-context API on a page the manifest matches over http
+
+**Symptom.** The agent gate built its description of an action **before**
+`preventDefault` and outside any `try`. A capture-phase listener that throws does
+not cancel its event, so anything the description threw let the action out. And it
+threw: the id came from `crypto.randomUUID()`, which is `[SecureContext]`, and the
+manifest matches plain-HTTP pages. **On every `http://` page the gate was a
+no-op** — on exactly the pages a poisoned document is cheapest to serve from.
+
+**Stage it surfaced at.** 0, from a filed row that had found the exact trigger.
+
+**Stage that owned it.** 5. The ordering — describe, then decide, then cancel —
+is deliberate and right: holding first and asking later would swallow the user's
+own clicks. What was missing is that the first step is allowed to fail, and a step
+that runs before the hold has to be unable to skip it.
+
+**Root cause, and the reason it is a class rather than a line.** An extension's
+content script runs in whatever context the page has, and half the platform's
+newer APIs are `[SecureContext]`. Nothing in the type system says so, nothing in a
+review catches it, and the failure appears only on http — where nobody develops.
+So the gate is not "wrap this call": it is a bundle scan that refuses any
+secure-context API in a script that runs on a page.
+
+**Which immediately found the second one.** The password check hashes the
+submitted value with `crypto.subtle.digest` — also `[SecureContext]` — inside a
+`try` whose `catch` said nothing. **The breach and reuse check did not run at all
+on any http page**, and a check that did not run was indistinguishable from a
+password that came back clean. Fixed by carrying our own SHA-1, checked against
+the FIPS vectors and against the platform's own digest, and by journalling the
+case where the digest cannot be taken.
+
+**My own recovery path had the defect it was recovering from.** The fallback
+description called `this.env.newId()` again — and `newId` was what threw — so the
+fallback threw too and the action went through. My test caught it, which is the
+argument for writing the test that supplies the failure rather than the one that
+supplies success. It now depends on nothing that could have failed: a counter, a
+property read, and `automated` defaulting to **true**, because if you cannot tell
+whether the browser is being driven then "a human did this" is the guess that lets
+the action out.
+
+**And the decision logic was righter than I was.** I expected the fallback to open
+a modal. `assessAction` already blocks an action it cannot name, without asking,
+with the reason written down: "a modal that cannot say what it is about invites a
+reflexive allow." The test was rewritten to assert what the code does, because
+what the code does is better.
+
+### 2026-08-20 — a shared helper that is safe on source and destructive on bundles
+
+**Symptom.** The new bundle gate stayed green with `crypto.randomUUID()` sitting
+in `dist/chrome/content.js` in plain sight. I had read the bundle through
+`executable()`, the helper that strips comments and literals so that a token
+inside a string counts as a mention rather than a call.
+
+**Root cause.** Its regex-literal pass has to guess where a regex begins, and
+minified output is full of division and of slashes inside strings. A false opening
+runs to the next slash and deletes everything between — including the token being
+looked for. On unminified source the helper is safe, which is where it was written
+and where every other user of it reads.
+
+**Fix.** The bundle checks read the raw text, which is what the network-token
+check in the same file has always done — a precedent I walked past. The helper's
+docstring now says where it may be used and what happened when it was not.
+
+**The general shape, for the fifth time this session.** A tool that reads text
+reports the shapes it was taught and is silent about the rest, and its silence is
+indistinguishable from a clean answer. The reliable defence is not a better
+pattern but a second thing to disagree with — here, a plant. The plant is what
+made the difference between a gate and a decoration, and it nearly did not, because
+the first attempt at it reddened the build instead of the rule and I almost read
+that as the gate working.
 
 ### 2026-08-20 — the docstring said noise, and the code sold silence
 

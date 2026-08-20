@@ -10,3 +10,8 @@ database_id = "set-at-deploy"
 
 [triggers]
 crons = ["17 3 * * *"]
+
+# APPEALS_TOKEN is a secret, set with `wrangler secret put APPEALS_TOKEN` and
+# deliberately absent from here: a token in a committed file is not a token.
+# Without it `/appeals` answers 404 — the route does not exist rather than
+# refusing, because an address that admits to existing gets guessed at.

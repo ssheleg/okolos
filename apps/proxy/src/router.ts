@@ -13,6 +13,15 @@ export interface Env {
   readonly DB: D1Like
   /** Base URL where signed feed files are published. */
   readonly FEEDS_BASE?: string
+  /**
+   * Bearer token for reading appeals back.
+   *
+   * Unset means the route does not exist — a 404 rather than a 401, because an
+   * endpoint that admits to existing invites the guessing that follows. Nothing
+   * else on this service is authenticated and nothing else needs to be: appeals
+   * are the one thing here that somebody wrote in confidence.
+   */
+  readonly APPEALS_TOKEN?: string
 }
 
 export interface D1Like {
@@ -25,17 +34,58 @@ export interface D1Like {
   }
 }
 
+/**
+ * The headers every response carries, whatever it is.
+ *
+ * There were none. A grep for CSP, `x-content-type-options`, `referrer-policy`,
+ * HSTS or `x-frame-options` across the whole repository returned nothing, on a
+ * service whose pages are quoted by crawlers and whose form posts a domain owner
+ * types their contact details into.
+ *
+ * The policy is as narrow as it is because the pages have earned it: they are
+ * rendered whole on the server, with no script of any kind, so `script-src
+ * 'none'` costs nothing and closes the class outright. `frame-ancestors 'none'`
+ * rather than `x-frame-options` alone — the header is legacy and the directive is
+ * what modern browsers read — and both are sent, because the legacy one still
+ * decides in browsers that ignore the other.
+ */
+const SECURITY_HEADERS = {
+  'content-security-policy':
+    "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; form-action 'self'; frame-ancestors 'none'; base-uri 'none'",
+  'x-content-type-options': 'nosniff',
+  'referrer-policy': 'no-referrer',
+  'x-frame-options': 'DENY',
+  // Two years, subdomains included. The service is https-only in every
+  // environment it is deployed to, and a downgrade is how a form post is read.
+  'strict-transport-security': 'max-age=63072000; includeSubDomains',
+  // No browsing data reaches this service, and no interface it serves needs a
+  // camera, a microphone or a location.
+  'permissions-policy': 'camera=(), microphone=(), geolocation=(), payment=()',
+}
+
 const HTML_HEADERS = {
+  ...SECURITY_HEADERS,
   'content-type': 'text/html; charset=utf-8',
   'cache-control': 'public, max-age=300',
 }
 
 const JSON_HEADERS = {
+  ...SECURITY_HEADERS,
   'content-type': 'application/json; charset=utf-8',
   // Nothing here is cacheable per-user because nothing here is per-user.
   'cache-control': 'public, max-age=300',
   'access-control-allow-origin': '*',
 }
+
+/**
+ * The same JSON headers without the open CORS grant.
+ *
+ * Used for anything a cross-origin page must not be able to read. `*` on a
+ * public lookup is right — the answer is public — and `*` on an appeal's reply
+ * would hand an attacker's page the reference it just filed under somebody
+ * else's domain.
+ */
+const PRIVATE_JSON_HEADERS = { ...JSON_HEADERS, 'access-control-allow-origin': '' }
 
 export async function handle(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url)
@@ -57,7 +107,11 @@ export async function handle(request: Request, env: Env): Promise<Response> {
   }
 
   if (url.pathname === '/appeal' && request.method === 'POST') {
-    return appeal(request, env)
+    return appeal(request, env, url)
+  }
+
+  if (url.pathname === '/appeals' && readOnly) {
+    return listAppeals(request, env, url)
   }
 
   if (url.pathname.startsWith('/feeds/') && readOnly) {
@@ -419,7 +473,89 @@ async function domainStatus(domain: string | null, env: Env): Promise<Response> 
   })
 }
 
-async function appeal(request: Request, env: Env): Promise<Response> {
+/**
+ * The largest appeal this service will read, in bytes.
+ *
+ * The fields are capped at 2000 and 200 characters — **after** the body has been
+ * read whole. `request.text()` and `request.json()` pull everything a client
+ * chooses to send before any check happens, so the cap described the row and not
+ * the read, and an unauthenticated POST could hand the worker as much as it liked.
+ */
+const APPEAL_BYTES_MAX = 8 * 1024
+
+/** Appeals accepted per domain per window, and the window. */
+const APPEALS_PER_DOMAIN = 5
+const APPEAL_WINDOW_MS = 60 * 60 * 1000
+
+/**
+ * Reads at most `APPEAL_BYTES_MAX` bytes, or refuses.
+ *
+ * `content-length` is checked first because it is free, and then the stream is
+ * read with a running total because the header is optional and a chunked body
+ * has none. Both, not either: trusting the header alone is trusting the sender
+ * about how much the sender is sending.
+ */
+async function boundedBody(request: Request): Promise<string | null> {
+  const declared = Number(request.headers.get('content-length') ?? '')
+  if (Number.isFinite(declared) && declared > APPEAL_BYTES_MAX) return null
+
+  const body = request.body
+  if (!body) return await request.text()
+
+  const reader = body.getReader()
+  const chunks: Uint8Array[] = []
+  let total = 0
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    total += value.byteLength
+    if (total > APPEAL_BYTES_MAX) {
+      // Cancelled rather than drained: continuing to read a body we have already
+      // refused is doing the work the refusal exists to avoid.
+      await reader.cancel()
+      return null
+    }
+    chunks.push(value)
+  }
+
+  const joined = new Uint8Array(total)
+  let at = 0
+  for (const chunk of chunks) {
+    joined.set(chunk, at)
+    at += chunk.byteLength
+  }
+  return new TextDecoder().decode(joined)
+}
+
+/**
+ * Whether this request came from somewhere allowed to post the form.
+ *
+ * There was no check of any kind: no token, no `Origin` read, and the form is
+ * `x-www-form-urlencoded`, which needs no preflight — so any page anywhere could
+ * file an appeal under any domain, in the visitor's name, with one HTML form and
+ * no JavaScript. The JSON path was no better: the preflight answered 204 for
+ * every path.
+ *
+ * `Sec-Fetch-Site` is the modern answer and browsers set it on every request
+ * they make; `Origin` is the fallback for those that do not. A request carrying
+ * neither is not a browser, and a non-browser cannot be made to act on a
+ * visitor's behalf without their knowledge — which is the whole of what this
+ * check is for. It is not authentication and does not pretend to be.
+ */
+function fromAnAllowedOrigin(request: Request, url: URL): boolean {
+  const site = request.headers.get('sec-fetch-site')
+  if (site) return site === 'same-origin' || site === 'same-site' || site === 'none'
+
+  const origin = request.headers.get('origin')
+  if (origin === null) return true
+  try {
+    return new URL(origin).origin === url.origin
+  } catch {
+    return false
+  }
+}
+
+async function appeal(request: Request, env: Env, url: URL): Promise<Response> {
   // A browser posting the form on /status and a client posting JSON are the
   // same appeal; only the wrapping differs. The owner gets a page back, because
   // a browser handed a JSON body renders it as text and the owner cannot tell
@@ -427,11 +563,26 @@ async function appeal(request: Request, env: Env): Promise<Response> {
   const asForm = (request.headers.get('content-type') ?? '').includes(
     'application/x-www-form-urlencoded',
   )
-  const reply = asForm ? appealPage : json
+  const reply = asForm
+    ? appealPage
+    : (body: unknown, status = 200) =>
+        new Response(JSON.stringify(body), { status, headers: PRIVATE_JSON_HEADERS })
+
+  if (!fromAnAllowedOrigin(request, url)) {
+    return reply({ error: 'this appeal did not come from this site — nothing was saved' }, 403)
+  }
+
+  const raw = await boundedBody(request)
+  if (raw === null) {
+    return reply(
+      { error: `an appeal may not exceed ${APPEAL_BYTES_MAX} bytes — nothing was saved` },
+      413,
+    )
+  }
 
   let body: { domain?: unknown; contact?: unknown; message?: unknown }
   if (asForm) {
-    const fields = new URLSearchParams(await request.text())
+    const fields = new URLSearchParams(raw)
     body = {
       domain: fields.get('domain') ?? undefined,
       contact: fields.get('contact') ?? undefined,
@@ -439,9 +590,9 @@ async function appeal(request: Request, env: Env): Promise<Response> {
     }
   } else {
     try {
-      body = (await request.json()) as typeof body
+      body = JSON.parse(raw) as typeof body
     } catch {
-      return json({ error: 'a JSON body is required' }, 400)
+      return reply({ error: 'a JSON body is required' }, 400)
     }
   }
 
@@ -450,8 +601,42 @@ async function appeal(request: Request, env: Env): Promise<Response> {
 
   const message = typeof body.message === 'string' ? body.message.slice(0, 2000) : ''
   const contact = typeof body.contact === 'string' ? body.contact.slice(0, 200) : ''
-  const reference = referenceFor(domain, message)
 
+  /**
+   * A budget per domain, counted from the table itself.
+   *
+   * Nothing about the sender is stored — no address, no identifier — so the
+   * limit is keyed on the only thing an appeal contains that is worth limiting.
+   * It does not stop a flood spread across many domains; it stops the row
+   * stuffing that a single HTML page could do, and it does so without this
+   * service learning anything new about anyone.
+   */
+  const since = new Date(Date.now() - APPEAL_WINDOW_MS).toISOString()
+  const recent = await countAppeals(env, domain, since)
+  if (recent !== null && recent >= APPEALS_PER_DOMAIN) {
+    return reply(
+      {
+        error: `this domain already has ${recent} appeals in the last hour — nothing was saved`,
+        domain,
+      },
+      429,
+    )
+  }
+
+  /**
+   * A duplicate is the same domain, message **and contact**.
+   *
+   * The reference used to be a 32-bit hash of `domain|message` and it was also
+   * the primary key, so an attacker could compute the reference an owner's
+   * appeal would get, file it first with their own contact, and the owner's
+   * submission came back "already filed" — with the owner's contact details
+   * never stored and nothing to tell them why. The reference is random now, and
+   * the duplicate check reads the row rather than colliding with it.
+   */
+  const already = await findAppeal(env, domain, message, contact)
+  if (already) return reply({ reference: already.reference, domain, alreadyFiled: true })
+
+  const reference = newReference()
   try {
     await env.DB.prepare(
       'INSERT INTO appeals (reference, domain, contact, message, created_at) VALUES (?, ?, ?, ?, ?)',
@@ -459,15 +644,117 @@ async function appeal(request: Request, env: Env): Promise<Response> {
       .bind(reference, domain, contact, message, new Date().toISOString())
       .run()
   } catch (cause) {
-    // The reference is a hash of the domain and the message, and it is the
-    // primary key — so the same appeal sent twice is a key conflict, not a
-    // failure. An owner who refreshed the page or clicked again was being told
-    // nothing was saved, about an appeal that was already on file.
+    // The check above is not a lock, so two requests can pass it together. A
+    // key conflict here is that race and not a failure — the appeal is on file.
     if (isDuplicate(cause)) return reply({ reference, domain, alreadyFiled: true })
     return reply({ error: 'the appeal could not be recorded — nothing was saved' }, 503)
   }
 
   return reply({ reference, domain, alreadyFiled: false })
+}
+
+/** How many appeals this domain has filed since `since`, or `null` if unknown. */
+async function countAppeals(env: Env, domain: string, since: string): Promise<number | null> {
+  try {
+    const row = await env.DB.prepare(
+      'SELECT COUNT(*) AS n FROM appeals WHERE domain = ? AND created_at > ?',
+    )
+      .bind(domain, since)
+      .first<{ n: number }>()
+    return typeof row?.n === 'number' ? row.n : null
+  } catch {
+    /**
+     * A database that cannot be counted must not become a database that cannot
+     * be written to: the appeal is the thing this service exists for, and
+     * refusing it because the limiter is unavailable would be a denial of
+     * service performed on the owner. `null` means "not known", and the insert
+     * below is still bounded by the duplicate check and by the body cap.
+     */
+    return null
+  }
+}
+
+/** The appeal already on file for this exact submission, if there is one. */
+async function findAppeal(
+  env: Env,
+  domain: string,
+  message: string,
+  contact: string,
+): Promise<{ reference: string } | null> {
+  try {
+    return await env.DB.prepare(
+      'SELECT reference FROM appeals WHERE domain = ? AND message = ? AND contact = ? LIMIT 1',
+    )
+      .bind(domain, message, contact)
+      .first<{ reference: string }>()
+  } catch {
+    // Unknown, not absent. The insert's own key conflict still catches a repeat.
+    return null
+  }
+}
+
+/**
+ * Reads appeals back, for whoever holds the token.
+ *
+ * The whole tree contained an `INSERT` and a `DELETE` and nothing else: appeals
+ * were written, swept after 180 days, and never read by anybody. A form that
+ * files a complaint into a table no one opens is a form that lies by existing.
+ */
+async function listAppeals(request: Request, env: Env, url: URL): Promise<Response> {
+  const expected = env.APPEALS_TOKEN
+  // Unset means the route does not exist. A 401 would confirm the address.
+  if (!expected) return json({ error: 'not found' }, 404)
+
+  const offered = (request.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '')
+  if (!timingSafeEqual(offered, expected)) return json({ error: 'not found' }, 404)
+
+  const limit = Math.min(Math.max(Number(url.searchParams.get('limit') ?? '50') || 50, 1), 200)
+  const rows = await env.DB.prepare(
+    'SELECT reference, domain, contact, message, created_at FROM appeals ORDER BY created_at DESC LIMIT ?',
+  )
+    .bind(limit)
+    .all<{
+      reference: string
+      domain: string
+      contact: string | null
+      message: string | null
+      created_at: string
+    }>()
+
+  return new Response(JSON.stringify({ appeals: rows.results }), {
+    status: 200,
+    // Never cached and never readable cross-origin: this is the one response
+    // here that contains something somebody wrote in confidence.
+    headers: { ...PRIVATE_JSON_HEADERS, 'cache-control': 'no-store' },
+  })
+}
+
+/**
+ * Compares without leaking the answer through how long it took.
+ *
+ * The comparison is against a secret, and `a === b` on strings returns at the
+ * first differing byte. Over enough attempts that difference is the token.
+ */
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i += 1) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return diff === 0
+}
+
+/**
+ * A reference nobody can compute in advance.
+ *
+ * It used to be a 32-bit hash of the domain and the message — guessable by
+ * construction, and the primary key besides, so filing an appeal under a
+ * predicted reference blocked the real one. Random, and long enough that
+ * guessing is not a strategy.
+ */
+function newReference(): string {
+  const bytes = new Uint8Array(8)
+  crypto.getRandomValues(bytes)
+  const body = [...bytes].map((b) => b.toString(36).toUpperCase().padStart(2, '0')).join('')
+  return `OK-${body}`
 }
 
 /**
@@ -505,7 +792,27 @@ ${inner}
 </main>
 </body>
 </html>`,
-    { status, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } },
+    {
+      status,
+      /**
+       * The security headers, spread rather than written out.
+       *
+       * This response was the one that had them and did not: it is built here
+       * rather than through `json` or `HTML_HEADERS`, so adding them in one place
+       * left exactly this page — the page a domain owner reads after typing their
+       * contact details into a form — without a policy. Found by a test that asked
+       * every response type the same question.
+       *
+       * `no-store` stays and overrides the shared `max-age`: an appeal's reply
+       * names a reference, and a shared cache holding that is a shared cache
+       * holding somebody's complaint.
+       */
+      headers: {
+        ...SECURITY_HEADERS,
+        'content-type': 'text/html; charset=utf-8',
+        'cache-control': 'no-store',
+      },
+    },
   )
 }
 
@@ -513,15 +820,6 @@ ${inner}
 function isDuplicate(cause: unknown): boolean {
   const message = String((cause as { message?: unknown } | null)?.message ?? cause)
   return /unique constraint|primary key|constraint failed/i.test(message)
-}
-
-/** Deterministic and short: an owner can quote it, and it identifies nobody. */
-function referenceFor(domain: string, message: string): string {
-  let hash = 0
-  for (const char of `${domain}|${message}`) {
-    hash = (hash * 31 + char.charCodeAt(0)) >>> 0
-  }
-  return `OK-${hash.toString(36).toUpperCase().padStart(7, '0')}`
 }
 
 export function normaliseDomain(raw: string | null): string | null {

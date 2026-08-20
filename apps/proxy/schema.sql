@@ -20,6 +20,12 @@ CREATE TABLE IF NOT EXISTS appeals (
 -- rule.
 CREATE INDEX IF NOT EXISTS appeals_by_created ON appeals (created_at);
 
+-- Two reads that happen on every appeal: how many this domain has filed in the
+-- last hour, and whether this exact submission is already on file. Without the
+-- index both are full scans of a table that only ever grows between sweeps —
+-- and the first of them is the rate limit, so a slow count is a slow refusal.
+CREATE INDEX IF NOT EXISTS appeals_by_domain ON appeals (domain, created_at);
+
 -- Published feeds, served verbatim. The worker never signs: the private half of
 -- the key stays off the server, so what is stored here is exactly what the
 -- signing tool produced and exactly what the extension verifies.

@@ -121,3 +121,36 @@ async function diagnose(page: Page, context?: BrowserContext): Promise<string> {
   )
   return lines.join('\n')
 }
+
+/**
+ * Waits for a line to appear in the journal, reloading the screen on each attempt.
+ *
+ * **The journal screen is a snapshot taken when it opens, not a live view** — which is
+ * right for a journal and wrong to assume in a test. A locator assertion re-reads the DOM
+ * of a page that was rendered before the row existed, so it retries for its whole budget
+ * against markup that cannot change, and reports the empty state as the received value.
+ *
+ * The class has now cost two failures. `scn-036` hit it locally, roughly one run in four,
+ * and was fixed there in isolation; `budget.spec.ts` hit it on CI two hours later — the
+ * sibling nobody swept for. Hence a helper rather than a third copy: the second occurrence
+ * is where a fix stops being a fix and becomes a rule.
+ *
+ * `text` is matched as a substring, so a caller may pass the opening of a sentence rather
+ * than a whole message — a message with substitutions has no single rendered form.
+ */
+export async function expectJournalLine(
+  journal: Page,
+  text: string,
+  timeoutMs = 15_000,
+): Promise<void> {
+  await expect
+    .poll(
+      async () => {
+        await journal.reload()
+        return journal.locator('[data-role=journal]').innerText()
+      },
+      { timeout: timeoutMs },
+    )
+    .toContain(text)
+}
+

@@ -1,4 +1,5 @@
 import { expect, serve, test } from './fixtures.js'
+import { expectJournalLine } from './surfaces.js'
 
 /**
  * REQ-09 — the traversal budget, measured where it matters.
@@ -103,7 +104,8 @@ test('a page that spends the whole budget on nothing is recorded, not passed ove
   const journal = await context.newPage()
   await journal.goto(`chrome-extension://${extensionId}/options.html#journal`)
   const line = await journal.evaluate(() => chrome.i18n.getMessage('noteScanBlinded'))
-  await expect(journal.locator('[data-role=journal]')).toContainText(line.slice(0, 40), {
-    timeout: 10_000,
-  })
+  // Reloaded on each attempt: the journal screen is a snapshot taken when it opens, so a
+  // plain locator assertion retries against markup that cannot change. This spec failed on
+  // CI for exactly that, and reported the screen's empty state as what it received.
+  await expectJournalLine(journal, line.slice(0, 40))
 })

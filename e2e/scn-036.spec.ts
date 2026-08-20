@@ -1,6 +1,7 @@
 import { expect, test } from './hooks.js'
 import { serveHosts } from './serve.js'
 import { SURFACE_MOUNT_MS } from './budgets.js'
+import { expectJournalLine } from './surfaces.js'
 
 /**
  * A password submitted by a form that **navigates**, and a verdict that survives the
@@ -171,22 +172,10 @@ test('the verdict is recorded, so it survives being missed', async ({
   )
   expect(line.length, 'the catalogue has no sentence for this row').toBeGreaterThan(10)
 
-  /**
-   * Reloaded on each attempt, because the journal screen is a snapshot taken when it
-   * opens, not a live view — which is right for a journal and wrong to assume in a test.
-   * A first version polled the DOM of a page rendered before the row was written, so it
-   * retried for ten seconds against markup that could never change, and failed roughly
-   * one run in four.
-   */
-  await expect
-    .poll(
-      async () => {
-        await journal.reload()
-        return journal.locator('[data-role=journal]').innerText()
-      },
-      { timeout: 15_000 },
-    )
-    .toContain(line)
+  // Reloaded on each attempt — see `expectJournalLine`. This spec is where the class was
+  // first found; `budget.spec.ts` is where it was found again, on CI, which is why the
+  // polling lives in one place now instead of two.
+  await expectJournalLine(journal, line)
 })
 
 test('the verdict is not delivered twice', async ({ context, extensionId }) => {

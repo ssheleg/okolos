@@ -421,6 +421,22 @@
   "dataWipeRetry": {
     "message": "Попробовать ещё раз"
   },
+  "dataWipeUnavailable": {
+    "message": "Удалить не удалось: $WHY$. Ничего не стёрто — данные на месте.",
+    "placeholders": {
+      "why": {
+        "content": "$1"
+      }
+    }
+  },
+  "dataExportFailed": {
+    "message": "Выгрузить не удалось: $WHY$. Файл не создан.",
+    "placeholders": {
+      "why": {
+        "content": "$1"
+      }
+    }
+  },
   "downloadFeedUnread": {
     "message": "списки заблокированных не прочитались, поэтому источник не проверен"
   },

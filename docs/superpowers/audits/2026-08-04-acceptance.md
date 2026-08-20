@@ -43,7 +43,7 @@ Added to the frozen list, not substituted for anything:
 
 | REQ | Requirement | How it will be verified | Release |
 |---|---|---|---|
-| REQ-32 | Wipe is reachable from the settings UI, with the confirmation that names what will be deleted | e2e SCN-023 | R2 |
+| REQ-32 | Wipe is reachable from the settings UI, with the confirmation that names what will be deleted | e2e SCN-023 | R2 — **the named gate did not exist until 2026-08-20.** The requirement was reported closed on unit tests while `e2e/scn-023.spec.ts` was a filename in this row and nothing else; the scenario's own Coverage line said so plainly and this row did not. Written 2026-08-20, three checks over a profile seeded into all nine stores |
 | REQ-33 | Background memory ceiling (≤64 MB) is measured, not assumed | CI measurement against a large-page session | R2 |
 | REQ-34 | Firefox end-to-end harness on `web-ext`, so REQ-27 rests on a test rather than on a build | web-ext run of SCN-003 | R1 |
 

@@ -438,9 +438,10 @@ See [foundation.md](foundation.md) → Personas.
 - **Alt paths:** user cancels -> nothing changes
 - **UI elements:** "Wipe all data" (destructive), confirmation listing data categories, cancel
 - **States covered:** success, error
-- **Errors & recovery:** deletion partially fails -> system names what could not be deleted and offers retry; it never reports success on a partial wipe
+- **Errors & recovery:** deletion partially fails -> system names what could not be deleted and offers retry; it never reports success on a partial wipe. **A wipe that could not start says that instead**, and says it differently: the handler opens the database first, so "could not open" is the ordinary failure — and it used to be silence. `void run()` swallowed the rejection with the confirmation already dismissed, so the user clicked "yes, delete it", the dialog vanished, nothing was deleted, and a dialog vanishing is what success looks like on this screen. The two failures are reported apart because they are different facts: a partial wipe leaves some of the user's data gone and names which, a wipe that never began leaves all of it, and naming stores that were never touched would invent a state
+- **One answer on the screen, whatever the clicking.** The failure note and the retry are single slots, not appended lines: the first version removed the old note before its `await` and appended the new one after, so three clicks on a failing action produced three identical lines. A success takes both the note and the retry away, because a retry button beside a first-run screen invites a second wipe of nothing
 - **Status:** implemented
-- **Coverage:** packages/ui/src/settings/data-controls.ts:renderDataControls, apps/extension/src/options/index.ts — PARTIAL: covered by unit tests including the partial-failure path; no end-to-end run yet, since asserting a real wipe needs a profile seeded with data first
+- **Coverage:** packages/ui/src/settings/data-controls.ts:renderDataControls, apps/extension/src/options/index.ts, **e2e/scn-023.spec.ts** — the gate REQ-32 named since 2026-08-04 and which **did not exist** until 2026-08-20: three checks over a profile seeded into all nine stores, asserting that the confirmation names one kind per store, that every store is emptied, that cancelling changes nothing, and that the first click asks rather than deletes. The failure paths stay unit tests, because nothing in a browser makes IndexedDB refuse on request
 
 ### SCN-024: Export all local data
 - **Persona:** P-01
@@ -455,9 +456,10 @@ See [foundation.md](foundation.md) → Personas.
 - **Alt paths:** none
 - **UI elements:** "Export all data" (primary), completion confirmation with contents list
 - **States covered:** success, error
-- **Errors & recovery:** export fails -> inline failure with retry; no partial file is left behind
+- **Errors & recovery:** export fails -> inline failure naming the reason; no partial file is left behind. **This was a promise the screen did not keep until 2026-08-20:** the click was `() => void handlers.onExport()`, so a rejected export did nothing and said nothing. Export needs no confirmation because nothing is lost — which is a reason to skip the question, not a reason to skip the answer. The failure is one slot, replaced rather than appended, and it comes down when a later export works
+- **Known limit — the retry is the button itself.** There is no separate "try again" for export, unlike the wipe: pressing "Export all data" again *is* the retry, and the stale failure clears when it succeeds. Recorded so the absence is a decision
 - **Status:** implemented
-- **Coverage:** packages/ui/src/settings/data-controls.ts:renderDataControls, apps/extension/src/options/index.ts — PARTIAL: unit-tested; the download itself is not yet asserted end-to-end
+- **Coverage:** packages/ui/src/settings/data-controls.ts:renderDataControls, apps/extension/src/options/index.ts — PARTIAL: unit-tested including the rejected-export path; the download itself is not yet asserted end-to-end, because a Chromium download in a persistent-context extension test writes to a real path and the assertion would be about Playwright's plumbing rather than the product
 
 ## daily-use
 

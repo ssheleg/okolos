@@ -18,8 +18,9 @@
 - `confirm-note`
 - `confirm-yes`
 - `confirm-no`
-- `wipe-failed`
 - `wipe-retry`
+- `export-failed`
+- `wipe-failed`
 
 **States**
 

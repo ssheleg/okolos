@@ -44,8 +44,19 @@ export function rolesOf(source) {
   const roles = []
   const patterns = [
     /setAttribute\(\s*'data-role',\s*'([a-z0-9-]+)'/g,
-    /\b(?:text|button|row|action)\(\s*doc,\s*'([a-z0-9-]+)'/g,
-    /\b(?:text|button|row|action)\(\s*\n\s*doc,\s*\n\s*'([a-z0-9-]+)'/g,
+    /\b(?:text|button|row|action|line)\(\s*doc,\s*'([a-z0-9-]+)'/g,
+    /\b(?:text|button|row|action|line)\(\s*\n\s*doc,\s*\n\s*'([a-z0-9-]+)'/g,
+    /\bnote\(\s*'([a-z0-9-]+)'/g,
+    /**
+     * A helper that takes the role first and the document not at all.
+     *
+     * `note('wipe-failed', …)` replaced `text(doc, 'wipe-failed', …)` on
+     * 2026-08-20 and the role vanished from SCR-12's wireframe, while the screen
+     * still emitted it — and `export-failed`, which arrived in the same change,
+     * never appeared. An extractor that reads source text reports the shapes it
+     * was taught, and says nothing about the ones it was not.
+     */
+
     // Server-rendered screens have no DOM calls; the roles are in the markup.
     /data-role="([a-z0-9-]+)"/g,
   ]

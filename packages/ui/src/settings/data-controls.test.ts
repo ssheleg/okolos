@@ -156,3 +156,220 @@ describe('a wipe that half-worked never reports success', () => {
     expect(h.onWiped).not.toHaveBeenCalled()
   })
 })
+
+describe('a wipe that never began says so, and does not look like one that worked', () => {
+  /**
+   * The outcome that used to be silence.
+   *
+   * `onWipe` is `async () => { const db = await openDb(); return wipeAll(db) }`, so
+   * a database that will not open **rejects** rather than returning a partial
+   * outcome — and the renderer called it as `void run()`, with the confirmation
+   * already removed at the top of `run`. The user clicked "yes, delete it", the
+   * dialog vanished, nothing was deleted, and a dialog vanishing is exactly what
+   * success looks like on this screen.
+   *
+   * None of the eight tests here supplied a rejecting promise. Every one of them
+   * resolved, and the branch that mattered was the one nobody expressed.
+   */
+  const refusing = () =>
+    handlers({
+      onWipe: vi.fn(async () => {
+        throw new Error('the database would not open')
+      }),
+    })
+
+  const wipeAndConfirm = (el: HTMLElement) => {
+    el.querySelector<HTMLButtonElement>('[data-role=wipe]')?.click()
+    el.querySelector<HTMLButtonElement>('[data-role=confirm-yes]')?.click()
+  }
+
+  it('puts the refusal on the screen instead of swallowing it', async () => {
+    const h = refusing()
+    const { el } = mount(h)
+    wipeAndConfirm(el)
+
+    await vi.waitFor(() => {
+      const failure = el.querySelector('[data-role=wipe-failed]')?.textContent ?? ''
+      expect(failure).toContain(message('dataWipeUnavailable').split('$')[0]?.trim())
+      expect(failure, 'the reason is the only thing that tells two failures apart').toContain(
+        'would not open',
+      )
+    })
+  })
+
+  it('says nothing was erased, rather than naming stores it never touched', async () => {
+    // A partial wipe leaves some of the user's data gone and names which; a wipe
+    // that never began leaves all of it. Reporting the second as the first would
+    // invent a state, and this is the sentence a person acts on.
+    const h = refusing()
+    const { el } = mount(h)
+    wipeAndConfirm(el)
+
+    await vi.waitFor(() => expect(el.querySelector('[data-role=wipe-failed]')).not.toBeNull())
+    const failure = el.querySelector('[data-role=wipe-failed]')?.textContent ?? ''
+    expect(failure).not.toContain(message('dataWipePartial').split('$')[0]?.trim())
+  })
+
+  it('does not tell the caller to repaint a first-run screen', async () => {
+    // `onWiped` returns the extension to its first-run state. Calling it here
+    // would show an empty product over a database that is still full.
+    const h = refusing()
+    const { el } = mount(h)
+    wipeAndConfirm(el)
+    await vi.waitFor(() => expect(el.querySelector('[data-role=wipe-failed]')).not.toBeNull())
+    expect(h.onWiped).not.toHaveBeenCalled()
+  })
+
+  it('offers the retry, and the retry really tries again', async () => {
+    let attempts = 0
+    const h = handlers({
+      onWipe: vi.fn(async () => {
+        attempts += 1
+        if (attempts === 1) throw new Error('the database would not open')
+        return { ok: true, failed: [] as string[] }
+      }),
+    })
+    const { el } = mount(h)
+    wipeAndConfirm(el)
+    await vi.waitFor(() => expect(el.querySelector('[data-role=wipe-retry]')).not.toBeNull())
+
+    el.querySelector<HTMLButtonElement>('[data-role=wipe-retry]')?.click()
+    await vi.waitFor(() => expect(h.onWiped).toHaveBeenCalledOnce())
+    // And the failure it was retrying is off the screen, not left beside a
+    // success.
+    expect(el.querySelector('[data-role=wipe-failed]')).toBeNull()
+  })
+
+  it('does not reject out of the click handler', async () => {
+    // The click path is `() => void run()`, so anything `run` throws is lost. It
+    // must handle its own failure rather than rely on a caller that cannot.
+    const h = refusing()
+    const { el } = mount(h)
+    const errors: unknown[] = []
+    const onError = (event: ErrorEvent) => errors.push(event.error)
+    window.addEventListener('error', onError)
+    wipeAndConfirm(el)
+    await vi.waitFor(() => expect(el.querySelector('[data-role=wipe-failed]')).not.toBeNull())
+    window.removeEventListener('error', onError)
+    expect(errors).toEqual([])
+  })
+})
+
+describe('an export that could not be made', () => {
+  it('says so on the screen', async () => {
+    // It was `() => void handlers.onExport()`: a click that did nothing and said
+    // nothing. Export needs no confirmation because nothing is lost — which is a
+    // reason to skip the question, not a reason to skip the answer.
+    const h = handlers({
+      onExport: vi.fn(async () => {
+        throw new Error('the database would not open')
+      }),
+    })
+    const { el } = mount(h)
+    el.querySelector<HTMLButtonElement>('[data-role=export]')?.click()
+
+    await vi.waitFor(() => {
+      const failure = el.querySelector('[data-role=export-failed]')?.textContent ?? ''
+      expect(failure).toContain(message('dataExportFailed').split('$')[0]?.trim())
+      expect(failure).toContain('would not open')
+    })
+  })
+
+  it('says it once, however many times it is asked', async () => {
+    const h = handlers({
+      onExport: vi.fn(async () => {
+        throw new Error('nope')
+      }),
+    })
+    const { el } = mount(h)
+    for (let i = 0; i < 3; i += 1) el.querySelector<HTMLButtonElement>('[data-role=export]')?.click()
+    await vi.waitFor(() => expect(el.querySelectorAll('[data-role=export-failed]').length).toBe(1))
+  })
+
+  it('takes the old failure down when a later export works', async () => {
+    let calls = 0
+    const h = handlers({
+      onExport: vi.fn(async () => {
+        calls += 1
+        if (calls === 1) throw new Error('nope')
+      }),
+    })
+    const { el } = mount(h)
+    el.querySelector<HTMLButtonElement>('[data-role=export]')?.click()
+    await vi.waitFor(() => expect(el.querySelector('[data-role=export-failed]')).not.toBeNull())
+
+    el.querySelector<HTMLButtonElement>('[data-role=export]')?.click()
+    await vi.waitFor(() => expect(el.querySelector('[data-role=export-failed]')).toBeNull())
+  })
+})
+
+describe('one answer on the screen, whatever the clicking', () => {
+  /**
+   * Found by a test rather than by review: the first version of the failure path
+   * removed the old note and then appended a new one after the await, so three
+   * clicks on a failing export produced three identical lines. All three removed
+   * nothing, all three waited, all three appended.
+   */
+  it('holds one wipe failure through repeated retries', async () => {
+    const h = handlers({
+      onWipe: vi.fn(async () => {
+        throw new Error('still shut')
+      }),
+    })
+    const { el } = mount(h)
+    el.querySelector<HTMLButtonElement>('[data-role=wipe]')?.click()
+    el.querySelector<HTMLButtonElement>('[data-role=confirm-yes]')?.click()
+    await vi.waitFor(() => expect(el.querySelector('[data-role=wipe-retry]')).not.toBeNull())
+
+    for (let i = 0; i < 3; i += 1) {
+      el.querySelector<HTMLButtonElement>('[data-role=wipe-retry]')?.click()
+    }
+    await vi.waitFor(() => expect(h.onWipe).toHaveBeenCalledTimes(4))
+    expect(el.querySelectorAll('[data-role=wipe-failed]').length).toBe(1)
+    expect(el.querySelectorAll('[data-role=wipe-retry]').length).toBe(1)
+  })
+
+  it('takes the failure and the retry away once a wipe succeeds', async () => {
+    // A retry button left beside a first-run screen invites a second wipe of
+    // nothing, and a failure line left there says the opposite of what happened.
+    let attempts = 0
+    const h = handlers({
+      onWipe: vi.fn(async () => {
+        attempts += 1
+        if (attempts === 1) return { ok: false, failed: ['journal'] }
+        return { ok: true, failed: [] as string[] }
+      }),
+    })
+    const { el } = mount(h)
+    el.querySelector<HTMLButtonElement>('[data-role=wipe]')?.click()
+    el.querySelector<HTMLButtonElement>('[data-role=confirm-yes]')?.click()
+    await vi.waitFor(() => expect(el.querySelector('[data-role=wipe-retry]')).not.toBeNull())
+
+    el.querySelector<HTMLButtonElement>('[data-role=wipe-retry]')?.click()
+    await vi.waitFor(() => expect(h.onWiped).toHaveBeenCalledOnce())
+    expect(el.querySelector('[data-role=wipe-failed]')).toBeNull()
+    expect(el.querySelector('[data-role=wipe-retry]')).toBeNull()
+  })
+
+  it('replaces a "could not start" with a partial failure when that is what happened next', async () => {
+    // The two are different facts and the screen must not show yesterday's.
+    let attempts = 0
+    const h = handlers({
+      onWipe: vi.fn(async () => {
+        attempts += 1
+        if (attempts === 1) throw new Error('shut')
+        return { ok: false, failed: ['models'] }
+      }),
+    })
+    const { el } = mount(h)
+    el.querySelector<HTMLButtonElement>('[data-role=wipe]')?.click()
+    el.querySelector<HTMLButtonElement>('[data-role=confirm-yes]')?.click()
+    await vi.waitFor(() => expect(el.querySelector('[data-role=wipe-retry]')).not.toBeNull())
+
+    el.querySelector<HTMLButtonElement>('[data-role=wipe-retry]')?.click()
+    await vi.waitFor(() =>
+      expect(el.querySelector('[data-role=wipe-failed]')?.textContent ?? '').toContain('models'),
+    )
+    expect(el.querySelectorAll('[data-role=wipe-failed]').length).toBe(1)
+  })
+})

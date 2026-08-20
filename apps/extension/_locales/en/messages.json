@@ -421,6 +421,22 @@
   "dataWipeRetry": {
     "message": "Try again"
   },
+  "dataWipeUnavailable": {
+    "message": "The deletion could not start: $WHY$. Nothing was erased — your data is still here.",
+    "placeholders": {
+      "why": {
+        "content": "$1"
+      }
+    }
+  },
+  "dataExportFailed": {
+    "message": "The export could not be made: $WHY$. No file was created.",
+    "placeholders": {
+      "why": {
+        "content": "$1"
+      }
+    }
+  },
   "downloadFeedUnread": {
     "message": "the blocklists could not be read, so the source was not checked"
   },

@@ -25,6 +25,12 @@
 - `area`
 - `area-link`
 - `area-state`
+- `overview-unrecognised`
+- `attention-counting`
+- `attention-error`
+- `attention-empty`
+- `attention-checked`
+- `attention-more`
 
 **States**
 

@@ -8,6 +8,7 @@ import {
   artefactStaleness,
   buildStamp,
   buildTooOld,
+  filesUnderWithTime,
   isBuildInput,
   newestSource,
 } from './build-age.mjs'
@@ -199,5 +200,38 @@ describe('the age of an artefact against the tree it came from', () => {
       known: true,
       stale: true,
     })
+  })
+})
+
+describe('the directories that are never a source', () => {
+  it('skips every name in the list, not only the ones a second copy remembered', () => {
+    /**
+     * The trap this replaced. `NOT_A_SOURCE_DIR` looked like the source of truth and the
+     * walk filtered a *hardcoded* candidate list through it — `['node_modules', 'dist']`
+     * — so adding `.tsc` to the pattern changed nothing: a name absent from the array
+     * could never be skipped however the pattern read. 148 files of `tsc` output were
+     * reported as uncovered sources by the code-graph check, burying nine real documents
+     * in the same list.
+     *
+     * Asserted against the real tree, because that is where the emit is: `.tsc` holds
+     * declarations written by `pnpm typecheck` and is git-ignored.
+     */
+    const walked = filesUnderWithTime(['apps'], /\.(ts|mts)$/).map((f) => f.file)
+    expect(walked.length).toBeGreaterThan(0)
+    for (const name of ['node_modules', 'dist', '.tsc']) {
+      expect(
+        walked.filter((file) => file.includes(`/${name}/`)),
+        `${name} was walked as a source`,
+      ).toEqual([])
+    }
+  })
+
+  it('is one list, so the pattern and the walk cannot disagree', () => {
+    // The structural half: the regex is built from the array. A hand-written pattern
+    // beside a hand-written list is the same rule twice, agreeing until it does not.
+    const source = readFileSync(path.join(root, 'tools/build-age.mjs'), 'utf8')
+    expect(source).toContain('const GENERATED_DIRS = [')
+    expect(source).toContain('GENERATED_DIRS.map(')
+    expect(source).toContain('GENERATED_DIRS.filter(')
   })
 })

@@ -38,7 +38,8 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
-import { artefactStaleness } from './build-age.mjs'
+import { artefactStaleness, filesUnderWithTime } from './build-age.mjs'
+import { describePending, pendingSources } from './graph-freshness.mjs'
 
 const graphPath = process.argv[2] ?? 'graphify-out/graph.json'
 
@@ -78,14 +79,27 @@ for (const link of dangling.slice(0, 10)) {
 const EDGELESS_BY_DESIGN = new Set([
   'playwright.config.ts',
   'vitest.config.ts',
-  'tools/imports.d.mts',
   'apps/extension/src/first-run/index.html',
 ])
+
+/**
+ * A hand-written declaration for a `.mjs` tool, which nothing imports and nothing can.
+ *
+ * `tools/imports.d.mts` sat in the list above as a named exception, and then
+ * `tree.d.mts` and `i18n-pattern.d.mts` appeared and were reported as new orphans —
+ * correctly by the rule and pointlessly by intent. TypeScript pairs a `.d.mts` with
+ * its module by *filename*, so an import of it can never exist: the whole class is
+ * edgeless by construction, and listing its members one at a time only records how
+ * many tools have grown a declaration.
+ */
+const DECLARATION = /^tools\/[\w.-]+\.d\.mts$/
 
 const codeOrphans = orphans
   .filter((node) => node.file_type === 'code')
   .map((node) => node.source_file ?? String(node.id))
-const unexpected = codeOrphans.filter((file) => !EDGELESS_BY_DESIGN.has(file))
+const unexpected = codeOrphans.filter(
+  (file) => !EDGELESS_BY_DESIGN.has(file) && !DECLARATION.test(file),
+)
 
 /**
  * What the graph covers, and what counts as a change to it.
@@ -94,7 +108,21 @@ const unexpected = codeOrphans.filter((file) => !EDGELESS_BY_DESIGN.has(file))
  * TypeScript, and a rationale node comes from a `.md`.
  */
 const COVERED = ['apps', 'packages', 'tools', 'docs', 'e2e', '.githooks']
-const COVERED_FILE = /\.(ts|tsx|mjs|js|py|html|json|md|css|yml)$/
+/**
+ * The extensions graphify's extraction actually reads.
+ *
+ * `.css` was in this list and is not in graphify's own detection, so two stylesheets sat
+ * permanently in "covered sources with no manifest row" — a gap in the pattern reported
+ * as a gap in the graph. `.tsx` was in it and this project has none: dead weight reading
+ * as coverage. And `.githooks/pre-push` — the hook that runs the gates — was extracted
+ * and unclaimed, because git hooks carry no extension and a pattern of extensions cannot
+ * name them, so the check quietly never asked about it.
+ *
+ * Both directions are held by `tools/graph-check.test.ts` against the manifest's own
+ * filenames: a type this claims and the extraction never reads is noise that buries the
+ * real rows, and one it reads and this omits is a blind spot.
+ */
+const COVERED_FILE = /(\.(ts|mts|mjs|js|py|html|json|md|yml|yaml|sql)|^pre-[a-z]+)$/
 
 /**
  * Is the graph older than the newest thing it covers?
@@ -112,6 +140,30 @@ const COVERED_FILE = /\.(ts|tsx|mjs|js|py|html|json|md|css|yml)$/
 const staleness = artefactStaleness(path.resolve(graphPath), COVERED, COVERED_FILE)
 const builtAtCommit = typeof graph.built_at_commit === 'string' ? graph.built_at_commit : null
 
+/**
+ * Which sources the graph only appears to contain, asked of graphify's own manifest.
+ *
+ * The timestamp above cannot answer this. graphify extracts in two passes — an AST pass
+ * over code that is deterministic and free, and a semantic pass over documents and
+ * images that needs an LLM — and a code-only rebuild rewrites `graph.json`, making every
+ * covered file older than the artefact. On 2026-08-20 that read as "nothing it covers has
+ * changed since" over 27 documents last extracted twelve days earlier.
+ *
+ * A missing manifest is not treated as an empty one: with no manifest nothing can be
+ * said about which sources are in there, and an unknown age is not a young age.
+ */
+const manifestPath = path.join(path.dirname(path.resolve(graphPath)), 'manifest.json')
+let manifest = null
+try {
+  manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+} catch {
+  manifest = null
+}
+const pending =
+  manifest === null
+    ? null
+    : pendingSources(manifest, filesUnderWithTime(COVERED, COVERED_FILE))
+
 console.log(`  code orphans:   ${codeOrphans.length} (${unexpected.length} unaccounted for)`)
 const from = builtAtCommit === null ? 'an unrecorded commit' : builtAtCommit.slice(0, 7)
 if (staleness.known) {
@@ -122,6 +174,13 @@ if (staleness.known) {
   )
 } else {
   console.log(`  built from:     unknown — ${staleness.reason}`)
+}
+if (pending === null) {
+  console.log('  sources:        unknown — no manifest beside the graph')
+} else {
+  const lines = describePending(pending)
+  console.log(`  sources:        ${pending.extracted} extracted, ${lines.length} state(s) pending`)
+  for (const line of lines) console.log(line)
 }
 
 let refused = false
@@ -143,19 +202,53 @@ if (unexpected.length > 0) {
   refused = true
 }
 
-if (!staleness.known) {
-  console.error(`\n  Freshness could not be established: ${staleness.reason}.` +
-    '\n  An unknown age is not a young age — rebuild with `/graphify . --update`.\n')
-  refused = true
-} else if (staleness.stale) {
-  const minutes = Math.max(1, Math.round((staleness.newest.at - staleness.built) / 60_000))
+if (pending === null) {
   console.error(
-    `\n  ${staleness.newest.file} changed ${minutes} minute(s) after the graph was built.` +
-      '\n  A stale graph is a false premise carrying the authority of a machine: a wrong' +
-      '\n  document gets argued with, a wrong graph gets believed. Rebuild it with' +
-      '\n  `/graphify . --update` before reading anything from it.\n',
+    '\n  No manifest beside the graph, so which sources are in it cannot be established.' +
+      '\n  An unknown age is not a young age — rebuild with `/graphify . --update`.\n',
   )
   refused = true
+} else if (describePending(pending).length > 0) {
+  /**
+   * The refusal names the pass that is missing, because the two halves are unblocked
+   * differently. `changed` and `never extracted` are fixed by a run of the update. The
+   * semantic pass over documents and images is not: it needs an LLM, which means either
+   * `GEMINI_API_KEY` set in the environment or an agent host willing to dispatch
+   * subagents. Saying "rebuild it" to someone whose blocker is a missing key sends them
+   * round the loop again.
+   */
+  console.error(
+    '\n  A source the graph appears to contain but does not is a false premise carrying' +
+      '\n  the authority of a machine: a wrong document gets argued with, a wrong graph' +
+      '\n  gets believed.\n',
+  )
+  if (pending.changed.length > 0 || pending.unknown.length > 0) {
+    console.error('  Changed and never-extracted sources: `/graphify . --update`.')
+  }
+  if (pending.awaiting.length > 0) {
+    console.error(
+      '  Sources awaiting meaning need the semantic pass, which needs an LLM — either' +
+        '\n  GEMINI_API_KEY in the environment, or a host that dispatches subagents. The' +
+        '\n  AST half of an update runs without either and does not clear them.\n',
+    )
+  }
+  refused = true
+}
+
+/**
+ * The timestamp is reported and no longer refuses.
+ *
+ * It cannot distinguish "the graph is old" from "a file was edited one minute ago",
+ * which on a working tree mid-task is every run — and it answered "fresh" for the one
+ * case that mattered. `pending` is the same question asked per source, which is the
+ * question the reader actually has.
+ */
+if (staleness.known && staleness.stale) {
+  const minutes = Math.max(1, Math.round((staleness.newest.at - staleness.built) / 60_000))
+  console.log(
+    `  note:           ${staleness.newest.file} was written ${minutes} minute(s) after the graph;` +
+      ' the per-source check above is what decides',
+  )
 }
 
 if (refused) process.exit(1)

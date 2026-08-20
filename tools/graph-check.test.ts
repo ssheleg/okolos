@@ -5,6 +5,18 @@ import path from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
+import { filesUnderWithTime } from './build-age.mjs'
+
+/**
+ * The scope the check itself uses, restated here on purpose.
+ *
+ * Two copies of a list is normally the drift this repository refuses — but the point of
+ * the last two assertions in this file is that this list and the extraction's own output
+ * agree. A shared constant would make them agree by construction and prove nothing.
+ */
+const COVERED = ['apps', 'packages', 'tools', 'docs', 'e2e', '.githooks']
+const COVERED_FILE = /(\.(ts|mts|mjs|js|py|html|json|md|yml|yaml|sql)|^pre-[a-z]+)$/
+
 /**
  * The checks on the code graph, and the record of why it is not a `gates` step.
  *
@@ -26,11 +38,21 @@ const head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: '
  * with uncommitted edits under it read as fresh, which is the normal state of a
  * working tree and exactly when someone reads a graph.
  */
-function run(graph: unknown, builtAt?: number): { code: number; out: string } {
+function run(
+  graph: unknown,
+  builtAt?: number,
+  manifest?: Record<string, unknown> | null,
+): { code: number; out: string } {
   const dir = mkdtempSync(path.join(tmpdir(), 'okolos-graph-'))
   const file = path.join(dir, 'graph.json')
   writeFileSync(file, JSON.stringify(graph))
   if (builtAt !== undefined) utimesSync(file, builtAt / 1000, builtAt / 1000)
+  // The manifest sits beside the graph, and that is where the per-source question is
+  // asked. `undefined` means "a complete one", `null` means "none written" — which is
+  // its own refusal, because with no manifest nothing can be said about what is in there.
+  if (manifest !== null) {
+    writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify(manifest ?? complete()))
+  }
   try {
     const out = execFileSync('node', [path.join(root, 'tools/graph-check.mjs'), file], {
       cwd: root,
@@ -42,6 +64,23 @@ function run(graph: unknown, builtAt?: number): { code: number; out: string } {
     const failed = cause as { status?: number; stdout?: string; stderr?: string }
     return { code: failed.status ?? -1, out: `${failed.stdout ?? ''}${failed.stderr ?? ''}` }
   }
+}
+
+/**
+ * A manifest that accounts for every source the graph covers, extracted just now.
+ *
+ * Built from the real tree rather than hand-written, because the check compares the
+ * manifest against the tree: a fixed list would pass this file and say nothing about
+ * whether the walk and the manifest agree. Every row is stamped a day ahead, so no real
+ * file can read as "changed after it was extracted" while the suite runs.
+ */
+function complete(): Record<string, { mtime: number; ast_hash: string; semantic_hash: string }> {
+  const tomorrow = Date.now() / 1000 + 86_400
+  const rows: Record<string, { mtime: number; ast_hash: string; semantic_hash: string }> = {}
+  for (const { file } of filesUnderWithTime(COVERED, COVERED_FILE)) {
+    rows[file] = { mtime: tomorrow, ast_hash: 'x', semantic_hash: 'x' }
+  }
+  return rows
 }
 
 /** Two nodes, one edge between them: the smallest graph with nothing wrong. */
@@ -76,12 +115,83 @@ describe('the code-graph check', () => {
     expect(out).toContain('ghost')
   })
 
-  it('refuses a graph built before the tree changed', () => {
-    // A year old: older than anything in the tree, on any machine, with no history
-    // to consult. The condition under test is "the tree moved after the graph did".
+  it('reports the file being older than the tree, and does not refuse for it', () => {
+    /**
+     * The timestamp stopped deciding on 2026-08-20. It cannot tell "the graph is twelve
+     * days old" from "a file was edited a minute ago", which on a working tree mid-task
+     * is every run — and it answered *fresh* for the one case that mattered: a code-only
+     * rebuild rewrites `graph.json`, so every source becomes older than the artefact
+     * while the documents inside it are weeks stale. It is a note now.
+     */
     const { code, out } = run(healthy(), Date.now() - 365 * 24 * 60 * 60_000)
-    expect(code).toBe(1)
-    expect(out).toContain('minute(s) after the graph was built')
+    expect(code, out).toBe(0)
+    expect(out).toContain('the per-source check above is what decides')
+  })
+
+  it('refuses a source the graph appears to contain and does not', () => {
+    // The defect the per-source check exists for, in each of its three shapes. The graph
+    // file is a day *ahead* of the tree in every case, so the timestamp would call all
+    // three fresh.
+    const ahead = Date.now() + 24 * 60 * 60_000
+    const tomorrow = Date.now() / 1000 + 86_400
+
+    const awaiting = complete()
+    const someDoc = Object.keys(awaiting).find((f) => f.endsWith('.md')) as string
+    awaiting[someDoc] = { mtime: tomorrow, ast_hash: 'x', semantic_hash: '' }
+    const one = run(healthy(), ahead, awaiting)
+    expect(one.code, one.out).toBe(1)
+    expect(one.out).toContain('awaiting meaning')
+    expect(one.out).toContain('needs an LLM')
+
+    const changed = complete()
+    changed[someDoc] = { mtime: 1, ast_hash: 'x', semantic_hash: 'x' }
+    const two = run(healthy(), ahead, changed)
+    expect(two.code, two.out).toBe(1)
+    expect(two.out).toContain('changed since')
+
+    const missing = complete()
+    delete missing[someDoc]
+    const three = run(healthy(), ahead, missing)
+    expect(three.code, three.out).toBe(1)
+    expect(three.out).toContain('never extracted')
+  })
+
+  it('refuses when there is no manifest at all', () => {
+    // An unknown set of sources is not an empty one. Without the manifest the check
+    // cannot say what is in the graph, and a gate that passes on "cannot say" is the
+    // absence-reads-as-a-pass failure this project refuses everywhere.
+    const { code, out } = run(healthy(), Date.now() + 60 * 60_000, null)
+    expect(code, out).toBe(1)
+    expect(out).toContain('No manifest beside the graph')
+  })
+
+  it('claims every extracted file type in the tree, and no type the tree lacks', () => {
+    /**
+     * Both directions, because they fail differently and both have happened.
+     *
+     * `.css` was claimed and is not in graphify's detection, so two stylesheets sat
+     * permanently in "never extracted" — a gap in the pattern reported as a gap in the
+     * graph, burying nine real documents in the same list. `.tsx` was claimed and this
+     * project has none: dead weight that reads as coverage.
+     *
+     * The other direction is the blind spot: a type the extraction reads and this
+     * pattern omits is a set of sources the check silently stops asking about.
+     */
+    const manifest = JSON.parse(
+      readFileSync(path.join(root, 'graphify-out/manifest.json'), 'utf8'),
+    ) as Record<string, unknown>
+    // By basename, because a git hook has no extension at all and `split('.').pop()`
+    // hands back the whole path for one — which reads as an unclaimed file type.
+    const names = Object.keys(manifest).map((f) => f.split('/').pop() ?? f)
+
+    // `png` is extracted and deliberately unclaimed: an image has no text to go stale,
+    // and "which images changed" is not a question this check answers.
+    const blind = names.filter((name) => !name.endsWith('.png') && !COVERED_FILE.test(name))
+    expect(blind, `extracted and unclaimed: ${[...new Set(blind)].join(', ')}`).toEqual([])
+
+    const claimed = [...COVERED_FILE.source.matchAll(/[a-z]{2,}/g)].map((m) => m[0])
+    const dead = claimed.filter((ext) => !names.some((name) => name.includes(ext)))
+    expect(dead, `claimed and never extracted: ${dead.join(', ')}`).toEqual([])
   })
 
   it('does not need repository history to answer', () => {

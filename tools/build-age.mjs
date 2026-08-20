@@ -52,7 +52,23 @@ const SOURCE_FILE = /\.(ts|tsx|html|json|css)$/
  * plant that failed to land: removing the exclusion changed nothing, because it had
  * never been doing anything.
  */
-const NOT_A_SOURCE_DIR = /\/(dist|node_modules)\//
+/**
+ * Generated directories, which are never a source to anyone.
+ *
+ * `.tsc` joined on 2026-08-20: it holds the `tsc` emit that `pnpm typecheck` writes and
+ * it is git-ignored. The code graph's coverage walk reported 148 of those files as
+ * "covered sources never extracted" — a true statement about a list that should not have
+ * contained them, burying the twelve real documents in the same report.
+ *
+ * **One list, and the regex is built from it.** Adding `.tsc` to a hand-written regex
+ * changed nothing at first, because the walk below filtered a *hardcoded* candidate list
+ * — `['node_modules', 'dist']` — through that regex, so a name absent from the list could
+ * never be skipped however the pattern read. The regex looked like the source of truth
+ * and the array was one. That is the same shape as the exclusion this module already
+ * carries a note about: a rule written twice, agreeing until it does not.
+ */
+const GENERATED_DIRS = ['node_modules', 'dist', '.tsc']
+const NOT_A_SOURCE_DIR = new RegExp(`/(${GENERATED_DIRS.map((d) => d.replace('.', String.raw`\.`)).join('|')})/`)
 const NOT_A_SOURCE_FILE = /\.test\.ts$/
 
 /**
@@ -83,7 +99,9 @@ export function isBuildInput(file) {
  * the mtime, and the two exclusions tested against two different strings.
  */
 function walk(dir, pattern, skipDir, skipFile = null) {
-  const skip = ['node_modules', 'dist'].filter((name) => skipDir.test(`/${name}/`))
+  // Every generated directory, from the one list the pattern is built from. Filtered by
+  // the caller's `skipDir` so a caller with a narrower rule still gets it.
+  const skip = GENERATED_DIRS.filter((name) => skipDir.test(`/${name}/`))
   /**
    * The absent directory is answered here, not swallowed by the walker.
    *
@@ -130,11 +148,25 @@ export function newestSource() {
  * covers `.md` and `.py` as well.
  */
 export function newestUnder(dirs, pattern = SOURCE_FILE) {
-  const files = dirs.flatMap((dir) =>
-    walk(path.isAbsolute(dir) ? dir : path.join(root, dir), pattern, NOT_A_SOURCE_DIR, NOT_A_SOURCE_FILE),
-  )
+  const files = filesUnderWithTime(dirs, pattern)
   if (files.length === 0) return null
   return files.reduce((newest, file) => (file.at > newest.at ? file : newest))
+}
+
+/**
+ * Every file under `dirs`, each with when it was last written.
+ *
+ * `newestUnder` answers "is the artefact older than the tree", which is the wrong
+ * question for an artefact built in two passes: a partial rebuild makes the whole tree
+ * older than the file and the answer comes back "fresh". The caller that needs to ask
+ * per source — `graph-check.mjs`, against graphify's manifest — needs the list, and it
+ * is the same walk with the same exclusions, so it lives here rather than as a second
+ * copy that drifts.
+ */
+export function filesUnderWithTime(dirs, pattern = SOURCE_FILE) {
+  return dirs.flatMap((dir) =>
+    walk(path.isAbsolute(dir) ? dir : path.join(root, dir), pattern, NOT_A_SOURCE_DIR, NOT_A_SOURCE_FILE),
+  )
 }
 
 /** When `dir` was last written, or null when there is no build there. */

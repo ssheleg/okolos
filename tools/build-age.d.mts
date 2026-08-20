@@ -17,6 +17,12 @@ export function isBuildInput(file: string): boolean
 /** The most recently touched build input, or null when the tree cannot be read. */
 export function newestSource(): SourceFile | null
 
+/** Every file under `dirs`, each with when it was last written. */
+export function filesUnderWithTime(
+  dirs: readonly string[],
+  pattern?: RegExp,
+): { readonly file: string; readonly at: number }[]
+
 /** The newest file under any of `dirs`, for a question that is not about the build. */
 export function newestUnder(dirs: readonly string[], pattern?: RegExp): SourceFile | null
 

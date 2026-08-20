@@ -64,6 +64,20 @@ export function collect(doc: Document, options: CollectOptions): PageCandidates 
     candidates.length >= budget.maxCandidates ||
     options.elapsed() >= budget.maxMillis
 
+  /**
+   * Adds a candidate, or refuses and says the scan was cut short.
+   *
+   * The ceiling used to be checked once per **node**, at the top of each walk — and one
+   * node can produce candidates without limit. A single element carrying 20 000 `data-*`
+   * attributes yielded 20 000 candidates, 40.3 MB of payload and 84.9 ms against an 8 ms
+   * budget, with `truncated: false`: the memory ceiling walked around, and the verdict
+   * reporting a complete scan of a page it had not finished. A page can do that twice a
+   * second, in every frame (B-41).
+   *
+   * So the ceiling is applied here, where candidates are actually made, and refusing sets
+   * `truncated` — because a scan that stopped early and says it did not is worse than one
+   * that stops early.
+   */
   const add = (
     text: string,
     locator: string,
@@ -72,6 +86,10 @@ export function collect(doc: Document, options: CollectOptions): PageCandidates 
   ): void => {
     const trimmed = text.trim()
     if (!trimmed) return
+    if (candidates.length >= budget.maxCandidates) {
+      truncated = true
+      return
+    }
     candidates.push({
       locator,
       text: trimmed.slice(0, budget.maxTextLength),
@@ -116,6 +134,10 @@ export function collect(doc: Document, options: CollectOptions): PageCandidates 
         if (content) add(content, locatorFor(element), 'meta', ['non-rendered'])
       }
       for (const name of element.getAttributeNames()) {
+        // Once the ceiling is reached, reading the rest of an element's attributes buys
+        // nothing: `add` will refuse every one. The 20 000-attribute element cost 84.9 ms
+        // mostly here, in `getAttribute` calls whose results were about to be discarded.
+        if (truncated) break
         if (!name.startsWith('data-')) continue
         const value = element.getAttribute(name)
         if (value) add(value, locatorFor(element), 'data-attr', ['non-rendered'])

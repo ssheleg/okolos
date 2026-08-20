@@ -112,6 +112,14 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (пятьдесят второй)** — B-41; стадии 0–10. Потолок кандидатов проверялся раз
+  на узел, а один узел может порождать кандидатов без счёта: элемент с 20 000 `data-*`
+  давал 20 000 кандидатов при `truncated: false` — потолок памяти обойдён, вердикт
+  отчитывается о полном скане недочитанной страницы. Измерено до и после одним и тем же
+  прогоном: 20 000 / 42 мс → 50 / 11.6 мс. Второй guard оказался про время, и плант прошёл
+  мимо всех тестов, пока он не стал проверяться счётом обращений вместо часов. 2299
+  юнит-тестов в 142 файлах. Три планта, легли все. Постоянных инструкций десять, снятий нет.
+  Вердикт REFINE.
 - **2026-08-20 (пятьдесят первый)** — B-50; стадии 0–10. Решение «третья ступень не
   выпускается» было принято 8 августа и **исполнено наполовину**: на Chrome воркер создавал
   offscreen-документ на каждое пробуждение, объявлял классификатор `ready`, гейт открывался,
@@ -2184,6 +2192,44 @@ description.
   keeping. But a row closed with its verification outstanding is a row closed early, and
   the honest form is the one now in the board: closed on the second attempt, with the
   first attempt's failure written into it rather than tidied away.
+
+### 2026-08-20 — the ceiling was checked where nothing was added
+
+**Symptom.** `DEFAULT_BUDGET.maxCandidates` is 50. An element carrying 20 000 `data-*`
+attributes produced 20 000 candidates, and the page reported `truncated: false` — a
+complete scan of a page the collector had not finished, with the memory ceiling walked
+around and 42 ms spent against an 8 ms budget. A hostile page can do that twice a second
+in every frame.
+
+**Stage it surfaced at.** 0, reproducing the row's own measurement before touching
+anything — and again after, with the same test, which is what makes the numbers comparable
+rather than two separate claims.
+
+**Stage that owned it.** 5 of the run that wrote the collector. `outOfBudget()` guards both
+walks correctly: it is checked once per node, and for the node walk that is exactly right.
+What it cannot see is that one node produces candidates in a loop — the attribute carriers,
+`meta`, and every `data-*`. The guard was in the loop that counts nodes rather than in the
+one that makes candidates.
+
+**Root cause.** A budget enforced at the boundary of the *outer* loop, when the thing it
+limits is produced by an inner one. Both loops looked guarded; only one was.
+
+**Fix, by grade.** *Structural:* the ceiling is applied in `add`, where candidates are
+made, and refusing sets `truncated` — a scan that stops early and says it did not is worse
+than one that stops early. *Performance:* the attribute loop breaks once the ceiling is
+reached, because reading two thousand values that are about to be discarded is where most
+of the 42 ms went.
+
+**The plant that did not land, and what it taught.** Removing that `break` changed nothing
+any test could see: `add` refuses either way, so only the *time* differs and no test
+measured time. It is asserted by counting `getAttribute` calls now — not by a clock, which
+would be the flake this project keeps out of its gates, and the number of reads is what the
+guard is actually about. A guard whose only effect is speed still needs an observable, and
+the observable is rarely the clock.
+
+**The check that catches it next time.** When a limit protects a collection, the assertion
+belongs where items enter it. A per-iteration check in an enclosing loop bounds iterations,
+not items.
 
 ### 2026-08-20 — the decision was recorded, and half of it was carried out
 

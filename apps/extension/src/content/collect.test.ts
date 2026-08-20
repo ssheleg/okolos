@@ -263,3 +263,79 @@ describe('the locator names one element, not the first that looks like it', () =
     expect(document.querySelectorAll(locator)).toHaveLength(1)
   })
 })
+
+describe('a page that tries to walk around the ceiling', () => {
+  /**
+   * The budget was checked once per node, and one node can produce candidates without
+   * limit. A single element with 20 000 `data-*` attributes yielded 20 000 candidates,
+   * 40.3 MB of payload and 84.9 ms against an 8 ms budget — with `truncated: false`, so
+   * the verdict reported a complete scan of a page it had not finished. A page can repeat
+   * that twice a second in every frame (B-41).
+   */
+  /** One element, many attributes: the shape that defeated a per-node check. */
+  const manyAttributes = (count: number): void => {
+    setBody('<div id="x"></div>')
+    const target = document.getElementById('x')
+    for (let index = 0; index < count; index += 1) {
+      target?.setAttribute(`data-n${index}`, `hidden instruction number ${index}`)
+    }
+  }
+
+  it('stops at the ceiling instead of taking every attribute of one element', () => {
+    manyAttributes(2000)
+    const page = collectHere()
+    expect(page.candidates.length).toBeLessThanOrEqual(DEFAULT_BUDGET.maxCandidates)
+  })
+
+  it('says the scan was cut short, rather than reporting a complete one', () => {
+    // The half that matters: a ceiling that silently drops the rest turns a page the
+    // product could not finish into a page it says is clean.
+    manyAttributes(2000)
+    const page = collectHere()
+    expect(page.truncated, 'the scan stopped early and did not say so').toBe(true)
+  })
+
+  it('keeps what it did find, because a partial scan is not a failed one', () => {
+    manyAttributes(2000)
+    const page = collectHere()
+    expect(page.candidates.length).toBeGreaterThan(0)
+    expect(page.candidates[0]?.carrier).toBe('data-attr')
+  })
+
+  it('stops reading attributes once it has stopped keeping them', () => {
+    /**
+     * The `break` in the attribute loop is a guard on time rather than on correctness —
+     * `add` refuses either way — so a plant that removed it changed nothing any test
+     * could see. It cost most of the 42 ms the 20 000-attribute element took: reading
+     * values that were about to be discarded.
+     *
+     * Counted rather than timed. A wall-clock assertion here would be the flake this
+     * project keeps out of its gates, and the number of reads is the thing the guard is
+     * actually about.
+     */
+    manyAttributes(2000)
+    const target = document.getElementById('x') as Element
+    const real = target.getAttribute.bind(target)
+    let reads = 0
+    target.getAttribute = (name: string): string | null => {
+      reads += 1
+      return real(name)
+    }
+
+    const page = collectHere()
+
+    expect(page.truncated).toBe(true)
+    // Fifty kept, a handful of named carriers looked at first, and then it stops. The
+    // exact number is not the point; two thousand is.
+    expect(reads, `read ${reads} attributes to keep ${page.candidates.length}`).toBeLessThan(200)
+  })
+
+  it('leaves an ordinary element untouched by the rule', () => {
+    // The ceiling must not fire on a page that is nowhere near it, or every verdict
+    // starts claiming to be partial and the word stops meaning anything.
+    manyAttributes(3)
+    const page = collectHere()
+    expect(page.truncated).toBe(false)
+    expect(page.candidates).toHaveLength(3)
+  })
+})

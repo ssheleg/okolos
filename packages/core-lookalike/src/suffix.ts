@@ -20,41 +20,64 @@
  */
 
 /**
+ * The table itself, as data.
+ *
+ * A JSON file rather than a constant, because it has two readers: this module and
+ * `tools/ingest.mjs`, which is plain Node and cannot import TypeScript. Before
+ * this, the blocklist carried **its own** hand-written list of forty-eight exact
+ * matches — and measured 2026-08-20 it was missing every platform the source
+ * actually emits hosts under: `github.io`, `backblazeb2.com`,
+ * `trycloudflare.com`, `edgeone.dev`, `bolt.host`, `webflow.io`. Two copies of a
+ * list agree with each other and with nothing else, which this repository has now
+ * paid for four times.
+ */
+import TABLE from './suffixes.json' with { type: 'json' }
+
+/**
  * Multi-label public suffixes, longest match wins.
  *
  * Held as a set of strings rather than a tree: at this size a set lookup per
  * candidate suffix is faster than building a tree, and a tree that nobody can
  * read is a tree nobody checks against the real list.
  */
-const MULTI_LABEL: ReadonlySet<string> = new Set([
-  // The ones the watchlist and its markets actually meet.
-  'co.uk', 'org.uk', 'ac.uk', 'gov.uk', 'me.uk', 'net.uk', 'sch.uk',
-  'gov.ru', 'net.ru', 'org.ru', 'com.ru', 'edu.ru', 'ac.ru', 'msk.ru', 'spb.ru',
-  'com.ua', 'net.ua', 'org.ua', 'gov.ua', 'kiev.ua',
-  'com.by', 'gov.by', 'com.kz', 'gov.kz', 'org.kz',
-  'co.il', 'org.il', 'gov.il', 'ac.il', 'net.il',
-  'co.jp', 'ne.jp', 'or.jp', 'ac.jp', 'go.jp', 'ad.jp', 'lg.jp',
-  'co.kr', 'or.kr', 'go.kr', 'ne.kr', 're.kr',
-  'co.in', 'net.in', 'org.in', 'gov.in', 'ac.in', 'firm.in',
-  'com.cn', 'net.cn', 'org.cn', 'gov.cn', 'edu.cn', 'ac.cn',
-  'com.hk', 'org.hk', 'edu.hk', 'gov.hk', 'com.tw', 'org.tw', 'gov.tw',
-  'com.sg', 'edu.sg', 'gov.sg', 'com.my', 'org.my', 'gov.my',
-  'com.au', 'net.au', 'org.au', 'edu.au', 'gov.au', 'id.au',
-  'co.nz', 'net.nz', 'org.nz', 'govt.nz', 'ac.nz',
-  'co.za', 'org.za', 'gov.za', 'ac.za', 'web.za',
-  'com.br', 'net.br', 'org.br', 'gov.br', 'edu.br',
-  'com.mx', 'gob.mx', 'org.mx', 'edu.mx',
-  'com.ar', 'gob.ar', 'org.ar', 'com.co', 'gov.co', 'com.pe', 'com.ve',
-  'com.tr', 'gov.tr', 'org.tr', 'edu.tr', 'net.tr',
-  'com.pl', 'net.pl', 'org.pl', 'gov.pl', 'edu.pl',
-  'co.id', 'or.id', 'go.id', 'ac.id', 'web.id',
-  'com.ph', 'gov.ph', 'com.vn', 'gov.vn', 'co.th', 'in.th', 'go.th',
-  'com.sa', 'gov.sa', 'com.eg', 'gov.eg', 'com.ng', 'gov.ng',
-  'com.pk', 'gov.pk', 'com.bd', 'gov.bd', 'co.ke', 'go.ke',
-  'com.es', 'org.es', 'gob.es', 'com.pt', 'gov.pt', 'com.gr', 'gov.gr',
-  'co.at', 'or.at', 'com.de', 'com.fr', 'gouv.fr', 'com.it', 'gov.it',
-  'co.no', 'com.se', 'com.cy', 'gov.cy',
-])
+const MULTI_LABEL: ReadonlySet<string> = new Set(TABLE.icann)
+
+/**
+ * Suffixes somebody rents out, not a registry: the Public Suffix List's private
+ * section, where the registrant is whoever holds the label in front.
+ *
+ * These matter more than the ICANN ones for one reason. Blocking rules are
+ * `||host^`, which covers every subdomain — so listing `github.io` as a malicious
+ * host takes down **every GitHub Pages site** for everyone who installed the
+ * extension. Measured 2026-08-20, today's source carried nine hosts under
+ * `github.io`, four under `backblazeb2.com`, and hosts under `trycloudflare.com`,
+ * `edgeone.dev`, `bolt.host` and `webflow.io`; eighteen of its 281 entries were
+ * two labels, meaning the source does report apexes. The day it reports the apex
+ * of one of these is the day the extension breaks a platform, and the
+ * short-host heuristic does not save it — `github.io` is nine characters.
+ *
+ * Curated rather than the whole list, and the trade is the opposite way round
+ * from the ICANN table above: there, a missing suffix loses a finding, and here a
+ * missing suffix **blocks a platform**. So this list carries every platform the
+ * source has been observed to emit hosts under, and B-66 remains the row for
+ * vendoring the real thing.
+ */
+const PRIVATE_SUFFIXES: ReadonlySet<string> = new Set(TABLE.private)
+
+/**
+ * Whether this host **is** a suffix rather than a site under one.
+ *
+ * The one question the blocklist has to ask before it emits a rule, because a
+ * rule is `||host^` and covers everything beneath. `evil.github.io` is a site;
+ * `github.io` is the ground a hundred thousand sites stand on.
+ */
+export function isPublicSuffix(host: string): boolean {
+  const cleaned = host.trim().toLowerCase().replace(/\.$/, '')
+  if (cleaned === '') return false
+  if (MULTI_LABEL.has(cleaned) || PRIVATE_SUFFIXES.has(cleaned)) return true
+  // A single label is a top-level domain: `com`, `io`, `test`.
+  return !cleaned.includes('.')
+}
 
 /** The longest suffix the registry owns, e.g. `co.uk` in `amazon.co.uk`. */
 export function publicSuffixOf(host: string): string {
@@ -62,9 +85,16 @@ export function publicSuffixOf(host: string): string {
   if (labels.length === 0) return ''
   // Only two-label suffixes are tabulated, so two candidates: the last pair and
   // the last label. Longest first — `co.uk` must beat `uk`.
+  if (labels.length >= 3) {
+    const triple = labels.slice(-3).join('.')
+    if (PRIVATE_SUFFIXES.has(triple)) return triple
+  }
   if (labels.length >= 2) {
     const pair = `${labels[labels.length - 2]}.${labels[labels.length - 1]}`
-    if (MULTI_LABEL.has(pair)) return pair
+    // Both tables, longest match first. A private suffix decides who the
+    // registrant is exactly as an ICANN one does: `user.github.io` is that
+    // user's, and nothing above it belongs to them.
+    if (MULTI_LABEL.has(pair) || PRIVATE_SUFFIXES.has(pair)) return pair
   }
   return labels[labels.length - 1] as string
 }

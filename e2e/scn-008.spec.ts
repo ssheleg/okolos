@@ -1,4 +1,5 @@
 import { expect, serve, test } from './hooks.js'
+import { SURFACE_MOUNT_MS } from './budgets.js'
 
 /**
  * SCN-008 and SCN-009 — the two traps that work on the person rather than the
@@ -44,7 +45,7 @@ test('SCN-008 — the warning arrives before the user can click the fake control
   const page = await context.newPage()
   await page.goto('https://fixture.test/verify')
 
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: 10_000 })
+  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
   await expect(page.locator('okolos-banner [data-role=headline]')).toContainText(
     'run a command outside the browser',
   )
@@ -87,7 +88,7 @@ test('SCN-009 — the fake lock is named as fake, with the number it wanted call
   const page = await context.newPage()
   await page.goto('https://fixture.test/alert')
 
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: 10_000 })
+  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
   await expect(page.locator('okolos-banner [data-role=headline]')).toContainText('fake')
   await expect(page.locator('okolos-banner [data-role=detail]')).toContainText('888')
 })

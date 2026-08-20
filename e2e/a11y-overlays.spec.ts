@@ -1,4 +1,5 @@
 import AxeBuilder from '@axe-core/playwright'
+import { SURFACE_MOUNT_MS } from './budgets.js'
 
 import { expect, serve, test } from './hooks.js'
 
@@ -116,7 +117,7 @@ test('SCR-03 — the warning banner survives a page built to ruin it', async ({ 
   await serve(context, INJECTED)
   const page = await context.newPage()
   await page.goto('https://fixture.test/')
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: 10_000 })
+  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
 
   const results = await auditOverlay(page, 'okolos-banner')
   assertScanned(results, 'the banner')
@@ -129,7 +130,7 @@ test('SCR-04 — the finding inspector is auditable where the user opens it', as
   await page.goto('https://fixture.test/')
 
   const banner = page.locator('okolos-banner')
-  await expect(banner).toHaveCount(1, { timeout: 10_000 })
+  await expect(banner).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
   await banner.locator('[data-role=primary]').click()
   await expect(page.locator('okolos-inspector')).toHaveCount(1)
 
@@ -165,7 +166,7 @@ test('SCR-19 — the lookalike comparison, the fourth surface and the one nobody
   await page.goto('https://g00gle.com/signin')
 
   const banner = page.locator('okolos-banner')
-  await expect(banner).toHaveCount(1, { timeout: 10_000 })
+  await expect(banner).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
   await banner.locator('[data-role=primary]').click()
   await expect(page.locator('[data-okolos=comparison]')).toHaveCount(1)
 
@@ -177,7 +178,7 @@ test('SCR-06 — the agent gate, the one surface a user meets mid-decision', asy
   await serve(context, WITH_FORM)
   const page = await context.newPage()
   await page.goto('https://fixture.test/')
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: 10_000 })
+  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
 
   await page.evaluate(() => {
     document.querySelector<HTMLButtonElement>('#pay button')?.click()
@@ -197,7 +198,7 @@ test('the hostile CSS lands on the page and not on the overlay', async ({ contex
   await serve(context, INJECTED)
   const page = await context.newPage()
   await page.goto('https://fixture.test/')
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: 10_000 })
+  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
 
   const measured = await page.evaluate(() => {
     const read = (el: Element | null | undefined) => {

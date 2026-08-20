@@ -1,4 +1,5 @@
 import { expect, serve, test } from './fixtures.js'
+import { SURFACE_MOUNT_MS } from './budgets.js'
 
 /**
  * SCN-004 — the user asks to see what was hidden, and gets the evidence.
@@ -19,7 +20,7 @@ test('opens the evidence from the banner and closes again', async ({ context }) 
   await serve(context, INJECTED)
   const page = await context.newPage()
   await page.goto('https://fixture.test/')
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: 10_000 })
+  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
   await expect(page.locator('okolos-inspector')).toHaveCount(0)
 
   // The banner's controls sit in a closed root, so the click goes through the
@@ -39,7 +40,7 @@ test('the page cannot read the inspector when it is open', async ({ context }) =
   await serve(context, INJECTED)
   const page = await context.newPage()
   await page.goto('https://fixture.test/')
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: 10_000 })
+  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
 
   const leak = await page.evaluate(() => {
     const host = document.querySelector('okolos-inspector')

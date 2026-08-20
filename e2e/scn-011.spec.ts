@@ -1,4 +1,5 @@
 import { expect, serve, test } from './hooks.js'
+import { SURFACE_MOUNT_MS } from './budgets.js'
 
 /**
  * SCN-011 — a pause before a password on a site this device does not know.
@@ -23,7 +24,7 @@ test('focusing the password field explains what is and is not known', async ({ c
   await page.goto('https://fixture.test/login')
 
   await page.locator('#pass').focus()
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: 10_000 })
+  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
 
   const detail = page.locator('okolos-banner [data-role=detail]')
   // First ever visit: there is no earlier one to count from, and the warning
@@ -40,7 +41,7 @@ test('the second visit counts from the first, which is what makes the fact real'
   const first = await context.newPage()
   await first.goto('https://fixture.test/login')
   await first.locator('#pass').focus()
-  await expect(first.locator('okolos-banner')).toHaveCount(1, { timeout: 10_000 })
+  await expect(first.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
 
   const second = await context.newPage()
   await second.goto('https://fixture.test/login')

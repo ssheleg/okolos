@@ -40,10 +40,38 @@
  * the feed's own version number would announce the shrinkage as an update. So a
  * failed fetch stops the run.
  */
-import { writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
+
 import path from 'node:path'
 
+
 const root = path.resolve(import.meta.dirname, '..')
+
+/**
+ * The suffix table, read from the file the product reads.
+ *
+ * Not imported from `@okolos/core-lookalike`: its `exports` point at TypeScript
+ * source, and this is plain Node. So the *data* is shared rather than the module
+ * — one file, two readers — which is the point. This tool used to carry its own
+ * list of forty-eight exact matches, and it was missing every platform the source
+ * actually emits hosts under.
+ */
+const SUFFIXES = JSON.parse(
+  readFileSync(path.join(root, 'packages/core-lookalike/src/suffixes.json'), 'utf8'),
+)
+const SUFFIX_SET = new Set([...SUFFIXES.icann, ...SUFFIXES.private])
+
+/**
+ * Whether this host **is** a suffix rather than a site under one.
+ *
+ * Mirrors `isPublicSuffix` in `packages/core-lookalike/src/suffix.ts`, over the
+ * same data. A single label is a top-level domain: `com`, `io`, `test`.
+ */
+export function isPublicSuffix(host) {
+  const cleaned = String(host).trim().toLowerCase().replace(/\.$/, '')
+  if (cleaned === '') return false
+  return SUFFIX_SET.has(cleaned) || !cleaned.includes('.')
+}
 
 /** Where the entries come from. One for now, deliberately — see the note above. */
 export const SOURCES = [
@@ -161,8 +189,27 @@ export function guard(hosts) {
   const kept = []
   const refused = []
   for (const host of hosts) {
-    if (NEVER_BLOCK.has(host)) {
-      refused.push({ host, why: 'shared host or public suffix — blocking it whole hits everyone' })
+    /**
+     * A public suffix is never a site, and the rule is what makes that fatal.
+     *
+     * Blocking rules are `||host^`, which covers every subdomain, so listing
+     * `github.io` takes down **every GitHub Pages site** for everyone who
+     * installed the extension. The guard used to be forty-eight hand-written
+     * exact matches, and measured 2026-08-20 today's source carried nine hosts
+     * under `github.io`, four under `backblazeb2.com`, and more under
+     * `trycloudflare.com`, `edgeone.dev`, `bolt.host` and `webflow.io` — **not one
+     * of them on the list**. Eighteen of its 281 entries were two labels, so the
+     * source does report apexes; the day it reports one of these is the day the
+     * extension breaks a platform. The short-host heuristic does not save it:
+     * `github.io` is nine characters.
+     *
+     * This asks the question directly, against the same suffix table the
+     * lookalike checks use, so a platform added in one place is known in both.
+     */
+    if (isPublicSuffix(host)) {
+      refused.push({ host, why: 'a public suffix, not a site — a rule here covers every subdomain' })
+    } else if (NEVER_BLOCK.has(host)) {
+      refused.push({ host, why: 'a shared host — blocking it whole hits everyone on it' })
     } else if (host.length < SHORT_HOST_CHARS && host.split('.').length === 2) {
       refused.push({ host, why: 'too short to be a campaign host — almost certainly a shortener' })
     } else {
@@ -170,6 +217,50 @@ export function guard(hosts) {
     }
   }
   return { kept, refused }
+}
+
+/**
+ * The largest share of the list a single run may remove.
+ *
+ * A source answering `200 OK` with a truncated body is not a failure any check
+ * above can see: the parse succeeds, the hosts are real, and the run publishes a
+ * higher version with fewer entries. Measured 2026-08-20 by truncating the body:
+ * **v6 with 7 entries, silently unblocking 241 of 248** — announced as an update,
+ * because the version rose.
+ *
+ * A third is generous on purpose. Phishing lists do turn over quickly and a real
+ * day can drop a quarter of them; what a real day does not do is drop nine in
+ * ten. The refusal names the numbers and stops, rather than writing a file that
+ * looks like progress.
+ */
+export const MAX_SHRINK = 1 / 3
+
+/** A sentence when the new list has shrunk too far to publish, `null` when it has not. */
+export function shrankTooFar(previousCount, nextCount, limit = MAX_SHRINK) {
+  const lost = previousCount - nextCount
+  /**
+   * Grew, stayed the same, or there was nothing there — all one answer.
+   *
+   * A separate `previousCount === 0` guard stood here too and a plant proved it
+   * unreachable: a first run has nothing to lose, so `lost` is negative and this
+   * line returns already. This line is **not** dead, and a second plant named the
+   * input it carries — zero from zero is a share of `0/0`, which is `NaN`, and
+   * `NaN <= limit` is false, so without it an empty previous list and an empty new
+   * one produce a refusal about nothing. Unreachable through `main`, which throws
+   * on a source that parsed to zero hosts long before here; kept and tested
+   * anyway, because a function that answers nonsense for an input it cannot
+   * currently receive is a function waiting for a caller.
+   */
+  if (lost <= 0) return null
+  const share = lost / previousCount
+  if (share <= limit) return null
+  return (
+    `the list would shrink from ${previousCount} to ${nextCount} entries — ` +
+    `${Math.round(share * 100)}% gone, past the ${Math.round(limit * 100)}% ceiling. ` +
+    `A source answering 200 with a truncated body looks exactly like this, and ` +
+    `publishing it would raise the version while unblocking ${lost} hosts. ` +
+    `Nothing was written. Run again, or check the source by hand.`
+  )
 }
 
 /**
@@ -239,6 +330,12 @@ async function main() {
   if (dropped > 0) console.log(`over the ${RULE_LIMIT} ceiling: ${dropped} entries left out`)
 
   console.log(`version ${update.body.version}: ${update.body.entries.length} entries`)
+
+  // After the build and before the write: the numbers to compare only exist here.
+  const previousCount = previous?.update?.body?.entries?.length ?? previous?.body?.entries?.length ?? 0
+  const shrink = shrankTooFar(previousCount, update.body.entries.length)
+  if (shrink) throw new Error(shrink)
+
   if (dryRun) {
     console.log('--dry-run: nothing written')
     return

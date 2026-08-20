@@ -1,7 +1,10 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": { "rootDir": "src", "outDir": "dist" },
-  "include": ["src/**/*.ts"],
+  // The suffix table is data with two readers — this package and the plain-Node
+  // ingest tool — so it is JSON rather than a constant, and the include has to
+  // say so or `tsc` refuses the import it resolved.
+  "include": ["src/**/*.ts", "src/**/*.json"],
   // Tests are not part of a built package, and shipping them puts their
   // fixtures — including deliberate examples of the very calls the bundle
   // gates forbid — inside the artefact those gates read.

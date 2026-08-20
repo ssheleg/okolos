@@ -1,4 +1,5 @@
 import { expect, serveHosts, test } from './fixtures.js'
+import { SURFACE_MOUNT_MS } from './budgets.js'
 
 /**
  * A finding inside an embedded frame is told to the page that embeds it.
@@ -53,14 +54,14 @@ test('tells the embedding page about a finding inside its frame', async ({ conte
    * has started, and the frame then retries for nine. This assertion failed in the
    * full suite and passed in isolation, which is exactly the shape of that race.
    */
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: 10_000 })
+  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
 })
 
 test('does not mount a banner inside the frame itself', async ({ context }) => {
   await serveHosts(context, { 'parent.test': PARENT, 'framed.test': FRAMED })
   const page = await context.newPage()
   await page.goto('https://parent.test/')
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: 10_000 })
+  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
 
   // The reason only the top frame speaks. Asserted after the top banner exists, so
   // this cannot pass by the whole detection having failed.

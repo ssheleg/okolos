@@ -1,4 +1,5 @@
 import { expect, serve, test } from './hooks.js'
+import { SURFACE_MOUNT_MS } from './budgets.js'
 
 /**
  * SCN-004, the half that could not be tested before: the user clicks "Show me"
@@ -24,7 +25,7 @@ test('clicking the warning opens the evidence, and closing it leaves the warning
   await page.goto('https://fixture.test/')
 
   const banner = page.locator('okolos-banner')
-  await expect(banner).toHaveCount(1, { timeout: 10_000 })
+  await expect(banner).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
 
   await banner.locator('[data-role=primary]').click()
 
@@ -47,7 +48,7 @@ test('disputing the verdict clears both surfaces', async ({ context }) => {
   await serve(context, INJECTED)
   const page = await context.newPage()
   await page.goto('https://fixture.test/')
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: 10_000 })
+  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
 
   await page.locator('okolos-banner [data-role=dispute]').click()
   await expect(page.locator('okolos-banner')).toHaveCount(0)
@@ -65,7 +66,7 @@ test('a restore the page made impossible leaves the panel open and says why', as
   await page.goto('https://fixture.test/')
 
   const banner = page.locator('okolos-banner')
-  await expect(banner).toHaveCount(1, { timeout: 10_000 })
+  await expect(banner).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
   await banner.locator('[data-role=primary]').click()
 
   const inspector = page.locator('okolos-inspector')

@@ -7,6 +7,11 @@ import { expect, serve, test } from './fixtures.js'
  * measure the algorithm and quietly ignore the expensive part: resolving
  * computed styles. These assertions read a performance measure taken inside a
  * real Chromium on a real page.
+ *
+ * **The waits here stay local and do not use `SURFACE_MOUNT_MS`.** In every other
+ * spec the mount wait is a precondition and its length is beside the point; in
+ * this file speed *is* the subject, and importing a number chosen to be generous
+ * would quietly relax the thing being measured.
  */
 
 function page(nodes: number): string {

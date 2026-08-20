@@ -112,6 +112,12 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (седьмой)** — B-37; стадии 0–10. Инвентарь расширений разделён на
+  чтение и решение: читать больше не значит писать, поэтому счётчик области и
+  экран говорят одно и то же, а отсутствие host-прав в снимке перестало читаться
+  как их отсутствие у расширения. Пять дефектов из строки плюс два, которых в ней
+  не было. 1820 юнит-тестов в 115 файлах, шесть плантов — все легли. Постоянных
+  инструкций десять, снятий нет. Вердикт REFINE.
 - **2026-08-20 (шестой)** — B-32; стадии 0–10. Детектор двойников перестал
   предупреждать о настоящих брендах: появилось понятие публичного суффикса, и
   правило «бренд стоит не там» сказано один раз вместо двух неточных
@@ -229,6 +235,66 @@ happens before adding.
   the acceptance walk. Verdict REFINE.
 
 ## Entries
+
+### 2026-08-20 — one function read and wrote, and three callers made that a bug
+
+**Symptom.** The extensions screen said nothing had changed while the area
+counter that sent the user there said there were changes. Measured 2026-08-20:
+`reviewInventory` compared the installed set against the stored snapshot and then
+recorded the new state as the baseline — and it was called from three places, the
+daily alarm, the extensions screen, and the counter on the overview. The counter
+and the screen run off one RPC handler, so whichever fired first consumed the
+difference and the other found none.
+
+Four more defects sat in the same function. Host permissions were never stored,
+so `before` was built with an empty list and every extension holding host access
+was reported as having just been granted it — `critical`, every run, for the life
+of the profile. `db.delete('snapshots')` appeared nowhere in the repository, so a
+removed extension was reported as removed forever. The extension's name was not
+stored either, so that sentence named it by its id. And the journal id carried the
+timestamp, so the same unaccepted change was written once per alarm and once per
+visit.
+
+**Stage it surfaced at.** 0 — the row was filed by an audit. What the audit did
+not name, and the code did: the missing name and the journal growing a row per
+visit.
+
+**Stage that owned it.** 2. The function's own docstring argued the design: "the
+snapshot is written after the comparison, never before: writing first would
+compare a state against itself and report nothing, forever." That is true, and it
+is an argument about *ordering* inside one operation — which is what hid the
+question of whether reading should write at all.
+
+**Root cause.** A read that mutates is safe only while there is exactly one
+reader. There were three, and nothing about the code said so; the third arrived
+when the overview grew an area counter, months after the ordering argument was
+written and settled.
+
+**Fix, by grade.** Structural: three functions where there was one, and the rule
+is a sentence — reading never writes, only a decision writes. Accepting a change
+is the one operation that moves the baseline, which also makes "Trust this change"
+do what SCN-017's alt path had promised all along: it used to write an
+`exceptions` row with `scope: 'extension'` that **nothing in the repository read**.
+Behavioural where the data cannot decide: a stored row without host permissions
+means unknown, typed as `readonly string[] | null` so a reader has to think about
+it, and unknown is not compared against.
+
+**The scenario was right and the code was wrong.** SCN-017 said acknowledging
+updates the baseline and the delta is not raised again. It had said so since the
+scenario was written. Nothing checked the sentence against the store, and the row
+that was supposed to implement it was write-only — which is the shape this project
+has now met three times: the wipe confirmation naming five stores of nine, the
+`scope: 'extension'` row, and `charClasses` handed to a rule that ignored them. A
+value nobody reads is a value that drifts, and a *record* nobody reads is a
+decision that never happened.
+
+**The check that catches it next time.** The tests that now exist and did not:
+reading three times in a row returns the same answer; a comparison writes no
+snapshot once a baseline exists; accepting one extension does not accept the
+others; the journal holds one row however often the change is seen. And the
+fixture carries non-empty host permissions — the old one set `[]` on both sides of
+every comparison, which is why the false `critical` was invisible from inside the
+suite that was supposed to cover it.
 
 ### 2026-08-20 — the same rule written twice, and both copies loose
 

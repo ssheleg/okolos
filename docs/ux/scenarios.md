@@ -545,10 +545,11 @@ See [foundation.md](foundation.md) → Personas.
 - **Alt paths:** nothing outstanding anywhere -> the band says "Сейчас ничего не требует внимания" **and when this was last checked**, and the area rows still carry their states; with an empty band the primary action is "Что делать дальше"
 - **UI elements:** attention band with up to three rows and a remainder count, eight area rows as real links, primary action
 - **States covered:** loading, empty, success
-- **Errors & recovery:** the store cannot be opened at all -> the failure is named, repair is offered, and **no area row claims a state**; a partial failure is SCN-030
+- **Alt paths:** the recovery row is the one whose address depends on what is open -> with exactly one unfinished checklist it opens that checklist; with none or several it opens the overview, where the band lists them. `#recovery` alone names no incident, so there is no third answer. Until 2026-08-20 the row was given the overview's address outright and a row reading «Восстановление» went somewhere else (B-59)
+- **Errors & recovery:** the store cannot be opened at all -> the failure is named, repair is offered, and **no area row claims a state**; a partial failure is SCN-030. The recovery row's own read failing is the same case as nothing being open: it opens the overview, because "we cannot tell" is not an address
 - **Behaviour notes:** one ranking rule for the whole product — `packages/core-queue/src/rank.ts` orders the band, each area's outstanding item mapped into the shape it already ranks. **No counter of blocked threats, no protection score, no streak** — the band names things to do, and when there is nothing to do it says so instead of scoring the silence
 - **Status:** implemented
-- **Coverage:** packages/ui/src/dashboard/overview.ts:renderOverview, apps/extension/src/options/index.ts, e2e/scn-027.spec.ts
+- **Coverage:** packages/ui/src/dashboard/overview.ts:renderOverview, apps/extension/src/options/index.ts, apps/extension/src/options/views.ts:recoveryHref, e2e/scn-027.spec.ts
 
 ### SCN-028: A deep link opens its area; an unknown address says so
 - **Persona:** P-01

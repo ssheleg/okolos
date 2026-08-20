@@ -42,7 +42,7 @@ import { mapJournal } from '../popup/state.js'
 import { answered } from './answered.js'
 import { keepingFocus, markFocus } from './keep-focus.js'
 import { whilePending } from './pending.js'
-import { optionsPageFor, routeFor, type Route } from './views.js'
+import { optionsPageFor, recoveryHref, routeFor, type Route } from './views.js'
 import '../pages.css'
 
 /**
@@ -546,12 +546,21 @@ async function recoverySection(kind: string): Promise<HTMLElement> {
  * oldest failure in this codebase with eight new chances to happen.
  */
 async function areaRows(): Promise<AreaRow[]> {
-  const row = (id: AreaId, label: string, state: string | null): AreaRow => ({
+  const row = (id: AreaId, label: string, state: string | null, href?: string): AreaRow => ({
     id,
     label,
-    href: optionsPageFor(id === 'recovery' ? 'overview' : id),
+    href: href ?? optionsPageFor(id),
     state,
   })
+
+  /**
+   * The rule is `recoveryHref`'s; what is here is the read it needs.
+   *
+   * A failed read gives it an empty list, which lands on the overview — the same place a
+   * row with nothing open goes, and the honest one when we cannot tell.
+   */
+  const openNow = await openIncidents().catch(() => ({ incidents: [], unreadable: 1 }))
+  const recoveryLink = recoveryHref(openNow.incidents)
 
   const [findings, journal, extensions, trusted, recovery, audit] = await Promise.all([
     count(async () => {
@@ -595,7 +604,7 @@ async function areaRows(): Promise<AreaRow[]> {
     row('leaks', t('areaLeaks'), t('areaStateOnDemand')),
     row('extensions', t('areaExtensions'), extensions),
     row('trusted', t('areaTrusted'), trusted),
-    row('recovery', t('areaRecovery'), recovery),
+    row('recovery', t('areaRecovery'), recovery, recoveryLink),
     row('audit', t('areaAudit'), audit),
     row('data', t('dataHeading'), t('areaStateRetention', String(RETENTION_DAYS.journal))),
   ]

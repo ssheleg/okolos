@@ -135,6 +135,29 @@ export function optionsPageFor(view: ViewId, kind?: string): string {
   return `options.html${hashFor(view, kind)}`
 }
 
+/**
+ * Where the areas list's recovery row goes, which is not one answer.
+ *
+ * `#recovery` alone names no incident — `routeFor` calls it unrecognised and opens the
+ * overview — so the row used to be handed the overview's address outright, and a row
+ * labelled "Восстановление" that lands on the overview is a promise the click breaks
+ * (B-59).
+ *
+ * Exactly one open incident has an address, and this is it. None or several do not: with
+ * none there is nothing to open, and with several no single checklist is *the* one — the
+ * overview's attention band lists them, which is where the click should land. The state
+ * beside the label says which case it is, so the row never quietly does something other
+ * than what it reads.
+ *
+ * Here rather than in `options/index.ts` for the reason everything else about addresses
+ * is here: that file builds the whole settings surface at import, so nothing in it can be
+ * called from a test.
+ */
+export function recoveryHref(incidents: readonly { kind: string }[]): string {
+  const only = incidents.length === 1 ? incidents[0] : undefined
+  return only === undefined ? optionsPageFor('overview') : optionsPageFor('recovery', only.kind)
+}
+
 /** Every area, for gates and for the overview's own list. */
 export const ALL_VIEWS: readonly ViewId[] = [
   'overview',

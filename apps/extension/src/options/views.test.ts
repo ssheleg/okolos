@@ -3,7 +3,15 @@ import path from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { ALL_VIEWS, hashFor, KNOWN_HASHES, optionsPageFor, routeFor, VIEW_FOR_HASH } from './views.js'
+import {
+  ALL_VIEWS,
+  hashFor,
+  KNOWN_HASHES,
+  optionsPageFor,
+  recoveryHref,
+  routeFor,
+  VIEW_FOR_HASH,
+} from './views.js'
 
 describe('the address decides the area', () => {
   it('opens the overview when there is no address', () => {
@@ -168,5 +176,33 @@ describe('the address is decoded once, and here', () => {
       .filter((line) => !/^\s*(\*|\/\/)/.test(line.trim()) && !line.trim().startsWith('*'))
       .join('\n')
     expect(entry).not.toContain('decodeURIComponent')
+  })
+})
+
+describe('where the recovery row in the areas list goes', () => {
+  it('opens the one open checklist, when there is exactly one', () => {
+    // The defect: the row was handed the overview's address outright, so a row reading
+    // "Восстановление" landed on the overview — a promise the click breaks (B-59).
+    expect(recoveryHref([{ kind: 'pasted-command' }])).toBe('options.html#recovery=pasted-command')
+  })
+
+  it('opens the overview when nothing is open, because there is nothing to open', () => {
+    // `#recovery` alone names no incident and `routeFor` calls it unrecognised, so
+    // linking there would send the user through a redirect to the same place anyway.
+    expect(recoveryHref([])).toBe('options.html')
+  })
+
+  it('opens the overview when several are open, because no one of them is the one', () => {
+    // The attention band lists them all. Picking the first would be an answer nobody
+    // asked for, and picking none is what the band is for.
+    expect(recoveryHref([{ kind: 'pasted-command' }, { kind: 'credentials' }])).toBe(
+      'options.html',
+    )
+  })
+
+  it('escapes a kind that needs it, like every other address here', () => {
+    // The same rule `hashFor` follows: a kind travels percent-encoded, because it comes
+    // from a stored key and `#recovery=a b` is not one address.
+    expect(recoveryHref([{ kind: 'not sure' }])).toBe('options.html#recovery=not%20sure')
   })
 })

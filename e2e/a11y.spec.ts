@@ -30,6 +30,20 @@ const WCAG = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']
  */
 const AREAS = [
   { hash: '', role: 'overview' },
+  /**
+   * The recovery checklist, and the reason it carries a value.
+   *
+   * `#recovery=<kind>` is the one address that names something — a bare `#recovery`
+   * opens the overview, because a checklist for no incident is a screen with nothing on
+   * it. So this entry needs a kind, and `pasted-command` is the one SCN-025 is about.
+   *
+   * B-59 recorded this area as never swept. By 2026-08-20 that was stale — a standalone
+   * test had been added — but it sat *outside* this list, with its own copy of the tag
+   * set, so the docstring's rule ("a new surface joins this sweep in the change that
+   * creates it") had two places to be obeyed and one of them was invisible. Folded in
+   * here, with the tag set shared by every test in this file.
+   */
+  { hash: '#recovery=pasted-command', role: 'recovery' },
   { hash: '#queue', role: 'queue-section' },
   { hash: '#journal', role: 'journal' },
   { hash: '#leaks', role: 'leaks' },
@@ -60,9 +74,7 @@ test('the popup has no detectable accessibility violations', async ({ context, e
   const page = await context.newPage()
   await page.goto(`chrome-extension://${extensionId}/popup.html`)
 
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-    .analyze()
+  const results = await new AxeBuilder({ page }).withTags([...WCAG]).analyze()
 
   expect(results.violations).toEqual([])
 })
@@ -78,24 +90,7 @@ test('the interstitial has no detectable accessibility violations', async ({
   await page.goto(`chrome-extension://${extensionId}/interstitial.html`)
   await expect(page.locator('[data-role=interstitial]')).toHaveCount(1)
 
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-    .analyze()
-
-  expect(results.violations).toEqual([])
-})
-
-test('the recovery checklist has no detectable accessibility violations', async ({
-  context,
-  extensionId,
-}) => {
-  const page = await context.newPage()
-  await page.goto(`chrome-extension://${extensionId}/options.html#recovery=pasted-command`)
-  await expect(page.locator('[data-role=recovery]')).toHaveCount(1)
-
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-    .analyze()
+  const results = await new AxeBuilder({ page }).withTags([...WCAG]).analyze()
 
   expect(results.violations).toEqual([])
 })
@@ -108,9 +103,7 @@ test('the first-run screen has no detectable accessibility violations', async ({
   await page.goto(`chrome-extension://${extensionId}/first-run.html`)
   await expect(page.locator('[data-role=first-run]')).toHaveCount(1)
 
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-    .analyze()
+  const results = await new AxeBuilder({ page }).withTags([...WCAG]).analyze()
 
   expect(results.violations).toEqual([])
 })

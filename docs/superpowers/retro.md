@@ -112,6 +112,15 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-20 (сорок пятый)** — B-59, часть первая; стадии 0–10. Первая находка строки
+  оказалась наполовину устаревшей: область восстановления мелась, но **мимо списка**, со
+  своей копией тегов — правило из шапки файла имело два места для соблюдения, одно
+  невидимое. V-07 при этом не сходился сам с собой («девять … 8 + три») и не совпадал с
+  прогоном; теперь число считается из спеки тестом. Строка «Восстановление» вела на обзор —
+  правило вынесено в `recoveryHref`, запись экрана и сценарий обновлены тем же изменением.
+  `git checkout` третий раз за сессию снёс мои же несохранённые тесты. 2251 юнит-тест в 140
+  файлах, 23 e2e по затронутым поверхностям. Четыре планта, легли все. Постоянных инструкций
+  десять, снятий нет. Вердикт REFINE.
 - **2026-08-20 (сорок четвёртый)** — B-77; стадии 0–10. Аргумент журнала, который сам
   является нашим сообщением, теперь едет ключом и разрешается при чтении. Наших слов среди
   аргументов оказалось три места, а не «везде», и худшее из них — целая фраза, вложенная
@@ -2125,6 +2134,62 @@ description.
   keeping. But a row closed with its verification outstanding is a row closed early, and
   the honest form is the one now in the board: closed on the second attempt, with the
   first attempt's failure written into it rather than tidied away.
+
+### 2026-08-20 — the finding was half stale, and the half that was true had moved
+
+**Symptom.** B-59's first bullet says the recovery area is absent from the a11y sweep,
+with `AREAS` quoted by line number. It was absent from `AREAS` — and swept anyway, by a
+standalone test added after the row was filed, carrying its own copy of the tag set. Adding
+the area as the row asked would have produced a duplicate sweep of the same address.
+
+**Stage it surfaced at.** 0, the harvest, by running the suite before editing: thirteen
+tests where the row implied twelve.
+
+**Stage that owned it.** 10 of the run that added the standalone test. The file's own
+docstring states the rule — "a new surface joins this sweep in the change that creates it"
+— and the surface joined the file without joining the list, so the rule acquired a second
+place to be obeyed that nothing points at.
+
+**Root cause.** A list plus stragglers reads as a list. Everything downstream — the
+ledger's count, this row's claim, the next reader's mental model — is built on the list,
+and a test outside it is invisible to all of them while being perfectly green.
+
+**Fix, by grade.** *Structural:* one list, one tag set; the standalone recovery test folded
+in and its duplicate tag array deleted. *Structural:* V-07's number is computed from the
+spec, so a surface leaving or joining the sweep moves the ledger or fails. *Process:* a
+backlog row's own measurements are re-measured before acting on them — this one was written
+a day earlier and one of its two halves had already been half-fixed.
+
+**The check that catches it next time.** The count that appears in the ledger is parsed out
+of the file that produces it, and the parse is itself asserted to have found something —
+zero would otherwise agree with a ledger that had also lost its number.
+
+### 2026-08-20 — `git checkout` ate my own uncommitted tests, for the third time
+
+**Symptom.** Restoring a planted file with `git checkout tools/verification.test.ts` reverted
+it to HEAD — which did not contain the two tests I had just written and not yet committed.
+The suite went from 8 tests to 6, and the "restored" line of the plant loop printed that
+number without my noticing for a beat.
+
+**Stage it surfaced at.** 5, during plants. Caught by the test count in the loop's own
+output, which is the only reason it was caught at all.
+
+**Stage that owned it.** 5, and this is the third instance in one session — the previous two
+lost an interface field and a whole new gate.
+
+**Root cause.** `git checkout <path>` restores from the index, and a plant is applied on top
+of *uncommitted* work. The command means "discard my changes to this file", which is exactly
+what a plant restore must not do.
+
+**Fix, by grade.** *Process:* a plant is restored from a copy taken before it — `cp file
+/tmp/x.bak` then `cp /tmp/x.bak file` — never from git. Every plant in this session used
+that shape except this one, and the exception happened because the file had *just* been
+written and copying it felt redundant.
+
+**The check that catches it next time.** The plant loop prints the test count on the restore
+line, and the restore count must equal the count before the plant. That is already the shape
+in use; what failed was reading it. Two numbers on the same screen is the check — it caught
+this in one beat, which is why the loss cost a rewrite and not a defect.
 
 ### 2026-08-20 — both halves were proved and the join between them was not
 

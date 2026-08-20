@@ -94,3 +94,55 @@ describe('the verification ledger describes itself correctly', () => {
     }
   })
 })
+
+describe('a row that states a number states the one that is true today', () => {
+  /**
+   * V-07 said "nine screens pass axe — 8 areas + popup, interstitial, first run", which
+   * does not add up to nine and was not what the file ran: the recovery area had a sweep
+   * of its own, outside the list, so the count was stale in one direction and the
+   * arithmetic wrong in the other (B-59).
+   *
+   * A number in a ledger about measurement is the last place a remembered figure belongs.
+   * This one is counted from the spec that produces it — the `AREAS` list plus the tests
+   * standing on their own — the same way `facts.md` numbers are computed rather than
+   * restated.
+   */
+  const spec = readFileSync(path.join(root, 'e2e/a11y.spec.ts'), 'utf8')
+
+  const surfaces = (): { areas: number; standalone: number } => {
+    const list = /const AREAS = \[([\s\S]*?)\n\] as const/.exec(spec)
+    const areas = [...(list?.[1] ?? '').matchAll(/\{ hash:/g)].length
+    const standalone = [
+      ...spec.matchAll(/^test\('the .* has no detectable accessibility violations'/gm),
+    ].length
+    return { areas, standalone }
+  }
+
+  it('parses the spec at all, so an empty count cannot agree with anything', () => {
+    // The failure this guards is the one the ledger is about: a regex that stops matching
+    // answers "zero", and zero would quietly equal a ledger that had also lost its number.
+    const { areas, standalone } = surfaces()
+    expect(areas, 'the AREAS list did not parse').toBeGreaterThan(5)
+    expect(standalone, 'the standalone axe tests did not parse').toBeGreaterThan(1)
+  })
+
+  it('states the number of surfaces the sweep actually covers', () => {
+    const { areas, standalone } = surfaces()
+    const row = rows().find((entry) => entry.id === 'V-07')
+    expect(row, 'V-07 is gone from the ledger').toBeDefined()
+    const claim = row?.cells.join(' ') ?? ''
+
+    /**
+     * Both halves: the total and the breakdown that has to add up to it.
+     *
+     * The claim column spells its number as a word, which is how every row here reads;
+     * the digit lives in the evidence beside it, where a reader checking arithmetic
+     * looks. Requiring the digit somewhere in the row is what makes the arithmetic
+     * checkable at all — "девять … 8 + три" survived a fortnight of reading.
+     */
+    expect(claim, `the sweep covers ${areas + standalone} surfaces`).toContain(
+      `${areas + standalone} поверхностей`,
+    )
+    expect(claim, `${areas} of them are options areas`).toContain(`${areas} областей`)
+  })
+})

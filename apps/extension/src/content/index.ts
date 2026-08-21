@@ -27,6 +27,7 @@ import { AgentGate } from './agent-gate.js'
 import { createPacer } from './pace.js'
 import { reportToEmbeddingPage } from './report-frame.js'
 import { collect, DEFAULT_BUDGET } from './collect.js'
+import { injectionDetail } from './warn-words.js'
 import { warnIfLookalike } from './lookalike.js'
 import { credentialDetail } from './credential-words.js'
 import { passwordDetail, passwordLines, passwordSourceKey } from './password-words.js'
@@ -222,6 +223,18 @@ export const MARK_SCAN_FAILED = 'okolos:scan-failed'
 export const MARK_BLINDED = 'okolos:scan-blinded'
 
 /**
+ * The walk was cut short — whatever it found.
+ *
+ * `MARK_BLINDED` is the narrower fact: cut short *and* nothing to ask about. This one is
+ * marked whenever the traversal stopped at a ceiling, because "was this page read in full?"
+ * is a question about every scan, and the answer was observable only when the answer was
+ * also "and nothing was found". The banner says it in words when there is a finding, but
+ * that text lives inside a closed shadow root in the shipping build, so no test outside the
+ * extension could read it (measured 2026-08-21).
+ */
+export const MARK_PARTIAL = 'okolos:scan-partial'
+
+/**
  * From the navigation to the warning being on screen — the number SCN-003 promises in
  * words and nothing measured.
  *
@@ -291,6 +304,9 @@ async function scan(): Promise<void> {
   })
   performance.mark(MARK_END)
   performance.measure(MEASURE_COLLECT, MARK_START, MARK_END)
+
+  // Before the branch, so it is true of every scan rather than only of the empty ones.
+  if (page.truncated) performance.mark(MARK_PARTIAL)
 
   if (page.candidates.length === 0) {
     /**
@@ -677,12 +693,6 @@ function openFrameJournal(): void {
 
 function show(verdict: Verdict, total: number, partialScan: boolean, neutralised: number): void {
 
-  // Both were English literals the sweep could not see either: one begins with a
-  // space, the other with a space and then a word, and its anchor wanted a letter
-  // immediately after the quote.
-  const others = total > 1 ? t('warnInjectionOthers', String(total - 1)) : ''
-  const scanNote = partialScan ? t('warnScanTruncated') : ''
-
   slot.claim({
     kind: 'injection',
     severity: verdict.severity,
@@ -690,10 +700,9 @@ function show(verdict: Verdict, total: number, partialScan: boolean, neutralised
       variant: 'injection',
       severity: verdict.severity,
       headline: t('warnInjectionHeadline'),
-      detail:
-        neutralised > 0
-          ? t('warnInjectionNeutralised', others, scanNote)
-          : t('warnInjectionPlain', others, scanNote),
+      // Assembled in `warn-words.ts`, where a test can read it: three facts go into this
+      // line and one of them — whether the page was read in full — had none.
+      detail: injectionDetail(total, partialScan, neutralised),
       sourceLine: t('warnFoundBy', verdict.sources.map((s) => s.name).join(', ')),
     },
     handlers: {

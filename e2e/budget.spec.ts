@@ -49,21 +49,49 @@ test('a small page is scanned well inside the budget', async ({ context }) => {
   expect(duration).toBeLessThan(20)
 })
 
-test('a large page is cut short rather than allowed to run long', async ({ context }) => {
+test('a large page is cut short, and says so on the warning', async ({ context }) => {
   await serve(context, page(4000))
   const p = await context.newPage()
   await p.goto('https://fixture.test/')
   await expectSurface(p, 'okolos-banner', context)
 
-  // The budget is enforced by the collector itself: on a page this size it
-  // stops early and says the scan was partial, rather than spending whatever
-  // time the DOM happens to demand.
+  /**
+   * **What "cut short" is asserted on, and why it stopped being the clock.**
+   *
+   * This used to be `duration < 60`, and on 2026-08-21 it failed on CI at **60.6 ms** — not
+   * because the product got slower but because the collector's own wall-clock ceiling had
+   * just been removed as a *decision* (B-110: eight milliseconds decided how much of a page
+   * got read, so on a busy machine the scan gave up on a seven-node page and the page went
+   * unwarned). With that gone, a truncated walk runs to its **node** ceiling, and how long
+   * that takes is a fact about the runner.
+   *
+   * Raising the number until green is the answer this project refuses. So the assertion
+   * moved to what is deterministic: the walk **was** cut short, which the product says out
+   * loud on the warning itself, and the duration is checked only against the hang guard it
+   * is now the ceiling for. A page this size is truncated by nodes on every machine.
+   */
+  /**
+   * Asserted on the product's own mark, not on the banner's words.
+   *
+   * The words are there — the warning carries "this page was too large to check in full" —
+   * but in the shipping build the panel lives in a **closed** shadow root, which is the
+   * property that stops a hostile page reading it and equally stops this spec. Measured, not
+   * assumed: `toContainText` came back with an empty string. The wording is covered where it
+   * can be read, in the banner's own unit test.
+   */
+  expect(
+    await p.evaluate(() => performance.getEntriesByName('okolos:scan-partial').length),
+    'the walk was not cut short, so this page no longer exercises the ceiling',
+  ).toBe(1)
+
   const duration = await collectDuration(p)
-  // A missing measurement returns -1, which would sail under any ceiling.
-  // Absence of data must not read as a pass — found by planting a build with
-  // the measure removed, which this assertion originally let through.
+  // A missing measurement returns -1, which would sail under any ceiling. Absence of data
+  // must not read as a pass — found by planting a build with the measure removed, which
+  // this assertion originally let through.
   expect(duration, 'no collect measurement was recorded').toBeGreaterThanOrEqual(0)
-  expect(duration).toBeLessThan(60)
+  // The hang guard, not a performance promise: 500 ms is the number the collector stops at
+  // to keep a page responsive, and this is the check that it does.
+  expect(duration).toBeLessThan(500)
 })
 
 test('the warning still arrives on a page too large to scan in full', async ({ context }) => {

@@ -149,6 +149,18 @@ function panel(doc: Document, props: BannerProps, handlers: BannerHandlers): HTM
   panelEl.setAttribute('data-role', 'panel')
   panelEl.setAttribute('data-variant', props.variant)
   panelEl.setAttribute('data-blocking', String(blocking))
+  /**
+   * Severity on the element, so the stylesheet below can pair a colour with the word.
+   *
+   * The word was the only carrier here until 2026-08-21, on the surface a person meets
+   * first — and the design system's own sentence says severity is "never carried by colour
+   * alone: the screens already pair it with a word, and the colour below is the third
+   * signal". On this panel the pairing was half there: `Критично` and `Незначительно`
+   * looked identical (B-116). The strip sits inside the panel, against this product's own
+   * surface, so a host page's palette cannot swallow it — which is why the argument for
+   * word-only does not hold here.
+   */
+  panelEl.setAttribute('data-severity', props.severity)
   panelEl.setAttribute('role', 'alert')
   panelEl.setAttribute('aria-live', 'assertive')
   panelEl.tabIndex = -1
@@ -240,6 +252,22 @@ function styles(doc: Document): HTMLStyleElement {
     [data-role=severity] {
       font-weight: var(--ok-type-weight-strong); text-transform: uppercase;
       letter-spacing: .04em; font-size: var(--ok-type-size-sm);
+    }
+    /*
+     * The third signal, beside the word and never instead of it. Three levels rather than
+     * four, and the same grouping pages.css uses on the extension's own screens: minor and
+     * major share the warning colour, because the difference between them is a difference in
+     * what to do rather than in how alarming it is.
+     */
+    [data-role=panel][data-severity=info] {
+      border-inline-start: var(--ok-shape-severity-bar) solid var(--ok-colour-severity-info);
+    }
+    [data-role=panel][data-severity=minor],
+    [data-role=panel][data-severity=major] {
+      border-inline-start: var(--ok-shape-severity-bar) solid var(--ok-colour-severity-warn);
+    }
+    [data-role=panel][data-severity=critical] {
+      border-inline-start: var(--ok-shape-severity-bar) solid var(--ok-colour-severity-block);
     }
     [data-role=headline] {
       margin: var(--ok-space-1) 0; font-size: var(--ok-type-size-base);

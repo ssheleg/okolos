@@ -141,3 +141,35 @@ describe('when something goes wrong inside the warning', () => {
     expect(root.querySelector('[data-role=retry]')).not.toBeNull()
   })
 })
+
+describe('severity is paired with a colour, never carried by one', () => {
+  /**
+   * The word was the only carrier on this panel until 2026-08-21, on the surface a person
+   * meets first: `Критично` and `Незначительно` looked identical. The design system's own
+   * sentence says severity is never carried by colour alone and the colour is the third
+   * signal — on the extension's own screens that was true, and here it was half true (B-116).
+   *
+   * The word is asserted elsewhere in this file; this is the other half, and it is asserted on
+   * the attribute rather than on the pixels, because the stylesheet lives in the shadow root
+   * and `e2e/a11y-overlays.spec.ts` is where computed style can be read.
+   */
+  for (const severity of ['critical', 'major', 'minor', 'info'] as const) {
+    it(`marks the panel as ${severity}`, () => {
+      const root = shadowOf(mountBanner(document, props({ severity }), handlers()))
+      expect(root.querySelector('[data-role=panel]')?.getAttribute('data-severity')).toBe(severity)
+    })
+  }
+
+  it('keeps the word, so the colour is a third signal and not the message', () => {
+    const root = shadowOf(mountBanner(document, props({ severity: 'critical' }), handlers()))
+    expect(root.querySelector('[data-role=severity]')?.textContent).not.toBe('')
+  })
+
+  it('gives each level its own rule in the panel’s own stylesheet', () => {
+    const root = shadowOf(mountBanner(document, props({ severity: 'critical' }), handlers()))
+    const css = root.querySelector('style')?.textContent ?? ''
+    for (const level of ['info', 'minor', 'major', 'critical']) {
+      expect(css, level).toContain(`[data-severity=${level}]`)
+    }
+  })
+})

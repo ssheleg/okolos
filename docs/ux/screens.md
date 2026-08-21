@@ -44,6 +44,15 @@ never updated, which is the same drift this file exists to catch.)
 
 ## Design system
 
+- **Severity is a pair on every surface, and was not until 2026-08-21.** The claim below —
+  colour as the third signal beside a word — held on the extension's own screens and was half
+  true on the in-page ones: the banner wrote `Критично` and `Незначительно` in the same ink, so
+  the two looked identical on the surface a person meets first (B-116). The panel carries
+  `data-severity` now and its own stylesheet pairs the three token colours with it, grouped the
+  way `pages.css` groups them. The strip sits inside the panel, against this product's own
+  surface, so a host page's palette cannot swallow it — which is why "word only" was not the
+  right answer here. Read as computed style by `e2e/a11y-overlays.spec.ts`, the one harness
+  that can open the root
 - **Style pack:** dense product UI, calm defaults, **no motion at all** — there
   is nothing here for `prefers-reduced-motion` to reduce, which is the strongest
   form of respecting it. Chosen 2026-08-08, after the line above said "not
@@ -176,6 +185,7 @@ includes a redirect from `*.workers.dev`, not just a CNAME.
   | the verdict outlived the page that asked for it | a form navigated away while the leak check was in flight (FLW-10, SCN-036) | - | drawn on the page the login landed on, naming the site the password was sent to — which keeps the sentence true on a page that is not the form. Shown once: the panel confirms it was drawn, and `pagehide` withholds that confirmation when the document is leaving |
   | the finding is in an embedded frame | a frame reports upward — an injection (FLW-02), a login form (FLW-09) or a leak verdict on a password it received (FLW-10) | - | drawn in the **top** frame, never in the frame that found it: a banner inside a 300x200 frame is clipped and inside a hidden ad frame warns nobody. The headline names the frame's origin, and it comes from the sender as the background stamped it. The frame's controls act on the frame's domain — trusting means trusting the site in the frame, and "Сменить пароль" opens that site's change-password page rather than the embedding page's |
 - **Behavior notes:** closed Shadow DOM; keyboard reachable; announced to screen readers; never covers a form field it warns about; low-confidence findings never block. **A page can delete this surface and nothing can forbid that** — the DOM belongs to the page — so the answer is bounded (ADR-0001, amended 2026-08-20): a short argument, then a channel the page does not own. A dismissal by the user is not a removal: the watch stops before the product destroys its own banner
+- **Behavior notes — severity in a word and a colour, in that order.** The word is the message; the strip on the panel's leading edge is the third signal, from the same three token levels the extension's own screens use. Until 2026-08-21 there was no strip and no colour at all here, so `Критично` and `Незначительно` were indistinguishable at a glance (B-116)
 - **Wireframe:** wireframes/SCR-03.md
 - **Coverage:** packages/ui/src/banner/banner.ts:mountBanner, e2e/scn-003.spec.ts, e2e/a11y-overlays.spec.ts, e2e/scn-034.spec.ts (the credential variant drawn from a frame's report, asserted through the open shadow root of the hooked build)
 - **Scenarios:** SCN-003, SCN-006, SCN-008, SCN-009, SCN-011, SCN-012, SCN-013, SCN-031, SCN-034, SCN-035, SCN-036

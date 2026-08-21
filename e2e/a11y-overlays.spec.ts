@@ -174,6 +174,45 @@ test('SCR-19 — the lookalike comparison, the fourth surface and the one nobody
   assertScanned(results, 'the comparison')
 })
 
+test('the banner pairs severity with a colour, on the page a person meets first', async ({
+  context,
+}) => {
+  /**
+   * The word was the only carrier here until 2026-08-21: `Критично` and `Незначительно` looked
+   * identical on the surface a person meets first, while the design system's own sentence says
+   * severity is never carried by colour alone and the colour is the third signal (B-116).
+   *
+   * Asserted on computed style rather than on the attribute — the unit test covers the
+   * attribute, and what a reader gets is the pixels. This harness opens the shadow root, which
+   * is the only reason a spec can read them at all.
+   */
+  await serve(context, INJECTED)
+  const page = await context.newPage()
+  await page.goto('https://fixture.test/')
+  await expectBanner(page, context)
+
+  const strip = await page.evaluate(() => {
+    const panel = document
+      .querySelector('okolos-banner')
+      ?.shadowRoot?.querySelector('[data-role=panel]')
+    if (panel === null || panel === undefined) return null
+    const style = getComputedStyle(panel)
+    return {
+      severity: panel.getAttribute('data-severity'),
+      width: Number.parseFloat(style.borderInlineStartWidth),
+      colour: style.borderInlineStartColor,
+      word: panel.querySelector('[data-role=severity]')?.textContent ?? '',
+    }
+  })
+
+  expect(strip, 'the panel was not reachable — is this the hooked build?').not.toBeNull()
+  expect(strip?.severity, 'the panel carries no severity').toBeTruthy()
+  expect(strip?.width ?? 0, 'no strip beside the word').toBeGreaterThan(0)
+  expect(strip?.colour, 'the strip has no colour of its own').not.toBe('rgba(0, 0, 0, 0)')
+  // And the word is still there: the colour is the third signal, not the message.
+  expect(strip?.word).not.toBe('')
+})
+
 test('SCR-06 — the agent gate, the one surface a user meets mid-decision', async ({ context }) => {
   await serve(context, WITH_FORM)
   const page = await context.newPage()

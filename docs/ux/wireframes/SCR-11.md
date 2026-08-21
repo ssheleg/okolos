@@ -9,12 +9,12 @@
 addressable as `[data-role=<name>]`, which is also how the tests reach them.
 
 - `journal`
-- `group`
-- `entry`
 - `empty`
 - `incomplete`
 - `history`
 - `retention`
+- `group`
+- `entry`
 
 **States**
 

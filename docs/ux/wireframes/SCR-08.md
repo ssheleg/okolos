@@ -9,11 +9,6 @@
 addressable as `[data-role=<name>]`, which is also how the tests reach them.
 
 - `leaks`
-- `leak-group`
-- `attribution`
-- `leak`
-- `leak-actions`
-- `address-slot`
 - `idle`
 - `needs`
 - `check`
@@ -22,12 +17,17 @@ addressable as `[data-role=<name>]`, which is also how the tests reach them.
 - `error-note`
 - `total`
 - `coverage`
+- `leak-group`
 - `group-why`
+- `attribution`
+- `leak`
 - `name`
 - `classes`
+- `leak-actions`
 - `change-password`
 - `no-domain`
 - `resolve`
+- `address-slot`
 
 **States**
 

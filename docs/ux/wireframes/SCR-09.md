@@ -9,29 +9,29 @@
 addressable as `[data-role=<name>]`, which is also how the tests reach them.
 
 - `extensions`
-- `installed`
-- `installed-row`
-- `analysis`
-- `inspect`
-- `finding`
-- `change`
-- `change-actions`
 - `unsupported`
 - `status`
 - `error`
 - `error-note`
 - `no-changes`
+- `installed`
+- `installed-row`
 - `name`
 - `permissions`
 - `standing`
 - `disable`
 - `disabled`
 - `none-installed`
+- `analysis`
 - `analysis-note`
+- `inspect`
 - `analysis-summary`
+- `finding`
 - `evidence`
 - `analysis-caveat`
+- `change`
 - `detail`
+- `change-actions`
 - `trust`
 
 **States**

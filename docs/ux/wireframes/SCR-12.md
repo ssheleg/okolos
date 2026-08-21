@@ -9,17 +9,17 @@
 addressable as `[data-role=<name>]`, which is also how the tests reach them.
 
 - `data-controls`
-- `actions`
-- `confirm`
 - `blurb`
+- `actions`
 - `export`
 - `wipe`
+- `confirm`
 - `confirm-title`
 - `confirm-note`
 - `confirm-yes`
 - `confirm-no`
-- `wipe-retry`
 - `export-failed`
+- `wipe-retry`
 - `wipe-failed`
 
 **States**

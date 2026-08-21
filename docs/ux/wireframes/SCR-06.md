@@ -10,11 +10,11 @@ addressable as `[data-role=<name>]`, which is also how the tests reach them.
 
 - `scrim`
 - `dialog`
-- `actions`
 - `action`
 - `target`
 - `finding`
 - `timeout`
+- `actions`
 - `block`
 - `allow`
 - `show`

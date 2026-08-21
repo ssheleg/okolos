@@ -321,6 +321,11 @@ textarea {
  * Third signal only. Each of these sits beside a word that already says the
  * same thing, which is what the cross-screen rule requires and what makes the
  * screens work for a reader who cannot see the difference.
+ *
+ * **This paragraph was a claim, not a fact, until 2026-08-21.** The queue's rows carried
+ * the strip and no word — severity in colour alone, on the screen a person acts from —
+ * and this comment asserted the rule the whole time. `queue.ts` now renders the word
+ * beside the day, from the same table the banner and the dashboard use.
  */
 [data-severity='info'] {
   border-inline-start: var(--ok-shape-severity-bar) solid var(--ok-colour-severity-info);
@@ -336,6 +341,28 @@ textarea {
 [data-severity='critical'] {
   border-inline-start: var(--ok-shape-severity-bar) solid var(--ok-colour-severity-block);
   padding-inline-start: var(--ok-space-3);
+}
+
+/*
+ * The two facts a row leads with: how serious, and when. A flex line so they cannot
+ * render flush against each other — the defect this file was rewritten for.
+ */
+[data-role='item-facts'] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ok-space-2);
+  margin-block-end: var(--ok-space-1);
+}
+
+[data-role='item-facts'] [data-role='severity'] {
+  font-weight: var(--ok-type-weight-strong);
+  font-size: var(--ok-type-size-sm);
+}
+
+[data-role='item-facts'] [data-role='when'] {
+  color: var(--ok-colour-text-muted);
+  font-size: var(--ok-type-size-sm);
 }
 
 /* --------------------------------------------------------------- states */

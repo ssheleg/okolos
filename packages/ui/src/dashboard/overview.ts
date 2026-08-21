@@ -21,6 +21,7 @@
 
 import type { Severity } from '@okolos/contracts'
 import { t } from '@okolos/i18n'
+import { SEVERITY_WORD_KEY } from '../severity.js'
 
 /** The areas of the page. Mirrors `ViewId` in the extension, minus `overview`. */
 export type AreaId =
@@ -112,12 +113,6 @@ const SEVERITY_MARK: Readonly<Record<Severity, string>> = {
  * `critical | major | minor | info` everywhere else in this codebase and the
  * banner already says those words aloud.
  */
-const SEVERITY_WORD_KEY: Readonly<Record<Severity, string>> = {
-  critical: 'bannerSeverityCritical',
-  major: 'bannerSeverityMajor',
-  minor: 'bannerSeverityMinor',
-  info: 'bannerSeverityInfo',
-}
 
 export function renderOverview(
   doc: Document,

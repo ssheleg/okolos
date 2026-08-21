@@ -9,10 +9,10 @@
 addressable as `[data-role=<name>]`, which is also how the tests reach them.
 
 - `interstitial`
-- `actions`
 - `url`
 - `source`
 - `stale`
+- `actions`
 - `back`
 - `continue`
 - `owner`

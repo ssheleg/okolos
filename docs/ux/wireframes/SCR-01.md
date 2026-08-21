@@ -11,16 +11,16 @@ addressable as `[data-role=<name>]`, which is also how the tests reach them.
 - `first-run`
 - `checks`
 - `actions`
+- `continue`
+- `skip`
+- `what-this-sends`
+- `retry`
 - `intro`
 - `check`
 - `check-label`
 - `check-state`
 - `check-note`
 - `result`
-- `continue`
-- `skip`
-- `what-this-sends`
-- `retry`
 
 **States**
 

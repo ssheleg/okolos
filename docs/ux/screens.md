@@ -216,7 +216,7 @@ includes a redirect from `*.workers.dev`, not just a CNAME.
 ### SCR-07: Findings queue
 - **Used by:** FLW-01, FLW-17
 - **Purpose:** turn everything found into at most three next actions
-- **Elements:** up to 3 prioritised items, each with what happened, why it matters, and one executable action; "show all" (collapsed by default); per-item "Готово" and "Не сейчас"
+- **Elements:** up to 3 prioritised items, each leading with **how serious in words and when it happened** (`[data-role=severity]`, `[data-role=when]`), then what happened, why it matters, and one executable action; "show all" (collapsed by default); per-item "Готово" and "Не сейчас"
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|
@@ -225,6 +225,7 @@ includes a redirect from `*.workers.dev`, not just a CNAME.
   | error | queue store unreadable | - | states the failure, offers repair |
   | success | items exist | - | max 3 shown; the rest behind "show all" |
 - **Behavior notes:** the queue never exceeds three visible items — this is the anti-pattern this product exists to avoid (203 alerts, nothing done)
+- **Behavior notes — severity is never colour alone, and a row says when.** Until 2026-08-21 a row was a sentence and three buttons: severity lived in a three-pixel coloured strip and nowhere else, which is WCAG 1.4.1 and invisible to the axe sweep — nothing tells a scanner that a border means anything — and the time, the first fact that decides whether a finding still matters, was not on the screen at all. The strip stays as the third signal. The words come from `SEVERITY_WORD_KEY`, the one table the banner and the dashboard also read (there were two, and this screen was one edit from being the third), and the day comes from `when.ts`, the same rendering as the dashboard band that shows these very rows
 - **Wireframe:** wireframes/SCR-07.md
 - **Coverage:** packages/core-queue/src/rank.ts:buildQueue, packages/ui/src/queue/queue.ts:renderQueue, e2e/scn-020.spec.ts
 - **Scenarios:** SCN-002, SCN-022

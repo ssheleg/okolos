@@ -9,15 +9,15 @@
 addressable as `[data-role=<name>]`, which is also how the tests reach them.
 
 - `self-audit`
-- `entries`
-- `entry`
 - `status`
 - `empty`
 - `error`
 - `error-note`
 - `repair`
 - `summary`
+- `entries`
 - `export`
+- `entry`
 - `entry-time`
 - `entry-destination`
 - `entry-purpose`

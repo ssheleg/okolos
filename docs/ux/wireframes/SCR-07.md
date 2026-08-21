@@ -9,11 +9,14 @@
 addressable as `[data-role=<name>]`, which is also how the tests reach them.
 
 - `queue`
-- `item`
-- `item-actions`
 - `queue-empty`
 - `ranking-note`
 - `show-all`
+- `item`
+- `item-facts`
+- `severity`
+- `when`
+- `item-actions`
 - `act`
 - `resolve`
 - `defer`

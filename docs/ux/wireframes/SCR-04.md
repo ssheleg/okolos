@@ -9,16 +9,16 @@
 addressable as `[data-role=<name>]`, which is also how the tests reach them.
 
 - `panel`
-- `restore-note`
-- `actions`
-- `item`
-- `snippet`
 - `empty`
 - `rescan`
 - `partial`
+- `restore-note`
+- `actions`
 - `keep`
 - `restore`
 - `dispute`
+- `item`
+- `snippet`
 - `why`
 - `technique`
 - `locator`

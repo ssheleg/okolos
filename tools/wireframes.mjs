@@ -38,34 +38,95 @@ export const SCREENS = {
   'SCR-16': { title: 'Trusted domains', source: 'packages/ui/src/trusted/trusted.ts' },
 }
 
+/**
+ * The file's own role-emitting helpers, found by their signature.
+ *
+ * This used to be a list of five names — `text|button|row|action|line` — and it failed on
+ * whichever helper was written last: `note(...)` lost SCR-12 two roles on 2026-08-20 and
+ * `span(...)` lost SCR-07 two more on 2026-08-21, both while the screens emitted them. An
+ * allow-list of helper names is the same silent-by-default shape as an allow-list of styled
+ * roles.
+ *
+ * Matching *any* call shaped `f(doc, 'literal')` is too wide in the other direction —
+ * measured: it read `createOverlayHost(doc, 'banner')` as a role and put three roles that
+ * do not exist into three wireframes. What actually identifies these helpers is their
+ * signature: they take a parameter called `role`. So the file is read for functions that
+ * declare one, and only their call sites count — with the argument taken from the position
+ * the parameter sits in, which is how `note(role, …)` is covered without naming it.
+ */
+function roleHelpers(text) {
+  const helpers = []
+  for (const match of text.matchAll(/function (\w+)\(([^)]*)\)/g)) {
+    const params = (match[2] ?? '').split(',').map((param) => param.trim())
+    const at = params.findIndex((param) => /^role\??:/.test(param))
+    if (at >= 0) helpers.push({ name: match[1], at })
+  }
+  return helpers
+}
+
 /** Every `data-role` the renderer can emit, in the order the source names them. */
 export function rolesOf(source) {
   const text = readFileSync(path.join(root, source), 'utf8')
-  const roles = []
+
+  /**
+   * Candidates with the position they were found at, so the order is the source's.
+   *
+   * The two passes below find roles in different ways and would otherwise report them in
+   * pass order, which renamed nothing and reordered fifteen wireframes — a diff that says
+   * "everything changed" about a change that added two roles. The heading above promises
+   * source order; sorting keeps the promise.
+   */
+  const found = []
+
+  for (const helper of roleHelpers(text)) {
+    for (const call of text.matchAll(new RegExp(`\\b${helper.name}\\(`, 'g'))) {
+      const literal = argumentAt(text, (call.index ?? 0) + call[0].length, helper.at)
+      if (literal !== null) found.push({ at: call.index ?? 0, role: literal })
+    }
+  }
+
   const patterns = [
     /setAttribute\(\s*'data-role',\s*'([a-z0-9-]+)'/g,
-    /\b(?:text|button|row|action|line)\(\s*doc,\s*'([a-z0-9-]+)'/g,
-    /\b(?:text|button|row|action|line)\(\s*\n\s*doc,\s*\n\s*'([a-z0-9-]+)'/g,
-    /\bnote\(\s*'([a-z0-9-]+)'/g,
-    /**
-     * A helper that takes the role first and the document not at all.
-     *
-     * `note('wipe-failed', …)` replaced `text(doc, 'wipe-failed', …)` on
-     * 2026-08-20 and the role vanished from SCR-12's wireframe, while the screen
-     * still emitted it — and `export-failed`, which arrived in the same change,
-     * never appeared. An extractor that reads source text reports the shapes it
-     * was taught, and says nothing about the ones it was not.
-     */
-
     // Server-rendered screens have no DOM calls; the roles are in the markup.
     /data-role="([a-z0-9-]+)"/g,
   ]
   for (const pattern of patterns) {
     for (const match of text.matchAll(pattern)) {
-      if (!roles.includes(match[1])) roles.push(match[1])
+      found.push({ at: match.index ?? 0, role: match[1] })
     }
   }
+
+  const roles = []
+  for (const { role } of found.sort((a, b) => a.at - b.at)) {
+    if (!roles.includes(role)) roles.push(role)
+  }
   return roles
+}
+
+/**
+ * The literal at one argument position of a call, or null.
+ *
+ * Commas are counted at depth zero only, so a nested call or an object literal cannot
+ * shift the position the role sits in.
+ */
+function argumentAt(text, from, index) {
+  const args = []
+  let depth = 1
+  let current = ''
+  for (let i = from; i < text.length && depth > 0; i += 1) {
+    const ch = text[i]
+    if (ch === '(' || ch === '[' || ch === '{') depth += 1
+    else if (ch === ')' || ch === ']' || ch === '}') depth -= 1
+    if (depth === 1 && ch === ',') {
+      args.push(current.trim())
+      current = ''
+      continue
+    }
+    if (depth > 0) current += ch
+  }
+  args.push(current.trim())
+  const literal = /^'([a-z0-9-]+)'$/.exec(args[index] ?? '')
+  return literal ? literal[1] : null
 }
 
 /** The states the screen record declares, so the two documents cannot disagree. */

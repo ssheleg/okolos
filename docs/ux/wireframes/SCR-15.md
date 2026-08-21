@@ -10,10 +10,16 @@ addressable as `[data-role=<name>]`, which is also how the tests reach them.
 
 - `overview`
 - `overview-heading`
+- `overview-unrecognised`
 - `attention`
+- `attention-counting`
+- `attention-error`
 - `overview-repair`
+- `attention-empty`
+- `attention-checked`
 - `attention-title`
 - `attention-list`
+- `attention-more`
 - `attention-item`
 - `attention-link`
 - `attention-mark`
@@ -25,12 +31,6 @@ addressable as `[data-role=<name>]`, which is also how the tests reach them.
 - `area`
 - `area-link`
 - `area-state`
-- `overview-unrecognised`
-- `attention-counting`
-- `attention-error`
-- `attention-empty`
-- `attention-checked`
-- `attention-more`
 
 **States**
 

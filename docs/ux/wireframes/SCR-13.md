@@ -9,17 +9,17 @@
 addressable as `[data-role=<name>]`, which is also how the tests reach them.
 
 - `recovery`
+- `generic`
+- `progress`
 - `steps`
 - `step`
 - `done`
-- `portable`
-- `portable-text`
-- `generic`
-- `progress`
 - `why`
 - `elsewhere`
 - `archive`
+- `portable`
 - `portable-why`
+- `portable-text`
 - `copy`
 
 **States**

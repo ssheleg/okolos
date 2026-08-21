@@ -2,6 +2,9 @@ import { t } from '@okolos/i18n'
 
 import type { Queue, QueueItem } from '@okolos/core-queue'
 
+import { SEVERITY_WORD_KEY } from '../severity.js'
+import { shortDate } from '../when.js'
+
 /**
  * SCR-07 — the findings queue.
  *
@@ -61,6 +64,27 @@ function row(doc: Document, item: QueueItem, handlers: QueueHandlers): HTMLEleme
   const el = doc.createElement('article')
   el.setAttribute('data-role', 'item')
   el.setAttribute('data-severity', item.severity)
+
+  /**
+   * How serious, and how recent — in words.
+   *
+   * A row was a sentence and three buttons until 2026-08-21. Severity lived in a coloured
+   * strip three pixels wide and nowhere else, which is WCAG 1.4.1 and invisible to the axe
+   * sweep: nothing tells a scanner that a border means anything. And **when** it happened,
+   * the first fact that decides whether a finding still matters, was not on the screen at
+   * all. The strip stays — colour is a third signal, not the only one.
+   *
+   * The day rather than the instant, and the same rendering as the dashboard's attention
+   * band, which shows these very rows: two screens disagreeing about one timestamp is the
+   * defect `when.ts` exists to prevent.
+   */
+  const facts = doc.createElement('div')
+  facts.setAttribute('data-role', 'item-facts')
+  facts.append(
+    span(doc, 'severity', t(SEVERITY_WORD_KEY[item.severity])),
+    span(doc, 'when', shortDate(item.createdAt)),
+  )
+
   const actions = doc.createElement('div')
   actions.setAttribute('data-role', 'item-actions')
   actions.append(
@@ -69,7 +93,14 @@ function row(doc: Document, item: QueueItem, handlers: QueueHandlers): HTMLEleme
     button(doc, 'defer', t('queueDefer'), () => handlers.onDefer(item.id)),
   )
 
-  el.append(text(doc, 'summary', item.summary), actions)
+  el.append(facts, text(doc, 'summary', item.summary), actions)
+  return el
+}
+
+function span(doc: Document, role: string, content: string): HTMLSpanElement {
+  const el = doc.createElement('span')
+  el.setAttribute('data-role', role)
+  el.textContent = content
   return el
 }
 

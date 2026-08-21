@@ -3,6 +3,7 @@ import { t } from '@okolos/i18n'
 import { OVERLAY_TOKENS } from '../overlay-tokens.js'
 import { createOverlayHost } from '../host.js'
 import type { Severity, VerdictCategory } from '@okolos/contracts'
+import { SEVERITY_WORD_KEY } from '../severity.js'
 
 /**
  * The in-page warning.
@@ -34,12 +35,6 @@ const BLOCKING: ReadonlySet<BannerVariant> = new Set<BannerVariant>(['clickfix',
  * the two would put Russian copy in a TypeScript file, which is where it
  * stops being translatable.
  */
-const SEVERITY_KEY: Record<Severity, string> = {
-  critical: 'bannerSeverityCritical',
-  major: 'bannerSeverityMajor',
-  minor: 'bannerSeverityMinor',
-  info: 'bannerSeverityInfo',
-}
 
 const PRIMARY_ACTION_KEY: Record<BannerVariant, string> = {
   injection: 'bannerActionInjection',
@@ -163,7 +158,7 @@ function panel(doc: Document, props: BannerProps, handlers: BannerHandlers): HTM
   // here and never meaning.
   const severity = doc.createElement('span')
   severity.setAttribute('data-role', 'severity')
-  severity.textContent = t(SEVERITY_KEY[props.severity])
+  severity.textContent = t(SEVERITY_WORD_KEY[props.severity])
 
   const headline = doc.createElement('h2')
   headline.setAttribute('data-role', 'headline')

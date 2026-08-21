@@ -111,3 +111,50 @@ describe('the two verbs that let the list end', () => {
     expect(labels).toEqual(['Neutralise it', 'Готово', 'Не сейчас'])
   })
 })
+
+describe('a row says how serious and how recent, not only in colour', () => {
+  /**
+   * The queue is the screen a person acts from, and until 2026-08-21 a row was a sentence
+   * and three buttons. **When** it happened was nowhere on it — the first thing that
+   * decides whether a finding still matters — and severity was carried by a coloured strip
+   * three pixels wide and nothing else. Colour as the sole carrier of meaning is WCAG
+   * 1.4.1, and the accessibility sweep cannot see it: axe has no way to know the strip
+   * means anything. Found by rendering the area and reading it.
+   */
+  const shown = (i: QueueItem): HTMLElement => {
+    document.body.innerHTML = ''
+    const el = renderQueue(document, { shown: [i], hidden: 0, rankedBy: 'full' }, handlers())
+    document.body.append(el)
+    return el
+  }
+
+  it('names the severity in words', () => {
+    const el = shown(item({ severity: 'critical' }))
+    expect(el.querySelector('[data-role=severity]')?.textContent).toBe(
+      message('bannerSeverityCritical'),
+    )
+  })
+
+  it('uses the same words as every other surface, for every severity', () => {
+    for (const [severity, key] of [
+      ['critical', 'bannerSeverityCritical'],
+      ['major', 'bannerSeverityMajor'],
+      ['minor', 'bannerSeverityMinor'],
+      ['info', 'bannerSeverityInfo'],
+    ] as const) {
+      const el = shown(item({ severity }))
+      expect(el.querySelector('[data-role=severity]')?.textContent, severity).toBe(message(key))
+    }
+  })
+
+  it('says when it happened, through the shared rendering', () => {
+    const el = shown(item({ createdAt: '2026-08-05T09:41:07.000Z' }))
+    expect(el.querySelector('[data-role=when]')?.textContent).toBe('2026-08-05')
+  })
+
+  it('keeps the strip as well, because colour is a third signal and not the only one', () => {
+    expect(shown(item({ severity: 'critical' })).querySelector('[data-role=item]')?.getAttribute('data-severity')).toBe(
+      'critical',
+    )
+  })
+})

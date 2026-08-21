@@ -9,13 +9,13 @@
 addressable as `[data-role=<name>]`, which is also how the tests reach them.
 
 - `popup`
-- `changed`
-- `footer`
 - `status`
 - `error`
 - `error-note`
 - `repair`
 - `verdict`
+- `changed`
+- `footer`
 - `self-audit`
 - `journal`
 - `recovery`
@@ -25,11 +25,14 @@ addressable as `[data-role=<name>]`, which is also how the tests reach them.
 exactly the same way; listed separately because the file to change is not this screen's.
 
 - `queue` — from `packages/ui/src/queue/queue.ts`
-- `item` — from `packages/ui/src/queue/queue.ts`
-- `item-actions` — from `packages/ui/src/queue/queue.ts`
 - `queue-empty` — from `packages/ui/src/queue/queue.ts`
 - `ranking-note` — from `packages/ui/src/queue/queue.ts`
 - `show-all` — from `packages/ui/src/queue/queue.ts`
+- `item` — from `packages/ui/src/queue/queue.ts`
+- `item-facts` — from `packages/ui/src/queue/queue.ts`
+- `severity` — from `packages/ui/src/queue/queue.ts`
+- `when` — from `packages/ui/src/queue/queue.ts`
+- `item-actions` — from `packages/ui/src/queue/queue.ts`
 - `act` — from `packages/ui/src/queue/queue.ts`
 - `resolve` — from `packages/ui/src/queue/queue.ts`
 - `defer` — from `packages/ui/src/queue/queue.ts`

@@ -298,3 +298,48 @@ describe('what is true of an extension as it stands', () => {
     expect(el.querySelector('[data-standing]')).toBeNull()
   })
 })
+
+describe('the actions offered follow the change, not the row', () => {
+  /**
+   * All five kinds got the same two buttons, and one of them cannot work: an extension
+   * that is no longer installed has nothing to disable. Pressing it sent
+   * `extensions/disable` for an id the browser does not have, which fails — so the screen
+   * offered a person a remedy for a problem they could not apply it to, and answered with
+   * an error. Found 2026-08-21 by rendering the area and reading it.
+   */
+  const kinds: readonly InventoryChange[] = [
+    { kind: 'newly-installed', id: 'a', name: 'Alpha', severity: 'minor' },
+    { kind: 'removed', id: 'b', name: 'Beta', severity: 'minor' },
+    { kind: 'publisher-changed', id: 'c', name: 'Gamma', severity: 'critical', publisher: 'X', previousPublisher: 'Y' },
+    { kind: 'permission-added', id: 'd', name: 'Delta', severity: 'critical', permissions: ['cookies'] },
+    { kind: 'host-access-widened', id: 'e', name: 'Epsilon', severity: 'major', hosts: ['*://*/*'] },
+  ]
+
+  function buttonsFor(change: InventoryChange): string[] {
+    document.body.innerHTML = ''
+    const el = render({ kind: 'ready', changes: [change], installed: [], analysis: null, analysisNote: NOTE })
+    return [...el.querySelectorAll('[data-role=change-actions] button')].map(
+      (node) => node.getAttribute('data-role') ?? '',
+    )
+  }
+
+  it('offers nothing to disable for an extension that is gone', () => {
+    expect(buttonsFor(kinds[1] as InventoryChange)).toEqual(['trust'])
+  })
+
+  it('still lets the change be acknowledged, which is the one thing left to do about it', () => {
+    const onTrust = vi.fn()
+    const el = render(
+      { kind: 'ready', changes: [kinds[1] as InventoryChange], installed: [], analysis: null, analysisNote: NOTE },
+      handlers({ onTrust }),
+    )
+    el.querySelector<HTMLButtonElement>('[data-role=trust]')?.click()
+    expect(onTrust).toHaveBeenCalledWith('b')
+  })
+
+  it('offers both to every change about an extension that is still there', () => {
+    for (const change of kinds.filter((c) => c.kind !== 'removed')) {
+      expect(buttonsFor(change), change.kind).toEqual(['disable', 'trust'])
+    }
+  })
+})

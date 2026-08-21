@@ -476,6 +476,7 @@ See [foundation.md](foundation.md) → Personas.
   3. User clicks "Disable" -> system disables the extension and journals the action
 - **Expected result:** a permission escalation is seen and handled the day it happens, and a removed extension is reported once — `db.delete('snapshots')` appeared nowhere in the repository until 2026-08-20, so "no longer installed" was raised on every run for the rest of the profile's life, naming the extension by its id because its name was never stored
 - **Alt paths:** user clicks "Trust this change" -> the delta is acknowledged and the baseline updated, and it is not raised again
+- **What a removed extension may be offered, and what it may not.** "Отключить его" was on that row too until 2026-08-21, for an extension the browser no longer has: the call fails, and the screen met a person's remedy with an error for a problem the remedy never fitted. Acknowledging is the whole of it there, and acknowledging *does* the right thing — `acceptInventoryChange` deletes the snapshot when the extension is gone rather than writing an exception nothing reads, which is the failure this scenario already records for the domain-scope case
 - **UI elements:** deltas section, permission diff list, version dates, publisher, "Disable" (primary), "Trust this change", "Inspect package"
 - **States covered:** loading, success, error
 - **Errors & recovery:** the extension cannot be disabled (policy-installed) -> system says why and offers the manual steps

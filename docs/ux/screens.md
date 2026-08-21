@@ -263,6 +263,7 @@ includes a redirect from `*.workers.dev`, not just a CNAME.
   | empty | no extensions installed | - | plain statement, no filler. **Built 2026-08-20:** the list rendered its heading with no rows under "nothing has changed since the last check" — two true sentences that together read as "we looked and there is nothing to say", when the fact is that there is nothing to look at (B-59) |
   | error | package could not be fetched | - | permission delta still shown; analysis marked unavailable |
   | success | inventory with deltas | - | deltas first, then the rest by risk |
+- **Behavior notes — the actions follow the change.** Each delta shows only what can be done about *it*: an extension that is **no longer installed** offers "Это изменение нормально" and nothing else, because there is nothing left to disable and no package left to read. Until 2026-08-21 all five kinds got the same two buttons, so pressing "Отключить его" on a removed extension sent `extensions/disable` for an id the browser does not have and answered a person's remedy with an error. The mapping is a `Record` over the change union (`CHANGE_ACTIONS` in `extensions.ts`), so a sixth kind fails the build until someone decides what a person can do about it — verified by planting one
 - **Wireframe:** wireframes/SCR-09.md
 - **Coverage:** packages/ui/src/extensions/extensions.ts:renderExtensions, packages/core-extensions/src/diff.ts:diffInventory, e2e/scn-017.spec.ts
 - **Scenarios:** SCN-017, SCN-018

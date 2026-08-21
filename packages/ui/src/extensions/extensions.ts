@@ -211,6 +211,29 @@ function analysisBlock(
   return block
 }
 
+/**
+ * What can be done about each kind of change.
+ *
+ * Every kind used to get the same two buttons, and for one of them the first cannot work:
+ * an extension that is **no longer installed** has nothing to disable. Pressing it sent
+ * `extensions/disable` for an id the browser does not have, the call failed, and the screen
+ * answered a person's remedy with an error — for a problem the remedy never fitted. Found
+ * 2026-08-21 by rendering the area and reading it.
+ *
+ * A `Record` over the union rather than a condition at the call site: a sixth kind of change
+ * then fails the build until somebody decides what a person can do about it, which is the
+ * same reason `DATA_KIND_KEY` is shaped that way.
+ */
+const CHANGE_ACTIONS: Record<InventoryChange['kind'], readonly ('disable' | 'trust')[]> = {
+  'newly-installed': ['disable', 'trust'],
+  // Acknowledging is the whole of it. There is nothing to disable and nothing to inspect:
+  // the package is gone from the machine along with the extension.
+  removed: ['trust'],
+  'publisher-changed': ['disable', 'trust'],
+  'permission-added': ['disable', 'trust'],
+  'host-access-widened': ['disable', 'trust'],
+}
+
 function changeRow(
   doc: Document,
   change: InventoryChange,
@@ -224,10 +247,13 @@ function changeRow(
 
   const actions = doc.createElement('div')
   actions.setAttribute('data-role', 'change-actions')
-  actions.append(
-    button(doc, 'disable', t('extensionsDisableIt'), () => handlers.onDisable(change.id), true),
-    button(doc, 'trust', t('extensionsTrustChange'), () => handlers.onTrust(change.id)),
-  )
+  for (const action of CHANGE_ACTIONS[change.kind]) {
+    actions.append(
+      action === 'disable'
+        ? button(doc, 'disable', t('extensionsDisableIt'), () => handlers.onDisable(change.id), true)
+        : button(doc, 'trust', t('extensionsTrustChange'), () => handlers.onTrust(change.id)),
+    )
+  }
   row.append(actions)
   return row
 }

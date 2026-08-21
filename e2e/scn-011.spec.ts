@@ -1,6 +1,5 @@
 import { expect, serve, test } from './hooks.js'
-import { SURFACE_MOUNT_MS } from './budgets.js'
-import { expectBanner } from './surfaces.js'
+import { expectBanner, expectSurface } from './surfaces.js'
 
 /**
  * SCN-011 — a pause before a password on a site this device does not know.
@@ -42,7 +41,7 @@ test('the second visit counts from the first, which is what makes the fact real'
   const first = await context.newPage()
   await first.goto('https://fixture.test/login')
   await first.locator('#pass').focus()
-  await expect(first.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectSurface(first, 'okolos-banner', context)
 
   const second = await context.newPage()
   await second.goto('https://fixture.test/login')

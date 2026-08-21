@@ -1,7 +1,7 @@
 import path from 'node:path'
-import { SURFACE_MOUNT_MS } from './budgets.js'
 import { fileURLToPath } from 'node:url'
 import { chromium, test as base, type BrowserContext } from '@playwright/test'
+import { expectSurface } from './surfaces.js'
 
 /**
  * REQ-33 — the background memory ceiling, measured rather than assumed.
@@ -114,7 +114,7 @@ test('the background stays under its memory ceiling after real traffic', async (
     // everything inside its shadow root is positioned fixed. `waitFor()` waits
     // for visibility by default and would time out on a warning that is on
     // screen — a test failing for a reason that has nothing to do with the code.
-    await expect(tab.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+    await expectSurface(tab, 'okolos-banner', context)
   }
 
   const used = await backgroundHeapBytes()
@@ -136,7 +136,7 @@ test('the worker keeps no state of its own between wake-ups', async ({ context }
   )
   const tab = await context.newPage()
   await tab.goto('https://fixture.test/')
-  await expect(tab.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectSurface(tab, 'okolos-banner', context)
 
   let [worker] = context.serviceWorkers()
   if (!worker) worker = await context.waitForEvent('serviceworker')

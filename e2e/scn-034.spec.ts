@@ -1,6 +1,6 @@
 import { expect, test } from './hooks.js'
 import { serveHosts } from './serve.js'
-import { SURFACE_MOUNT_MS } from './budgets.js'
+import { expectSurface } from './surfaces.js'
 
 /**
  * A login form inside an embedded frame is checked, and its finding reaches the page a
@@ -60,7 +60,7 @@ test('warns about a login form inside a frame, on the page that embeds it', asyn
    */
   await page.frameLocator('iframe').locator('input[type=password]').click()
 
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectSurface(page, 'okolos-banner', context)
 
   const shown = await page.evaluate(() => {
     const host = document.querySelector('okolos-banner')
@@ -100,7 +100,7 @@ test('does not mount a banner inside the frame with the form', async ({ context 
   const page = await context.newPage()
   await page.goto('https://parent.test/')
   await page.frameLocator('iframe').locator('input[type=password]').click()
-  await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectSurface(page, 'okolos-banner', context)
 
   // Asserted after the top banner exists, so it cannot pass by the whole check having
   // failed. A frame that both draws and reports shows the warning twice.

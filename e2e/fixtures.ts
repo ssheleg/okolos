@@ -4,7 +4,7 @@ import { chromium, test as base, type BrowserContext } from '@playwright/test'
 
 import { buildTooOld } from '../tools/build-age.mjs'
 
-import { WORKER_REGISTER_MS } from './budgets.js'
+import { extensionWorker } from './ready.js'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const BUILD = path.join(here, '..', 'apps', 'extension', 'dist', 'chrome')
@@ -38,11 +38,22 @@ if (stale !== null) throw new Error(`e2e: ${stale}`)
  */
 export const outbound: string[] = []
 
-export const test = base.extend<{ context: BrowserContext; extensionId: string }>({
-  // Playwright's fixture API requires the destructured first argument even
-  // when this fixture takes nothing from it.
-  // eslint-disable-next-line no-empty-pattern
-  context: async ({}, use) => {
+export const test = base.extend<{
+  context: BrowserContext
+  extensionId: string
+  /**
+   * Navigate before the extension has registered, on purpose.
+   *
+   * Only `cold-start.spec.ts` sets this: a booted worker is the one thing that file must
+   * not have, because the figure it asserts is what a person waits for on the first page
+   * of a session. Everywhere else the wait is a precondition nobody should have to
+   * remember — see `ready.ts`.
+   */
+  coldWorker: boolean
+}>({
+  coldWorker: [false, { option: true }],
+
+  context: async ({ coldWorker }, use) => {
     const context = await chromium.launchPersistentContext('', {
       channel: 'chromium',
       args: [`--disable-extensions-except=${BUILD}`, `--load-extension=${BUILD}`],
@@ -82,30 +93,15 @@ export const test = base.extend<{ context: BrowserContext; extensionId: string }
     })
 
     outbound.length = 0
+    // Before any test navigates: a tab opened ahead of registration runs no content
+    // script and never gets one, which looks exactly like a detector that found nothing.
+    if (!coldWorker) await extensionWorker(context)
     await use(context)
     await context.close()
   },
 
   extensionId: async ({ context }, use) => {
-    let [worker] = context.serviceWorkers()
-    if (!worker) {
-      /**
-       * A named wait with its own sentence, because the unnamed one blamed the
-       * fixture. Running out of the per-test timeout here printed "Test timeout of
-       * 30000ms exceeded while setting up extensionId" — which sends the reader to
-       * look for a broken fixture, when the fact is that the worker had not
-       * registered yet on a loaded machine.
-       */
-      worker = await context
-        .waitForEvent('serviceworker', { timeout: WORKER_REGISTER_MS })
-        .catch(() => {
-          throw new Error(
-            `the extension's service worker did not register within ` +
-              `${WORKER_REGISTER_MS / 1000}s — the extension may have failed to load, or this ` +
-              `machine is busy enough that a fresh browser plus an extension load takes longer`,
-          )
-        })
-    }
+    const worker = await extensionWorker(context)
     await use(worker.url().split('/')[2] as string)
   },
 })

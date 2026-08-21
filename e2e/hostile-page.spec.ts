@@ -1,5 +1,5 @@
 import { expect, serve, test } from './hooks.js'
-import { SURFACE_MOUNT_MS } from './budgets.js'
+import { expectSurface } from './surfaces.js'
 
 /**
  * ADR-0001 says the page can neither read, modify nor hide the warning about it.
@@ -104,7 +104,7 @@ for (const [name, css] of ATTACKS) {
     const tab = await context.newPage()
     await tab.setViewportSize({ width: 1200, height: 800 })
     await tab.goto('https://fixture.test/')
-    await expect(tab.locator('[data-okolos=banner]')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+    await expectSurface(tab, '[data-okolos=banner]', context)
 
     const seen = await readable(tab)
     expect(seen.ok, `${name}: ${seen.why}`).toBe(true)
@@ -132,7 +132,7 @@ test('the page cannot take the surface away by taking its element name', async (
   const tab = await context.newPage()
   await tab.setViewportSize({ width: 1200, height: 800 })
   await tab.goto('https://fixture.test/')
-  await expect(tab.locator('[data-okolos=banner]')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectSurface(tab, '[data-okolos=banner]', context)
 
   const seen = await readable(tab)
   expect(seen.ok, seen.why).toBe(true)

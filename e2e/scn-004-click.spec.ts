@@ -1,6 +1,5 @@
 import { expect, serve, test } from './hooks.js'
-import { SURFACE_MOUNT_MS } from './budgets.js'
-import { expectBanner } from './surfaces.js'
+import { expectBanner, expectSurface } from './surfaces.js'
 
 /**
  * SCN-004, the half that could not be tested before: the user clicks "Show me"
@@ -26,7 +25,7 @@ test('clicking the warning opens the evidence, and closing it leaves the warning
   await page.goto('https://fixture.test/')
 
   const banner = page.locator('okolos-banner')
-  await expect(banner).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectSurface(page, 'okolos-banner', context)
 
   await banner.locator('[data-role=primary]').click()
 
@@ -67,7 +66,7 @@ test('a restore the page made impossible leaves the panel open and says why', as
   await page.goto('https://fixture.test/')
 
   const banner = page.locator('okolos-banner')
-  await expect(banner).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectSurface(page, 'okolos-banner', context)
   await banner.locator('[data-role=primary]').click()
 
   const inspector = page.locator('okolos-inspector')

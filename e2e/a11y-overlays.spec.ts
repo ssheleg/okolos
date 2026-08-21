@@ -1,8 +1,7 @@
 import AxeBuilder from '@axe-core/playwright'
-import { SURFACE_MOUNT_MS } from './budgets.js'
 
 import { expect, serve, test } from './hooks.js'
-import { expectBanner } from './surfaces.js'
+import { expectBanner, expectSurface } from './surfaces.js'
 
 /**
  * REQ-29 for the three surfaces that render over somebody else's page.
@@ -131,7 +130,7 @@ test('SCR-04 — the finding inspector is auditable where the user opens it', as
   await page.goto('https://fixture.test/')
 
   const banner = page.locator('okolos-banner')
-  await expect(banner).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectSurface(page, 'okolos-banner', context)
   await banner.locator('[data-role=primary]').click()
   await expect(page.locator('okolos-inspector')).toHaveCount(1)
 
@@ -167,9 +166,9 @@ test('SCR-19 — the lookalike comparison, the fourth surface and the one nobody
   await page.goto('https://g00gle.com/signin')
 
   const banner = page.locator('okolos-banner')
-  await expect(banner).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectSurface(page, 'okolos-banner', context)
   await banner.locator('[data-role=primary]').click()
-  await expect(page.locator('[data-okolos=comparison]')).toHaveCount(1)
+  await expectSurface(page, '[data-okolos=comparison]', context)
 
   const results = await auditOverlay(page, '[data-okolos=comparison]')
   assertScanned(results, 'the comparison')
@@ -184,7 +183,7 @@ test('SCR-06 — the agent gate, the one surface a user meets mid-decision', asy
   await page.evaluate(() => {
     document.querySelector<HTMLButtonElement>('#pay button')?.click()
   })
-  await expect(page.locator('okolos-gate')).toHaveCount(1)
+  await expectSurface(page, 'okolos-gate', context)
 
   const results = await auditOverlay(page, 'okolos-gate')
   assertScanned(results, 'the gate')

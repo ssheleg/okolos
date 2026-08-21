@@ -1,6 +1,5 @@
 import { expect, serve, test } from './fixtures.js'
-import { expectJournalLine } from './surfaces.js'
-import { SURFACE_MOUNT_MS } from './budgets.js'
+import { expectJournalLine, expectSurface } from './surfaces.js'
 
 /**
  * REQ-09 — the traversal budget, measured where it matters.
@@ -10,10 +9,14 @@ import { SURFACE_MOUNT_MS } from './budgets.js'
  * computed styles. These assertions read a performance measure taken inside a
  * real Chromium on a real page.
  *
- * **The waits here stay local and do not use `SURFACE_MOUNT_MS`.** In every other
- * spec the mount wait is a precondition and its length is beside the point; in
- * this file speed *is* the subject, and importing a number chosen to be generous
- * would quietly relax the thing being measured.
+ * **The mount wait is a precondition here too, and it cannot relax what is measured.**
+ * This paragraph used to claim the opposite — that the waits stayed local because a
+ * generous imported budget would loosen the ceiling — while the three waits five lines
+ * below it imported exactly that number. What actually protects the measurement is that
+ * every figure asserted comes from the product's own `performance.measure`, not from the
+ * test's stopwatch, plus the assertion that a *missing* measure is a failure rather than a
+ * value under the ceiling. Corrected 2026-08-21, when the waits moved to `expectSurface`
+ * for its report.
  */
 
 function page(nodes: number): string {
@@ -39,7 +42,7 @@ test('a small page is scanned well inside the budget', async ({ context }) => {
   await serve(context, page(200))
   const p = await context.newPage()
   await p.goto('https://fixture.test/')
-  await expect(p.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectSurface(p, 'okolos-banner', context)
 
   const duration = await collectDuration(p)
   expect(duration).toBeGreaterThanOrEqual(0)
@@ -50,7 +53,7 @@ test('a large page is cut short rather than allowed to run long', async ({ conte
   await serve(context, page(4000))
   const p = await context.newPage()
   await p.goto('https://fixture.test/')
-  await expect(p.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectSurface(p, 'okolos-banner', context)
 
   // The budget is enforced by the collector itself: on a page this size it
   // stops early and says the scan was partial, rather than spending whatever
@@ -71,7 +74,7 @@ test('the warning still arrives on a page too large to scan in full', async ({ c
   // The hidden instruction sits first in the document, so a truncated scan
   // still finds it. Missing the warning because the page was big would be the
   // worst possible reading of "budget".
-  await expect(p.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectSurface(p, 'okolos-banner', context)
 })
 
 test('a page that spends the whole budget on nothing is recorded, not passed over', async ({

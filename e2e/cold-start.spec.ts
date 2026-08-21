@@ -1,5 +1,5 @@
 import { expect, serve, test } from './fixtures.js'
-import { SURFACE_MOUNT_MS } from './budgets.js'
+import { expectSurface } from './surfaces.js'
 
 /**
  * How long a person waits for the warning on a cold worker — the number SCN-003
@@ -22,6 +22,17 @@ import { SURFACE_MOUNT_MS } from './budgets.js'
  * from the navigation's time origin, not the test's stopwatch, so Playwright's own
  * overhead is not counted as the product's latency.
  */
+
+/**
+ * The one file that must navigate before the extension is ready.
+ *
+ * Since 2026-08-21 both harnesses wait for the service worker to register before a test
+ * navigates, because fourteen spec files never did and a tab opened ahead of registration
+ * runs no content script at all (`ready.ts`). Here that wait would warm the very thing
+ * being measured: the figure below is what a person waits for on the first page of a
+ * session, worker boot included.
+ */
+test.use({ coldWorker: true })
 
 const PAGE = `<!doctype html>
 <html><head><title>Fixture</title></head>
@@ -63,9 +74,7 @@ test('the warning arrives inside a measured ceiling on a cold worker', async ({ 
   await serve(context, PAGE)
   const page = await context.newPage()
   await page.goto('https://fixture.test/')
-  await expect(page.locator('[data-okolos=banner]')).toHaveCount(1, {
-    timeout: SURFACE_MOUNT_MS,
-  })
+  await expectSurface(page, '[data-okolos=banner]', context)
 
   const waited = await timeToBanner(page)
   // Absence of data must not read as a pass: a build with the measure removed would
@@ -91,9 +100,7 @@ test('the measurement is taken from the navigation, not from the stopwatch', asy
   const page = await context.newPage()
   const before = Date.now()
   await page.goto('https://fixture.test/')
-  await expect(page.locator('[data-okolos=banner]')).toHaveCount(1, {
-    timeout: SURFACE_MOUNT_MS,
-  })
+  await expectSurface(page, '[data-okolos=banner]', context)
   const wall = Date.now() - before
 
   const waited = await timeToBanner(page)

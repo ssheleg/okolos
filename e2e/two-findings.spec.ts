@@ -1,5 +1,5 @@
 import { expect, serve, test } from './fixtures.js'
-import { SURFACE_MOUNT_MS } from './budgets.js'
+import { expectSurface } from './surfaces.js'
 
 /**
  * A page that is both a lookalike and poisoned gets one panel, not two.
@@ -37,9 +37,7 @@ test('one panel on a page with two kinds of finding, and the other is named on i
   await page.goto('https://g00gle.com/signin')
 
   // One host, whatever name the fallback gave it — the count is the whole point.
-  await expect(page.locator('[data-okolos=banner]')).toHaveCount(1, {
-    timeout: SURFACE_MOUNT_MS,
-  })
+  await expectSurface(page, '[data-okolos=banner]', context)
 
   /**
    * Both detectors really did run, which is what keeps this from passing for the wrong

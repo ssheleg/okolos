@@ -80,6 +80,46 @@ happens before adding.
 - «Убедись, что плант приземлился» — **слита с первой**: это одна дисциплина, и
   вторая была написана потому, что первую делали небрежно.
 
+### 2026-08-21 — twice in a row is not a flake, and the report that would have said why was one file away
+
+- **Symptom:** `e2e/hostile-page.spec.ts` failed on CI on two consecutive commits, both times
+  on the same case (`opacity: 0`, the fourth of eighteen), 35 s waiting for a banner while its
+  three neighbours mounted in 480 ms each. A rerun of the first commit's job was green, which
+  is what made me file the first occurrence as a flake.
+- **Surfaced at:** stage 7, reading the CI verdict — twice.
+- **Owned by:** the harness, in two different ways.
+- **Root cause: not established, and the entry says so.** The trace holds a live service
+  worker, a complete page, seven nodes and not one line from this product. Ten launches on an
+  idle machine reproduced nothing. What *is* measured is a hole: fourteen of thirty-five spec
+  files ask only for the `context` fixture, and the wait for the extension's service worker
+  lived inside `extensionId`, which they never request — so they navigate the moment the
+  browser is up. A tab opened before registration runs no content script and never gets one
+  later; from outside that is indistinguishable from a detector that found nothing. Both specs
+  that failed on CI are among the fourteen. That is a candidate, not a verdict.
+- **The report that would have answered it existed.** `expectBanner` in `e2e/surfaces.ts`
+  prints which of the five links broke, and its own docstring records the class failing twice
+  before. Ten spec files used it. Eight hand-rolled `expect(locator).toHaveCount(1, …)` beside
+  it — and the one that failed *could not* have called it: it matches the host by attribute,
+  because the host takes an unpredictable name when a page claims the canonical one, and the
+  helper took no selector. **A helper the sibling case cannot call gets hand-rolled beside it;
+  a helper nothing enforces gets hand-rolled anyway.**
+- **Fix, by grade:** *structural* — one definition of the wait (`e2e/ready.ts`), applied by the
+  `context` fixture in both harnesses before any test navigates, with `cold-start.spec.ts`
+  opting out through a named option because a warm worker is exactly what it must not have.
+  *Mechanical* — `expectSurface(page, selector, context)`, and all twenty hand-rolled waits
+  converted.
+- **Catches it next time:** `tools/surface-waits.test.ts` refuses a count assertion naming one
+  of this product's surfaces outside the helper. A plant of a build whose verdict never
+  arrives now prints "the content script scanned in 1.7 ms, so the verdict is what did not
+  arrive, 0 okolos host element(s)" — the fact that cost a downloaded trace and an hour of
+  hypotheses this time.
+- **A doc claim its own file disproved.** `budget.spec.ts` opened by saying its waits stay
+  local and do not use `SURFACE_MOUNT_MS`, because speed is the subject there — while three
+  waits five lines below imported exactly that. The paragraph was false before this run
+  touched it. What keeps that measurement honest is that every figure comes from the product's
+  own `performance.measure`, plus the assertion that a missing measure fails rather than
+  passing under the ceiling.
+
 ### 2026-08-21 — the picture said "two cards" and the DOM said "one focus ring"
 
 - **Symptom:** rendering all nine areas of `options.html` showed four visual defects at
@@ -216,6 +256,19 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-21 (восемьдесят первый)** — B-108; стадии 0–10. Задача переписалась на ходу:
+  через двадцать минут после записи «флейк» тот же спек упал второй раз подряд на том же
+  кейсе, и «дважды подряд» — это не флейк. Трейс: воркер жив, страница complete, ни строки
+  продукта. Локально 0 промахов из 10 — **причину не установил и так и записал**. Что
+  измерено: из 35 спек **четырнадцать** не ждут регистрации воркера вообще, потому что
+  ожидание живёт в фикстуре, которую они не просят; оба падавших спека — из них. Ожидание
+  перенесено в `context` обоих харнессов (`e2e/ready.ts`), `cold-start` отказывается явной
+  опцией. Хелпер с диагностикой существовал, им пользовались десять файлов, **восемь писали
+  руками** — включая тот, который не мог его позвать: селектора он не принимал. Принимает;
+  20 ручных ожиданий сведены; гейт отказывает новой ручной форме. Два планта, легли оба, и
+  первый напечатал ровно тот факт, за которым я качал трейс. Плюс ложное утверждение в шапке
+  `budget.spec.ts`, опровергнутое кодом пятью строками ниже. 2476 юнитов в 156 файлах,
+  164 e2e. Постоянных инструкций десять, снятий нет. Вердикт REFINE.
 - **2026-08-21 (восьмидесятый)** — B-103; стадии 0–10. Та же ось: смотреть. Четыре
   дефекта оболочки, и **один из четырёх оказался не тем, чем выглядел** — «карточка внутри
   карточки» на трёх областях была фокус-рингом на безролевой обёртке, что видно только по

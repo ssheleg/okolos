@@ -20,8 +20,32 @@ import { RECORD_VISIBLE_MS, SURFACE_MOUNT_MS } from './budgets.js'
  * recorded as B-73 and unknown.
  */
 export async function expectBanner(page: Page, context?: BrowserContext): Promise<void> {
+  await expectSurface(page, 'okolos-banner', context)
+}
+
+/**
+ * The same wait and the same report, for a surface named some other way.
+ *
+ * Ten spec files reached for `expectBanner`; eight hand-rolled the assertion beside it,
+ * and one of those is the reason this paragraph exists. `hostile-page.spec.ts` matches on
+ * `[data-okolos=banner]` rather than on the tag — deliberately, because the host takes an
+ * unpredictable name when a page has claimed the canonical one — so it could not use the
+ * helper and had no report. It then failed on CI three times for a banner that never
+ * arrived (B-65 twice, B-108 once), and each failure said "0 elements" and nothing else:
+ * the third one cost a downloaded trace and an hour of hypotheses to reach a fact this
+ * function prints in one line.
+ *
+ * A helper the sibling case cannot call is a helper that will be hand-rolled beside it,
+ * which is why the selector is a parameter now and `tools/surface-waits.test.ts` refuses
+ * the hand-rolled form.
+ */
+export async function expectSurface(
+  page: Page,
+  selector: string,
+  context?: BrowserContext,
+): Promise<void> {
   try {
-    await expect(page.locator('okolos-banner')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+    await expect(page.locator(selector)).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
   } catch (cause) {
     throw new Error(`${(cause as Error).message}\n\n${await diagnose(page, context)}`)
   }

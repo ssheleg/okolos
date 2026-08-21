@@ -1,6 +1,6 @@
 import { expect, serve, test } from './hooks.js'
 import { SURFACE_MOUNT_MS } from './budgets.js'
-import { expectBanner } from './surfaces.js'
+import { expectBanner, expectSurface } from './surfaces.js'
 
 /**
  * SCN-010 — an agent tries to act on a poisoned page.
@@ -88,9 +88,9 @@ test('the evidence is one click away from the decision', async ({ context }) => 
   await page.evaluate(AGENT_CLICK)
   await page.locator('okolos-gate [data-role=show]').click()
 
-  await expect(page.locator('okolos-inspector')).toHaveCount(1)
+  await expectSurface(page, 'okolos-inspector', context)
   // Looking is not deciding: the gate is still waiting behind the evidence.
-  await expect(page.locator('okolos-gate')).toHaveCount(1)
+  await expectSurface(page, 'okolos-gate', context)
 })
 
 test('a click injected into a driven browser is held, trusted or not', async ({ context }) => {
@@ -124,6 +124,6 @@ test('a click injected into a driven browser is held, trusted or not', async ({ 
 
   await page.locator('#pay button').click()
 
-  await expect(page.locator('okolos-gate')).toHaveCount(1, { timeout: SURFACE_MOUNT_MS })
+  await expectSurface(page, 'okolos-gate', context)
   await expect(page.locator('#done')).toHaveCount(0)
 })

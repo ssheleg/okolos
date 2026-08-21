@@ -1,4 +1,5 @@
 import { expect, serve, test } from './fixtures.js'
+import { SURFACE_MOUNT_MS } from './budgets.js'
 import { expectJournalLine, expectSurface } from './surfaces.js'
 
 /**
@@ -79,10 +80,40 @@ test('a large page is cut short, and says so on the warning', async ({ context }
    * assumed: `toContainText` came back with an empty string. The wording is covered where it
    * can be read, in the banner's own unit test.
    */
-  expect(
-    await p.evaluate(() => performance.getEntriesByName('okolos:scan-partial').length),
-    'the walk was not cut short, so this page no longer exercises the ceiling',
-  ).toBe(1)
+  /**
+   * Polled, not read once — and two versions of this were wrong before this one.
+   *
+   * The mark belongs to whichever scan read the finished document. A `goto` that resolves on
+   * `load` does not promise the content script has run since, and on a page this size the
+   * first pass can happen against a document that is still arriving; the pass that hits the
+   * ceiling is then the rescan. Reading the counter once caught that gap on a slower machine
+   * and went red on CI (2026-08-21).
+   *
+   * The version after it was worse: `expect.poll(…).toMatchObject({ partial: expect.any(Number) })`
+   * is true on the first tick, so it waited for nothing and the assertion after it still read
+   * once. A check that cannot fail for the reason it was written is the decoy this session has
+   * already caught twice elsewhere.
+   */
+  let seen = { partial: 0, scans: 0, nodes: 0 }
+  const snapshot = async (): Promise<number> => {
+    seen = await p.evaluate(() => ({
+      partial: performance.getEntriesByName('okolos:scan-partial').length,
+      scans: performance.getEntriesByName('okolos:collect').length,
+      nodes: document.querySelectorAll('*').length,
+    }))
+    return seen.partial
+  }
+  try {
+    await expect.poll(snapshot, { timeout: SURFACE_MOUNT_MS }).toBeGreaterThan(0)
+  } catch (cause) {
+    // The numbers, because "was never cut short" has two explanations and they need
+    // different fixes: a page that stopped being large enough, or a scan that never ran
+    // against the whole of it.
+    throw new Error(
+      `${(cause as Error).message}\n\nthe walk was never cut short: ${seen.scans} scan(s) ` +
+        `over ${seen.nodes} nodes, and the node ceiling is 5000`,
+    )
+  }
 
   const duration = await collectDuration(p)
   // A missing measurement returns -1, which would sail under any ceiling. Absence of data

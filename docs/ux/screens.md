@@ -83,6 +83,13 @@ never updated, which is the same drift this file exists to catch.)
   is the slot: one slot, prepended by the repaint, replaced rather than appended, `role="alert"`
   because the reader is looking at the control they pressed. Enforced by
   `tools/no-modals.test.ts`
+- **Nothing touches, and the check is about rendering rather than about names.** Three spans in
+  a row with nothing between them ("Local storagedoneready") is the defect this stylesheet was
+  written for, and it came back three times — the check rows, the dashboard's area rows (B-99),
+  the attention band's item rows and the queue's buttons (B-119). Each time a role got no rule;
+  each time it was found by looking. `e2e/no-flush-text.spec.ts` measures the thing itself: two
+  element siblings carrying text, on one line, with no space between them. A rule about
+  rendering cannot be defeated by adding a role, which is how three allow-lists of names failed
 - **A row is a row, whatever it is made of.** Two rows in this product are `<button>`s — the
   journal's history line and the popup's "nothing new since…" line — and the stylesheet's
   chip rule gave them a rounded bordered box the width of their text, which reads as a

@@ -210,7 +210,17 @@ textarea {
   margin-block-end: var(--ok-space-3);
 }
 
-[data-role='actions'] {
+/*
+ * Every row of controls, matched by suffix.
+ *
+ * The rule existed for `actions` alone, and the product has four: `item-actions` on a queue
+ * row, `change-actions` on an extension change, `leak-actions` on a leak. Their buttons sat
+ * with **nothing** between them — the markup has no whitespace to fall back on, because the
+ * elements are created in code — and it took `e2e/no-flush-text.spec.ts` to say so: I had
+ * looked at that screen and read the row as fine. Fourth allow-list of this session, and the
+ * suffix is what the naming convention already gives.
+ */
+[data-role$='actions'] {
   display: flex;
   flex-wrap: wrap;
   gap: var(--ok-space-2);
@@ -234,6 +244,61 @@ textarea {
  */
 [data-role='attention'] {
   margin-block: var(--ok-space-3);
+}
+
+/*
+ * A row of the attention band: a severity, a sentence, and where it came from.
+ *
+ * These five roles had **no rule at all** until 2026-08-21, so the row rendered as
+ * "▲КритичноСкрытый текст на news-agregator.test: «…»2026-08-21" — three facts with nothing
+ * between them, and the whole line one blue underlined link. Exactly the defect this
+ * stylesheet was written for ("Local storagedoneready"), and exactly the allow-list failure
+ * B-99 recorded: the band's own roles were styled and the roles *inside its rows* were not.
+ *
+ * Found by rendering the dashboard **with items in the band**. Every earlier look had it
+ * empty or looked at another area — the band with content had never been on screen (B-119).
+ */
+[data-role='attention-item'] {
+  /*
+   * A paragraph, not a flex line — and that was the second attempt.
+   *
+   * With flex the three parts became flex items, so a long sentence pushed the date onto a
+   * line of its own and the band read as rows of one line and rows of three. A row here is a
+   * sentence with a label in front and a source behind: it should flow and wrap like prose,
+   * which is what `inline` plus a margin gives.
+   */
+  display: block;
+  margin-block: var(--ok-space-2);
+}
+
+/*
+ * The whole row opens the area, and the underline sits on the sentence rather than on all
+ * three parts: a severity word wearing a link's underline reads as a second link.
+ */
+[data-role='attention-link'] {
+  color: inherit;
+  text-decoration: none;
+}
+
+[data-role='attention-mark'],
+[data-role='attention-severity'] {
+  margin-inline-end: var(--ok-space-2);
+}
+
+[data-role='attention-severity'] {
+  font-weight: var(--ok-type-weight-strong);
+  font-size: var(--ok-type-size-sm);
+}
+
+[data-role='attention-what'] {
+  color: var(--ok-colour-focus);
+  text-decoration: underline;
+}
+
+[data-role='attention-origin'] {
+  margin-inline-start: var(--ok-space-2);
+  color: var(--ok-colour-text-muted);
+  font-size: var(--ok-type-size-sm);
 }
 
 [data-role='area'] {

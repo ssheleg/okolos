@@ -14,14 +14,12 @@ jobs:
     name: gates
     runs-on: ubuntu-latest
     steps:
-      # Full history for this job: `tools/listing.test.ts` asks git when the store
-      # screenshots were last retaken against when the surfaces they show last changed.
-      # A shallow clone holds one commit, every path answers with the tip, and the check
-      # would pass on nothing — which is how its first version (mtimes) went red here on
-      # a fresh checkout where every file is written at once.
+      # A shallow clone is enough, and that is a property worth keeping. The screenshot
+      # freshness gate went through three mechanisms in one day: mtimes (wrong — a fresh
+      # checkout writes every file at once), commit dates (unsatisfiable — a surface change
+      # that alters no pixel leaves nothing to commit), and now a digest of the surfaces'
+      # content written by `pnpm screenshots` itself. Only the first two needed history.
       - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
 
       # No `version:` here on purpose. `pnpm/action-setup` refuses to run when
       # a version is given both here and as `packageManager` in package.json,

@@ -172,10 +172,10 @@
     }
   },
   "auditSummaryNoContent": {
-    "message": "ни в одном не было адреса страницы, почты или её содержимого"
+    "message": "ни в одном не было адреса страницы или её содержимого"
   },
   "auditSummarySent": {
-    "message": "запросов отправлено с $SINCE$: $COUNT$",
+    "message": "запросов отправлено за $SINCE$: $COUNT$",
     "placeholders": {
       "count": {
         "content": "$1"
@@ -2238,6 +2238,53 @@
     "message": "Показанный номер, $PHONE$, ведёт к тем, кто сделал эту страницу.",
     "placeholders": {
       "phone": {
+        "content": "$1"
+      }
+    }
+  },
+  "auditFieldUnknown": {
+    "message": "не записано"
+  },
+  "auditTimeUnknown": {
+    "message": "когда — не записано"
+  },
+  "auditDestinationUnknown": {
+    "message": "куда — не записано"
+  },
+  "auditPayloadUnknown": {
+    "message": "что ушло — не записано"
+  },
+  "auditPurposeUnknown": {
+    "message": "зачем — не записано"
+  },
+  "auditSummaryUnknownOutcome": {
+    "message": "исход не записан: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "auditSummaryCarriedAddress": {
+    "message": "адрес почты, который вы дали на проверку: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "auditSummaryCarriedDomain": {
+    "message": "домен, который вы проверяли: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "auditSummaryUnknownPurpose": {
+    "message": "назначение не записано, поэтому за эти запросы поручиться нельзя: $COUNT$",
+    "placeholders": {
+      "count": {
         "content": "$1"
       }
     }

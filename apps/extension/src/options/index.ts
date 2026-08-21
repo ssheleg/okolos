@@ -24,6 +24,7 @@ import {
   renderSelfAudit,
   renderStorageProblem,
   renderTrusted,
+  shortDate,
   shortTime,
   type AreaId,
   type AreaRow,
@@ -477,12 +478,24 @@ async function paintCurrent(): Promise<void> {
   await reload()
 }
 
+/**
+ * The window the panel's own sentence names.
+ *
+ * Retention is ninety days, and the panel used to be handed all of it under the words "the
+ * last seven". The clock lives here — the renderer takes the boundary as an instant, so its
+ * filter stays deterministic and its test needs no fake timer.
+ */
+const AUDIT_WINDOW_DAYS = 7
+
 async function load(): Promise<PanelState> {
   try {
     const db = await openDb()
     const entries = await db.getAll('outbound_log')
     if (entries.length === 0) return { kind: 'empty' }
-    return { kind: 'ready', entries, since: t('auditSinceSevenDays') }
+    const windowStartIso = new Date(
+      Date.now() - AUDIT_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+    ).toISOString()
+    return { kind: 'ready', entries, since: t('auditSinceSevenDays'), windowStartIso }
   } catch (cause) {
     return { kind: 'error', message: String(cause) }
   }
@@ -765,7 +778,9 @@ async function attentionItems(): Promise<AttentionItem[] | null> {
       severity: item.severity,
       what: item.summary,
       where: null,
-      when: item.createdAt.slice(0, 10),
+      // `shortDate`, not a slice: the same two lines open-coded for the eighth time, in
+      // the file whose journal row was converted an hour earlier.
+      when: shortDate(item.createdAt),
       area: 'queue' as AreaId,
       href: optionsPageFor('queue'),
     }))

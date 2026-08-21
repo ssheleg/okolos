@@ -1,0 +1,14 @@
+{
+  "surfaces": [
+    "packages/ui/src",
+    "apps/extension/src/options",
+    "apps/extension/src/pages.css"
+  ],
+  "surfacesDigest": "d18cd777c1772b9978af5b1b09b09d11",
+  "images": {
+    "01-interstitial.png": "a0c1dbad098e1c42",
+    "02-first-run.png": "7dda62063b310db1",
+    "03-self-audit.png": "995e831ccd1ca4a3",
+    "04-popup.png": "f9708643e05f23ab"
+  }
+}

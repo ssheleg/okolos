@@ -2,6 +2,8 @@
 import { t } from '@okolos/i18n'
 import type { AuditEntry } from '@okolos/contracts'
 
+import { shortTime } from '../when.js'
+
 /**
  * The self-audit panel: what left this device, and why.
  *
@@ -16,7 +18,21 @@ export type PanelState =
   | { readonly kind: 'loading' }
   | { readonly kind: 'empty' }
   | { readonly kind: 'error'; readonly message: string }
-  | { readonly kind: 'ready'; readonly entries: readonly AuditEntry[]; readonly since: string }
+  | {
+      readonly kind: 'ready'
+      readonly entries: readonly AuditEntry[]
+      /**
+       * The start of the window `since` puts into words.
+       *
+       * The panel used to be handed everything `outbound_log` holds — retention is ninety
+       * days — under a sentence reading "the last seven". Passing the boundary as an
+       * instant keeps the clock with the caller and the filter here, where it is
+       * deterministic: you cannot hand this screen a quarter of history and get a
+       * seven-day sentence out of it.
+       */
+      readonly windowStartIso: string
+      readonly since: string
+    }
 
 export interface PanelHandlers {
   readonly onExport: () => void
@@ -59,10 +75,11 @@ export function renderSelfAudit(
     }
 
     case 'ready': {
-      section.append(text(doc, 'summary', summarise(state.entries, state.since)))
+      const shown = [...state.entries].filter((e) => within(e, state.windowStartIso)).sort(newestFirst)
+      section.append(text(doc, 'summary', summarise(shown, state.since)))
       const list = doc.createElement('ol')
       list.setAttribute('data-role', 'entries')
-      for (const entry of state.entries) list.append(row(doc, entry))
+      for (const entry of shown) list.append(row(doc, entry))
       section.append(list, action(doc, 'export', t('auditExport'), handlers.onExport))
       return section
     }
@@ -70,43 +87,116 @@ export function renderSelfAudit(
 }
 
 /**
- * The summary states what is absent as well as what is present. "12 requests"
- * invites the reader to wonder what was in them; naming that none carried a
- * page address or an identifier answers the question they actually have.
+ * A value the store actually holds.
+ *
+ * Every row here is read straight out of IndexedDB, where the type is a promise rather
+ * than a guarantee: a row written by an older build, or one a migration left half-done,
+ * arrives with fields missing. The screen printed `источник: undefined` and three blank
+ * lines for such a row — on the surface that carries the product's central claim.
+ */
+const said = (value: unknown): string | undefined =>
+  typeof value === 'string' && value.trim() !== '' ? value : undefined
+
+/**
+ * Inside the window the sentence names.
+ *
+ * A row whose time is unreadable stays: this screen's failure direction is *understating*
+ * what left, so a row it cannot place is one it must still show.
+ */
+function within(entry: AuditEntry, startIso: string): boolean {
+  const at = said(entry.createdAt)
+  return at === undefined || at >= startIso
+}
+
+/** Newest first, as the screen record says — and rows with no time first, not last. */
+function newestFirst(a: AuditEntry, b: AuditEntry): number {
+  const x = said(a.createdAt)
+  const y = said(b.createdAt)
+  if (x === undefined || y === undefined) return x === y ? 0 : x === undefined ? -1 : 1
+  return x < y ? 1 : x > y ? -1 : 0
+}
+
+/**
+ * The summary states what is absent as well as what is present. "12 requests" invites the
+ * reader to wonder what was in them; naming that none carried a page address or the page's
+ * content answers the question they actually have.
+ *
+ * It names no absence it cannot prove. Until 2026-08-21 the sentence ended "…no page
+ * address, **email** or page content" unconditionally — while `docs/brand/facts.md` says in
+ * its own table that `leak-lookup` sends the email address and `domain-status` sends the
+ * domain. A list containing such a request, under a sentence denying it exists, is a false
+ * privacy claim on the one screen built to be checked against a network trace.
  */
 function summarise(entries: readonly AuditEntry[], since: string): string {
-  const sent = entries.filter((e) => e.outcome === 'sent').length
-  const blocked = entries.filter((e) => e.outcome === 'blocked-by-redactor').length
-  const failed = entries.filter((e) => e.outcome === 'failed').length
+  const withOutcome = (outcome: string): number =>
+    entries.filter((e) => said(e.outcome) === outcome).length
+  const sent = withOutcome('sent')
+  const blocked = withOutcome('blocked-by-redactor')
+  const failed = withOutcome('failed')
+  // Not `length - sent - blocked - failed` for its own sake: a row whose outcome the store
+  // never recorded is a row this screen must count, because the alternative is a total
+  // smaller than the list under it.
+  const unrecorded = entries.length - sent - blocked - failed
 
   const parts = [t('auditSummarySent', String(sent), since)]
   if (failed > 0) parts.push(t('auditSummaryFailed', String(failed)))
   if (blocked > 0) parts.push(t('auditSummaryBlocked', String(blocked)))
-  parts.push(t('auditSummaryNoContent'))
+  if (unrecorded > 0) parts.push(t('auditSummaryUnknownOutcome', String(unrecorded)))
+
+  for (const [key, count] of carried(entries)) parts.push(t(key, String(count)))
+
+  const unreadable = entries.filter((e) => purposeKey(said(e.purpose) ?? '') === undefined).length
+  // A purpose this build cannot read is a request whose payload it cannot vouch for, so it
+  // does not: the absence claim is dropped and the reason is named in its place.
+  if (unreadable > 0) parts.push(t('auditSummaryUnknownPurpose', String(unreadable)))
+  else parts.push(t('auditSummaryNoContent'))
+
   return `${parts.join(' · ')}.`
+}
+
+/** What the rows shown did carry, counted by purpose — the facts table, in code. */
+function carried(entries: readonly AuditEntry[]): ReadonlyArray<readonly [string, number]> {
+  const counts = new Map<string, number>()
+  for (const entry of entries) {
+    const key = CARRIED_KEY[said(entry.purpose) ?? '']
+    if (key !== undefined) counts.set(key, (counts.get(key) ?? 0) + 1)
+  }
+  return [...counts]
 }
 
 function row(doc: Document, entry: AuditEntry): HTMLLIElement {
   const item = doc.createElement('li')
   item.setAttribute('data-role', 'entry')
-  item.setAttribute('data-outcome', entry.outcome)
+  item.setAttribute('data-entry', said(entry.id) ?? 'unrecorded')
+  item.setAttribute('data-outcome', said(entry.outcome) ?? 'unrecorded')
+  const at = said(entry.createdAt)
+  const purpose = said(entry.purpose)
+  const key = purpose === undefined ? undefined : purposeKey(purpose)
+  const payload = said(entry.payloadShape)
   item.append(
-    text(doc, 'entry-time', entry.createdAt),
-    text(doc, 'entry-destination', entry.destination),
-    // The purpose id is the fallback on purpose: a destination this build does
-    // not have wording for is still shown, named as the contract names it,
-    // rather than vanishing from the log that exists to be complete.
-    text(doc, 'entry-purpose', purposeKey(entry.purpose) ? t(purposeKey(entry.purpose) as string) : entry.purpose),
-    // Translated on read, never on write. `payloadShape` is stored in the audit
-    // log, and a log written in whatever language was active that day stops
-    // being one record. Only the bare "none" is prose; `email:…` and
-    // `hash-prefix:…` are shapes, and shapes are the same in every language.
+    // The shared rendering, not the stored string. The raw ISO form reached this screen
+    // while four others were converted on 2026-08-21: the sweep looked for copies of the
+    // formatter and could not see a screen that called none.
+    text(doc, 'entry-time', at === undefined ? t('auditTimeUnknown') : shortTime(at)),
+    text(doc, 'entry-destination', said(entry.destination) ?? t('auditDestinationUnknown')),
+    // The purpose id is the fallback on purpose: a destination this build does not have
+    // wording for is still shown, named as the contract names it, rather than vanishing
+    // from the log that exists to be complete.
+    text(doc, 'entry-purpose', key !== undefined ? t(key) : (purpose ?? t('auditPurposeUnknown'))),
+    // Translated on read, never on write. `payloadShape` is stored in the audit log, and a
+    // log written in whatever language was active that day stops being one record. Only the
+    // bare "none" is prose; `email:…` and `hash-prefix:…` are shapes, and shapes are the
+    // same in every language.
     text(
       doc,
       'entry-payload',
-      entry.payloadShape === 'none' ? t('auditPayloadNone') : entry.payloadShape,
+      payload === undefined
+        ? t('auditPayloadUnknown')
+        : payload === 'none'
+          ? t('auditPayloadNone')
+          : payload,
     ),
-    text(doc, 'entry-trigger', t('auditTriggeredBy', entry.triggeredBy)),
+    text(doc, 'entry-trigger', t('auditTriggeredBy', said(entry.triggeredBy) ?? t('auditFieldUnknown'))),
   )
   return item
 }
@@ -120,6 +210,18 @@ const PURPOSE_KEY: Record<string, string> = {
   'leak-lookup': 'auditPurposeLeakLookup',
   'file-hash': 'auditPurposeFileHash',
   'domain-status': 'auditPurposeDomainStatus',
+}
+
+/**
+ * The two purposes that carry something of the user's, and the sentence each earns.
+ *
+ * Kept beside `PURPOSE_KEY` because they answer different questions — that one names the
+ * request, this one names what was in it — and because the pair is what
+ * `docs/brand/facts.md` documents.
+ */
+const CARRIED_KEY: Record<string, string> = {
+  'leak-lookup': 'auditSummaryCarriedAddress',
+  'domain-status': 'auditSummaryCarriedDomain',
 }
 
 const purposeKey = (purpose: string): string | undefined => PURPOSE_KEY[purpose]

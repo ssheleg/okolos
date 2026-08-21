@@ -464,10 +464,33 @@ describe('the brand pack states facts, and a fact is checkable', () => {
 
     expect(scnTotal, 'no scenarios found to count').toBeGreaterThan(10)
     expect(scrTotal, 'no screens found to count').toBeGreaterThan(10)
-    expect(scnDone, 'facts claims every scenario is implemented').toBe(scnTotal)
-    expect(scrDone, 'facts claims every screen is built').toBe(scrTotal)
-    expect(facts).toContain(`| Сценариев | ${scnTotal}, все реализованы |`)
-    expect(facts).toContain(`| Экранов | ${scrTotal}, все построены |`)
+
+    /**
+     * The claim, read rather than assumed.
+     *
+     * This gate used to require `done === total` outright, because the fact said "all of
+     * them". That made the document unable to state anything else: when SCR-10 went to
+     * `drifted` on 2026-08-21 — four elements of its own description do not exist — the
+     * only way to keep the gate green was to lie about the screen or to leave the fact
+     * behind. So both wordings are now checkable, "все" and "построено N", and the
+     * numbers are compared either way. A fact that can only say one thing is not being
+     * verified; it is being asserted.
+     */
+    const claim = (label: string, done: number, total: number, all: string, some: string): void => {
+      const row = new RegExp(`^\\| ${label} \\| (\\d+), ([^|]+?)\\s*\\|`, 'm').exec(facts)
+      expect(row, `facts.md has no countable "${label}" row`).not.toBeNull()
+      // The sentence the document ought to carry, computed from the tree — so the
+      // comparison is one assertion over a pair rather than a branch with an assertion in
+      // each arm, which `tools/test-quality.test.ts` refuses and is right to: a branched
+      // assertion is a test that can pass without ever running its check.
+      const ought = done === total ? all : `${some} ${done}`
+      expect([row?.[1], (row?.[2] ?? '').trim()], `facts.md and the tree disagree about ${label}`).toEqual([
+        String(total),
+        ought,
+      ])
+    }
+    claim('Сценариев', scnDone, scnTotal, 'все реализованы', 'реализовано')
+    claim('Экранов', scrDone, scrTotal, 'все построены', 'построено')
   })
 
   it('counts requirements, and the one closed by decision, from the brief', () => {

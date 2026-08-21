@@ -12,9 +12,13 @@
  * with the state seeded through the same storage the product uses.
  */
 import { chromium } from '@playwright/test'
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+
+import { SURFACES, surfacesDigest } from './surfaces.mjs'
+import { filesIn } from './tree.mjs'
 
 const root = path.resolve(import.meta.dirname, '..')
 const BUILD = path.join(root, 'apps/extension/dist/chrome')
@@ -234,6 +238,31 @@ await shot(
 
 await context.close()
 rmSync(STAGED, { recursive: true, force: true })
+
+/**
+ * The receipt: the state of the surfaces these images were taken from.
+ *
+ * The freshness gate first compared *commit dates* — the last commit touching the
+ * screenshots against the last touching the surfaces they show. That rule can demand the
+ * impossible: a surface change that alters no pixel leaves the four files byte-identical,
+ * git records nothing, and the gate stays red with no way for an author to satisfy it
+ * except by faking a change. Measured on the first commit that exercised it, 2026-08-21.
+ *
+ * A digest of the surfaces' content, written by the run itself, states the true claim —
+ * "these were taken from that code" — and can be checked before any commit exists.
+ */
+const images = Object.fromEntries(
+  filesIn(OUT, '.png')
+    .map((name) => [
+      name,
+      createHash('sha256').update(readFileSync(path.join(OUT, name))).digest('hex').slice(0, 16),
+    ]),
+)
+writeFileSync(
+  path.join(OUT, 'taken-at.json'),
+  `${JSON.stringify({ surfaces: SURFACES, surfacesDigest: surfacesDigest(root), images }, null, 2)}\n`,
+)
+console.log('   taken-at.json')
 
 if (untranslated.length > 0) {
   console.error(

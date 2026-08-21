@@ -7,14 +7,14 @@
  * sentence nobody checks.
  */
 
+import { createHash } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 import { filesIn } from './tree.mjs'
-
-import { execFileSync } from 'node:child_process'
+import { SURFACES, surfacesDigest } from './surfaces.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const listing = readFileSync(path.join(root, 'docs/store/listing.md'), 'utf8')
@@ -143,39 +143,54 @@ describe('the screenshots are of this product', () => {
    * pipeline does not restage a picture, and a gate that fires for unrelated reasons is one
    * people re-run without reading.
    */
-  const SURFACES = [
-    'packages/ui/src',
-    'apps/extension/src/options',
-    'apps/extension/src/pages.css',
-  ]
+  /**
+   * Content, not commit dates.
+   *
+   * The first version of this compared the last commit touching the screenshots against
+   * the last touching the surfaces. On the first commit that actually exercised it, the
+   * rule turned out to be able to demand the impossible: a surface change that alters no
+   * pixel leaves the four images byte-identical, git records nothing, and no commit can
+   * satisfy the comparison — the only way out is to fake a change to an image, which is
+   * exactly the dishonesty this file exists to prevent.
+   *
+   * `pnpm screenshots` now writes `taken-at.json` beside the images, carrying a digest of
+   * the surfaces it rendered. The claim checked here is the true one — these images were
+   * taken from this code — and it needs no repository history, so it also survives the
+   * shallow clone CI makes by default.
+   */
+  const receiptPath = path.join(root, 'docs/store/screenshots/taken-at.json')
 
-  /** The commit date of the last change to a path, or null when history cannot say. */
-  function lastTouched(...paths: string[]): number | null {
-    const out = execFileSync('git', ['log', '-1', '--format=%ct', '--', ...paths], {
-      cwd: root,
-      encoding: 'utf8',
-    }).trim()
-    return out === '' ? null : Number(out)
-  }
-
-  it('is not older than the surfaces it shows', () => {
-    const shallow =
-      execFileSync('git', ['rev-parse', '--is-shallow-repository'], {
-        cwd: root,
-        encoding: 'utf8',
-      }).trim() === 'true'
-    // A shallow clone holds one commit, so every path answers with the tip and the
-    // comparison would pass on nothing. Said out loud rather than silently skipped: the
-    // workflow fetches full history for this job precisely so this stays a real check.
-    expect(shallow, 'shallow clone — this gate needs history; set fetch-depth: 0').toBe(false)
-
-    const shots = lastTouched('docs/store/screenshots')
-    const surfaces = lastTouched(...SURFACES)
-    expect(shots, 'no commit touches the screenshots').not.toBeNull()
-    expect(surfaces, 'no commit touches the surfaces').not.toBeNull()
+  it('was taken from the code that is here now', () => {
+    expect(existsSync(receiptPath), 'no taken-at.json — run `pnpm screenshots`').toBe(true)
+    const receipt = JSON.parse(readFileSync(receiptPath, 'utf8')) as {
+      surfaces: string[]
+      surfacesDigest: string
+      images: Record<string, string>
+    }
+    expect(receipt.surfaces, 'the receipt names other surfaces than the tool does').toEqual(SURFACES)
     expect(
-      (shots as number) >= (surfaces as number),
-      'a surface changed in a later commit than the screenshots — run `pnpm screenshots` and commit them',
-    ).toBe(true)
+      receipt.surfacesDigest,
+      'a surface changed since the screenshots were taken — run `pnpm screenshots` and commit them',
+    ).toBe(surfacesDigest(root))
+  })
+
+  it('names every image that is there, with the bytes it wrote', () => {
+    const receipt = JSON.parse(readFileSync(receiptPath, 'utf8')) as {
+      images: Record<string, string>
+    }
+    const onDisk = filesIn(path.join(root, 'docs/store/screenshots'), '.png')
+    expect(Object.keys(receipt.images), 'the receipt and the directory disagree').toEqual(onDisk)
+    const hashed = Object.fromEntries(
+      onDisk.map((name) => [
+        name,
+        createHash('sha256')
+          .update(readFileSync(path.join(root, 'docs/store/screenshots', name)))
+          .digest('hex')
+          .slice(0, 16),
+      ]),
+    )
+    // A hand-edited image is the one way a listing can show something the product does not
+    // draw while every other check in this file passes.
+    expect(hashed, 'an image on disk is not the one the run wrote').toEqual(receipt.images)
   })
 })

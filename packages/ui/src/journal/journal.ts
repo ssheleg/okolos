@@ -1,6 +1,7 @@
 import { t } from '@okolos/i18n'
 
 import type { Diff, DiffGroup, JournalEntry } from '@okolos/core-queue'
+import { shortTime } from '../when.js'
 
 /**
  * SCR-11 — the journal, shown as a diff.
@@ -103,10 +104,6 @@ function entryRow(doc: Document, item: JournalEntry, handlers: JournalHandlers):
   })`
   row.addEventListener('click', () => handlers.onOpenEntry(item.id))
   return row
-}
-
-function shortTime(iso: string): string {
-  return iso.replace('T', ' ').replace(/\.\d+Z$/, ' UTC')
 }
 
 function text(doc: Document, role: string, content: string): HTMLParagraphElement {

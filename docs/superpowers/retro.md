@@ -80,6 +80,69 @@ happens before adding.
 - «Убедись, что плант приземлился» — **слита с первой**: это одна дисциплина, и
   вторая была написана потому, что первую делали небрежно.
 
+### 2026-08-21 — a gate that missed the case it was written for, and a rule that could demand the impossible
+
+- **Symptom:** three separate things, one root each, all found by *looking* at screens
+  nobody had opened. (1) The self-audit summary asserted "no request carried a page
+  address, **an email**, or page content" unconditionally — while `docs/brand/facts.md:47`
+  says in its own table that `leak-lookup` sends the email address. A list containing such
+  a request sat under a sentence denying such requests exist. (2) The same screen printed
+  `источник: undefined` for a row an older build had written, and named a seven-day window
+  it never applied to ninety days of retention. (3) A raw `2026-08-20T23:51:17.931Z` where
+  every other screen writes `… UTC`.
+- **Surfaced at:** stage 6, by rendering all nine areas of `options.html` — empty and with
+  the stores seeded — and reading them. Four of twenty screens had been looked at before;
+  eight areas never once.
+- **Owned by:** stage 3 for the summary sentence, which is a *contract* about what may be
+  claimed and was written as a fixed string; stage 5 for the rest.
+- **Root cause, and it is one cause:** the previous run consolidated three copies of the
+  timestamp formatter and swept for **copies of the function**. That query cannot see a
+  site where the defect is an *absence* — a screen that calls no formatter — so it missed
+  the self-audit panel, a fourth copy under a name it did not match, and an eighth copy in
+  `options/index.ts:780`, in the same file it had edited an hour earlier. **A sweep for a
+  defect's shape finds every instance of that shape and nothing else.** Ask what identifies
+  the defect — here: a person reads a machine value — and run *that* query.
+- **The gate I wrote for it was a decoy, and the plant proved it.** `tools/instants.test.ts`
+  got a third check matching a stored field handed to the DOM. Planting the original defect
+  back — `text(doc, 'entry-time', entry.createdAt)` — left it **green**: this codebase's
+  renderers pass strings as arguments to a `text(doc, role, content)` helper rather than
+  assigning `textContent`. A gate that misses the case it was written for is worse than no
+  gate, because it certifies the class as covered. Deleted; the class now lives in
+  `e2e/rendered-instants.spec.ts`, which reads what the built pages show — nine areas, one
+  row written the way an older build leaves it. Textual gates catch a shape; only rendered
+  text catches an absence.
+- **And my own freshness gate could demand the impossible.** Yesterday's rule compared
+  commit dates: last commit touching the store screenshots against last touching the
+  surfaces. This was the first commit to exercise it — and a surface change that alters no
+  pixel leaves the four images byte-identical, so git records nothing and *no commit can
+  satisfy the comparison*. The only escape is to fake a change to an image, which is the
+  dishonesty the file exists to prevent. The second attempt — a receipt naming the surface
+  commit — has a subtler form of the same fault: a receipt cannot name the commit it is part
+  of, so it is stale the moment it is committed. The third works because it is about
+  **content**: `pnpm screenshots` writes a digest of the surfaces it rendered, which changes
+  whenever they do, is knowable before any commit exists, and needs no history — so
+  `fetch-depth: 0`, added yesterday for the version that did, came back out.
+- **Fix, by grade:** *contract* — `PanelState.ready` now carries `windowStartIso`, so the
+  window a sentence names cannot differ from the set it counts; the summary's unconditional
+  half shrank to what the network choke point actually keeps, and what did leave is named
+  per purpose from a table beside `PURPOSE_KEY`. *Structural* — `said()` at the store
+  boundary, every missing field naming itself, an unrecognised outcome counted rather than
+  dropped, an unreadable purpose dropping the absence claim entirely. *Mechanical* — three
+  formatter sites converted, the grammar fixed in two locales.
+- **Catches it next time:** `e2e/rendered-instants.spec.ts` (nine areas, plant landed),
+  `tools/instants.test.ts` (no second copy in a file that draws — scoped that way after the
+  first version dragged a rendering rule into the storage layer, where `.slice(0, 10)` is a
+  key), `tools/surfaces.test.ts` (eight checks on the digest's boundaries: a `.DS_Store` and
+  a test file must not move it, a rename with identical content must), and
+  `tools/docs.test.ts`, whose screens count now reads the *claim* — "все построены" or
+  "построено N" — instead of requiring totality, because a fact that can only say one thing
+  is being asserted, not verified.
+- **A lesson with nowhere to go, twice.** "A sweep for a shape misses every site where the
+  defect is an absence" belongs in the standing instructions, and the list is at its cap of
+  ten with nothing honestly retirable — the same thing happened last run. Filed as B-106:
+  mechanise instruction #6 so the slot frees up, rather than quietly dropping the lesson or
+  quietly breaking the cap.
+
 ### 2026-08-04 — a Firefox suite that would have passed with no extension loaded
 
 - **Symptom:** the first Firefox e2e run had one spec fail and one pass. The
@@ -116,6 +179,24 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-21 (семьдесят девятый)** — B-100; стадии 0–10. Ось та же, что вчера, и
+  продолжена сознательно: из двадцати экранов я видел пять, восемь областей `options.html`
+  не видел ни разу. Прогнал их все — пустыми и с засеянными сторами — и самая тяжёлая
+  находка оказалась на поверхности приватности. Сводка самоаудита **отрицала то, что
+  утверждает собственная таблица фактов**: «ни в одном не было адреса страницы, почты или
+  её содержимого» безусловно, при `leak-lookup` → «адрес почты» в `facts.md:47`. Плюс окно
+  «последние семь дней», которое не применялось при хранении 90 дней; `источник: undefined`
+  из строки, написанной прежней сборкой; неграмотное «с последние семь дней»; сырая
+  ISO-метка. **Свод формататоров прошлой итерации искал копии функции — и не увидел ни
+  экран, который не звал ни одной, ни восьмую копию в том же файле, который я час назад
+  правил.** Гейт для второй половины класса я написал, подсадил дефект — и **проверка
+  прошла**: рендереры передают строку аргументом, а не присваивают `textContent`. Ложную
+  проверку снёс, класс перенёс в e2e по отрисованному тексту. **И собственный гейт свежести
+  оказался невыполнимым:** правка поверхности без изменения пикселя не даёт коммита
+  скриншотов, а расписка, называющая коммит, не может назвать тот, в который входит, —
+  третья механика за день, теперь digest содержимого, и `fetch-depth: 0` снят как больше не
+  нужный. Одиннадцать плантов, легли все. 2472 юнита в 155 файлах, 150 e2e.
+  Постоянных инструкций десять, снятий нет. Вердикт REFINE.
 - **2026-08-21 (семьдесят восьмой)** — B-99; стадии 0–10. Ось выбрана по признанию
   дрейфа: последние находки были про гейты, а не про продукт, и из четырёх названных
   областей дизайн закрыт **только записями** — за всю сессию на интерфейс никто не смотрел.

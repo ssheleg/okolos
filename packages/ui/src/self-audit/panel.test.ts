@@ -77,7 +77,7 @@ describe('the log itself', () => {
   ]
   const el = renderSelfAudit(
     document,
-    { kind: 'ready', entries, since: 'Monday' },
+    { kind: 'ready', entries, since: 'Monday', windowStartIso: '2026-08-01T00:00:00.000Z' },
     handlers,
   )
 
@@ -125,5 +125,193 @@ describe('loading', () => {
     const el = renderSelfAudit(document, { kind: 'loading' }, handlers)
     expect(el.querySelector('[data-role=status]')?.textContent).toContain(message('auditReading'))
     expect(el.querySelector('[data-role=entries]')).toBeNull()
+  })
+})
+
+describe('the window the sentence names is the window the panel shows', () => {
+  // The panel used to be handed everything `outbound_log` holds — retention is
+  // ninety days — under a sentence that said "the last seven". The number and
+  // the claim beside it described different sets, on the one screen whose whole
+  // purpose is to be checkable against a browser network trace.
+  const entries = [
+    entry({ id: 'in', createdAt: '2026-08-04T09:00:00.000Z' }),
+    entry({ id: 'out', createdAt: '2026-07-02T09:00:00.000Z' }),
+  ]
+  const el = renderSelfAudit(
+    document,
+    { kind: 'ready', entries, since: 'x', windowStartIso: '2026-08-01T00:00:00.000Z' },
+    handlers,
+  )
+
+  it('leaves out what the window leaves out', () => {
+    const rows = el.querySelectorAll('[data-role=entry]')
+    expect(rows).toHaveLength(1)
+    expect(rows[0]?.getAttribute('data-entry')).toBe('in')
+  })
+
+  it('counts what it shows, not what it was handed', () => {
+    expect(el.querySelector('[data-role=summary]')?.textContent).toMatch(/:\s*1/)
+  })
+
+  it('lists the newest first, as the screen record says it does', () => {
+    const three = renderSelfAudit(
+      document,
+      {
+        kind: 'ready',
+        since: 'x',
+        windowStartIso: '2026-08-01T00:00:00.000Z',
+        entries: [
+          entry({ id: 'mid', createdAt: '2026-08-04T09:00:00.000Z' }),
+          entry({ id: 'new', createdAt: '2026-08-06T09:00:00.000Z' }),
+          entry({ id: 'old', createdAt: '2026-08-02T09:00:00.000Z' }),
+        ],
+      },
+      handlers,
+    )
+    const ids = [...three.querySelectorAll('[data-role=entry]')].map((r) =>
+      r.getAttribute('data-entry'),
+    )
+    expect(ids).toEqual(['new', 'mid', 'old'])
+  })
+})
+
+describe('a row the store wrote incompletely', () => {
+  // Read straight out of IndexedDB, where a row written by an older build, or a
+  // row a migration half-finished, does not have to match the type. The screen
+  // printed "источник: undefined" and left three lines blank — on the surface
+  // that carries the product's central claim.
+  const broken = { id: 'b1', createdAt: '2026-08-04T09:00:00.000Z' } as unknown as AuditEntry
+  const el = renderSelfAudit(
+    document,
+    { kind: 'ready', entries: [broken], since: 'x', windowStartIso: '2026-08-01T00:00:00.000Z' },
+    handlers,
+  )
+
+  it('never prints a value that is not there', () => {
+    expect(el.textContent ?? '').not.toContain('undefined')
+    expect(el.textContent ?? '').not.toContain('null')
+  })
+
+  it('names each missing field rather than leaving a blank line', () => {
+    for (const role of ['entry-destination', 'entry-purpose', 'entry-payload'] as const) {
+      const line = el.querySelector(`[data-role=${role}]`)?.textContent ?? ''
+      expect(line, role).not.toBe('')
+      expect(line, role).toContain(message('auditFieldUnknown'))
+    }
+    expect(el.querySelector('[data-role=entry-trigger]')?.textContent).toContain(
+      message('auditFieldUnknown'),
+    )
+  })
+
+  it('keeps the row rather than hiding it, because hiding is the dangerous direction', () => {
+    expect(el.querySelectorAll('[data-role=entry]')).toHaveLength(1)
+  })
+
+  it('counts it, and says its outcome was not recorded', () => {
+    const summary = el.querySelector('[data-role=summary]')?.textContent ?? ''
+    expect(summary).toContain(message('auditSummaryUnknownOutcome').split('$')[0]?.trim())
+  })
+
+  it('refuses to vouch for a request whose purpose it cannot read', () => {
+    const summary = el.querySelector('[data-role=summary]')?.textContent ?? ''
+    expect(summary).toContain(message('auditSummaryUnknownPurpose').split('$')[0]?.trim())
+    expect(summary).not.toContain(message('auditSummaryNoContent'))
+  })
+})
+
+describe('an entry with no time at all is still an entry', () => {
+  const el = renderSelfAudit(
+    document,
+    {
+      kind: 'ready',
+      since: 'x',
+      windowStartIso: '2026-08-01T00:00:00.000Z',
+      entries: [{ ...entry(), createdAt: '' }],
+      },
+    handlers,
+  )
+
+  it('is listed, because a row the window cannot place is not a row to drop', () => {
+    expect(el.querySelectorAll('[data-role=entry]')).toHaveLength(1)
+  })
+
+  it('says the time is not recorded instead of printing an empty line', () => {
+    expect(el.querySelector('[data-role=entry-time]')?.textContent).toBe(
+      message('auditTimeUnknown'),
+    )
+  })
+})
+
+describe('the absence the summary claims is only the absence it can prove', () => {
+  // `docs/brand/facts.md` says in its own table that `leak-lookup` sends the
+  // email address and `domain-status` sends the domain. The summary asserted
+  // that no request carried an email — under a list containing exactly such a
+  // request. A false privacy claim on the verification screen is worse than no
+  // screen at all.
+  it('names the address it sent instead of denying it sent one', () => {
+    const el = renderSelfAudit(
+      document,
+      {
+        kind: 'ready',
+        since: 'x',
+        windowStartIso: '2026-08-01T00:00:00.000Z',
+        entries: [entry({ purpose: 'leak-lookup', payloadShape: 'email:s@example.test' })],
+      },
+      handlers,
+    )
+    const summary = el.querySelector('[data-role=summary]')?.textContent ?? ''
+    expect(summary).toContain(message('auditSummaryCarriedAddress').split('$')[0]?.trim())
+    expect(summary).toContain(message('auditSummaryNoContent'))
+  })
+
+  it('names the domain a status check carried', () => {
+    const el = renderSelfAudit(
+      document,
+      {
+        kind: 'ready',
+        since: 'x',
+        windowStartIso: '2026-08-01T00:00:00.000Z',
+        entries: [entry({ purpose: 'domain-status', payloadShape: 'domain:example.test' })],
+      },
+      handlers,
+    )
+    expect(el.querySelector('[data-role=summary]')?.textContent).toContain(
+      message('auditSummaryCarriedDomain').split('$')[0]?.trim(),
+    )
+  })
+
+  it('still says what never leaves, because that is the claim the choke point keeps', () => {
+    const el = renderSelfAudit(
+      document,
+      {
+        kind: 'ready',
+        since: 'x',
+        windowStartIso: '2026-08-01T00:00:00.000Z',
+        entries: [entry({ purpose: 'feed-update', payloadShape: 'none' })],
+      },
+      handlers,
+    )
+    const summary = el.querySelector('[data-role=summary]')?.textContent ?? ''
+    expect(summary).toContain(message('auditSummaryNoContent'))
+    expect(summary).not.toContain(message('auditSummaryCarriedAddress').split('$')[0]?.trim())
+  })
+})
+
+describe('the instant is rendered the way every other screen renders one', () => {
+  it('uses the shared rendering rather than the stored string', () => {
+    const el = renderSelfAudit(
+      document,
+      {
+        kind: 'ready',
+        since: 'x',
+        windowStartIso: '2026-08-01T00:00:00.000Z',
+        entries: [entry({ createdAt: '2026-08-04T09:00:00.000Z' })],
+      },
+      handlers,
+    )
+    // The raw stored form reached this screen while four others were converted:
+    // the sweep that consolidated the formatters looked for copies of the
+    // function and could not see a screen that called none.
+    expect(el.querySelector('[data-role=entry-time]')?.textContent).toBe('2026-08-04 09:00:00 UTC')
   })
 })

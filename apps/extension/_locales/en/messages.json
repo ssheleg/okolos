@@ -172,10 +172,10 @@
     }
   },
   "auditSummaryNoContent": {
-    "message": "none contained a page address, an email or page content"
+    "message": "none contained a page address or page content"
   },
   "auditSummarySent": {
-    "message": "$COUNT$ requests sent since $SINCE$",
+    "message": "$COUNT$ requests sent in $SINCE$",
     "placeholders": {
       "count": {
         "content": "$1"
@@ -2238,6 +2238,53 @@
     "message": "The number shown, $PHONE$, reaches the people who made this page.",
     "placeholders": {
       "phone": {
+        "content": "$1"
+      }
+    }
+  },
+  "auditFieldUnknown": {
+    "message": "not recorded"
+  },
+  "auditTimeUnknown": {
+    "message": "when — not recorded"
+  },
+  "auditDestinationUnknown": {
+    "message": "where — not recorded"
+  },
+  "auditPayloadUnknown": {
+    "message": "what left — not recorded"
+  },
+  "auditPurposeUnknown": {
+    "message": "why — not recorded"
+  },
+  "auditSummaryUnknownOutcome": {
+    "message": "outcome not recorded: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "auditSummaryCarriedAddress": {
+    "message": "the email address you asked us to check: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "auditSummaryCarriedDomain": {
+    "message": "the domain you checked: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "auditSummaryUnknownPurpose": {
+    "message": "purpose not recorded, so these requests cannot be vouched for: $COUNT$",
+    "placeholders": {
+      "count": {
         "content": "$1"
       }
     }

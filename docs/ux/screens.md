@@ -30,7 +30,7 @@ never updated, which is the same drift this file exists to catch.)
 | SCR-07 | Findings queue | FLW-01, FLW-17 | - | built | e2e/scn-020.spec.ts, e2e/scn-002.spec.ts |
 | SCR-08 | Leaks and repair | FLW-10, FLW-11, FLW-16 | - | built | e2e/scn-015.spec.ts |
 | SCR-09 | Extensions watch | FLW-12 | - | built | e2e/scn-017.spec.ts |
-| SCR-10 | Self-audit | FLW-13, FLW-17 | - | built | packages/ui/src/self-audit/panel.ts:renderSelfAudit |
+| SCR-10 | Self-audit | FLW-13, FLW-17 | - | drifted | packages/ui/src/self-audit/panel.ts:renderSelfAudit |
 | SCR-11 | Journal and weekly diff | FLW-17 | - | built | e2e/scn-020.spec.ts |
 | SCR-12 | Settings | FLW-05, FLW-14 | - | built | packages/ui/src/settings/data-controls.ts:renderDataControls |
 | SCR-13 | Recovery checklist | FLW-06, FLW-07, FLW-16 | - | built | e2e/scn-025.spec.ts |
@@ -267,11 +267,15 @@ includes a redirect from `*.workers.dev`, not just a CNAME.
   | error | journal unreadable | - | states the problem and offers repair; never shows an empty list on error |
   | success | entries exist | - | newest first, grouped by purpose |
 - **Behavior notes:** this log is written by the single network choke point before each request; if a request could bypass it, the guarantee is void — enforced by lint and test, not by convention
+- **Behavior notes — what the summary may claim.** The one-line summary names no absence it cannot prove. Until 2026-08-21 it ended "no page address, **email** or page content" unconditionally, while [facts.md](../brand/facts.md) says in its own table that `leak-lookup` sends the email address and `domain-status` sends the domain: a list containing such a request, under a sentence denying it exists. The unconditional half is now only what the choke point keeps — no page address, no page content — and what did leave is named per purpose. A purpose this build cannot read drops the absence claim entirely and says why
+- **Behavior notes — the window is applied, not just worded.** The panel receives the boundary as an instant (`windowStartIso`) and filters on it; retention is ninety days, and it used to be handed all of them under the words "the last seven". A row whose time is unreadable is kept, because understating what left is this screen's dangerous direction
+- **Behavior notes — a row the store wrote incompletely.** Rows are read straight out of IndexedDB, where the type is a promise and an older build's row is not bound by it. Each missing field names itself ("куда — не записано"), the row is never hidden, and an outcome nobody recorded is counted in its own clause rather than dropped from the total
+- **Known gaps — B-101.** Four elements above do not exist in the code: the period filter, the feature filter, per-row detail with the exact bytes and the redaction applied, and grouping by purpose. Rows are flat, unopenable and ungrouped. Recorded rather than quietly deleted from the description, which is why the status below is `drifted`
 - **Wireframe:** wireframes/SCR-10.md
-- **Coverage:** packages/ui/src/self-audit/panel.ts:renderSelfAudit, apps/extension/src/options/index.ts
+- **Coverage:** packages/ui/src/self-audit/panel.ts:renderSelfAudit, apps/extension/src/options/index.ts, packages/ui/src/self-audit/panel.test.ts (24 checks), e2e/rendered-instants.spec.ts (nine areas, seeded stores, one row written the way an older build leaves it)
 - **Scenarios:** SCN-019
 - **Resources:** net layer journal, exporter
-- **Status:** built
+- **Status:** drifted
 
 ### SCR-11: Journal and weekly diff
 - **Used by:** FLW-17

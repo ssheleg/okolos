@@ -501,6 +501,24 @@ try {
    * What that leaves untested in this engine: the message catalogue resolving
    * through its `i18n`, and the pages' own stylesheet. Both are covered in
    * Chromium; neither is covered here, and saying so is the point.
+   *
+   * **Two measurements added 2026-08-21, so the limit has a named blocker rather
+   * than an absence of attempts.** The chrome context *does* allow the navigation,
+   * through `openTrustedLinkIn` — and Firefox then answers "System access is
+   * required. Start Firefox with -remote-allow-system-access". geckodriver's own
+   * `--allow-system-access` is not enough, and passing the browser flag through
+   * capabilities is refused outright: "Argument --remote-allow-system-access can't
+   * be set via capabilities". Getting past that means launching Firefox with the
+   * flag and attaching, which is a different harness.
+   *
+   * **And half of what the limit named is covered now.** The catalogue needs the
+   * extension; the stylesheet does not. `tools/gecko-layout.mjs`, which runs after
+   * this file, replays the markup Chromium renders against the built CSS inside
+   * Firefox and measures the defect class this project has seen four times — two
+   * pieces of text with nothing between them. Its first plant showed the engines
+   * differ in the *other* direction: with the row-of-controls rule removed,
+   * Chromium renders three buttons flush and Gecko does not, which is the argument
+   * for keeping both checks rather than either.
    */
 
 } catch (cause) {

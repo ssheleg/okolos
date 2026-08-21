@@ -294,12 +294,39 @@ textarea {
 [data-role='item'],
 [data-role='leak'],
 [data-role='step'],
-[data-role='change'] {
+[data-role='change'],
+[data-role='changed'] {
   display: flex;
   flex-direction: column;
   gap: var(--ok-space-1);
+  /*
+   * Every property the `button` rule sets, undone — because two of these rows *are*
+   * buttons and inherited the chip look from it: a rounded bordered box the width of its
+   * text, which reads as a disabled text field rather than a line in a list. The journal's
+   * history row and the popup's "nothing new since…" line both shipped that way, and the
+   * screenshot is what showed it.
+   *
+   * Declared here rather than as `button[data-role=entry]` so a row that becomes clickable
+   * later needs no new rule: whatever a row is made of, it is a row.
+   */
+  inline-size: 100%;
   padding: var(--ok-space-2) 0;
+  border: 0;
   border-block-start: var(--ok-shape-hairline) solid var(--ok-colour-border);
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+}
+
+/*
+ * A clickable row still has to look clickable. `cursor: pointer` comes from the button
+ * rule; this is the hover the chip's own background used to provide.
+ */
+button[data-role='entry']:hover,
+button[data-role='changed']:hover {
+  background: var(--ok-colour-surface-sunken);
 }
 
 [data-role='step'] input[type='checkbox'] {

@@ -101,16 +101,18 @@ describe('the log itself', () => {
   it('lists every entry with its destination, purpose and payload shape', () => {
     const rows = el.querySelectorAll('[data-role=entry]')
     expect(rows).toHaveLength(3)
-    expect(rows[0]?.querySelector('[data-role=entry-destination]')?.textContent).toBe(
+    // Labelled since 2026-08-21: the line is "куда: <host>", so the value is asserted
+    // inside the sentence the reader actually sees rather than instead of it.
+    expect(rows[0]?.querySelector('[data-role=entry-destination]')?.textContent).toContain(
       'api.pwnedpasswords.com',
     )
-    expect(rows[0]?.querySelector('[data-role=entry-payload]')?.textContent).toBe(
+    expect(rows[0]?.querySelector('[data-role=entry-payload]')?.textContent).toContain(
       'hash-prefix:5BAA6',
     )
   })
 
   it('explains the purpose in the reader’s words, not in ours', () => {
-    expect(el.querySelector('[data-role=entry-purpose]')?.textContent).toBe(
+    expect(el.querySelector('[data-role=entry-purpose]')?.textContent).toContain(
       message('auditPurposePasswordRange'),
     )
   })
@@ -236,8 +238,10 @@ describe('an entry with no time at all is still an entry', () => {
   })
 
   it('says the time is not recorded instead of printing an empty line', () => {
+    // The label carries the field name and the body says the value is missing: one
+    // sentence in both cases, which is the point of labelling them.
     expect(el.querySelector('[data-role=entry-time]')?.textContent).toBe(
-      message('auditTimeUnknown'),
+      `${message('auditWhen').split('$')[0]}${message('auditFieldUnknown')}`,
     )
   })
 })
@@ -312,6 +316,48 @@ describe('the instant is rendered the way every other screen renders one', () =>
     // The raw stored form reached this screen while four others were converted:
     // the sweep that consolidated the formatters looked for copies of the
     // function and could not see a screen that called none.
-    expect(el.querySelector('[data-role=entry-time]')?.textContent).toBe('2026-08-04 09:00:00 UTC')
+    expect(el.querySelector('[data-role=entry-time]')?.textContent).toContain(
+      '2026-08-04 09:00:00 UTC',
+    )
+  })
+})
+
+describe('every line says which field it is', () => {
+  // Five bare lines meant a reader had to know the order to know what they were reading —
+  // and a row missing two fields read as the same shape with parts silently absent. Found
+  // 2026-08-21 by rendering the area and looking at it.
+  const el = renderSelfAudit(
+    document,
+    {
+      kind: 'ready',
+      since: 'x',
+      windowStartIso: '2026-08-01T00:00:00.000Z',
+      entries: [entry()],
+    },
+    handlers,
+  )
+
+  it('labels the time, the destination, the purpose and the payload', () => {
+    for (const [role, key] of [
+      ['entry-time', 'auditWhen'],
+      ['entry-destination', 'auditWhere'],
+      ['entry-purpose', 'auditWhy'],
+      ['entry-payload', 'auditWhat'],
+    ] as const) {
+      const label = message(key).split('$')[0] as string
+      expect(el.querySelector(`[data-role=${role}]`)?.textContent, role).toContain(label.trim())
+    }
+  })
+
+  it('reads as one sentence whether the value is there or not', () => {
+    const broken = { id: 'b', createdAt: '2026-08-04T09:00:00.000Z' } as unknown as AuditEntry
+    const missing = renderSelfAudit(
+      document,
+      { kind: 'ready', since: 'x', windowStartIso: '2026-08-01T00:00:00.000Z', entries: [broken] },
+      handlers,
+    )
+    const line = missing.querySelector('[data-role=entry-destination]')?.textContent ?? ''
+    expect(line).toContain(message('auditWhere').split('$')[0]?.trim() as string)
+    expect(line).toContain(message('auditFieldUnknown'))
   })
 })

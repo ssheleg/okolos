@@ -2,7 +2,7 @@
 import { t } from '@okolos/i18n'
 import type { AuditEntry } from '@okolos/contracts'
 
-import { shortTime } from '../when.js'
+import { exactInstant } from '../when.js'
 
 /**
  * The self-audit panel: what left this device, and why.
@@ -173,16 +173,26 @@ function row(doc: Document, entry: AuditEntry): HTMLLIElement {
   const purpose = said(entry.purpose)
   const key = purpose === undefined ? undefined : purposeKey(purpose)
   const payload = said(entry.payloadShape)
+  /**
+   * Every field says which field it is.
+   *
+   * The row was five bare lines — an instant, a host, a purpose, a shape, a source — and a
+   * reader had to know the order to know what they were looking at. Worse when a field was
+   * missing: two rows of five lines and three lines read as the same shape with parts
+   * silently absent. One label per line, from the same words the missing case uses, so
+   * "куда: не записано" and "куда: api.pwnedpasswords.com" are the same sentence with
+   * different news in it.
+   */
+  const unknown = t('auditFieldUnknown')
   item.append(
-    // The shared rendering, not the stored string. The raw ISO form reached this screen
-    // while four others were converted on 2026-08-21: the sweep looked for copies of the
-    // formatter and could not see a screen that called none.
-    text(doc, 'entry-time', at === undefined ? t('auditTimeUnknown') : shortTime(at)),
-    text(doc, 'entry-destination', said(entry.destination) ?? t('auditDestinationUnknown')),
+    // The instant to the second, not the minute: this log exists to be lined up against a
+    // browser's own network panel, and the second is what makes two records comparable.
+    text(doc, 'entry-time', t('auditWhen', at === undefined ? unknown : exactInstant(at))),
+    text(doc, 'entry-destination', t('auditWhere', said(entry.destination) ?? unknown)),
     // The purpose id is the fallback on purpose: a destination this build does not have
     // wording for is still shown, named as the contract names it, rather than vanishing
     // from the log that exists to be complete.
-    text(doc, 'entry-purpose', key !== undefined ? t(key) : (purpose ?? t('auditPurposeUnknown'))),
+    text(doc, 'entry-purpose', t('auditWhy', key !== undefined ? t(key) : (purpose ?? unknown))),
     // Translated on read, never on write. `payloadShape` is stored in the audit log, and a
     // log written in whatever language was active that day stops being one record. Only the
     // bare "none" is prose; `email:…` and `hash-prefix:…` are shapes, and shapes are the
@@ -190,13 +200,12 @@ function row(doc: Document, entry: AuditEntry): HTMLLIElement {
     text(
       doc,
       'entry-payload',
-      payload === undefined
-        ? t('auditPayloadUnknown')
-        : payload === 'none'
-          ? t('auditPayloadNone')
-          : payload,
+      t(
+        'auditWhat',
+        payload === undefined ? unknown : payload === 'none' ? t('auditPayloadNone') : payload,
+      ),
     ),
-    text(doc, 'entry-trigger', t('auditTriggeredBy', said(entry.triggeredBy) ?? t('auditFieldUnknown'))),
+    text(doc, 'entry-trigger', t('auditTriggeredBy', said(entry.triggeredBy) ?? unknown)),
   )
   return item
 }

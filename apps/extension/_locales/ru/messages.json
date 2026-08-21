@@ -2245,18 +2245,6 @@
   "auditFieldUnknown": {
     "message": "не записано"
   },
-  "auditTimeUnknown": {
-    "message": "когда — не записано"
-  },
-  "auditDestinationUnknown": {
-    "message": "куда — не записано"
-  },
-  "auditPayloadUnknown": {
-    "message": "что ушло — не записано"
-  },
-  "auditPurposeUnknown": {
-    "message": "зачем — не записано"
-  },
   "auditSummaryUnknownOutcome": {
     "message": "исход не записан: $COUNT$",
     "placeholders": {
@@ -2285,6 +2273,38 @@
     "message": "назначение не записано, поэтому за эти запросы поручиться нельзя: $COUNT$",
     "placeholders": {
       "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "auditWhen": {
+    "message": "когда: $WHAT$",
+    "placeholders": {
+      "what": {
+        "content": "$1"
+      }
+    }
+  },
+  "auditWhere": {
+    "message": "куда: $WHAT$",
+    "placeholders": {
+      "what": {
+        "content": "$1"
+      }
+    }
+  },
+  "auditWhy": {
+    "message": "зачем: $WHAT$",
+    "placeholders": {
+      "what": {
+        "content": "$1"
+      }
+    }
+  },
+  "auditWhat": {
+    "message": "что ушло: $WHAT$",
+    "placeholders": {
+      "what": {
         "content": "$1"
       }
     }

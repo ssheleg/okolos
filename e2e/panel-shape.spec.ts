@@ -121,6 +121,44 @@ test('arriving at an area puts focus on the card, not on a wrapper around it', a
   }
 })
 
+test('a clickable row is drawn as a row, not as a chip', async ({ context, extensionId }) => {
+  /**
+   * Two rows in this product are `<button>`s — the journal's history line and the popup's
+   * "nothing new since…" line — and the stylesheet's chip rule gave them a rounded bordered
+   * box the width of their text, which reads as a disabled text field. Both shipped that
+   * way and the screenshot is what showed it.
+   *
+   * The measurable property is width: a row spans its panel, a chip does not. Asserted on
+   * the journal, whose row exists on a fresh profile — the popup's line needs a check to
+   * have happened, and a test that seeds one would be about the seeding.
+   */
+  const page = await context.newPage()
+  await page.goto(`chrome-extension://${extensionId}/options.html#journal`)
+  await expect(page.locator('[data-role=journal]')).toHaveCount(1)
+
+  const shape = await page.evaluate(() => {
+    const row = document.querySelector('button[data-role=entry]')
+    if (row === null) return null
+    const panel = document.querySelector('[data-role=journal]') as HTMLElement
+    const style = getComputedStyle(row)
+    return {
+      width: row.getBoundingClientRect().width,
+      inner: panel.clientWidth - Number.parseFloat(getComputedStyle(panel).paddingInline || '0') * 2,
+      radius: Number.parseFloat(style.borderTopLeftRadius),
+      border: Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderLeftWidth),
+      align: style.textAlign,
+    }
+  })
+
+  // A fresh profile has one journal row — the feed download — but if a build ever renders
+  // none, say so rather than passing on an absent element.
+  expect(shape, 'no journal row to measure').not.toBeNull()
+  expect(shape?.radius, 'the row has a chip corner').toBe(0)
+  expect(shape?.align, 'the row centres its text like a button').toBe('start')
+  // Full width, allowing for the panel's own padding rounding.
+  expect(shape?.width ?? 0).toBeGreaterThan((shape?.inner ?? 0) - 4)
+})
+
 for (const { file, role } of PAGES) {
   test(`${file} is one card too`, async ({ context, extensionId }) => {
     const page = await context.newPage()

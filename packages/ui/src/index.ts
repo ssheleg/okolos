@@ -90,4 +90,4 @@ export {
  * path: unlike `./words`, whose whole point is to stay out of the worker's graph, both
  * consumers of this are surfaces that already pull the graph in.
  */
-export { shortDate, shortTime } from './when.js'
+export { exactInstant, shortDate, shortTime } from './when.js'

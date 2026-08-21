@@ -41,10 +41,16 @@ happens before adding.
 5. **A new user-facing surface joins the accessibility sweep in the same
    change.** Four had accumulated outside it, and the one carrying an
    unlabelled control was the newest.
-6. **A test comment that defers an assertion to a later release names the
-   release and the requirement**, so the ledger carries the obligation. A
-   promise living only in a comment is tracked by nothing — the HIBP
-   attribution waited three releases in one.
+6. **A sweep for a defect's *shape* misses every site where the defect is an
+   absence.** Three times in one session: the instant formatters were swept by
+   matching copies of the function, so the screen that called *none* was
+   invisible — and so was a fourth copy under another name, and an eighth in the
+   very file the sweep had just edited. The severity table was not a function at
+   all. The styled-role allow-lists were three separate lists, each failing on
+   whichever screen was added last. **Ask what identifies the defect, then run
+   that query** — and where the defect is something *not being done*, the query
+   has to be behavioural: render the surface and read it, because no grep can
+   find a call that was never written.
 7. **A number produced by a tool is a claim about the tool** until it has been
    checked against the artefact. Report it as "the diagnostic says X", or
    verify it — never as "X". Reported as fact, a diagnostic's 225 dangling
@@ -70,6 +76,13 @@ happens before adding.
    matches in its scenario's Known limit, and name the parts that have no
    language — an invisible-character class, a DOM difference, a fact about the
    connection — so nobody re-derives which is which.
+
+**Прорежено 2026-08-21.** №6 («комментарий теста, откладывающий утверждение, называет
+релиз и требование») **стала проверкой** — `tools/deferred-assertions.test.ts` находит язык
+отсрочки в комментарии теста без ссылки на REQ или строку доски, и правило показано на
+синтетических строках, потому что свод по дереву сегодня пуст: весь долг выплачен, и гейт
+существует как охрана от следующего случая, а не как находка. На освободившийся слот встал
+урок, которому два прогона было некуда встать (B-106).
 
 **Прорежено 2026-08-09, до потолка в десять.** Каждое удаление — строкой:
 
@@ -256,6 +269,14 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-21 (девяносто шестой)** — B-106; стадии 0–10. Измерение изменило форму задачи:
+  языка отсрочки в тестах нет ни одного места, весь долг выплачен. Значит гейт — охрана от
+  следующего случая, и правило показано на синтетических строках, потому что «ничего не
+  совпало» одинаково верно для правила, которое не совпадает ни с чем. Шаблоны собраны из
+  кусков — четыре гейта в этой сессии читали собственную прозу как код. **№6 снята по триггеру
+  «стала проверкой»**, снятие записано строкой, и на слот встал урок, которому два прогона было
+  некуда встать: свип по форме дефекта не видит мест, где дефект — это отсутствие. Два планта,
+  легли оба. Постоянных инструкций десять, одно снятие. Вердикт REFINE.
 - **2026-08-21 (девяносто пятый)** — B-116; стадии 0–10. На баннере серьёзность несло только
   слово: «Критично» и «Незначительно» одними чернилами, на поверхности, которую человек видит
   первой. Аргумент «на чужой странице цвет ненадёжен» проверил и отбросил — полоса внутри

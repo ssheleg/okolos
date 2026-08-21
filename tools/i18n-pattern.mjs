@@ -46,6 +46,15 @@ export const LOWER = String.raw`[a-zа-яё](?:[\wА-ЯЁа-яё-]|'(?=[A-Za-z])
 export const LEAD = String.raw`\s*[\[(]?\s*(?:\$\{[^}]*\}[\s,.:;!?-]*)*`
 
 /**
+ * **The body may hold a quote of another kind, and could not until 2026-08-21.** It was
+ * `[^'"`]*` — no quote character at all — so a sentence in backticks with a nested double
+ * quote never reached its closing delimiter and the whole match failed. That is exactly what
+ * hid `\`Hidden text on this page addresses an assistant: "…"\`` in the content script: an
+ * English sentence on the agent gate, the one surface a person meets mid-decision, in a
+ * product that ships Russian first. Found by rendering the gate and reading it — this file's
+ * own header already said a screenshot, not a count, is what finds these. The negated class
+ * is now a lookahead against the delimiter itself, so group numbering is unchanged.
+ *
  * A colon after the first word, and nothing else.
  *
  * `'Blocked: this page has an unresolved finding…'` was invisible to the anchored form:
@@ -55,7 +64,9 @@ export const LEAD = String.raw`\s*[\[(]?\s*(?:\$\{[^}]*\}[\s,.:;!?-]*)*`
  * a match cross a quote boundary, and no sentence worth catching needs it.
  */
 export const SENTENCE = new RegExp(
-  String.raw`(['"` + '`' + String.raw`])(${LEAD}${WORD}:?(?: ${LOWER}){2,}[^'"` + '`' + String.raw`]*)\1`,
+  String.raw`(['"` +
+    '`' +
+    String.raw`])(${LEAD}${WORD}:?(?: ${LOWER}){2,}(?:(?!\1)[^\n])*)\1`,
   'g',
 )
 

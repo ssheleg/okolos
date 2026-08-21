@@ -2352,5 +2352,13 @@
   },
   "auditWindowAll": {
     "message": "Всё, что хранится"
+  },
+  "contentHiddenTextQuoted": {
+    "message": "Скрытый текст на этой странице обращается к ассистенту: «$WHAT$»",
+    "placeholders": {
+      "what": {
+        "content": "$1"
+      }
+    }
   }
 }

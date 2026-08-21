@@ -397,11 +397,22 @@ async function tellEmbeddingPage(verdicts: readonly Verdict[]): Promise<void> {
   )
 }
 
+/**
+ * The one line the agent gate quotes as its evidence.
+ *
+ * It was an English template literal, and the gate is the surface a person meets
+ * mid-decision: the whole panel was Russian around one English sentence, in a product whose
+ * `default_locale` is `ru`. Found 2026-08-21 by rendering the gate and reading it — the
+ * i18n sweep had called this file clean, because its anchor could not carry a sentence in
+ * backticks with a nested double quote in it (fixed in the same change, and the anchor now
+ * finds seven more).
+ *
+ * The snippet itself is not translated and must not be: it is the attacker's own text, and a
+ * reader checking the page has to find the same characters.
+ */
 function summarise(verdict: Verdict): string {
   const snippet = verdict.evidence.find((item) => item.snippet)?.snippet
-  return snippet
-    ? `Hidden text on this page addresses an assistant: "${snippet.slice(0, 120)}"`
-    : t('contentHiddenText')
+  return snippet ? t('contentHiddenTextQuoted', snippet.slice(0, 120)) : t('contentHiddenText')
 }
 
 function worst(verdicts: readonly Verdict[]): Verdict {

@@ -182,3 +182,32 @@ describe('the regex itself', () => {
     expect(SENTENCE.flags).toContain('g')
   })
 })
+
+describe('a sentence may hold a quote of another kind', () => {
+  /**
+   * The anchor forbade *any* quote character inside a sentence, so a template literal with a
+   * nested double quote never reached its closing backtick and the whole match failed. B-76
+   * recorded this class as fixed and it was not — the string it hid was an English sentence on
+   * the agent gate, the one surface a person meets mid-decision, found by rendering the surface
+   * and reading it rather than by any count (B-114).
+   */
+  const BT = '`'
+  const DQ = '"'
+
+  it('finds a sentence in backticks that quotes something', () => {
+    const line = `    ? ${BT}Hidden text on this page addresses an assistant: ${DQ}\${snippet}${DQ}${BT}`
+    expect(sentencesIn(line)).toHaveLength(1)
+  })
+
+  it('finds a sentence in single quotes that quotes something in doubles', () => {
+    expect(sentencesIn(`  throw new Error('refused to send ${DQ}feed${DQ} anywhere')`)).toHaveLength(
+      1,
+    )
+  })
+
+  it('still stops at its own delimiter, so one string cannot swallow the next', () => {
+    // Two sentences on one line stay two: the body may not contain the quote that closes it.
+    const found = sentencesIn("  t('the first one here', 'the second one here')")
+    expect(found).toEqual(['the first one here', 'the second one here'])
+  })
+})

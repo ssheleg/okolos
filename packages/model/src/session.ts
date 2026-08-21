@@ -52,6 +52,8 @@ export class ClassifierSession {
       }
     }
 
+    // i18n-exempt: names the backends that failed and goes to `deps.log` — a console line for
+    // whoever has devtools open. Stage three is not released, and no user surface shows this
     throw new Error(`No inference backend could be started — ${failures.join('; ')}`)
   }
 

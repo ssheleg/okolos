@@ -45,6 +45,8 @@ function keyFor(reason: Refusal['reason']): string {
   const key = REFUSAL_KEY[reason]
   // Unreachable while the table is a total `Record` over the union — and if a reason is
   // ever added without a message, saying so beats journalling an empty sentence.
+  // i18n-exempt: unreachable while the table above is a total `Record` over the union, and the
+  // audience of the throw is whoever added a reason without a message — not a user
   if (key === undefined) throw new Error(`no message key for feed refusal "${reason}"`)
   return key
 }

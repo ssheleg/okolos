@@ -2352,5 +2352,13 @@
   },
   "auditWindowAll": {
     "message": "Everything kept"
+  },
+  "contentHiddenTextQuoted": {
+    "message": "Hidden text on this page addresses an assistant: “$WHAT$”",
+    "placeholders": {
+      "what": {
+        "content": "$1"
+      }
+    }
   }
 }

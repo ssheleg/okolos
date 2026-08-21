@@ -22,6 +22,7 @@ import {
   renderQueue,
   renderRecovery,
   renderSelfAudit,
+  type AuditWindow,
   renderStorageProblem,
   renderTrusted,
   shortDate,
@@ -476,15 +477,46 @@ async function paintCurrent(): Promise<void> {
  */
 const AUDIT_WINDOW_DAYS = 7
 
+/**
+ * Which period the audit panel is showing. A page-lifetime choice, like `fullHistory`
+ * below: it is a question about the current reading, not a setting worth storing.
+ */
+let auditWindow: AuditWindow = 'week'
+
+/**
+ * The words for each period. A table, not a ternary inside `t(…)`: the locale gate reads
+ * keys out of a call with a literal argument and out of tables named `*_KEY`, and a key hiding in a
+ * conditional reads as translated-and-never-shown. This project has been caught by that
+ * exact shape before.
+ */
+const AUDIT_SINCE_KEY: Record<AuditWindow, string> = {
+  week: 'auditSinceSevenDays',
+  all: 'auditWindowAll',
+}
+
 async function load(): Promise<PanelState> {
   try {
     const db = await openDb()
     const entries = await db.getAll('outbound_log')
     if (entries.length === 0) return { kind: 'empty' }
-    const windowStartIso = new Date(
-      Date.now() - AUDIT_WINDOW_DAYS * 24 * 60 * 60 * 1000,
-    ).toISOString()
-    return { kind: 'ready', entries, since: t('auditSinceSevenDays'), windowStartIso }
+    /**
+     * The epoch for "everything kept", not a ninety-day subtraction.
+     *
+     * Retention already guarantees nothing older than ninety days exists, so the widest
+     * honest boundary is "no boundary" — and computing 90 days here would invent a second
+     * place where the retention number lives.
+     */
+    const windowStartIso =
+      auditWindow === 'all'
+        ? new Date(0).toISOString()
+        : new Date(Date.now() - AUDIT_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString()
+    return {
+      kind: 'ready',
+      entries,
+      since: t(AUDIT_SINCE_KEY[auditWindow]),
+      windowStartIso,
+      window: auditWindow,
+    }
   } catch (cause) {
     return { kind: 'error', message: String(cause) }
   }
@@ -965,6 +997,10 @@ async function selfAuditSection(): Promise<HTMLElement> {
   return renderSelfAudit(document, await load(), {
     onExport: () => void download(),
     onRepair: () => void reload(),
+    onWindow: (next) => {
+      auditWindow = next
+      void reload()
+    },
   })
 }
 

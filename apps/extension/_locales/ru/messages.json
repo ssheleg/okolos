@@ -2308,5 +2308,49 @@
         "content": "$1"
       }
     }
+  },
+  "auditKeptFeedUpdate": {
+    "message": "Ничего вашего: запрос за подписанным списком. Ни адреса страницы, ни её содержимого."
+  },
+  "auditKeptModelUpdate": {
+    "message": "Ничего вашего: скачивание файла модели."
+  },
+  "auditKeptPasswordRange": {
+    "message": "Первые пять символов SHA-1-хеша пароля. Сам пароль и его полный хеш не отправляются и здесь не хранятся."
+  },
+  "auditKeptLeakLookup": {
+    "message": "Адрес почты, который вы дали на проверку. В журнале он сокращён до первой буквы — полностью он здесь не хранится."
+  },
+  "auditKeptFileHash": {
+    "message": "Хеш файла. Ни имени файла, ни его содержимого."
+  },
+  "auditKeptDomainStatus": {
+    "message": "Домен, который вы проверяли. Ни адреса страницы, ни её содержимого."
+  },
+  "auditKeptUnknown": {
+    "message": "Назначение не записано, поэтому что ушло с этим запросом — неизвестно."
+  },
+  "auditOutcome": {
+    "message": "исход: $WHAT$",
+    "placeholders": {
+      "what": {
+        "content": "$1"
+      }
+    }
+  },
+  "auditOutcomeSent": {
+    "message": "отправлено"
+  },
+  "auditOutcomeBlocked": {
+    "message": "остановлено до отправки"
+  },
+  "auditOutcomeFailed": {
+    "message": "не удалось"
+  },
+  "auditWindowWeek": {
+    "message": "Последние семь дней"
+  },
+  "auditWindowAll": {
+    "message": "Всё, что хранится"
   }
 }

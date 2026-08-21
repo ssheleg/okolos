@@ -25,7 +25,7 @@ function message(key: string): string {
   return entry.message
 }
 
-const handlers = { onExport: vi.fn(), onRepair: vi.fn() }
+const handlers = { onExport: vi.fn(), onRepair: vi.fn(), onWindow: vi.fn() }
 
 function entry(overrides: Partial<AuditEntry> = {}): AuditEntry {
   return {
@@ -77,7 +77,7 @@ describe('the log itself', () => {
   ]
   const el = renderSelfAudit(
     document,
-    { kind: 'ready', entries, since: 'Monday', windowStartIso: '2026-08-01T00:00:00.000Z' },
+    { kind: 'ready', window: 'week' as const, entries, since: 'Monday', windowStartIso: '2026-08-01T00:00:00.000Z' },
     handlers,
   )
 
@@ -141,7 +141,7 @@ describe('the window the sentence names is the window the panel shows', () => {
   ]
   const el = renderSelfAudit(
     document,
-    { kind: 'ready', entries, since: 'x', windowStartIso: '2026-08-01T00:00:00.000Z' },
+    { kind: 'ready', window: 'week' as const, entries, since: 'x', windowStartIso: '2026-08-01T00:00:00.000Z' },
     handlers,
   )
 
@@ -159,7 +159,7 @@ describe('the window the sentence names is the window the panel shows', () => {
     const three = renderSelfAudit(
       document,
       {
-        kind: 'ready',
+        kind: 'ready', window: 'week' as const,
         since: 'x',
         windowStartIso: '2026-08-01T00:00:00.000Z',
         entries: [
@@ -185,7 +185,7 @@ describe('a row the store wrote incompletely', () => {
   const broken = { id: 'b1', createdAt: '2026-08-04T09:00:00.000Z' } as unknown as AuditEntry
   const el = renderSelfAudit(
     document,
-    { kind: 'ready', entries: [broken], since: 'x', windowStartIso: '2026-08-01T00:00:00.000Z' },
+    { kind: 'ready', window: 'week' as const, entries: [broken], since: 'x', windowStartIso: '2026-08-01T00:00:00.000Z' },
     handlers,
   )
 
@@ -225,7 +225,7 @@ describe('an entry with no time at all is still an entry', () => {
   const el = renderSelfAudit(
     document,
     {
-      kind: 'ready',
+      kind: 'ready', window: 'week' as const,
       since: 'x',
       windowStartIso: '2026-08-01T00:00:00.000Z',
       entries: [{ ...entry(), createdAt: '' }],
@@ -256,7 +256,7 @@ describe('the absence the summary claims is only the absence it can prove', () =
     const el = renderSelfAudit(
       document,
       {
-        kind: 'ready',
+        kind: 'ready', window: 'week' as const,
         since: 'x',
         windowStartIso: '2026-08-01T00:00:00.000Z',
         entries: [entry({ purpose: 'leak-lookup', payloadShape: 'email:s@example.test' })],
@@ -272,7 +272,7 @@ describe('the absence the summary claims is only the absence it can prove', () =
     const el = renderSelfAudit(
       document,
       {
-        kind: 'ready',
+        kind: 'ready', window: 'week' as const,
         since: 'x',
         windowStartIso: '2026-08-01T00:00:00.000Z',
         entries: [entry({ purpose: 'domain-status', payloadShape: 'domain:example.test' })],
@@ -288,7 +288,7 @@ describe('the absence the summary claims is only the absence it can prove', () =
     const el = renderSelfAudit(
       document,
       {
-        kind: 'ready',
+        kind: 'ready', window: 'week' as const,
         since: 'x',
         windowStartIso: '2026-08-01T00:00:00.000Z',
         entries: [entry({ purpose: 'feed-update', payloadShape: 'none' })],
@@ -306,7 +306,7 @@ describe('the instant is rendered the way every other screen renders one', () =>
     const el = renderSelfAudit(
       document,
       {
-        kind: 'ready',
+        kind: 'ready', window: 'week' as const,
         since: 'x',
         windowStartIso: '2026-08-01T00:00:00.000Z',
         entries: [entry({ createdAt: '2026-08-04T09:00:00.000Z' })],
@@ -329,7 +329,7 @@ describe('every line says which field it is', () => {
   const el = renderSelfAudit(
     document,
     {
-      kind: 'ready',
+      kind: 'ready', window: 'week' as const,
       since: 'x',
       windowStartIso: '2026-08-01T00:00:00.000Z',
       entries: [entry()],
@@ -353,11 +353,88 @@ describe('every line says which field it is', () => {
     const broken = { id: 'b', createdAt: '2026-08-04T09:00:00.000Z' } as unknown as AuditEntry
     const missing = renderSelfAudit(
       document,
-      { kind: 'ready', since: 'x', windowStartIso: '2026-08-01T00:00:00.000Z', entries: [broken] },
+      { kind: 'ready', window: 'week' as const, since: 'x', windowStartIso: '2026-08-01T00:00:00.000Z', entries: [broken] },
       handlers,
     )
     const line = missing.querySelector('[data-role=entry-destination]')?.textContent ?? ''
     expect(line).toContain(message('auditWhere').split('$')[0]?.trim() as string)
     expect(line).toContain(message('auditFieldUnknown'))
+  })
+})
+
+describe('a row opens, and what is behind it is what the log holds', () => {
+  /**
+   * SCR-10 promised "per-row detail with the exact bytes sent and redaction applied" for two
+   * weeks while rows were flat and unopenable (B-101). The exact bytes are deliberately not
+   * stored — a leak lookup writes `email:s***@example.test`, redacted where it is written,
+   * because this log is exportable and wipeable and a log full of plaintext addresses would
+   * be a secret store of its own. So the detail answers the question instead: what left, and
+   * what was held back.
+   */
+  const opened = (e: AuditEntry): HTMLElement =>
+    renderSelfAudit(
+      document,
+      { kind: 'ready', window: 'week' as const, entries: [e], since: 'x', windowStartIso: '2026-08-01T00:00:00.000Z' },
+      handlers,
+    )
+
+  it('is a native disclosure, so a keyboard reaches it', () => {
+    const el = opened(entry())
+    expect(el.querySelector('details[data-role=entry-detail]')).not.toBeNull()
+    expect(el.querySelector('summary[data-role=entry-summary]')).not.toBeNull()
+  })
+
+  it('says what that purpose sends and what it does not', () => {
+    expect(
+      opened(entry({ purpose: 'password-range' })).querySelector('[data-role=entry-kept]')
+        ?.textContent,
+    ).toBe(message('auditKeptPasswordRange'))
+    expect(
+      opened(entry({ purpose: 'leak-lookup' })).querySelector('[data-role=entry-kept]')
+        ?.textContent,
+    ).toBe(message('auditKeptLeakLookup'))
+  })
+
+  it('refuses to describe a purpose it cannot read', () => {
+    const odd = { ...entry(), purpose: 'something-new' } as unknown as AuditEntry
+    expect(opened(odd).querySelector('[data-role=entry-kept]')?.textContent).toBe(
+      message('auditKeptUnknown'),
+    )
+  })
+
+  it('names the outcome in words, and says when there is none', () => {
+    expect(opened(entry({ outcome: 'blocked-by-redactor' })).querySelector('[data-role=entry-outcome]')?.textContent).toContain(
+      message('auditOutcomeBlocked'),
+    )
+    const noOutcome = { ...entry(), outcome: undefined } as unknown as AuditEntry
+    expect(opened(noOutcome).querySelector('[data-role=entry-outcome]')?.textContent).toContain(
+      message('auditFieldUnknown'),
+    )
+  })
+})
+
+describe('the period is a control, not a fixed sentence', () => {
+  // Retention is ninety days and the default view is seven, so without this the other
+  // eighty-three were reachable only by exporting the file.
+  const el = renderSelfAudit(
+    document,
+    { kind: 'ready', window: 'week' as const, entries: [entry()], since: 'x', windowStartIso: '2026-08-01T00:00:00.000Z' },
+    handlers,
+  )
+
+  it('offers both periods and marks the one in force', () => {
+    expect(el.querySelector('[data-role=window-week]')?.getAttribute('aria-pressed')).toBe('true')
+    expect(el.querySelector('[data-role=window-all]')?.getAttribute('aria-pressed')).toBe('false')
+  })
+
+  it('asks the caller for the other one rather than filtering behind its back', () => {
+    const onWindow = vi.fn()
+    const own = renderSelfAudit(
+      document,
+      { kind: 'ready', window: 'week' as const, entries: [entry()], since: 'x', windowStartIso: '2026-08-01T00:00:00.000Z' },
+      { ...handlers, onWindow },
+    )
+    own.querySelector<HTMLButtonElement>('[data-role=window-all]')?.click()
+    expect(onWindow).toHaveBeenCalledWith('all')
   })
 })

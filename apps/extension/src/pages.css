@@ -392,6 +392,66 @@ button[data-role='changed']:hover {
   font-size: var(--ok-type-size-sm);
 }
 
+/*
+ * The audit's rows open, and the affordance took three attempts to get right.
+ *
+ * Hiding the marker left a closed row indistinguishable from a static one — nothing on the
+ * screen said it opened. Keeping the native marker put it on a line of its own *above* the
+ * first field, because a `<summary>` holding block children starts them on new lines. So the
+ * marker is drawn here, inline with the first line, and it turns when the row is open.
+ * Each version was rendered and looked at; none of this is visible in the markup.
+ */
+[data-role='entry-detail'] summary {
+  cursor: pointer;
+  list-style: none;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: var(--ok-space-2);
+}
+
+[data-role='entry-detail'] summary::-webkit-details-marker {
+  display: none;
+}
+
+[data-role='entry-detail'] summary::before {
+  content: '▸';
+  grid-row: 1;
+  color: var(--ok-colour-text-muted);
+}
+
+[data-role='entry-detail'][open] summary::before {
+  content: '▾';
+}
+
+/* The five lines sit in the second column, under one another. */
+[data-role='entry-detail'] summary > * {
+  grid-column: 2;
+}
+
+[data-role='entry-detail'][open] summary {
+  margin-block-end: var(--ok-space-2);
+}
+
+[data-role='entry-kept'],
+[data-role='entry-outcome'] {
+  color: var(--ok-colour-text-muted);
+  font-size: var(--ok-type-size-sm);
+}
+
+/* The two periods, side by side rather than stacked. */
+[data-role='window'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ok-space-2);
+  margin-block: var(--ok-space-2);
+}
+
+[data-role='window'] button[aria-pressed='true'] {
+  border-color: var(--ok-colour-border-strong);
+  background: var(--ok-colour-surface-sunken);
+  font-weight: var(--ok-type-weight-strong);
+}
+
 /* --------------------------------------------------------------- states */
 
 [data-role='error'],

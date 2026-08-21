@@ -57,3 +57,59 @@ test('the panel never shows an empty list in place of a failure', async ({
     if (hasTable) expect(hasRows, 'a table with no rows is an empty claim').toBe(true)
   }).toPass({ timeout: RECORD_VISIBLE_MS })
 })
+
+test('a row opens, and says what that request sends and what it does not', async ({
+  context,
+  extensionId,
+}) => {
+  /**
+   * SCN-019 step 2 — "user opens a row" — had no coverage and, until 2026-08-21, nothing to
+   * cover: rows were flat and unopenable while SCR-10's record promised per-row detail
+   * (B-101). What is behind the row is what the log holds: the exact bytes are deliberately
+   * not stored, so the detail names what left for that purpose and what was held back.
+   */
+  const page = await context.newPage()
+  await page.goto(`chrome-extension://${extensionId}/options.html#audit`)
+
+  const row = page.locator('[data-role=entries] [data-role=entry]').first()
+  await expect(row).toBeVisible({ timeout: RECORD_VISIBLE_MS })
+
+  const kept = row.locator('[data-role=entry-kept]')
+  // Present in the DOM either way — `<details>` hides its content rather than dropping it —
+  // so the assertion is about what a person can *see*.
+  await expect(kept).toBeHidden()
+
+  await row.locator('summary').click()
+  await expect(kept).toBeVisible()
+  // The feed download is the one request a fresh profile has made.
+  await expect(kept).toContainText('signed list')
+  await expect(row.locator('[data-role=entry-outcome]')).toContainText('sent')
+})
+
+test('the period is a control, and widening it keeps the panel honest', async ({
+  context,
+  extensionId,
+}) => {
+  // Retention is ninety days and the default view is seven; before this the other
+  // eighty-three were reachable only by exporting the file.
+  const page = await context.newPage()
+  await page.goto(`chrome-extension://${extensionId}/options.html#audit`)
+
+  // The control belongs to the `ready` state, and a profile with nothing sent yet is
+  // `empty` — the feed download lands within a second of the worker booting, but "within a
+  // second" is a race, and this test passed alone and failed in the full run because of it.
+  await expect(page.locator('[data-role=entries] [data-role=entry]').first()).toBeVisible({
+    timeout: RECORD_VISIBLE_MS,
+  })
+
+  const week = page.locator('[data-role=window-week]')
+  const all = page.locator('[data-role=window-all]')
+  await expect(week).toHaveAttribute('aria-pressed', 'true', { timeout: RECORD_VISIBLE_MS })
+  await expect(all).toHaveAttribute('aria-pressed', 'false')
+
+  await all.click()
+  await expect(all).toHaveAttribute('aria-pressed', 'true')
+  await expect(week).toHaveAttribute('aria-pressed', 'false')
+  // The summary follows the control rather than keeping the sentence it opened with.
+  await expect(page.locator('[data-role=summary]')).toContainText('Everything kept')
+})

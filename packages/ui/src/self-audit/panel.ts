@@ -32,11 +32,26 @@ export type PanelState =
        */
       readonly windowStartIso: string
       readonly since: string
+      /** Which period the control shows as chosen. */
+      readonly window: AuditWindow
     }
+
+/** How far back the panel is looking. The instant is computed by the caller. */
+export type AuditWindow = 'week' | 'all'
 
 export interface PanelHandlers {
   readonly onExport: () => void
   readonly onRepair: () => void
+  /**
+   * The reader asked for a different period.
+   *
+   * SCR-10 promised "filters by period and feature" from the start. The feature filter is
+   * deliberately not built — over six purposes at a handful of rows a day it is a control
+   * that costs a line and answers nothing — but the period is real: retention is ninety days
+   * and the default view is seven, so without this the other eighty-three are reachable only
+   * by exporting the file.
+   */
+  readonly onWindow: (next: AuditWindow) => void
 }
 
 export function renderSelfAudit(
@@ -76,7 +91,10 @@ export function renderSelfAudit(
 
     case 'ready': {
       const shown = [...state.entries].filter((e) => within(e, state.windowStartIso)).sort(newestFirst)
-      section.append(text(doc, 'summary', summarise(shown, state.since)))
+      section.append(
+        text(doc, 'summary', summarise(shown, state.since)),
+        windowControl(doc, state.window, handlers),
+      )
       const list = doc.createElement('ol')
       list.setAttribute('data-role', 'entries')
       for (const entry of shown) list.append(row(doc, entry))
@@ -164,6 +182,36 @@ function carried(entries: readonly AuditEntry[]): ReadonlyArray<readonly [string
   return [...counts]
 }
 
+/**
+ * The period control, and why there are two positions rather than a date picker.
+ *
+ * Retention is ninety days; the sentence above says seven. Two named periods answer the
+ * question a reader of this screen actually has — "and before that?" — without inventing a
+ * range nobody asked to specify. The chosen one is `aria-pressed`, so the state is available
+ * to a screen reader and not only to the eye.
+ */
+function windowControl(doc: Document, chosen: AuditWindow, handlers: PanelHandlers): HTMLElement {
+  const bar = doc.createElement('div')
+  bar.setAttribute('data-role', 'window')
+
+  /**
+   * Both positions written out, rather than a loop over a pair.
+   *
+   * The loop built its role as `` `window-${which}` `` and read its message key out of a
+   * tuple array, and **both were invisible to every static reader in this project**: the
+   * wireframe generator reports roles it can see as literals, and the locale gate reads keys
+   * out of `t('…')` calls and `*_KEY` tables. Two gates went red at once, and both were
+   * right — a name assembled at runtime cannot be checked by anything that reads the source.
+   */
+  const week = action(doc, 'window-week', t('auditWindowWeek'), () => handlers.onWindow('week'))
+  week.setAttribute('aria-pressed', String(chosen === 'week'))
+  const all = action(doc, 'window-all', t('auditWindowAll'), () => handlers.onWindow('all'))
+  all.setAttribute('aria-pressed', String(chosen === 'all'))
+
+  bar.append(week, all)
+  return bar
+}
+
 function row(doc: Document, entry: AuditEntry): HTMLLIElement {
   const item = doc.createElement('li')
   item.setAttribute('data-role', 'entry')
@@ -184,7 +232,28 @@ function row(doc: Document, entry: AuditEntry): HTMLLIElement {
    * different news in it.
    */
   const unknown = t('auditFieldUnknown')
-  item.append(
+
+  /**
+   * The row opens, and what is behind it is what the log holds — not "the exact bytes".
+   *
+   * SCR-10 promised "per-row detail with the exact bytes sent and redaction applied" for two
+   * weeks, and the exact bytes are **deliberately not stored**: a leak lookup writes
+   * `email:s***@example.test`, redacted at the point of writing, because this log is
+   * exportable and wipeable and a log full of plaintext addresses would be a new secret
+   * store of its own. So the detail says what did leave for that purpose and what was held
+   * back — which is the question a reader has, and a stronger answer than a byte dump.
+   *
+   * A native `<details>` rather than a button and a state flag: keyboard support, an
+   * accessible disclosure role, and nothing to keep in sync.
+   */
+  const disclosure = doc.createElement('details')
+  disclosure.setAttribute('data-role', 'entry-detail')
+  const summary = doc.createElement('summary')
+  summary.setAttribute('data-role', 'entry-summary')
+  disclosure.append(summary)
+  item.append(disclosure)
+
+  summary.append(
     // The instant to the second, not the minute: this log exists to be lined up against a
     // browser's own network panel, and the second is what makes two records comparable.
     text(doc, 'entry-time', t('auditWhen', at === undefined ? unknown : exactInstant(at))),
@@ -207,7 +276,45 @@ function row(doc: Document, entry: AuditEntry): HTMLLIElement {
     ),
     text(doc, 'entry-trigger', t('auditTriggeredBy', said(entry.triggeredBy) ?? unknown)),
   )
+
+  const outcome = said(entry.outcome)
+  // `t('auditKeptUnknown')` spelled out, not reached through a `??` inside another call: the
+  // locale gate reads keys from `t('…')` and from `*_KEY` tables, and a key hiding in an
+  // expression reads as translated-and-never-shown.
+  const kept = purpose === undefined ? undefined : KEPT_KEY[purpose]
+  disclosure.append(
+    text(doc, 'entry-kept', kept === undefined ? t('auditKeptUnknown') : t(kept)),
+    text(
+      doc,
+      'entry-outcome',
+      t('auditOutcome', outcome === undefined ? unknown : t(OUTCOME_KEY[outcome] ?? 'auditFieldUnknown')),
+    ),
+  )
   return item
+}
+
+/**
+ * What each purpose sends, and what it holds back — the facts table, in code.
+ *
+ * `docs/brand/facts.md` carries the same six rows under "Что уходит с устройства", and a
+ * gate compares that document against the tree. Kept beside `PURPOSE_KEY` because they
+ * answer different questions: that one names the request, this one is what a person opens
+ * the row to read.
+ */
+const KEPT_KEY: Record<string, string> = {
+  'feed-update': 'auditKeptFeedUpdate',
+  'model-update': 'auditKeptModelUpdate',
+  'password-range': 'auditKeptPasswordRange',
+  'leak-lookup': 'auditKeptLeakLookup',
+  'file-hash': 'auditKeptFileHash',
+  'domain-status': 'auditKeptDomainStatus',
+}
+
+/** The three outcomes the contract has, in words. A row with none says so instead. */
+const OUTCOME_KEY: Record<string, string> = {
+  sent: 'auditOutcomeSent',
+  'blocked-by-redactor': 'auditOutcomeBlocked',
+  failed: 'auditOutcomeFailed',
 }
 
 /** Keys, not sentences: a table of words built at module load resolves before

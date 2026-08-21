@@ -64,7 +64,12 @@ export {
   type FirstRunHandlers,
   type FirstRunProps,
 } from './first-run/screen.js'
-export { renderSelfAudit, type PanelHandlers, type PanelState } from './self-audit/panel.js'
+export {
+  renderSelfAudit,
+  type AuditWindow,
+  type PanelHandlers,
+  type PanelState,
+} from './self-audit/panel.js'
 export {
   renderDataControls,
   type DataControlsHandlers,

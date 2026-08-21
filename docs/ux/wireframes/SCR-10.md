@@ -17,12 +17,19 @@ addressable as `[data-role=<name>]`, which is also how the tests reach them.
 - `summary`
 - `entries`
 - `export`
+- `window`
+- `window-week`
+- `window-all`
 - `entry`
+- `entry-detail`
+- `entry-summary`
 - `entry-time`
 - `entry-destination`
 - `entry-purpose`
 - `entry-payload`
 - `entry-trigger`
+- `entry-kept`
+- `entry-outcome`
 
 **States**
 

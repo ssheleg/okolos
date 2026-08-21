@@ -30,7 +30,7 @@ never updated, which is the same drift this file exists to catch.)
 | SCR-07 | Findings queue | FLW-01, FLW-17 | - | built | e2e/scn-020.spec.ts, e2e/scn-002.spec.ts |
 | SCR-08 | Leaks and repair | FLW-10, FLW-11, FLW-16 | - | built | e2e/scn-015.spec.ts |
 | SCR-09 | Extensions watch | FLW-12 | - | built | e2e/scn-017.spec.ts |
-| SCR-10 | Self-audit | FLW-13, FLW-17 | - | drifted | packages/ui/src/self-audit/panel.ts:renderSelfAudit |
+| SCR-10 | Self-audit | FLW-13, FLW-17 | - | built | packages/ui/src/self-audit/panel.ts:renderSelfAudit |
 | SCR-11 | Journal and weekly diff | FLW-17 | - | built | e2e/scn-020.spec.ts |
 | SCR-12 | Settings | FLW-05, FLW-14 | - | built | packages/ui/src/settings/data-controls.ts:renderDataControls |
 | SCR-13 | Recovery checklist | FLW-06, FLW-07, FLW-16 | - | built | e2e/scn-025.spec.ts |
@@ -285,7 +285,7 @@ includes a redirect from `*.workers.dev`, not just a CNAME.
 ### SCR-10: Self-audit
 - **Used by:** FLW-13, FLW-17
 - **Purpose:** make "we don't collect your browsing" verifiable rather than promised
-- **Elements:** outbound request log — time, destination, purpose, payload shape, what triggered it; filters by period and feature; **primary action: "Выгрузить журнал"**; per-row detail with the exact bytes sent and redaction applied; a one-line summary ("this week: N requests, none containing a URL or address")
+- **Elements:** outbound request log — each row labelled (`когда/куда/зачем/что ушло/источник`) and **openable**, with what that purpose sends and what it holds back plus the outcome in words; a two-position period control (the last seven days / everything kept); **primary action: "Выгрузить журнал"**; a one-line summary that names what left as well as what did not
 - **States:**
   | State | Trigger | Figma frame | Behavior |
   |-------|---------|-------------|----------|
@@ -305,12 +305,21 @@ includes a redirect from `*.workers.dev`, not just a CNAME.
   sentence with different news in it. This screen is the one place that renders the second
   (`exactInstant`, not `shortTime`), because its purpose is being lined up against a
   browser's own network panel and the second is what makes two records comparable
-- **Known gaps — B-101.** Four elements above do not exist in the code: the period filter, the feature filter, per-row detail with the exact bytes and the redaction applied, and grouping by purpose. Rows are flat, unopenable and ungrouped. Recorded rather than quietly deleted from the description, which is why the status below is `drifted`
+- **Two promises dropped on purpose, with the reasons (B-101).** The record asked for four
+  elements that did not exist; two are built and two are not going to be. **"The exact bytes
+  sent" is not stored and must not be:** a leak lookup writes `email:s***@example.test`,
+  redacted where it is written, because this log is exportable and wipeable and a log full of
+  plaintext addresses would be a secret store of its own — so the row's detail names what left
+  for that purpose and what was held back, which is the question a reader has and a stronger
+  answer than a byte dump. **A filter by feature** over six purposes at a handful of rows a
+  day is a control that costs a line and answers nothing. **Grouping by purpose** contradicts
+  the newest-first order this screen's own scenario promises in step 1; with a seven-day
+  window the flat list is short enough that grouping only adds nesting
 - **Wireframe:** wireframes/SCR-10.md
-- **Coverage:** packages/ui/src/self-audit/panel.ts:renderSelfAudit, apps/extension/src/options/index.ts, packages/ui/src/self-audit/panel.test.ts (24 checks), e2e/rendered-instants.spec.ts (nine areas, seeded stores, one row written the way an older build leaves it)
+- **Coverage:** packages/ui/src/self-audit/panel.ts:renderSelfAudit, apps/extension/src/options/index.ts, packages/ui/src/self-audit/panel.test.ts (32 checks), e2e/scn-019.spec.ts (four, including opening a row and widening the period), e2e/rendered-instants.spec.ts (nine areas, seeded stores, one row written the way an older build leaves it)
 - **Scenarios:** SCN-019
 - **Resources:** net layer journal, exporter
-- **Status:** drifted
+- **Status:** built
 
 ### SCR-11: Journal and weekly diff
 - **Used by:** FLW-17

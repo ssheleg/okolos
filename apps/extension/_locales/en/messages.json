@@ -2308,5 +2308,49 @@
         "content": "$1"
       }
     }
+  },
+  "auditKeptFeedUpdate": {
+    "message": "Nothing of yours: a request for a signed list. No page address, no page content."
+  },
+  "auditKeptModelUpdate": {
+    "message": "Nothing of yours: a model file download."
+  },
+  "auditKeptPasswordRange": {
+    "message": "The first five characters of the password’s SHA-1 hash. The password itself and its full hash are never sent and are not kept here."
+  },
+  "auditKeptLeakLookup": {
+    "message": "The email address you asked us to check. This log shortens it to its first letter — the whole address is not kept here."
+  },
+  "auditKeptFileHash": {
+    "message": "The file’s hash. Not its name, not its contents."
+  },
+  "auditKeptDomainStatus": {
+    "message": "The domain you checked. No page address, no page content."
+  },
+  "auditKeptUnknown": {
+    "message": "The purpose was not recorded, so what went with this request is unknown."
+  },
+  "auditOutcome": {
+    "message": "outcome: $WHAT$",
+    "placeholders": {
+      "what": {
+        "content": "$1"
+      }
+    }
+  },
+  "auditOutcomeSent": {
+    "message": "sent"
+  },
+  "auditOutcomeBlocked": {
+    "message": "stopped before sending"
+  },
+  "auditOutcomeFailed": {
+    "message": "failed"
+  },
+  "auditWindowWeek": {
+    "message": "The last seven days"
+  },
+  "auditWindowAll": {
+    "message": "Everything kept"
   }
 }

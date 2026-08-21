@@ -57,6 +57,20 @@ never updated, which is the same drift this file exists to catch.)
   asserts the generated file matches, that both colour schemes carry the same
   roles, and that **no stylesheet writes a colour or a length of its own**
 - **Component source:** none — `data-role` selectors over existing markup
+- **One panel per screen, by structure.** Whatever the router mounts is the page's card:
+  `#root > *:not([data-role='back'])`. It was a list of fourteen roles, and membership was
+  hand-work — measured 2026-08-21 by rendering all nine areas of `options.html`, which
+  found the recovery *chooser* drawn with no card at all (its role had never been added),
+  five areas returning a role-less wrapper the router then focused so the focus ring framed
+  nothing, and one area heading at `h2` where the other eight were `h1`. An allow-list
+  fails silent-by-default and the failure lands on whichever screen was built last.
+  Enforced by `e2e/panel-shape.spec.ts`, which reads computed style on every surface: one
+  panel, padding and border on it, focus on the card, no list markers, exactly one `h1`
+- **A list here is a structure, never prose,** so markers are off by default rather than
+  suppressed role by role — one of them was only suppressed by accident, a flex `li` having
+  no marker box. No opt-in hook ships with the rule: there is no prose list on any of these
+  screens, and vocabulary for a state the product cannot reach is what this project's gates
+  refuse elsewhere
 - **Assets:** `apps/extension/icons`, drawn by `tools/icons.mjs`
 
 ## Web surfaces

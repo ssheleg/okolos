@@ -386,9 +386,7 @@ async function extensionsSection(): Promise<HTMLElement> {
     state = { kind: 'error', message: String(cause) }
   }
 
-  const container = document.createElement('div')
-  container.append(
-    renderExtensions(document, state, {
+  return renderExtensions(document, state, {
       onDisable: (id: string) => {
         void (async () => {
           const result = await platform.runtime.send('extensions/disable', { id })
@@ -418,9 +416,7 @@ async function extensionsSection(): Promise<HTMLElement> {
           await reload()
         })()
       },
-    }),
-  )
-  return container
+  })
 }
 
 /**
@@ -429,7 +425,6 @@ async function extensionsSection(): Promise<HTMLElement> {
  * words that it can be.
  */
 async function trustedSection(): Promise<HTMLElement> {
-  const container = document.createElement('div')
   let entries: TrustedDomain[] = []
   try {
     // Not `?? []`: silence is not an empty list, and the comment three lines
@@ -445,27 +440,21 @@ async function trustedSection(): Promise<HTMLElement> {
     // reachable by a test of `renderTrusted` and by the axe sweep that walks its markup
     // (B-59). It used to be built here, so SCR-16's record named a file its error state
     // did not live in.
-    container.append(
-      renderTrusted(
-        document,
-        { kind: 'error', message: t('optionsTrustedUnread', String(cause)) },
-        // Nothing to revoke on a screen that could not read the list.
-        { onRevoke: () => undefined },
-      ),
+    return renderTrusted(
+      document,
+      { kind: 'error', message: t('optionsTrustedUnread', String(cause)) },
+      // Nothing to revoke on a screen that could not read the list.
+      { onRevoke: () => undefined },
     )
-    return container
   }
 
-  container.append(
-    renderTrusted(document, { kind: 'ready', domains: entries }, {
-      onRevoke: (domain: string) => {
-        void act(async () => {
-          await platform.runtime.send('trust/revoke', { domain })
-        })
-      },
-    }),
-  )
-  return container
+  return renderTrusted(document, { kind: 'ready', domains: entries }, {
+    onRevoke: (domain: string) => {
+      void act(async () => {
+        await platform.runtime.send('trust/revoke', { domain })
+      })
+    },
+  })
 }
 
 /**
@@ -550,7 +539,6 @@ async function readJournal(): Promise<{
  * middle of a bad afternoon does not lose it.
  */
 async function recoverySection(kind: string): Promise<HTMLElement> {
-  const container = document.createElement('div')
   /**
    * No incident named: the picker, which is what SCR-13's `empty` state has always said.
    *
@@ -559,16 +547,13 @@ async function recoverySection(kind: string): Promise<HTMLElement> {
    * realised after the fact that they had run the pasted command (B-59).
    */
   if (!kind) {
-    container.append(
-      renderIncidentPicker(document, {
-        onPick: (picked) => {
-          // A navigation, so back works and the address names the incident — the same
-          // address the ClickFix warning produces.
-          location.hash = hashFor('recovery', picked)
-        },
-      }),
-    )
-    return container
+    return renderIncidentPicker(document, {
+      onPick: (picked) => {
+        // A navigation, so back works and the address names the incident — the same
+        // address the ClickFix warning produces.
+        location.hash = hashFor('recovery', picked)
+      },
+    })
   }
 
   let progress: StepProgress[] = []
@@ -580,7 +565,7 @@ async function recoverySection(kind: string): Promise<HTMLElement> {
     // Progress is a convenience; the checklist itself is the point.
   }
 
-  container.append(
+  return (
     /**
      * `kind` arrives decoded. Decoding it again was two defects in one call.
      *
@@ -623,9 +608,8 @@ async function recoverySection(kind: string): Promise<HTMLElement> {
           location.hash = ''
         })()
       },
-    }),
+    })
   )
-  return container
 }
 
 /**
@@ -974,20 +958,20 @@ function backLink(): HTMLElement {
 let outstanding: number | null = null
 
 async function selfAuditSection(): Promise<HTMLElement> {
-  const container = document.createElement('div')
-  container.append(
-    renderSelfAudit(document, await load(), {
-      onExport: () => void download(),
-      onRepair: () => void reload(),
-    }),
-  )
-  return container
+  // The panel itself, with no wrapper around it. Five of these areas returned a role-less
+  // `div` holding exactly one child; the router focuses whatever it mounts, so the focus
+  // ring was drawn around the wrapper and read on screen as a second card offset from the
+  // first. Measured 2026-08-21 on five areas at once.
+  return renderSelfAudit(document, await load(), {
+    onExport: () => void download(),
+    onRepair: () => void reload(),
+  })
 }
 
 async function dataSection(): Promise<HTMLElement> {
-  const container = document.createElement('div')
-  container.append(
-    renderDataControls(document, {
+  return renderDataControls(
+    document,
+    {
       onExport: download,
       onWipe: async () => {
         const db = await openDb()
@@ -999,9 +983,7 @@ async function dataSection(): Promise<HTMLElement> {
     // `DATA_KIND_KEY` is `Record<StoreName, string>`, so a store added later fails
     // the build until the confirmation has words for it.
     Object.values(DATA_KIND_KEY),
-    ),
   )
-  return container
 }
 
 /**
@@ -1018,34 +1000,27 @@ async function overviewSection(route: Route): Promise<HTMLElement> {
 
   outstanding = attention === null ? null : attention.length
 
-  const container = document.createElement('div')
   if (attention === null) {
-    container.append(
-      renderOverview(
-        document,
-        { kind: 'error', message: overviewFailure ?? t('errNoAnswer'), areas: rows },
-        overviewHandlers(),
-      ),
+    return renderOverview(
+      document,
+      { kind: 'error', message: overviewFailure ?? t('errNoAnswer'), areas: rows },
+      overviewHandlers(),
     )
-    return container
   }
 
-  container.append(
-    renderOverview(
-      document,
-      {
-        kind: 'ready',
-        attention,
-        areas: rows,
-        // Worded here, because that is what the field means (see `OverviewState`). It
-        // used to pass the journal's stored instant and the screen showed it.
-        lastChecked: worded(await lastCheckedAt()),
-        ...(route.unrecognised === undefined ? {} : { unrecognised: route.unrecognised }),
-      },
-      overviewHandlers(),
-    ),
+  return renderOverview(
+    document,
+    {
+      kind: 'ready',
+      attention,
+      areas: rows,
+      // Worded here, because that is what the field means (see `OverviewState`). It
+      // used to pass the journal's stored instant and the screen showed it.
+      lastChecked: worded(await lastCheckedAt()),
+      ...(route.unrecognised === undefined ? {} : { unrecognised: route.unrecognised }),
+    },
+    overviewHandlers(),
   )
-  return container
 }
 
 function overviewHandlers(): OverviewHandlers {

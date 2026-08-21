@@ -52,7 +52,11 @@ export function renderDataControls(
   const section = doc.createElement('section')
   section.setAttribute('data-role', 'data-controls')
 
-  const heading = doc.createElement('h2')
+  // `h1`, like every other area of this page. It was the only `h2` of the nine, which put
+  // the settings area's title a size smaller than its neighbours' and left the area with
+  // no first-level heading at all — a difference the eye reads before any check does
+  // (measured 2026-08-21 by rendering all nine).
+  const heading = doc.createElement('h1')
   heading.textContent = t('dataHeading')
   section.append(
     heading,

@@ -57,24 +57,20 @@ body:has([data-role='popup']) {
 /* ------------------------------------------------------------------ blocks */
 
 /*
- * Every top-level surface a renderer emits becomes a card. Selecting on the
- * roles rather than on a class keeps this file out of the renderers, which is
- * what lets fourteen screens gain a visual layer in one change.
+ * Whatever the router mounts is the page's panel — a card by structure, not by name.
+ *
+ * This was a list of fourteen `data-role`s, and membership was hand-work. Measured
+ * 2026-08-21 by rendering every area and looking: the recovery *chooser* — the surface
+ * behind a bare `#recovery` — was drawn with no card at all, its heading flush against
+ * the page and browser bullets beside its buttons, because its role had never been added.
+ * An allow-list fails silent-by-default, and the failure lands on whichever screen was
+ * built last.
+ *
+ * The structural version cannot miss a screen: the router replaces `#root`'s children
+ * with the back link and one panel, and the three standalone pages each mount exactly one
+ * (measured: popup, first-run, interstitial). A new screen is a card the moment it exists.
  */
-[data-role='self-audit'],
-[data-role='leaks-section'],
-[data-role='journal'],
-[data-role='queue-section'],
-[data-role='queue'],
-[data-role='extensions'],
-[data-role='trusted'],
-[data-role='data-controls'],
-[data-role='recovery'],
-[data-role='first-run'],
-[data-role='popup'],
-[data-role='interstitial'],
-[data-role='comparison'],
-[data-role='overview'] {
+#root > *:not([data-role='back']) {
   display: block;
   padding: var(--ok-space-4);
   background: var(--ok-colour-surface);
@@ -102,10 +98,23 @@ p {
   margin: 0 0 var(--ok-space-2);
 }
 
+/*
+ * A list on these pages is a structure — a queue, a log, a set of choices — never prose,
+ * so the browser's markers are noise in every one of them. They were being suppressed one
+ * at a time and by accident: `area-list` by name (B-99), the log's rows because a flex
+ * `li` has no marker box at all, and the recovery chooser not at all. The indent was left
+ * behind even where the marker was gone — `ul[checks]` on the first-run screen sat 24px in
+ * for bullets nobody could see.
+ *
+ * No opt-in hook comes with this: there is no prose list on any of these screens today,
+ * and vocabulary for a state the product cannot reach is what `journal-kinds.test.ts`
+ * exists to refuse. The change that adds one adds its rule.
+ */
 ul,
 ol {
   margin: 0 0 var(--ok-space-2);
-  padding-inline-start: var(--ok-space-5);
+  padding-inline-start: 0;
+  list-style: none;
 }
 
 li {
@@ -225,13 +234,6 @@ textarea {
  */
 [data-role='attention'] {
   margin-block: var(--ok-space-3);
-}
-
-/* A navigation list, so the browser's bullets are noise rather than structure. */
-[data-role='area-list'] {
-  margin: 0;
-  padding: 0;
-  list-style: none;
 }
 
 [data-role='area'] {

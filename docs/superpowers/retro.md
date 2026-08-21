@@ -80,6 +80,43 @@ happens before adding.
 - «Убедись, что плант приземлился» — **слита с первой**: это одна дисциплина, и
   вторая была написана потому, что первую делали небрежно.
 
+### 2026-08-21 — the picture said "two cards" and the DOM said "one focus ring"
+
+- **Symptom:** rendering all nine areas of `options.html` showed four visual defects at
+  once — three areas apparently drawing a card inside a card, the recovery chooser with its
+  heading flush against the frame and browser bullets beside its buttons, the settings area
+  a size smaller than its neighbours, and an indent under lists whose markers were already
+  gone.
+- **Surfaced at:** stage 6, by looking. Nothing else can see any of it: unit tests assert
+  markup, axe asserts roles and contrast, `docs/ux/lint.py` asserts structure, and none of
+  them reads computed style.
+- **Owned by:** stage 3. "One locked style pack" was recorded as a decision and implemented
+  as an allow-list of fourteen `data-role`s, which is a decision with a hand-work clause
+  attached.
+- **Root cause:** an allow-list fails silent-by-default, and the failure lands on whichever
+  screen was built last — here the incident picker, whose role had never been added. The
+  same shape as B-99 one day earlier, where the dashboard shipped with no rule addressing
+  its roles at all. Fixing the instance twice and the class never is what made the second
+  case possible.
+- **And the picture was wrong about one of the four.** "A card inside a card" was a **focus
+  ring on a role-less wrapper**: five area functions returned a `div` holding exactly one
+  child, and the router focuses what it mounts, so the browser drew a rectangle around a box
+  with no padding, offset from the real card. Only the DOM and the computed styles say so —
+  I dumped both before editing, and the fix I would have written from the screenshot alone
+  (suppressing an inner card) would have addressed a card that does not exist. **Looking
+  finds the defect; measuring finds what it is.**
+- **Fix, by grade:** *structural* — the card is now `#root > *:not([data-role='back'])`, so
+  whatever the router mounts is the panel and a new screen is carded the moment it exists;
+  six vestigial wrappers deleted, which puts the focus ring on the card by construction.
+  *Mechanical* — list markers off by default (one suppression had been working by accident,
+  a flex `li` having no marker box), and the settings heading moved to `h1`, the only `h2` of
+  nine.
+- **Catches it next time:** `e2e/panel-shape.spec.ts` — fourteen checks over thirteen
+  surfaces, reading computed style: one panel at the root, padding and border on it, the
+  role present (a wrapper has none), focus landing on the card after arrival, no list
+  markers, exactly one `h1`. Four plants — the allow-list back, the wrapper back, the `h2`
+  back, the markers back — produced eleven red assertions between them.
+
 ### 2026-08-21 — a gate that missed the case it was written for, and a rule that could demand the impossible
 
 - **Symptom:** three separate things, one root each, all found by *looking* at screens
@@ -179,6 +216,20 @@ happens before adding.
 
 ## Run stamps
 
+- **2026-08-21 (восьмидесятый)** — B-103; стадии 0–10. Та же ось: смотреть. Четыре
+  дефекта оболочки, и **один из четырёх оказался не тем, чем выглядел** — «карточка внутри
+  карточки» на трёх областях была фокус-рингом на безролевой обёртке, что видно только по
+  DOM и вычисленным стилям, а не по картинке. Вывод по картинке был неверен, и измерение
+  это показало до того, как я начал править не то. Причина всех четырёх одна: визуальный
+  слой был allow-list из четырнадцати ролей, а попадание в список — ручная работа, поэтому
+  экран, построенный последним (выбор инцидента), вышел вообще без карточки. Карточка стала
+  структурной, шесть вестигиальных обёрток убраны, маркеры сняты по умолчанию (одна отмена
+  работала **случайно** — у flex-`li` нет маркер-бокса), `#data` переведён на `h1`. Гейт
+  `e2e/panel-shape.spec.ts` читает вычисленный стиль на тринадцати поверхностях; четыре
+  планта, легли все, 11 красных утверждений. Плюс прочитан вердикт CI: `hostile-page`
+  флейкнул, rerun того же задания на том же коммите зелёный — заведено B-108, потому что
+  падение неотличимо от регресса. 2471 юнит в 155 файлах, 164 e2e. Постоянных инструкций
+  десять, снятий нет. Вердикт REFINE.
 - **2026-08-21 (семьдесят девятый)** — B-100; стадии 0–10. Ось та же, что вчера, и
   продолжена сознательно: из двадцати экранов я видел пять, восемь областей `options.html`
   не видел ни разу. Прогнал их все — пустыми и с засеянными сторами — и самая тяжёлая

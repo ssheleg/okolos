@@ -229,6 +229,54 @@ test('SCR-06 — the agent gate, the one surface a user meets mid-decision', asy
   expect(results.violations).toEqual([])
 })
 
+test('the gate holds focus, and Escape blocks from anywhere inside it', async ({ context }) => {
+  /**
+   * The gate's own header has promised since it was written that "it holds focus so a stray
+   * Enter blocks", and until 2026-08-21 it did not. Three presses of Tab walked out of the
+   * dialog and onto the page beneath — the form the gate is holding — and Escape then stopped
+   * working, because the handler lives on the panel. Nine axe checks over this surface said
+   * nothing: focus containment is not an axe rule (B-122).
+   *
+   * Not a bypass, measured: pressing the page's own submit again is caught and held again. What
+   * it was, was a modal that is not one.
+   */
+  await serve(context, WITH_FORM)
+  const page = await context.newPage()
+  await page.goto('https://fixture.test/')
+  await expectBanner(page, context)
+
+  await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>('#pay button')?.click()
+  })
+  await expectSurface(page, 'okolos-gate', context)
+
+  const inside = async (): Promise<string> =>
+    page.evaluate(() => {
+      const root = document.querySelector('okolos-gate')?.shadowRoot
+      return root?.activeElement?.getAttribute('data-role') ?? 'outside'
+    })
+
+  // Block on arrival: the default is the safe one, so a stray Enter blocks.
+  expect(await inside()).toBe('block')
+
+  // Round the three controls and back, without leaving.
+  for (const expected of ['allow', 'show', 'block', 'allow']) {
+    await page.keyboard.press('Tab')
+    expect(await inside(), `Tab left the dialog: expected ${expected}`).toBe(expected)
+  }
+
+  // Backwards too, since Shift+Tab is the other half of the trap.
+  await page.keyboard.press('Shift+Tab')
+  expect(await inside()).toBe('block')
+  await page.keyboard.press('Shift+Tab')
+  expect(await inside(), 'Shift+Tab left the dialog').toBe('show')
+
+  await page.keyboard.press('Escape')
+  await expect(page.locator('okolos-gate')).toHaveCount(0)
+  // Escape blocks; it does not let the action through.
+  expect(page.url()).toBe('https://fixture.test/')
+})
+
 test('the hostile CSS lands on the page and not on the overlay', async ({ context }) => {
   // The three tests above are only worth their green if the page really is
   // fighting them. Measured rather than inferred from axe's counts: on this

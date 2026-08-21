@@ -106,8 +106,41 @@ function dialog(doc: Document, props: GateProps, handlers: GateHandlers): HTMLEl
   )
   el.append(actions)
 
+  /**
+   * Escape blocks, and Tab does not leave.
+   *
+   * The header above has said "it holds focus so a stray Enter blocks" since this file was
+   * written, and until 2026-08-21 it did not: the panel focused its Block button on mount and
+   * nothing kept focus inside. Three presses of Tab walked out of the dialog and onto the page
+   * underneath — the very form the gate is holding — and from there Escape stopped working,
+   * because the handler is on the panel. Measured by tabbing through it; `axe` has no rule for
+   * focus containment, so nine accessibility checks over this surface said nothing about it.
+   *
+   * Pressing the page's own submit again is *not* a bypass — the interceptor catches it and
+   * holds again — but it does mount a second gate over the first, which is recorded as B-123.
+   */
   el.addEventListener('keydown', (event) => {
-    if ((event as KeyboardEvent).key === 'Escape') once(handlers.onBlock)()
+    const key = (event as KeyboardEvent).key
+    if (key === 'Escape') {
+      once(handlers.onBlock)()
+      return
+    }
+    if (key !== 'Tab') return
+
+    const focusable = [...el.querySelectorAll<HTMLElement>('button, [href], [tabindex]')].filter(
+      (node) => !node.hasAttribute('disabled'),
+    )
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    if (first === undefined || last === undefined) return
+
+    // The dialog's own root, because `document.activeElement` inside a shadow tree is the host.
+    const active = (el.getRootNode() as ShadowRoot).activeElement
+    const wrapping = (event as KeyboardEvent).shiftKey ? active === first : active === last
+    if (wrapping) {
+      event.preventDefault()
+      ;((event as KeyboardEvent).shiftKey ? last : first).focus()
+    }
   })
 
   return el

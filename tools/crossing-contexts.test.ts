@@ -66,14 +66,33 @@ describe('the background may set a timer to give up, never to wait', () => {
    * The pair that keeps the rule readable: a deadline must still be possible, and it is.
    * Without this, someone reading the failure above could conclude timers are banned here
    * and remove the one that stops a hung request.
+   *
+   * **Where it looks moved on 2026-08-21, and the gate is what said so.** The deadline used
+   * to be written out in `background/leaks.ts`; it existed twice, so it was consolidated into
+   * `withDeadline` in `@okolos/platform` (B-111) — and this assertion went red, because the
+   * background then contained no rejecting timer of its own. Exactly its job: it watches a
+   * thing, and the thing moved. It now looks where the deadline lives, while the rule above
+   * still applies to the background, which is the half that matters.
    */
+  const DEADLINE_HOME = 'packages/platform/src/adapter.ts'
+
   it('still allows a timer that ends work early', () => {
-    const deadlines = backgroundSources()
-      .flatMap((file) => timers(readFileSync(file, 'utf8')))
-      .filter((call) => /\breject\b|\babort\b/i.test(call))
-    expect(deadlines.length, 'no deadline timer found — has the network guard moved?').toBeGreaterThan(
-      0,
+    const deadlines = timers(readFileSync(path.join(root, DEADLINE_HOME), 'utf8')).filter((call) =>
+      /\breject\b|\babort\b/i.test(call),
     )
+    expect(
+      deadlines.length,
+      `no deadline timer in ${DEADLINE_HOME} — has the one shared deadline moved again?`,
+    ).toBeGreaterThan(0)
+  })
+
+  it('and the background reaches that deadline rather than writing its own', () => {
+    // The rule above forbids a *waiting* timer here; this says the giving-up kind is still
+    // reachable from the background, which is what makes the rule a rule and not a ban.
+    const callers = backgroundSources().filter((file) =>
+      /\bwithDeadline\s*\(/.test(readFileSync(file, 'utf8')),
+    )
+    expect(callers.length, 'nothing in the background sets a deadline at all').toBeGreaterThan(0)
   })
 })
 

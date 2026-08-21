@@ -1,7 +1,7 @@
-import { createPlatform, toSafeUrl } from './adapter.js'
+import { createPlatform, toSafeUrl, withDeadline } from './adapter.js'
 import type { Platform, WebExtensionApi } from './types.js'
 
-export { createPlatform, toSafeUrl }
+export { createPlatform, toSafeUrl, withDeadline }
 export type {
   Alarms,
   Blocking,

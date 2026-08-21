@@ -39,8 +39,18 @@ export function toSafeUrl(raw: string | undefined): string | null {
  */
 export const RPC_TIMEOUT_MS = 30_000
 
-/** Rejects with `message` if `work` has not settled in time. */
-async function withDeadline<T>(work: Promise<T>, ms: number, message: string): Promise<T> {
+/**
+ * Rejects with `message` if `work` has not settled in time.
+ *
+ * Exported because it existed twice: here, for a message to a service worker that may never
+ * answer, and in `background/leaks.ts`, for a source that may never reply. Two copies of the
+ * same fifteen lines, each with its own comment explaining the same `clearTimeout` — and
+ * they had already drifted, one testing the handle with `!== undefined` and the other for
+ * truthiness. This is the third pair of copies swept in one session (the instant formatters,
+ * the severity table), and it is the one that decides *behaviour under failure*, which is
+ * the worst place for two answers to live.
+ */
+export async function withDeadline<T>(work: Promise<T>, ms: number, message: string): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined
   try {
     return await Promise.race([

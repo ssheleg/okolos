@@ -1,6 +1,7 @@
 import { t } from '@okolos/i18n'
 import { mergeLeaks, type Leak, type LeakInventory, type SourceStatus } from '@okolos/core-leaks'
 import { request, type RequestDeps } from '@okolos/net'
+import { withDeadline } from '@okolos/platform'
 
 /**
  * Asking several places whether an address has appeared in a breach.
@@ -106,22 +107,6 @@ export function hibp(apiKey: string | null): LeakSource {
         ...(entry.Domain ? { domain: entry.Domain } : {}),
       }))
     },
-  }
-}
-
-async function withDeadline<T>(work: Promise<T>, ms: number, message: string): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined
-  try {
-    return await Promise.race([
-      work,
-      new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(new Error(message)), ms)
-      }),
-    ])
-  } finally {
-    // The losing timer is cleared either way: a pending one keeps the worker
-    // awake for no reason, and Chrome tears it down for being idle anyway.
-    if (timer) clearTimeout(timer)
   }
 }
 

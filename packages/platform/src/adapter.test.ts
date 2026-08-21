@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Envelope } from '@okolos/contracts'
 
-import { createPlatform, RPC_TIMEOUT_MS, toSafeUrl } from './adapter.js'
+import { createPlatform, RPC_TIMEOUT_MS, toSafeUrl, withDeadline } from './adapter.js'
 import type { WebExtensionApi } from './types.js'
 
 /**
@@ -665,5 +665,43 @@ describe('an error answer is a failure, not a result', () => {
     await expect(platform.runtime.send('page/candidates', {} as never)).resolves.toMatchObject({
       verdicts: [],
     })
+  })
+})
+
+describe('the deadline helper, now that two callers share it', () => {
+  /**
+   * It existed twice — here for a message to a worker that may never answer, and in the
+   * background's leak lookup for a source that may never reply — and the copies had already
+   * drifted in how they tested the timer handle. Behaviour under failure is the worst place
+   * for two answers to live, so these are the properties both callers depend on.
+   */
+  it('rejects with the caller’s own sentence when nothing settles', async () => {
+    vi.useFakeTimers()
+    try {
+      const pending = withDeadline(new Promise<never>(() => {}), 1000, 'the source said nothing')
+      const settled = expect(pending).rejects.toThrow('the source said nothing')
+      await vi.advanceTimersByTimeAsync(1000)
+      await settled
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('leaves no timer behind when the work answers, which is most of the time', async () => {
+    vi.useFakeTimers()
+    try {
+      expect(await withDeadline(Promise.resolve('answered'), 60_000, 'never')).toBe('answered')
+      // A pending timer per answered call keeps a page — or a service worker — awake for
+      // nothing. This is the assertion the `finally` in the helper exists for.
+      expect(vi.getTimerCount()).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('lets the work’s own failure through rather than reporting a timeout', async () => {
+    await expect(
+      withDeadline(Promise.reject(new Error('the source refused')), 60_000, 'timed out'),
+    ).rejects.toThrow('the source refused')
   })
 })

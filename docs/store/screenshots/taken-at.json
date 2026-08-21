@@ -8,7 +8,13 @@
   "images": {
     "01-interstitial.png": "a0c1dbad098e1c42",
     "02-first-run.png": "d228b05ea51432f6",
-    "03-self-audit.png": "6bf840f1a43305af",
-    "04-popup.png": "fa8b1d6e5ee45091"
+    "03-self-audit.png": "265d45fe2542d9d7",
+    "04-popup.png": "099d629920f17b01"
+  },
+  "shown": {
+    "01-interstitial.png": "interstitial",
+    "02-first-run.png": "first-run",
+    "03-self-audit.png": "self-audit",
+    "04-popup.png": "popup"
   }
 }

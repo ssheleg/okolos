@@ -93,10 +93,32 @@ const CENTRE = `
 /** Screens that went out untranslated, and the shot that caught each one. */
 const untranslated = []
 
-async function shot(name, open, { centre = false } = {}) {
+/**
+ * The name is a claim, so the run that writes the file checks it.
+ *
+ * `03-self-audit.png` showed the **overview** for two weeks — the shot opened
+ * `options.html` with no hash — while `docs/store/listing.md` said in its own table that the
+ * file shows SCR-10, "журнал отправок целиком", and its prose sold that screen above the
+ * table. A store reviewer comparing the caption to the image sees the mismatch first.
+ *
+ * `expects` is the `data-role` the named screen renders. Nothing is written until it is on
+ * the page, so a shot cannot be filed under a screen it does not show.
+ */
+/** What each image turned out to show, for the receipt. */
+const shown = {}
+
+async function shot(name, open, { centre = false, expects = null } = {}) {
   const page = await context.newPage()
   await page.setViewportSize(SIZE)
   await open(page)
+  if (expects !== null) {
+    await page.waitForSelector(`[data-role='${expects}']`, { timeout: 15_000 }).catch(() => {
+      throw new Error(
+        `screenshots: ${name}.png is named for [data-role=${expects}] and the page does not ` +
+          `render it. The name is a claim about the image; fix one of the two.`,
+      )
+    })
+  }
   if (centre) await page.addStyleTag({ content: CENTRE })
   await page.waitForTimeout(400)
 
@@ -120,6 +142,7 @@ async function shot(name, open, { centre = false } = {}) {
   }
 
   await page.screenshot({ path: path.join(OUT, `${name}.png`) })
+  if (expects !== null) shown[`${name}.png`] = expects
   await page.close()
   console.log(`   ${name}.png`)
 }
@@ -210,20 +233,46 @@ async function seedFindings(page) {
 
 console.log('\n── screenshots, from the built extension')
 
-await shot('01-interstitial', async (page) => {
+await shot(
+  '01-interstitial',
+  async (page) => {
   // The block screen, shown as a page rather than reached through a real block:
   // the shot is of the same renderer either way, and seeding a feed here would
   // photograph the test harness instead of the product.
-  await page.goto(`chrome-extension://${id}/interstitial.html`)
-})
+    await page.goto(`chrome-extension://${id}/interstitial.html`)
+  },
+  { expects: 'interstitial' },
+)
 
-await shot('02-first-run', async (page) => {
-  await page.goto(`chrome-extension://${id}/first-run.html`)
-})
+await shot(
+  '02-first-run',
+  async (page) => {
+    await page.goto(`chrome-extension://${id}/first-run.html`)
+  },
+  { expects: 'first-run' },
+)
 
-await shot('03-self-audit', async (page) => {
-  await page.goto(`chrome-extension://${id}/options.html`)
-})
+await shot(
+  '03-self-audit',
+  async (page) => {
+    /**
+     * `#audit`, not the bare page.
+     *
+     * The bare address is the overview, and this file has been named for the self-audit
+     * screen since the listing was written — the table and the prose above it both sell
+     * "what left this device", which is the claim a reviewer checks first and the one thing
+     * no competitor's card can show. Pointed at the screen its name promises (B-109); the
+     * `expects` guard below is what keeps the two together.
+     *
+     * A fresh profile has one row by the time this runs — the feed download — and the guard
+     * waits for the list rather than for a clock. An image of an empty log would be a
+     * picture of a product that has done nothing.
+     */
+    await page.goto(`chrome-extension://${id}/options.html#audit`)
+    await page.waitForSelector("[data-role='entry']", { timeout: 15_000 })
+  },
+  { expects: 'self-audit' },
+)
 
 await shot(
   '04-popup',
@@ -233,7 +282,7 @@ await shot(
     await seedFindings(page)
     await page.reload()
   },
-  { centre: true },
+  { centre: true, expects: 'popup' },
 )
 
 await context.close()
@@ -260,7 +309,11 @@ const images = Object.fromEntries(
 )
 writeFileSync(
   path.join(OUT, 'taken-at.json'),
-  `${JSON.stringify({ surfaces: SURFACES, surfacesDigest: surfacesDigest(root), images }, null, 2)}\n`,
+  `${JSON.stringify(
+    { surfaces: SURFACES, surfacesDigest: surfacesDigest(root), images, shown },
+    null,
+    2,
+  )}\n`,
 )
 console.log('   taken-at.json')
 

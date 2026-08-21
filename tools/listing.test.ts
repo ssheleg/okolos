@@ -174,6 +174,31 @@ describe('the screenshots are of this product', () => {
     ).toBe(surfacesDigest(root))
   })
 
+  it('is named for the screen it shows', () => {
+    /**
+     * The name is a claim, and it was false for two weeks: `03-self-audit.png` showed the
+     * **overview** — the shot opened `options.html` with no hash — while the listing's own
+     * table said the file shows SCR-10, "журнал отправок целиком", and its prose sold that
+     * screen above the table. A reviewer comparing caption to image sees that first (B-109).
+     *
+     * `pnpm screenshots` records the `data-role` each page turned out to render, and refuses
+     * to write a file whose named screen is not on it. This is the committed half of the same
+     * rule: the file name has to say what the receipt says was there.
+     */
+    const receipt = JSON.parse(readFileSync(receiptPath, 'utf8')) as {
+      shown?: Record<string, string>
+    }
+    const shown = receipt.shown ?? {}
+    expect(Object.keys(shown).length, 'the receipt records no screen for any image').toBeGreaterThan(
+      0,
+    )
+    const wrong = Object.entries(shown).filter(([file, role]) => !file.includes(role))
+    expect(
+      wrong,
+      'rename the file or point the shot at the screen its name promises — a caption a reviewer can check against the image is the first thing they check',
+    ).toEqual([])
+  })
+
   it('names every image that is there, with the bytes it wrote', () => {
     const receipt = JSON.parse(readFileSync(receiptPath, 'utf8')) as {
       images: Record<string, string>

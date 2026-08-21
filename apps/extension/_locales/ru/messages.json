@@ -2310,5 +2310,13 @@
         "content": "$1"
       }
     }
+  },
+  "gateReasonAlreadyAsking": {
+    "message": "Заблокировано: «$ACTION$» задержали, пока на экране был вопрос о другом действии.",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
   }
 }

@@ -933,6 +933,13 @@ function askTheUser(
   action: AgentAction,
   findings: readonly UnresolvedFinding[],
 ): Promise<GateChoice> {
+  // One gate, one action. A second interception arriving while a question stands
+  // used to overwrite `gate` and mount a second panel in the same coordinates: two
+  // dialogs stacked, the first host leaked out of reach of `closeGate`, and whichever
+  // button the reader pressed answered the question on top about an action the panel
+  // underneath had named. The slot is claimed, not stacked — the second action is
+  // refused, and the journal records that a question was already open (B-123).
+  if (gate !== null) return Promise.resolve('already-asking')
   return new Promise((resolve) => {
     gate = mountGate(
       document,

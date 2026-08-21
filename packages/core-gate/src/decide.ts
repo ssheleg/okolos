@@ -122,7 +122,9 @@ export async function resolveGate(
     return decide('blocked', 'timeout')
   }
 
-  return choice === 'allow-once'
-    ? decide('allowed-once', 'user-allowed')
-    : decide('blocked', 'user-blocked')
+  if (choice === 'allow-once') return decide('allowed-once', 'user-allowed')
+  // Not `user-blocked`: nobody chose this. The surface refused to stack a second
+  // question over the standing one, and the record says so in its own words.
+  if (choice === 'already-asking') return decide('blocked', 'already-asking')
+  return decide('blocked', 'user-blocked')
 }

@@ -26,16 +26,29 @@ useResolver(fromCatalogue(CATALOGUE))
 const CATALOGUE_RESOLVE = (key: string, args: readonly string[]): string =>
   fromCatalogue(CATALOGUE)(key, args)
 
-/** Every reason the contract has. Adding one to the union fails this list at compile time. */
-const REASONS: readonly GateReason[] = [
+/**
+ * Every reason the contract has.
+ *
+ * The header used to claim this list fails at compile time when a reason is added to the
+ * union, and it did not: `readonly GateReason[]` accepts a list that is short by one, so
+ * `already-asking` was caught by the run below instead — a runtime red where a compiler
+ * error was promised (B-123). `as const` keeps the element type literal, and the check
+ * under it is the promise made good: with a reason missing, `MissingReason` stops being
+ * `never` and the assignment does not compile.
+ */
+const REASONS = [
   'no-finding',
   'human-gesture',
   'unidentified',
   'unavailable',
+  'already-asking',
   'timeout',
   'user-allowed',
   'user-blocked',
-]
+] as const satisfies readonly GateReason[]
+
+type MissingReason = Exclude<GateReason, (typeof REASONS)[number]>
+const REASONS_ARE_COMPLETE: MissingReason extends never ? true : never = true
 
 function decision(overrides: Partial<GateDecision> = {}): GateDecision {
   return {
@@ -93,22 +106,32 @@ describe('every reason the gate can give', () => {
     // A leftover key outlives the reason it was written for, and nothing else notices:
     // the sweep sees it referenced and the catalogue keeps the message forever.
     expect(Object.keys(GATE_REASON_KEY).sort()).toEqual([...REASONS].sort())
+    // The compile-time half of the same question, asserted so the compiler counts it as
+    // read: this is `true` only while the list above covers the union.
+    expect(REASONS_ARE_COMPLETE).toBe(true)
   })
 })
 
 /**
- * Three of the seven name the action, and which three is a decision, not an accident.
+ * Four of the eight name the action, and which four is a decision, not an accident.
  *
- * A decision the user made or missed is about *that* action, so it is named. The other
- * four are about the page or the browser: `no-finding` and `human-gesture` are why
- * nothing was held at all, `unidentified` fires precisely when the action could not be
- * made out — its description may be blank, which is one of the two ways it fires — and
- * `unavailable` is about a window that would not open.
+ * A decision the user made or missed is about *that* action, so it is named — and so is
+ * `already-asking`, which is the one case where an action is dropped while the reader is
+ * busy with a different one: a record that does not say which action went is a record of
+ * nothing they can act on. The other four are about the page or the browser:
+ * `no-finding` and `human-gesture` are why nothing was held at all, `unidentified` fires
+ * precisely when the action could not be made out — its description may be blank, which
+ * is one of the two ways it fires — and `unavailable` is about a window that would not open.
  */
-const NAMES_THE_ACTION: readonly GateReason[] = ['timeout', 'user-allowed', 'user-blocked']
+const NAMES_THE_ACTION: readonly GateReason[] = [
+  'timeout',
+  'user-allowed',
+  'user-blocked',
+  'already-asking',
+]
 
 describe('what each sentence is allowed to name', () => {
-  it('names the action for the three reasons that are about the action', () => {
+  it('names the action for the four reasons that are about the action', () => {
     for (const reason of NAMES_THE_ACTION) {
       expect(gateSentence(decision({ reason }))).toContain('отправку файла на почту')
     }

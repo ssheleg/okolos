@@ -48,7 +48,16 @@ export interface UnresolvedFinding {
   readonly summary: string
 }
 
-export type GateChoice = 'block' | 'allow-once'
+/**
+ * What came back from the surface — including the case where there was no surface.
+ *
+ * `already-asking` is not a thing a person can click: it is the answer when a gate
+ * about another action is already on screen, and the second one was refused rather
+ * than stacked on top of it. It travels as a choice because only the layer that owns
+ * the surface knows a question was standing, and `resolveGate` must not translate it
+ * into `user-blocked` — that would record a refusal by a reader who saw nothing.
+ */
+export type GateChoice = 'block' | 'allow-once' | 'already-asking'
 
 export type GateOutcome = 'ungated' | 'blocked' | 'allowed-once'
 
@@ -61,6 +70,20 @@ export type GateReason =
   | 'user-blocked'
   | 'timeout'
   | 'unavailable'
+  /**
+   * A question about another action was already on screen.
+   *
+   * A gate asks about **one** action, and a second one arriving while it stands cannot be
+   * answered by it: the panel names the first action, and a decision taken there would be
+   * applied to something the reader never saw. Until 2026-08-21 the second attempt mounted a
+   * second panel over the first — two questions in identical coordinates, the shape B-69
+   * recorded for banners (B-123).
+   *
+   * Its own code rather than `unavailable`, because the journal is queried by kind and these
+   * are different events with different remedies: one is "the surface would not open", this is
+   * "you were already being asked".
+   */
+  | 'already-asking'
   /** allowed */
   | 'user-allowed'
 

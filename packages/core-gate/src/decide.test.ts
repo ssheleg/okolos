@@ -201,6 +201,13 @@ describe('what the user chose', () => {
     expect(decision).toMatchObject({ outcome: 'blocked', reason: 'user-blocked' })
   })
 
+  it('blocks without blaming the reader when a question was already open', async () => {
+    const assessment = assessAction(action(), [FINDING])
+    const decision = await resolveGate(assessment, async () => 'already-asking', pending)
+    // `user-blocked` here would be a record of a decision nobody made.
+    expect(decision).toMatchObject({ outcome: 'blocked', reason: 'already-asking' })
+  })
+
   it('allows on Allow once', async () => {
     const assessment = assessAction(action(), [FINDING])
     const decision = await resolveGate(assessment, async () => 'allow-once', pending)

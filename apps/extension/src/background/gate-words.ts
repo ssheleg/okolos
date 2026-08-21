@@ -32,6 +32,7 @@ export const GATE_REASON_KEY: Record<GateReason, string> = {
   'human-gesture': 'gateReasonHumanGesture',
   unidentified: 'gateReasonUnidentified',
   unavailable: 'gateReasonUnavailable',
+  'already-asking': 'gateReasonAlreadyAsking',
   timeout: 'gateReasonTimeout',
   'user-allowed': 'gateReasonUserAllowed',
   'user-blocked': 'gateReasonUserBlocked',

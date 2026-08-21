@@ -2310,5 +2310,13 @@
         "content": "$1"
       }
     }
+  },
+  "gateReasonAlreadyAsking": {
+    "message": "Blocked: \"$ACTION$\" was held while a question about another action was on screen.",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
   }
 }

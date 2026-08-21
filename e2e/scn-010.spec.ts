@@ -49,6 +49,34 @@ test('a scripted submit is held, and the page names both the action and the find
   await expect(gate.locator('[data-role=target]')).not.toContainText('900')
 })
 
+test('a second attempt while the question stands is refused, not stacked', async ({
+  context,
+}) => {
+  await serve(context, PAGE)
+  const page = await context.newPage()
+  await page.goto('https://fixture.test/')
+  await expectBanner(page, context)
+
+  await page.evaluate(AGENT_CLICK)
+  await expectSurface(page, 'okolos-gate', context)
+
+  // Counted rather than waited for, and deliberately: a second panel, if one mounted,
+  // would already be here — the interception calls `ask` synchronously inside the click
+  // dispatch, so an evaluate that has returned is strictly after any mount it caused.
+  // There is nothing to wait for, and the number is what the defect was measured in.
+  await page.evaluate(AGENT_CLICK)
+  const gates = await page.evaluate(() => document.querySelectorAll('okolos-gate').length)
+  expect(gates).toBe(1)
+
+  // The standing question still names the action it was opened about, and Block on it
+  // takes down the one host there is — a stacked second panel used to leave the first
+  // out of reach of the close path.
+  await expect(page.locator('okolos-gate [data-role=action]')).toContainText('Transfer')
+  await page.locator('okolos-gate [data-role=block]').click()
+  await expect(page.locator('okolos-gate')).toHaveCount(0)
+  await expect(page.locator('#done')).toHaveCount(0)
+})
+
 test('Block cancels the action — the page stays where it was', async ({ context }) => {
   await serve(context, PAGE)
   const page = await context.newPage()

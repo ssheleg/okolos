@@ -297,6 +297,8 @@ textarea {
 
 [data-role='attention-origin'] {
   margin-inline-start: var(--ok-space-2);
+  /* A date is one token: "2026-" on one line and "08-21" on the next is not a date. */
+  white-space: nowrap;
   color: var(--ok-colour-text-muted);
   font-size: var(--ok-type-size-sm);
 }
@@ -532,6 +534,15 @@ button[data-role='changed']:hover {
   border-color: var(--ok-colour-border-strong);
   background: var(--ok-colour-surface-sunken);
   font-weight: var(--ok-type-weight-strong);
+}
+
+/*
+ * A native file input carries an intrinsic width — measured at 373px — and it does not
+ * shrink, so at 320px the extensions area was the one screen that scrolled sideways. Nothing
+ * else in the product did, at 420 or at 320 (measured 2026-08-21).
+ */
+[data-role='inspect'] {
+  max-inline-size: 100%;
 }
 
 /* --------------------------------------------------------------- states */

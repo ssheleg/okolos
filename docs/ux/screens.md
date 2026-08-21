@@ -83,6 +83,14 @@ never updated, which is the same drift this file exists to catch.)
   is the slot: one slot, prepended by the repaint, replaced rather than appended, `role="alert"`
   because the reader is looking at the control they pressed. Enforced by
   `tools/no-modals.test.ts`
+- **Every area fits a 320px window.** An options page opens in whatever window the person has,
+  and one that scrolls sideways puts the end of every sentence behind a gesture. Nothing checked
+  it: every screenshot and every look was 1280 wide, and this section had no floor. Measured
+  2026-08-21 — everything held at 420; at 320 exactly one screen scrolled, and the cause was a
+  native `<input type=file>` whose intrinsic 373px does not shrink. `e2e/narrow.spec.ts` holds
+  the floor and names the element that breaks it. The **popup** is deliberately outside it: its
+  body asks for `--ok-size-popup` and the browser opens a window that size, so measuring it in a
+  320px viewport measures a case that does not occur
 - **Nothing touches, and the check is about rendering rather than about names.** Three spans in
   a row with nothing between them ("Local storagedoneready") is the defect this stylesheet was
   written for, and it came back three times — the check rows, the dashboard's area rows (B-99),

@@ -66,6 +66,14 @@ never updated, which is the same drift this file exists to catch.)
   fails silent-by-default and the failure lands on whichever screen was built last.
   Enforced by `e2e/panel-shape.spec.ts`, which reads computed style on every surface: one
   panel, padding and border on it, focus on the card, no list markers, exactly one `h1`
+- **A failure answers on the page, never in a browser dialog.** Two writes used a modal —
+  the generic action wrapper every control on the options page goes through, and the
+  extensions area's disable. A dialog blocks the page, cannot be styled so a sentence written
+  through the brand pack arrives in a system box, is invisible to the accessibility sweep, and
+  reads as *the browser* failing rather than as this product answering. `[data-role=page-failure]`
+  is the slot: one slot, prepended by the repaint, replaced rather than appended, `role="alert"`
+  because the reader is looking at the control they pressed. Enforced by
+  `tools/no-modals.test.ts`
 - **A row is a row, whatever it is made of.** Two rows in this product are `<button>`s — the
   journal's history line and the popup's "nothing new since…" line — and the stylesheet's
   chip rule gave them a rounded bordered box the width of their text, which reads as a
@@ -275,6 +283,9 @@ includes a redirect from `*.workers.dev`, not just a CNAME.
   | empty | no extensions installed | - | plain statement, no filler. **Built 2026-08-20:** the list rendered its heading with no rows under "nothing has changed since the last check" — two true sentences that together read as "we looked and there is nothing to say", when the fact is that there is nothing to look at (B-59) |
   | error | package could not be fetched | - | permission delta still shown; analysis marked unavailable |
   | success | inventory with deltas | - | deltas first, then the rest by risk |
+- **Behavior notes — a disable that is refused says so on the page.** Policy-installed
+  extensions cannot be disabled, and the browser's answer used to arrive in a modal. It is the
+  page's failure slot now, above the area, in the product's own words
 - **Behavior notes — the actions follow the change.** Each delta shows only what can be done about *it*: an extension that is **no longer installed** offers "Это изменение нормально" and nothing else, because there is nothing left to disable and no package left to read. Until 2026-08-21 all five kinds got the same two buttons, so pressing "Отключить его" on a removed extension sent `extensions/disable` for an id the browser does not have and answered a person's remedy with an error. The mapping is a `Record` over the change union (`CHANGE_ACTIONS` in `extensions.ts`), so a sixth kind fails the build until someone decides what a person can do about it — verified by planting one
 - **Wireframe:** wireframes/SCR-09.md
 - **Coverage:** packages/ui/src/extensions/extensions.ts:renderExtensions, packages/core-extensions/src/diff.ts:diffInventory, e2e/scn-017.spec.ts

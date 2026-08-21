@@ -51,6 +51,7 @@ import {
 import { mapJournal } from '../popup/state.js'
 import { answered } from './answered.js'
 import { keepingFocus, markFocus } from './keep-focus.js'
+import { showFailure } from './failure.js'
 import { whilePending } from './pending.js'
 import {
   hashFor,
@@ -391,9 +392,12 @@ async function extensionsSection(): Promise<HTMLElement> {
       onDisable: (id: string) => {
         void (async () => {
           const result = await platform.runtime.send('extensions/disable', { id })
-          if (result && !result.ok) {
-            window.alert(t('extensionsDisableFailed', result.why ?? t('extensionsUnknownReason')))
-          }
+          // On the page, not in a browser dialog: `failure.ts` says why, and every other
+          // failure in this product is a slot on the screen.
+          failure =
+            result && !result.ok
+              ? t('extensionsDisableFailed', result.why ?? t('extensionsUnknownReason'))
+              : null
           await reload()
         })()
       },
@@ -521,6 +525,15 @@ async function load(): Promise<PanelState> {
     return { kind: 'error', message: String(cause) }
   }
 }
+
+/**
+ * The answer to the last action that failed, or `null`.
+ *
+ * Page-lifetime, like `fullHistory` below: a failure is news about what just happened, not
+ * a setting. Drawn by the repaint — see `failure.ts` for why it is a slot on the screen
+ * rather than a browser dialog.
+ */
+let failure: string | null = null
 
 /** Full history is a request, not the default view. */
 let fullHistory = false
@@ -907,6 +920,7 @@ async function renderRoute(route: Route): Promise<void> {
   if (problem) {
     keepingFocus(root, document, () => {
       root.replaceChildren(problem)
+      showFailure(document, root, failure)
     })
     return
   }
@@ -919,6 +933,9 @@ async function renderRoute(route: Route): Promise<void> {
 
   keepingFocus(root, document, () => {
     root.replaceChildren(...(route.view === 'overview' ? [] : [backLink()]), body)
+    // Above the panel, after the children are in place: the slot is prepended, so it leads
+    // the page whatever the area draws.
+    showFailure(document, root, failure)
 
     // Synchronously, with no await between: the field is out of the document
     // for one statement rather than for the length of a database read.
@@ -1145,11 +1162,15 @@ async function act(work: () => Promise<void>): Promise<void> {
     await whilePending(document, root, work)
   } catch (cause) {
     // Reload anyway: the store may have changed before the failure, and a
-    // screen showing pre-failure state is its own wrong answer.
+    // screen showing pre-failure state is its own wrong answer. The message is
+    // set *before* the repaint, because the repaint is what draws it.
+    failure = t('actionFailed', String(cause))
     await reload()
-    window.alert(t('actionFailed', String(cause)))
     return
   }
+  // A write that worked clears the last failure: an answer to an action nobody
+  // is waiting for any more is stale news at the top of the screen.
+  failure = null
   await reload()
 }
 

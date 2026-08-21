@@ -454,6 +454,7 @@ button[data-role='changed']:hover {
 
 /* --------------------------------------------------------------- states */
 
+[data-role='page-failure'],
 [data-role='error'],
 [data-role='queue-error'],
 [data-role='not-saved'] {

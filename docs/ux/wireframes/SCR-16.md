@@ -10,6 +10,7 @@ addressable as `[data-role=<name>]`, which is also how the tests reach them.
 
 - `trusted`
 - `trusted-error`
+- `trusted-diagnostic`
 - `trusted-empty`
 - `trusted-note`
 - `trusted-row`

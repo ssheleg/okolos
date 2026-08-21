@@ -55,25 +55,17 @@ function insideResolvingCall(line: string): boolean {
 }
 
 /**
- * What predates the rule, counted per file rather than by line.
+ * Nothing owed, and the list is gone with the debt.
  *
- * Eight sites were already doing this when the rule was written, on four surfaces — the
- * queue's read error, the data screen's export and wipe failures, the password-unchecked
- * journal line, the page failure slot. **One of them this session's own work added** (the
- * failure slot, two iterations earlier), which is the argument for a gate rather than a
- * habit. Each needs its surface to gain somewhere to put the diagnostic, the way the journal
- * just did — that is B-117, and until it lands the numbers here are the line being held.
- *
- * Counted per file, not per line: line numbers move with every edit, and a ledger that
- * churns is a ledger nobody reads. Exact match in both directions — a new site fails, and a
- * fixed one fails too until the number here comes down, because a ceiling nobody lowers is a
- * ceiling that rots upward.
+ * Eight sites predated this rule, on four surfaces — the queue's and the journal's read
+ * errors, the data screen's export and wipe refusals, the trusted list, the package
+ * analysis, the password-unchecked journal line, and the page failure slot. **One of them
+ * this session's own work added**, two iterations before the rule existed, which is the
+ * argument for a gate rather than a habit. All eight are paid (B-117): every surface now has
+ * somewhere to put a diagnostic, and the map below is empty because there is nothing to
+ * record — not because the walk found nothing, which the second check keeps honest.
  */
-const OWED: Readonly<Record<string, number>> = {
-  'apps/extension/src/content/index.ts': 1,
-  'apps/extension/src/options/index.ts': 5,
-  'packages/ui/src/settings/data-controls.ts': 2,
-}
+const OWED: Readonly<Record<string, number>> = {}
 
 describe('a reader’s sentence', () => {
   it('never has a failure’s own words substituted into it, outside what B-117 still owes', () => {

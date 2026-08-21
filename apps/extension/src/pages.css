@@ -321,10 +321,15 @@ textarea {
 }
 
 /*
- * The journal row now has two lines: the sentence, and — when there is one — the failure
- * verbatim. Muted and smaller, because it is for a bug report rather than for reading.
+ * A failure's own words, wherever a surface shows them: muted, smaller and monospaced,
+ * because they are for a bug report rather than for reading.
+ *
+ * Matched by suffix rather than by name — five surfaces show one now (the journal row, the
+ * page failure slot, the queue's and the journal's read errors, the data screen's two
+ * refusals, the trusted list, the package analysis), and an allow-list of role names is the
+ * shape that fails on whichever one is added last (B-103 twice over).
  */
-[data-role='entry-diagnostic'] {
+[data-role$='diagnostic'] {
   display: block;
   color: var(--ok-colour-text-muted);
   font-family: var(--ok-type-font-mono);

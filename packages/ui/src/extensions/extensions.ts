@@ -54,6 +54,13 @@ export type ExtensionsState =
       readonly analysis: PackageReport | null
       /** Why there is no analysis, when there is none. Never silence. */
       readonly analysisNote: string
+      /**
+       * The exception behind `analysisNote`, when a read failed rather than a rule deciding.
+       *
+       * `analysisNote` used to have the cause interpolated into it, so a reader got a Russian
+       * sentence with an English exception in the middle (B-117). Drawn under it.
+       */
+      readonly analysisDiagnostic?: string
     }
 
 export interface ExtensionsHandlers {
@@ -102,7 +109,9 @@ export function renderExtensions(
     for (const change of state.changes) root.append(changeRow(doc, change, handlers))
   }
 
-  root.append(analysisBlock(doc, state.analysis, state.analysisNote, handlers))
+  root.append(
+    analysisBlock(doc, state.analysis, state.analysisNote, state.analysisDiagnostic, handlers),
+  )
 
   const list = doc.createElement('div')
   list.setAttribute('data-role', 'installed')
@@ -162,6 +171,7 @@ function analysisBlock(
   doc: Document,
   report: PackageReport | null,
   note: string,
+  diagnostic: string | undefined,
   handlers: ExtensionsHandlers,
 ): HTMLElement {
   const block = doc.createElement('section')
@@ -170,6 +180,10 @@ function analysisBlock(
   const heading = doc.createElement('h2')
   heading.textContent = t('extensionsInspectTitle')
   block.append(heading, text(doc, 'analysis-note', note))
+  // The exception under the sentence, never inside it (B-117).
+  if (diagnostic !== undefined && diagnostic !== '') {
+    block.append(text(doc, 'analysis-diagnostic', diagnostic))
+  }
 
   const picker = doc.createElement('input')
   picker.type = 'file'

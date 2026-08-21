@@ -213,6 +213,9 @@ let lastAnalysis: PackageReport | null = null
  */
 let lastAnalysisFailure: string | null = null
 
+/** The exception behind `lastAnalysisFailure`, drawn under it rather than inside it (B-117). */
+let lastAnalysisDiagnostic: string | undefined
+
 /**
  * A standing fact about an extension, before it is narrowed.
  *
@@ -341,8 +344,7 @@ async function queueSection(): Promise<HTMLElement> {
     // most damaging sentence in this product to say wrongly.
     const failed = document.createElement('p')
     failed.setAttribute('data-role', 'queue-error')
-    failed.textContent = t('optionsQueueUnread', String(cause))
-    container.append(failed)
+    container.append(withDiagnostic(failed, t('optionsQueueUnread'), cause))
   }
 
   return container
@@ -382,6 +384,7 @@ async function extensionsSection(): Promise<HTMLElement> {
         })),
         analysis: lastAnalysis,
         analysisNote: lastAnalysisFailure ?? t('extensionsInspectNote'),
+        ...(lastAnalysisDiagnostic === undefined ? {} : { analysisDiagnostic: lastAnalysisDiagnostic }),
       }
     }
   } catch (cause) {
@@ -394,10 +397,7 @@ async function extensionsSection(): Promise<HTMLElement> {
           const result = await platform.runtime.send('extensions/disable', { id })
           // On the page, not in a browser dialog: `failure.ts` says why, and every other
           // failure in this product is a slot on the screen.
-          failure =
-            result && !result.ok
-              ? t('extensionsDisableFailed', result.why ?? t('extensionsUnknownReason'))
-              : null
+          failure = result && !result.ok ? t('extensionsDisableFailed', result.why ?? t('extensionsUnknownReason')) : null
           await reload()
         })()
       },
@@ -413,10 +413,12 @@ async function extensionsSection(): Promise<HTMLElement> {
             // the background, let alone the network.
             lastAnalysis = analysePackage(await file.text(), file.name)
             lastAnalysisFailure = null
+            lastAnalysisDiagnostic = undefined
           } catch (cause) {
             // No report at all, rather than an empty one: see `lastAnalysisFailure`.
             lastAnalysis = null
-            lastAnalysisFailure = t('extensionsFileUnread', String(cause))
+            lastAnalysisFailure = t('extensionsFileUnread')
+            lastAnalysisDiagnostic = String(cause)
           }
           await reload()
         })()
@@ -447,7 +449,7 @@ async function trustedSection(): Promise<HTMLElement> {
     // did not live in.
     return renderTrusted(
       document,
-      { kind: 'error', message: t('optionsTrustedUnread', String(cause)) },
+      { kind: 'error', message: t('optionsTrustedUnread'), diagnostic: String(cause) },
       // Nothing to revoke on a screen that could not read the list.
       { onRevoke: () => undefined },
     )
@@ -535,6 +537,25 @@ async function load(): Promise<PanelState> {
  */
 let failure: string | null = null
 
+/** The exception behind `failure`, shown under it rather than inside it (B-117). */
+let failureDiagnostic: string | undefined
+
+/**
+ * A failure sentence with the exception's own words under it.
+ *
+ * Two inline error elements on this page interpolated `String(cause)` into a catalogue
+ * sentence, which is how a reader got a Russian line with an English middle (B-117). Written
+ * once here because both do the same thing, and because a third will want it.
+ */
+function withDiagnostic(el: HTMLElement, sentence: string, cause: unknown): HTMLElement {
+  el.textContent = sentence
+  const detail = document.createElement('span')
+  detail.setAttribute('data-role', 'read-diagnostic')
+  detail.textContent = String(cause)
+  el.append(detail)
+  return el
+}
+
 /** Full history is a request, not the default view. */
 let fullHistory = false
 
@@ -545,8 +566,7 @@ async function journalSection(): Promise<HTMLElement> {
   } catch (cause) {
     const failed = document.createElement('section')
     failed.setAttribute('data-role', 'journal-error')
-    failed.textContent = t('optionsJournalUnread', String(cause))
-    return failed
+    return withDiagnostic(failed, t('optionsJournalUnread'), cause)
   }
 
   const { entries, unreadable } = mapJournal(records.entries)
@@ -920,7 +940,7 @@ async function renderRoute(route: Route): Promise<void> {
   if (problem) {
     keepingFocus(root, document, () => {
       root.replaceChildren(problem)
-      showFailure(document, root, failure)
+      showFailure(document, root, failure, failureDiagnostic)
     })
     return
   }
@@ -935,7 +955,7 @@ async function renderRoute(route: Route): Promise<void> {
     root.replaceChildren(...(route.view === 'overview' ? [] : [backLink()]), body)
     // Above the panel, after the children are in place: the slot is prepended, so it leads
     // the page whatever the area draws.
-    showFailure(document, root, failure)
+    showFailure(document, root, failure, failureDiagnostic)
 
     // Synchronously, with no await between: the field is out of the document
     // for one statement rather than for the length of a database read.
@@ -1164,13 +1184,15 @@ async function act(work: () => Promise<void>): Promise<void> {
     // Reload anyway: the store may have changed before the failure, and a
     // screen showing pre-failure state is its own wrong answer. The message is
     // set *before* the repaint, because the repaint is what draws it.
-    failure = t('actionFailed', String(cause))
+    failure = t('actionFailed')
+    failureDiagnostic = String(cause)
     await reload()
     return
   }
   // A write that worked clears the last failure: an answer to an action nobody
   // is waiting for any more is stale news at the top of the screen.
   failure = null
+  failureDiagnostic = undefined
   await reload()
 }
 

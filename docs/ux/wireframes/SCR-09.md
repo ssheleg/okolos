@@ -24,6 +24,7 @@ addressable as `[data-role=<name>]`, which is also how the tests reach them.
 - `none-installed`
 - `analysis`
 - `analysis-note`
+- `analysis-diagnostic`
 - `inspect`
 - `analysis-summary`
 - `finding`

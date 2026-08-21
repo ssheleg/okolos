@@ -1199,7 +1199,9 @@ document.addEventListener(
         void platform.runtime
           .send('page/note', {
             kind: 'password-unchecked',
-            explain: t('logPasswordUnchecked', String(cause)),
+            explain: t('logPasswordUnchecked'),
+            // Beside the sentence, not inside it: the journal draws it as its own line (B-115).
+            diagnostic: String(cause),
           })
           .catch(() => undefined)
       }

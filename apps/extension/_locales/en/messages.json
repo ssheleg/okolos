@@ -3,12 +3,7 @@
     "message": "This is wrong"
   },
   "actionFailed": {
-    "message": "The action did not go through: $CAUSE$",
-    "placeholders": {
-      "cause": {
-        "content": "$1"
-      }
-    }
+    "message": "The action did not go through."
   },
   "actionTitle": {
     "message": "Okolos"
@@ -450,12 +445,7 @@
     "message": "Export all data"
   },
   "dataExportFailed": {
-    "message": "The export could not be made: $WHY$. No file was created.",
-    "placeholders": {
-      "why": {
-        "content": "$1"
-      }
-    }
+    "message": "The export failed. No file was created."
   },
   "dataHeading": {
     "message": "Your data"
@@ -505,12 +495,7 @@
     "message": "Try again"
   },
   "dataWipeUnavailable": {
-    "message": "The deletion could not start: $WHY$. Nothing was erased — your data is still here.",
-    "placeholders": {
-      "why": {
-        "content": "$1"
-      }
-    }
+    "message": "The deletion failed. Nothing was wiped — the data is still there."
   },
   "downloadFeedUnread": {
     "message": "the blocklists could not be read, so the source was not checked"
@@ -717,12 +702,7 @@
     "message": "This is not a statement that nothing changed."
   },
   "extensionsFileUnread": {
-    "message": "That file could not be read: $CAUSE$",
-    "placeholders": {
-      "cause": {
-        "content": "$1"
-      }
-    }
+    "message": "The file could not be read."
   },
   "extensionsHexDensity": {
     "message": "$COUNT$ hex escapes per 100 characters",
@@ -1448,12 +1428,7 @@
     }
   },
   "logPasswordUnchecked": {
-    "message": "The password could not be checked: $WHY$. There is no answer about it — neither breached nor clean.",
-    "placeholders": {
-      "why": {
-        "content": "$1"
-      }
-    }
+    "message": "The password could not be checked. There is no answer about it — neither \"in a breach\" nor \"clean\"."
   },
   "logRulesTruncated": {
     "message": "$COUNT$ entries from $FEED$ could not be enforced: the browser limits how many blocking rules an extension may install.",
@@ -1515,31 +1490,16 @@
     }
   },
   "optionsJournalUnread": {
-    "message": "The journal could not be read: $CAUSE$",
-    "placeholders": {
-      "cause": {
-        "content": "$1"
-      }
-    }
+    "message": "The journal could not be read."
   },
   "optionsQueueHeading": {
     "message": "What needs you"
   },
   "optionsQueueUnread": {
-    "message": "The queue could not be read: $CAUSE$",
-    "placeholders": {
-      "cause": {
-        "content": "$1"
-      }
-    }
+    "message": "The queue could not be read."
   },
   "optionsTrustedUnread": {
-    "message": "The trusted list could not be read: $CAUSE$",
-    "placeholders": {
-      "cause": {
-        "content": "$1"
-      }
-    }
+    "message": "The trusted list could not be read."
   },
   "overviewAreas": {
     "message": "Areas"

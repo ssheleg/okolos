@@ -45,7 +45,12 @@ export interface TrustedHandlers {
  */
 export type TrustedState =
   | { readonly kind: 'ready'; readonly domains: readonly TrustedDomain[] }
-  | { readonly kind: 'error'; readonly message: string }
+  | {
+      readonly kind: 'error'
+      readonly message: string
+      /** The exception's own words, drawn under the sentence rather than inside it (B-117). */
+      readonly diagnostic?: string
+    }
 
 export function renderTrusted(
   doc: Document,
@@ -63,6 +68,10 @@ export function renderTrusted(
     // Never an empty list in place of a failure: it would read as "you trust nothing",
     // which is the reassuring answer and possibly the wrong one.
     root.append(text(doc, 'trusted-error', state.message))
+    // The exception under the sentence, never inside it (B-117).
+    if (state.diagnostic !== undefined && state.diagnostic !== '') {
+      root.append(text(doc, 'trusted-diagnostic', state.diagnostic))
+    }
     return root
   }
 

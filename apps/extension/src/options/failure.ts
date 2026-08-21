@@ -27,7 +27,20 @@ export const FAILURE_ROLE = 'page-failure'
  *
  * Returns the element so a caller can assert on it; `null` when the slot was cleared.
  */
-export function showFailure(doc: Document, root: Element, message: string | null): Element | null {
+export function showFailure(
+  doc: Document,
+  root: Element,
+  message: string | null,
+  /**
+   * The exception's own text, when there is one — shown under the sentence, never inside it.
+   *
+   * The first version of this slot interpolated it: `t('actionFailed', String(cause))` put an
+   * English exception in the middle of a Russian line, and the gate written one iteration
+   * later counted it among eight such sites (B-115, B-117). The sentence is the reader's; this
+   * is the bug report's.
+   */
+  diagnostic?: string,
+): Element | null {
   const existing = root.querySelector(`[data-role='${FAILURE_ROLE}']`)
   existing?.remove()
   if (message === null) return null
@@ -41,6 +54,12 @@ export function showFailure(doc: Document, root: Element, message: string | null
    */
   slot.setAttribute('role', 'alert')
   slot.textContent = message
+  if (diagnostic !== undefined && diagnostic !== '') {
+    const detail = doc.createElement('span')
+    detail.setAttribute('data-role', 'failure-diagnostic')
+    detail.textContent = diagnostic
+    slot.append(detail)
+  }
   root.prepend(slot)
   return slot
 }

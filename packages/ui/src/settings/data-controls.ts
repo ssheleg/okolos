@@ -111,7 +111,7 @@ export function renderDataControls(
       await handlers.onExport()
       note('export-failed', null)
     } catch (cause) {
-      note('export-failed', t('dataExportFailed', String(cause)))
+      note('export-failed', t('dataExportFailed'), String(cause))
     }
   }
 
@@ -126,9 +126,25 @@ export function renderDataControls(
    * Both halves happen here, after the answer is known, and the clicks are the
    * user's — they will double-click, and the screen must hold one answer.
    */
-  function note(role: string, content: string | null): void {
+  /**
+   * One slot per role, replaced rather than appended — and the exception's own words under the
+   * sentence rather than inside it.
+   *
+   * Both failures here used to read `t('dataExportFailed', String(cause))`, so a reader got a
+   * Russian sentence with an English exception in the middle (B-117). The sentence is the
+   * reader's; the diagnostic is what a bug report needs.
+   */
+  function note(role: string, content: string | null, diagnostic?: string): void {
     section.querySelector<HTMLElement>(`[data-role=${role}]`)?.remove()
-    if (content !== null) section.append(text(doc, role, content))
+    if (content === null) return
+    const slot = text(doc, role, content)
+    if (diagnostic !== undefined && diagnostic !== '') {
+      const detail = doc.createElement('span')
+      detail.setAttribute('data-role', `${role}-diagnostic`)
+      detail.textContent = diagnostic
+      slot.append(detail)
+    }
+    section.append(slot)
   }
 
   /** The retry button, created once however many failures pass through. */
@@ -158,7 +174,7 @@ export function renderDataControls(
     try {
       outcome = await handlers.onWipe()
     } catch (cause) {
-      note('wipe-failed', t('dataWipeUnavailable', String(cause)))
+      note('wipe-failed', t('dataWipeUnavailable'), String(cause))
       offerRetry()
       return
     }

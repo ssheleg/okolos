@@ -3,12 +3,7 @@
     "message": "Это неверно"
   },
   "actionFailed": {
-    "message": "Действие не выполнилось: $CAUSE$",
-    "placeholders": {
-      "cause": {
-        "content": "$1"
-      }
-    }
+    "message": "Действие не выполнилось."
   },
   "actionTitle": {
     "message": "Okolos"
@@ -450,12 +445,7 @@
     "message": "Выгрузить все данные"
   },
   "dataExportFailed": {
-    "message": "Выгрузить не удалось: $WHY$. Файл не создан.",
-    "placeholders": {
-      "why": {
-        "content": "$1"
-      }
-    }
+    "message": "Выгрузить не удалось. Файл не создан."
   },
   "dataHeading": {
     "message": "Ваши данные"
@@ -505,12 +495,7 @@
     "message": "Попробовать ещё раз"
   },
   "dataWipeUnavailable": {
-    "message": "Удалить не удалось: $WHY$. Ничего не стёрто — данные на месте.",
-    "placeholders": {
-      "why": {
-        "content": "$1"
-      }
-    }
+    "message": "Удалить не удалось. Ничего не стёрто — данные на месте."
   },
   "downloadFeedUnread": {
     "message": "списки заблокированных не прочитались, поэтому источник не проверен"
@@ -717,12 +702,7 @@
     "message": "Это не утверждение, что ничего не изменилось."
   },
   "extensionsFileUnread": {
-    "message": "Файл не прочитался: $CAUSE$",
-    "placeholders": {
-      "cause": {
-        "content": "$1"
-      }
-    }
+    "message": "Файл не прочитался."
   },
   "extensionsHexDensity": {
     "message": "экранированных байтов на 100 символов: $COUNT$",
@@ -1448,12 +1428,7 @@
     }
   },
   "logPasswordUnchecked": {
-    "message": "Проверить пароль не удалось: $WHY$. Ответа о нём нет — ни «в утечке», ни «чистый».",
-    "placeholders": {
-      "why": {
-        "content": "$1"
-      }
-    }
+    "message": "Проверить пароль не удалось. Ответа о нём нет — ни «в утечке», ни «чистый»."
   },
   "logRulesTruncated": {
     "message": "Записей из списка $FEED$, которые не удалось применить: $COUNT$. Браузер ограничивает число блокирующих правил у расширения.",
@@ -1515,31 +1490,16 @@
     }
   },
   "optionsJournalUnread": {
-    "message": "Журнал не прочитался: $CAUSE$",
-    "placeholders": {
-      "cause": {
-        "content": "$1"
-      }
-    }
+    "message": "Журнал не прочитался."
   },
   "optionsQueueHeading": {
     "message": "Что требует вас"
   },
   "optionsQueueUnread": {
-    "message": "Очередь не прочиталась: $CAUSE$",
-    "placeholders": {
-      "cause": {
-        "content": "$1"
-      }
-    }
+    "message": "Очередь не прочиталась."
   },
   "optionsTrustedUnread": {
-    "message": "Список доверенных не прочитался: $CAUSE$",
-    "placeholders": {
-      "cause": {
-        "content": "$1"
-      }
-    }
+    "message": "Список доверенных не прочитался."
   },
   "overviewAreas": {
     "message": "Разделы"

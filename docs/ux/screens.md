@@ -130,6 +130,17 @@ includes a redirect from `*.workers.dev`, not just a CNAME.
 - In-page surfaces render inside a closed Shadow DOM so page CSS cannot
   restyle or hide them.
 
+**The three public pages carry the product's own visual layer, and did not until 2026-08-21.**
+All of them shipped with no stylesheet at all — Times New Roman, browser bullets, text edge to
+edge across a wide window — while their markup, copy and metadata were right. That is exactly
+why nothing caught it: every gate here reads structure, and none of them looks. The sheet is
+generated from `packages/ui/src/tokens.ts` into `apps/proxy/src/style.generated.ts` and inlined,
+because a worker has no CSS build and a hand-copied palette would be the second place a colour
+lives. Two deliberate differences from `pages.css`: **lists keep their markers**, since these are
+prose rather than the app's structures, and the text has **a measure** — these are documents, not
+panels. Held by `apps/proxy/src/style.test.ts`: every page inlines it, the module matches the
+generator, and the sheet declares no colour of its own.
+
 ## Screens
 
 ### SCR-01: First-run check

@@ -89,10 +89,25 @@ describe('the landing page a stranger and a crawler both read', () => {
   })
 
   it('uses none of the words the brand pack forbids', async () => {
+    /**
+     * Read from the **text**, not from the markup.
+     *
+     * This checked the raw HTML, and on 2026-08-21 it went red on `inline-size: 100%` inside
+     * the stylesheet the page had just gained: a CSS length is not a claim to a reader. The
+     * same shape as a gate reading its own prose — the rule was right and the layer was
+     * wrong. Styles, scripts and tags come out first; what is left is what a person reads,
+     * which is what the brand pack is about.
+     */
     const { html } = await landing()
+    const text = html
+      .replace(/<style[\s\S]*?<\/style>/g, ' ')
+      .replace(/<script[\s\S]*?<\/script>/g, ' ')
+      .replace(/<[^>]*>/g, ' ')
     for (const word of ['полностью', 'гарантированно', '100%']) {
-      expect(html, `the landing page says "${word}"`).not.toContain(word)
+      expect(text, `the landing page says "${word}"`).not.toContain(word)
     }
+    // The stripping must not empty the page: a blank string contains nothing at all.
+    expect(text, 'nothing left to check after stripping').toContain('Okolos')
   })
 
   it('is in the language the product ships in', async () => {

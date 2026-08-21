@@ -8,6 +8,7 @@
 import { displayFeedNameRu, isOurFeed, OUR_FEEDS } from '@okolos/core-feeds'
 
 import { PRIVACY_HTML } from './privacy.generated.js'
+import { PUBLIC_STYLE } from './style.generated.js'
 
 export interface Env {
   readonly DB: D1Like
@@ -217,6 +218,18 @@ async function servePublishedFeed(name: string, env: Env): Promise<Response> {
  * repository keeps cannot drift; a test compares the committed markup with what
  * the generator produces.
  */
+/**
+ * The visual layer, inlined into every public page.
+ *
+ * All three shipped with none until 2026-08-21 — Times New Roman, browser bullets, text edge
+ * to edge across a wide window — while the markup, the copy and the metadata were all right.
+ * Found by rendering them and looking, on the surfaces a stranger meets first. A worker has
+ * no CSS build and no filesystem, so the sheet is generated from `packages/ui/src/tokens.ts`
+ * into `style.generated.ts` rather than hand-copied here, which would be the second place a
+ * colour lives.
+ */
+const STYLE_TAG = `<style>${PUBLIC_STYLE}</style>`
+
 function privacyPage(): Response {
   return new Response(
     `<!doctype html>
@@ -226,6 +239,7 @@ function privacyPage(): Response {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Приватность — Okolos</title>
 <meta name="description" content="Что Okolos отправляет с устройства, что не отправляет, и сколько хранит.">
+${STYLE_TAG}
 </head>
 <body>
 <main>
@@ -277,6 +291,7 @@ function landingPage(url: URL): Response {
 <meta name="description" content="Находит на странице текст, спрятанный от человека, но видимый ИИ-ассистенту, и обезвреживает его до того, как ассистент прочтёт. Работает на устройстве, история браузинга никуда не уходит.">
 <link rel="canonical" href="${escapeHtml(origin)}/">
 <script type="application/ld+json">${JSON.stringify(structured)}</script>
+${STYLE_TAG}
 </head>
 <body>
 <main>
@@ -349,6 +364,7 @@ async function statusPage(url: URL, env: Env): Promise<Response> {
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(title)}">
 ${canonical ? `<link rel="canonical" href="${escapeHtml(canonical)}">` : ''}
+${STYLE_TAG}
 </head>
 <body>
 <main>

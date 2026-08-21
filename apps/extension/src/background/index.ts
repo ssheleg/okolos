@@ -64,6 +64,29 @@ import { changePasswordUrl, reuseOf } from '@okolos/core-credential'
 import { recordPageRequest } from './page-requests.js'
 import { optionsPageFor } from '../options/views.js'
 
+/**
+ * What the worker did with a verdict request, in the worker's own timeline.
+ *
+ * The page side has said for a while whether it scanned (`okolos:collect`), gave up
+ * (`okolos:scan-failed`) or stopped short (`okolos:scan-blinded`). When a banner does
+ * not arrive and the page says "the scan asked", one link was still unreadable from
+ * outside: whether this worker ever *received* the question. Three cases looked
+ * identical — the message never reached the worker, the handler took it and never
+ * answered, or it answered and the answer was lost on the way back — and B-78 has
+ * spent four CI reds and two local repros inside that ambiguity.
+ *
+ * So the request is marked on arrival and the answer is measured on return. A worker
+ * with no `okolos:verdict:start` never heard the question; a start with no
+ * `okolos:verdict` measure is a handler that took it and stalled, which is ours to
+ * fix; a measure with a duration says the background did its part in N ms and moves
+ * the search to the reply path. Marks rather than a journal entry, for the reason
+ * B-78 already settled on the page side: reading a journal means opening another
+ * page, which changes the thing being diagnosed.
+ */
+export const MARK_VERDICT_IN = 'okolos:verdict:start'
+export const MARK_VERDICT_OUT = 'okolos:verdict:end'
+export const MEASURE_VERDICT = 'okolos:verdict'
+
 const FEED_ALARM = 'okolos:feeds'
 const RETENTION_ALARM = 'okolos:retention'
 const INVENTORY_ALARM = 'okolos:inventory'
@@ -192,6 +215,10 @@ const prepared = inference.prepare().catch(() => 'no-host' as const)
 
 
 async function handleCandidates(page: PageCandidates): Promise<{ verdicts: Verdict[] }> {
+  // Before anything that can throw or await: the fact being recorded is "this worker
+  // heard the question", and a mark placed after the first await would be missing in
+  // exactly the case it exists to describe.
+  performance.mark(MARK_VERDICT_IN)
   const now = new Date().toISOString()
   const ctx = { now, newId: () => crypto.randomUUID() }
   const verdicts = detectHidden(page, ctx)
@@ -220,6 +247,11 @@ async function handleCandidates(page: PageCandidates): Promise<{ verdicts: Verdi
     }
   }
 
+  // Deliberately not in a `finally`: a handler that threw did not answer, and a measure
+  // written anyway would say it did. The absent measure beside a present start mark is
+  // the reading that matters.
+  performance.mark(MARK_VERDICT_OUT)
+  performance.measure(MEASURE_VERDICT, MARK_VERDICT_IN, MARK_VERDICT_OUT)
   return { verdicts }
 }
 

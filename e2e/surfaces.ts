@@ -69,6 +69,51 @@ async function diagnose(page: Page, context?: BrowserContext): Promise<string> {
       : `  - ${workers.length} service worker(s): ${workers.map((w) => w.url().split('/')[2]).join(', ')}`,
   )
 
+  /**
+   * The other half of the same question, read from the worker's own timeline.
+   *
+   * "A worker is registered" and "the worker heard this question" are different facts,
+   * and the report used to carry only the first. When the page says it asked and no
+   * banner came, three cases are indistinguishable from the page alone: the message
+   * never reached the worker, the worker took it and stalled, or it answered and the
+   * answer was lost. The product marks the arrival and measures the answer (B-78), so
+   * the lines below eliminate two of the three — and the worker's age is the fourth
+   * fact, because a worker two hundred milliseconds old had been asleep for the whole
+   * wait, which is Chrome's cost and not this code's.
+   */
+  const worker = workers[0]
+  let answered: number | null = null
+  if (worker) {
+    try {
+      const w = await worker.evaluate(() => ({
+        aliveMs: performance.now(),
+        asked: performance.getEntriesByName('okolos:verdict:start').length,
+        answers: performance.getEntriesByName('okolos:verdict').length,
+        lastMs: performance.getEntriesByName('okolos:verdict').at(-1)?.duration ?? null,
+      }))
+      lines.push(`  - the worker has been alive ${(w.aliveMs / 1000).toFixed(1)} s`)
+      if (w.asked === 0) {
+        lines.push('  - this worker NEVER RECEIVED a verdict request: either nothing reached it,')
+        lines.push('    or the worker that took the question was torn down and this is a new one.')
+        lines.push('    Compare its age against the wait: a young worker had been asleep.')
+      } else if (w.answers === 0) {
+        lines.push(`  - the worker RECEIVED ${w.asked} verdict request(s) and ANSWERED NONE:`)
+        lines.push('    the handler took the question and did not come back. This one is ours.')
+      } else {
+        answered = w.answers
+        lines.push(
+          `  - the worker answered ${w.answers} of ${w.asked} request(s), the last in ` +
+            `${w.lastMs?.toFixed(1) ?? '?'} ms: the background did its part, so the loss is`,
+        )
+        lines.push('    on the way back or in the mount, not in the scan.')
+      }
+    } catch (cause) {
+      // An extension worker that cannot be evaluated is itself worth printing: it is
+      // either gone or not the kind of worker this report assumed.
+      lines.push(`  - the worker could not be read: ${String(cause)}`)
+    }
+  }
+
   try {
     const page_ = await page.evaluate(() => ({
       url: location.href,
@@ -108,6 +153,24 @@ async function diagnose(page: Page, context?: BrowserContext): Promise<string> {
        * and on a loaded runner that fires on a seven-node page (B-110).
        */
       blinded: performance.getEntriesByName('okolos:scan-blinded').length > 0,
+      /**
+       * Was the page read in full, whatever the walk found?
+       *
+       * `blinded` is the narrower fact — cut short *and* nothing to ask about. A walk
+       * that was cut short and did find something can still miss the finding this test
+       * is waiting for, which looks identical from outside to a finding that was never
+       * there. Written by the product since B-121 and unread here until the gate in
+       * `tools/marks-read.test.ts` said so.
+       */
+      partial: performance.getEntriesByName('okolos:scan-partial').length > 0,
+      /**
+       * If a banner did arrive, how long it took from the navigation.
+       *
+       * The number SCN-003 promises in words. On a run where the wait ran out and the
+       * surface is here a moment later, this says by how much — which is the difference
+       * between "the budget is too tight for this machine" and "the mount is broken".
+       */
+      bannerMs: performance.getEntriesByName('okolos:banner')[0]?.duration ?? null,
     }))
     lines.push(`  - page ${page_.url} (${page_.ready}), ${page_.nodes} nodes`)
     lines.push(
@@ -124,7 +187,22 @@ async function diagnose(page: Page, context?: BrowserContext): Promise<string> {
       )
       lines.push('    the page — and against the load on this machine, if the ceiling is time.')
     } else if (page_.scanned !== null) {
-      lines.push('  - the scan asked, so the verdict is what did not arrive')
+      /**
+       * Only when nothing on the worker side contradicts it.
+       *
+       * This line used to be printed on the strength of the page alone, and the page
+       * cannot see the answer — so a run where the background had answered every
+       * request still read "the verdict is what did not arrive" and sent the next
+       * reader down the relay. Measured on the probe that added the worker lines. The
+       * rule the product already keeps for `okolos:scan-blinded` applies to the report
+       * itself: a named link that was never checked is worse than no name at all.
+       */
+      lines.push(
+        answered === null || answered === 0
+          ? '  - the scan asked, so the verdict is what did not arrive'
+          : '  - the scan asked and the worker answered, so what is missing is downstream of' +
+              ' both — the reply, or the mount',
+      )
     }
     if (page_.gaveUp) {
       /**
@@ -141,9 +219,18 @@ async function diagnose(page: Page, context?: BrowserContext): Promise<string> {
       )
       lines.push('    this is the product degrading honestly on a worker that was too slow.')
     }
+    if (page_.partial && !page_.blinded) {
+      lines.push('  - the walk was CUT SHORT but did find candidates: the finding this test')
+      lines.push('    waits for may have been past the ceiling. Check the budget, not the relay.')
+    }
     lines.push(
       `  - ${page_.hosts} okolos host element(s), ${page_.neutralised} neutralised node(s)`,
     )
+    if (page_.bannerMs !== null) {
+      lines.push(
+        `  - a banner was measured at ${(page_.bannerMs / 1000).toFixed(1)} s from the navigation`,
+      )
+    }
     if (page_.hosts > 0) {
       /**
        * The report is taken *after* the wait ran out, so a surface that is here now

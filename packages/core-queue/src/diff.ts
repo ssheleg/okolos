@@ -17,6 +17,18 @@ export interface JournalEntry {
   readonly createdAt: string
   readonly kind: JournalKind
   readonly summary: string
+  /**
+   * The underlying failure, verbatim, for whoever is writing a bug report.
+   *
+   * It used to be **inside** `summary`: two writers interpolated `String(cause)` into a
+   * sentence from the catalogue, so a reader got an English exception in the middle of a
+   * Russian line — "Проверка страницы не завершилась: Error: the background service refused
+   * …". The developer-facing text is worth keeping and worth keeping *out* of the sentence;
+   * this is where it goes, and the screen shows it as a secondary line the way SCR-20 shows
+   * the storage detail: last, because it is what a bug report needs and not what a reader
+   * should meet first (B-115).
+   */
+  readonly diagnostic?: string
   /** Whether the product did it, or the user did. */
   readonly automatic: boolean
 }

@@ -43,7 +43,7 @@ export interface FeedSyncDeps {
    * record written in whichever language was active that day has stopped
    * being one record.
    */
-  readonly note: (explained: Explained) => Promise<void>
+  readonly note: (explained: Explained, diagnostic?: string) => Promise<void>
 }
 
 /**
@@ -90,7 +90,10 @@ export async function syncFeed(deps: FeedSyncDeps): Promise<FeedSyncResult> {
     }
     signed = (await response.json()) as SignedUpdate
   } catch (cause) {
-    await deps.note(explained(NOTE_KEY.failed, [String(cause)]))
+    // The cause travels beside the sentence, not inside it: an exception's text is English
+    // and a developer's, and pasting it into a catalogue sentence gave the reader a Russian
+    // line with an English middle (B-115).
+    await deps.note(explained(NOTE_KEY.failed, []), String(cause))
     return { fetched: false, accepted: false, why: String(cause) }
   }
 

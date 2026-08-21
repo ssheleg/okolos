@@ -418,6 +418,8 @@ async function notePageEvent(
       | 'scan-failed'
       | 'scan-blinded'
     explain: string
+    /** Verbatim failure text, when the sender has one. Never folded into `explain` (B-115). */
+    diagnostic?: string
   },
   from?: { tabId?: number },
 ): Promise<{ ok: true }> {
@@ -443,7 +445,11 @@ async function notePageEvent(
       id: `page:${payload.kind}:${new Date().toISOString()}`,
       createdAt: new Date().toISOString(),
       kind: 'action',
-      detail: { reason: `page-${payload.kind}`, explain: payload.explain },
+      detail: {
+        reason: `page-${payload.kind}`,
+        explain: payload.explain,
+        ...(payload.diagnostic === undefined ? {} : { diagnostic: payload.diagnostic }),
+      },
     })
   } catch (cause) {
     // The note is the least important thing on the page at that moment.
@@ -1243,12 +1249,18 @@ async function pullFeed(): Promise<void> {
             }
       },
       refresh: () => refreshBlockRules(),
-      note: async (note) => {
+      note: async (note, diagnostic) => {
         await db.put('journal', {
           id: `feed:${new Date().toISOString()}`,
           createdAt: new Date().toISOString(),
           kind: 'error',
-          detail: { reason: 'feed-sync', ...note },
+          // `diagnostic` beside the explanation, never inside it: the reader gets the
+          // catalogue's sentence and, under it, the exception's own words (B-115).
+          detail: {
+            reason: 'feed-sync',
+            ...note,
+            ...(diagnostic === undefined ? {} : { diagnostic }),
+          },
         })
       },
     })

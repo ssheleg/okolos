@@ -342,6 +342,7 @@ includes a redirect from `*.workers.dev`, not just a CNAME.
   |-------|---------|-------------|----------|
   | empty | nothing changed | - | "Nothing changed since <time>" |
   | success | changes exist | - | grouped diff, newest first |
+- **Behavior notes — a failure's own words sit under the sentence, never inside it.** Two writers interpolated `String(cause)` into a catalogue sentence, so a reader got a Russian line with an English exception in the middle. The entry carries a `diagnostic` beside its explanation now, and the row draws it as a muted second line in a monospace face — last, the way SCR-20 shows the storage detail, because it is what a bug report needs and not what a reader should meet first (B-115)
 - **Behavior notes — the history line is a row.** It is a `<button>`, and until 2026-08-21 it
   inherited the chip look: a bordered box the width of its text, reading as a disabled input.
   The instant it carries is to the minute (`shortTime`), not the second — "nothing new since

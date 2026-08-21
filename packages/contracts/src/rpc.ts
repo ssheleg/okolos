@@ -417,6 +417,17 @@ export interface RpcMap {
          */
         | 'password-unreported'
       explain: string
+      /**
+       * The underlying failure verbatim, when there is one — never folded into `explain`.
+       *
+       * `explain` is a sentence from the catalogue and the reader's language decides it;
+       * an exception's text is English and a developer's. Interpolating the second into the
+       * first gave a reader a Russian line with an English middle, which is how
+       * "Проверка страницы не завершилась: Error: the background service refused …" reached
+       * the journal (B-115). The screen shows this under the sentence, the way SCR-20 shows
+       * the storage detail: last, because it is what a bug report needs.
+       */
+      diagnostic?: string
     }
     res: { ok: true }
   }

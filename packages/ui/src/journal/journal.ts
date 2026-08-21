@@ -99,9 +99,30 @@ function entryRow(doc: Document, item: JournalEntry, handlers: JournalHandlers):
   row.type = 'button'
   row.setAttribute('data-role', 'entry')
   row.setAttribute('data-entry', item.id)
-  row.textContent = `${shortTime(item.createdAt)} — ${item.summary} (${
+
+  const line = doc.createElement('span')
+  line.setAttribute('data-role', 'entry-line')
+  line.textContent = `${shortTime(item.createdAt)} — ${item.summary} (${
     item.automatic ? t('journalAutomatic') : t('journalManual')
   })`
+  row.append(line)
+
+  /**
+   * The underlying failure, under the sentence rather than inside it.
+   *
+   * Two writers used to interpolate `String(cause)` into a catalogue sentence, so the reader
+   * got a Russian line with an English exception in the middle. The developer-facing text is
+   * worth keeping and worth keeping out of the sentence — shown last and muted, the way
+   * SCR-20 shows the storage detail: what a bug report needs, not what a reader meets first
+   * (B-115).
+   */
+  if (item.diagnostic !== undefined && item.diagnostic !== '') {
+    const detail = doc.createElement('span')
+    detail.setAttribute('data-role', 'entry-diagnostic')
+    detail.textContent = item.diagnostic
+    row.append(detail)
+  }
+
   row.addEventListener('click', () => handlers.onOpenEntry(item.id))
   return row
 }

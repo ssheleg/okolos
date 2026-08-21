@@ -57,8 +57,13 @@ export class DestinationError extends Error {
   ) {
     const allowed = DESTINATIONS[purpose as Purpose]
     super(
+      // i18n-exempt: thrown to the caller and never shown as itself — the user reads the audit
+      // entry, and a caller that journals a failure now writes this text as `diagnostic`
+      // beside a catalogue sentence rather than inside one (B-115)
       `Refused to send: '${purpose}' may not reach ${destination}. ` +
         (allowed && allowed.length > 0
+          // i18n-exempt: the second half of the same developer-facing sentence; the sweep is a
+          // line rule, so each fragment carries its own reason
           ? `It may reach ${allowed.join(', ')}.`
           // i18n-exempt: names a source file, which is the audience: nobody but a developer can act on a purpose with no destinations
           : `It has no destinations at all — see packages/net/src/destinations.ts for why.`),
@@ -85,6 +90,8 @@ export class AuditWriteError extends Error {
  */
 export async function request(spec: RequestSpec, deps: RequestDeps): Promise<Response> {
   if (!PURPOSES.has(spec.purpose)) {
+    // i18n-exempt: a purpose outside the union is a programming mistake, and the audience of
+    // the throw is whoever wrote it
     throw new Error(`Refused to send: unknown purpose '${spec.purpose}'`)
   }
 
@@ -95,6 +102,8 @@ export async function request(spec: RequestSpec, deps: RequestDeps): Promise<Res
   try {
     destination = new URL(spec.url).hostname
   } catch {
+    // i18n-exempt: names the malformed URL for whoever built it; the user's record of the
+    // attempt is the audit entry, which is written before this line can be reached
     throw new Error(`Refused to send: '${spec.url}' is not a valid URL`)
   }
   const entry = (outcome: AuditEntry['outcome']): AuditEntry => ({

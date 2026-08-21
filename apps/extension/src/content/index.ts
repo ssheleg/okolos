@@ -864,9 +864,13 @@ async function safely(work: () => Promise<void>): Promise<void> {
        * fails its rescan over and over, and the same sentence repeated is the flood
        * this store cannot afford. A *different* cause is new information and is written.
        */
-      const explain = t('noteScanFailed', String(cause))
-      await journal.record(`scan:${explain}`, async () => {
-        await platform.runtime.send('page/note', { kind: 'scan-failed', explain })
+      const explain = t('noteScanFailed')
+      const diagnostic = String(cause)
+      // Keyed on the *cause*, not on the sentence: the sentence is the same every time now
+      // that the cause is not inside it, so keying on it would journal the first failure of
+      // a page and silence every different one after it.
+      await journal.record(`scan:${diagnostic}`, async () => {
+        await platform.runtime.send('page/note', { kind: 'scan-failed', explain, diagnostic })
       })
     },
   })

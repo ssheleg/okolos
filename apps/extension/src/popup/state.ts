@@ -62,6 +62,11 @@ export function mapJournal(records: readonly JournalRecord[]): MappedJournal {
       createdAt: record.createdAt,
       kind: record.kind,
       summary: summarise(detail, record.kind),
+      // Only when it is there and is text: a record written by an older build has none, and
+      // the sentence stands on its own without it.
+      ...(typeof detail.diagnostic === 'string' && detail.diagnostic !== ''
+        ? { diagnostic: detail.diagnostic }
+        : {}),
       // A decision the user made is not the same event as one the product made,
       // and the journal is the place where that difference is legible.
       automatic: detail.reason !== 'user-blocked' && detail.reason !== 'user-allowed',

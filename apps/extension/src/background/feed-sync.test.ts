@@ -13,7 +13,12 @@ import { syncFeed, FEED_URL } from './feed-sync.js'
 
 function deps(overrides: Partial<Parameters<typeof syncFeed>[0]> & { body?: unknown; status?: number; throws?: unknown } = {}) {
   /** Key first, then its arguments — the shape the journal is handed. */
-  const notes: { explainKey: string; explainArgs: readonly string[] }[] = []
+  const notes: {
+    explainKey: string
+    explainArgs: readonly string[]
+    /** Beside the sentence, never inside it — see B-115. */
+    diagnostic?: string
+  }[] = []
   const refreshed: number[] = []
   const applied: unknown[] = []
   const base = {
@@ -40,8 +45,11 @@ function deps(overrides: Partial<Parameters<typeof syncFeed>[0]> & { body?: unkn
     // while the note took positional arguments; now the shape itself is what these
     // tests are about — a refusal must arrive as its own key, not as a sentence
     // substituted into another message (B-77).
-    note: async (note: { explainKey: string; explainArgs: readonly string[] }) => {
-      notes.push(note)
+    note: async (
+      note: { explainKey: string; explainArgs: readonly string[] },
+      diagnostic?: string,
+    ) => {
+      notes.push({ ...note, ...(diagnostic === undefined ? {} : { diagnostic }) })
     },
     ...overrides,
   }
@@ -112,7 +120,16 @@ describe('pulling the blocking feed', () => {
     expect(result.fetched).toBe(false)
     expect(refreshed).toHaveLength(0)
     expect(notes[0]?.explainKey).toBe('feedFetchFailed')
-    expect(String(notes[0]?.explainArgs)).toMatch(/offline/)
+    /**
+     * The cause travels **beside** the sentence, not as a substitution into it.
+     *
+     * It used to be an argument, so the reader got "Список блокировок не скачался: Error:
+     * offline." — a Russian sentence with an English exception in the middle. The sentence is
+     * now whole on its own and the exception is a `diagnostic` the journal shows under it
+     * (B-115).
+     */
+    expect(notes[0]?.explainArgs).toEqual([])
+    expect(notes[0]?.diagnostic).toMatch(/offline/)
   })
 
   it('names a feed address that is not a placeholder', async () => {

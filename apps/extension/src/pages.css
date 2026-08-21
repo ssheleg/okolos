@@ -321,6 +321,18 @@ textarea {
 }
 
 /*
+ * The journal row now has two lines: the sentence, and — when there is one — the failure
+ * verbatim. Muted and smaller, because it is for a bug report rather than for reading.
+ */
+[data-role='entry-diagnostic'] {
+  display: block;
+  color: var(--ok-colour-text-muted);
+  font-family: var(--ok-type-font-mono);
+  font-size: var(--ok-type-size-sm);
+  overflow-wrap: anywhere;
+}
+
+/*
  * A clickable row still has to look clickable. `cursor: pointer` comes from the button
  * rule; this is the hover the chip's own background used to provide.
  */

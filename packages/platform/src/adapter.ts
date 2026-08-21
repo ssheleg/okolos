@@ -147,6 +147,9 @@ export function createPlatform(kind: Platform['kind'], api: WebExtensionApi): Pl
          */
         if (isErrorAnswer(answer)) {
           throw new Error(
+            // i18n-exempt: the caller's `catch` decides what a reader sees; since B-115 a
+            // journalled failure carries this text as `diagnostic` beside a catalogue
+            // sentence rather than interpolated into one
             `the background service refused "${type}": ${answer.error}` +
               (typeof answer.detail === 'string' && answer.detail !== ''
                 ? ` — ${answer.detail}`

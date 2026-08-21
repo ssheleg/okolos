@@ -117,3 +117,40 @@ describe('the rest of it', () => {
     expect(role(el, 'retention')?.textContent).toContain('30 дней')
   })
 })
+
+describe('a failure’s own words sit under the sentence, not inside it', () => {
+  /**
+   * Two writers interpolated `String(cause)` into a catalogue sentence, so a reader got a
+   * Russian line with an English exception in the middle — "Проверка страницы не завершилась:
+   * Error: the background service refused …". The text is worth keeping and worth keeping out
+   * of the sentence (B-115).
+   */
+  const shown = (diagnostic?: string): HTMLElement =>
+    render(
+      [
+        entry({
+          kind: 'error',
+          summary: 'Проверка страницы не завершилась.',
+          ...(diagnostic === undefined ? {} : { diagnostic }),
+        }),
+      ],
+      SINCE,
+    )
+
+  it('shows it as its own line when there is one', () => {
+    expect(role(shown('Error: the background service refused'), 'entry-diagnostic')?.textContent).toBe(
+      'Error: the background service refused',
+    )
+  })
+
+  it('keeps the sentence free of it', () => {
+    const line = role(shown('Error: refused'), 'entry-line')?.textContent ?? ''
+    expect(line).not.toContain('Error: refused')
+    expect(line).toContain('Проверка страницы не завершилась.')
+  })
+
+  it('draws no empty line when a record has none', () => {
+    expect(role(shown(), 'entry-diagnostic')).toBeNull()
+    expect(role(shown(''), 'entry-diagnostic')).toBeNull()
+  })
+})

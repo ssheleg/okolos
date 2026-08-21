@@ -407,3 +407,40 @@ describe('a page that tries to blind the scan with cheap markup', () => {
     expect(page.candidates[0]?.carrier).toBe('html-comment')
   })
 })
+
+describe('the time ceiling is a hang guard, not a budget', () => {
+  /**
+   * It was 8 ms, and it decided how much of a page got read — so on a busy machine the
+   * collector gave up on a seven-node page, returned zero candidates, journalled "could not
+   * finish" and showed nothing. Four CI runs failed that way (B-110); the report printed
+   * `8.1 ms`, which was the ceiling itself.
+   *
+   * This project wrote the rule down on the day it gated bundle bytes and refused to gate
+   * milliseconds: a deterministic ceiling may decide things, a wall-clock one may not. The
+   * floor below is what stops the number drifting back to a value that decides.
+   */
+  it('is far above any honest scan, so load cannot decide what gets read', () => {
+    expect(DEFAULT_BUDGET.maxMillis).toBeGreaterThanOrEqual(100)
+  })
+
+  it('leaves the real budget deterministic, so two machines read the same page alike', () => {
+    expect(DEFAULT_BUDGET.maxNodes).toBeGreaterThan(1000)
+    expect(DEFAULT_BUDGET.maxCandidates).toBeGreaterThan(10)
+    expect(DEFAULT_BUDGET.maxTextLength).toBeGreaterThan(500)
+  })
+
+  it('still stops a walk that will not end, because that is what it is for', () => {
+    // The mechanism stays: a document over the node ceiling is truncated, deterministically.
+    const doc = new DOMParser().parseFromString(
+      `<html><body>${'<span></span>'.repeat(DEFAULT_BUDGET.maxNodes + 100)}</body></html>`,
+      'text/html',
+    )
+    const page = collect(doc, {
+      url: 'https://fixture.test/',
+      frameId: 0,
+      budget: DEFAULT_BUDGET,
+      elapsed: () => 0,
+    })
+    expect(page.truncated).toBe(true)
+  })
+})

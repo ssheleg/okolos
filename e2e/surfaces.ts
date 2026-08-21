@@ -98,13 +98,34 @@ async function diagnose(page: Page, context?: BrowserContext): Promise<string> {
        * is the fact that separates them (B-78).
        */
       gaveUp: performance.getEntriesByName('okolos:scan-failed').length > 0,
+      /**
+       * Did the walk stop before anything was asked?
+       *
+       * The third state, and the one this report got wrong. A truncated traversal with no
+       * candidates sends no RPC at all — so "the verdict is what did not arrive" named a
+       * link that was never reached. Four CI failures read that way before the cause was
+       * measured: the collector's budget had a wall-clock component of eight milliseconds,
+       * and on a loaded runner that fires on a seven-node page (B-110).
+       */
+      blinded: performance.getEntriesByName('okolos:scan-blinded').length > 0,
     }))
     lines.push(`  - page ${page_.url} (${page_.ready}), ${page_.nodes} nodes`)
     lines.push(
       page_.scanned === null
         ? '  - the content script never finished a scan: it did not run, or it threw'
-        : `  - the content script scanned in ${page_.scanned.toFixed(1)} ms, so the verdict is what did not arrive`,
+        : `  - the content script scanned in ${page_.scanned.toFixed(1)} ms`,
     )
+    if (page_.blinded) {
+      lines.push(
+        '  - the collector STOPPED SHORT and asked nothing: the traversal hit its ceiling',
+      )
+      lines.push(
+        '    with no candidates, so no verdict was ever requested. Check the budget against',
+      )
+      lines.push('    the page — and against the load on this machine, if the ceiling is time.')
+    } else if (page_.scanned !== null) {
+      lines.push('  - the scan asked, so the verdict is what did not arrive')
+    }
     if (page_.gaveUp) {
       /**
        * Then this is not a broken relay. The background did not answer inside

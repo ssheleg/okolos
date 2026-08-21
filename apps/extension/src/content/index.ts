@@ -210,6 +210,18 @@ export const MEASURE_COLLECT = 'okolos:collect'
 export const MARK_SCAN_FAILED = 'okolos:scan-failed'
 
 /**
+ * The collector gave up before anything was asked.
+ *
+ * A third state that looked exactly like the other two from outside, and it cost four CI
+ * runs to name: the traversal stops, zero candidates come back, the scan journals "could
+ * not finish" and **no RPC is sent at all**. The e2e report said "the verdict is what did
+ * not arrive", which was false — nothing had been asked for. A report that names the wrong
+ * link is worse than one that names none, because it sends the next reader down a corridor
+ * that does not exist.
+ */
+export const MARK_BLINDED = 'okolos:scan-blinded'
+
+/**
  * From the navigation to the warning being on screen — the number SCN-003 promises in
  * words and nothing measured.
  *
@@ -296,6 +308,10 @@ async function scan(): Promise<void> {
      * afternoon.
      */
     if (page.truncated) {
+      // In the page, beside `okolos:collect`, for the same reason `okolos:scan-failed`
+      // is: from outside, "no banner" looks identical whether nothing was found, the
+      // answer never came, or the walk stopped before asking.
+      performance.mark(MARK_BLINDED)
       void journal.record('scan-blinded', async () => {
         await platform.runtime.send('page/note', {
           kind: 'scan-blinded',

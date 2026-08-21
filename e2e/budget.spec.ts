@@ -105,6 +105,20 @@ test('a page that spends the whole budget on nothing is recorded, not passed ove
   // Nothing to warn about: the page carries no injection, only the markup that blinds.
   await expect(p.locator('okolos-banner')).toHaveCount(0)
 
+  /**
+   * And in the page, where an observer outside the extension can read it.
+   *
+   * "No banner" has three causes that look identical from outside: nothing was found, the
+   * answer never came, or the walk stopped before asking. The third one cost four CI runs
+   * to name, because the e2e report inferred the second (B-110). The product marks it now,
+   * and this is the assertion that keeps the mark alive — the report's wording is a
+   * diagnostic, but the fact behind it is a promise.
+   */
+  expect(
+    await p.evaluate(() => performance.getEntriesByName('okolos:scan-blinded').length),
+    'the collector stopped short and left no trace in the page',
+  ).toBe(1)
+
   const journal = await context.newPage()
   await journal.goto(`chrome-extension://${extensionId}/options.html#journal`)
   const line = await journal.evaluate(() => chrome.i18n.getMessage('noteScanBlinded'))

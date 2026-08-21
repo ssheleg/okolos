@@ -15,9 +15,28 @@ import type {
  */
 
 export interface Budget {
-  /** Elements to visit before giving up. */
+  /** Elements to visit before giving up. The real budget: deterministic, same on every machine. */
   readonly maxNodes: number
-  /** Milliseconds to spend, measured by the caller's clock. */
+  /**
+   * Milliseconds to spend, measured by the caller's clock — a **hang guard**, not a budget.
+   *
+   * It was 8, and it decided how much of a page got read. A wall-clock ceiling makes that
+   * decision a function of machine load, and on a busy machine eight milliseconds is one
+   * scheduler slice: the collector gave up on a **seven-node page**, returned zero
+   * candidates, and the content script journalled "could not finish" and showed nothing.
+   * Four CI runs failed that way before the report was detailed enough to say so — the
+   * measure printed `8.1 ms`, which is the ceiling, and the pipeline behind it never ran.
+   *
+   * This project already wrote the rule down, on the day it gated bundle *bytes* and
+   * refused to gate milliseconds: a deterministic ceiling may decide things, a wall-clock
+   * one may not, because it is a claim about the runner rather than about the work. The same
+   * applies inside the product, where the cost of getting it wrong is a security check that
+   * abandons itself exactly when the machine is under strain.
+   *
+   * So the number is now what it was always described as — protection against making a page
+   * unresponsive. 500 ms is far above any honest scan (the product's own median is 1–2 ms,
+   * and 4000 nodes measure in the tens) and far below a hang a person would notice as one.
+   */
   readonly maxMillis: number
   /** Candidates to report from one page. */
   readonly maxCandidates: number
@@ -27,7 +46,7 @@ export interface Budget {
 
 export const DEFAULT_BUDGET: Budget = {
   maxNodes: 5000,
-  maxMillis: 8,
+  maxMillis: 500,
   maxCandidates: 50,
   maxTextLength: 2000,
 }

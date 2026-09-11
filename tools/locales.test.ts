@@ -102,6 +102,9 @@ function keysAsked(): Set<string> {
   }
   walk(path.join(root, 'packages'))
   walk(path.join(root, 'apps/extension/src'))
+  // The mail command reads the same catalogue; a caller the gate cannot see
+  // makes a live key look dead (added with the app, 2026-09-11).
+  walk(path.join(root, 'apps/mail-cli/src'))
 
   for (const target of ['chrome', 'firefox']) {
     const manifest = readFileSync(path.join(root, `apps/extension/manifest.${target}.json`), 'utf8')

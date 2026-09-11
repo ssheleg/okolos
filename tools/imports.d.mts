@@ -14,4 +14,5 @@ export declare function reachableFrom(entries: readonly string[]): Set<string>
 export declare function tsEntriesFromBuild(): string[]
 export declare function pageEntriesFromBuild(): string[]
 export declare function workerEntryFromWrangler(): string[]
+export declare function binEntriesFromPackages(): string[]
 export declare function entryPoints(): string[]

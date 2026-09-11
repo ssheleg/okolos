@@ -2318,5 +2318,117 @@
         "content": "$1"
       }
     }
+  },
+  "mailHeader": {
+    "message": "От $WHO$ <$ADDRESS$> — «$SUBJECT$» — $DATE$",
+    "placeholders": {
+      "who": {
+        "content": "$1"
+      },
+      "address": {
+        "content": "$2"
+      },
+      "subject": {
+        "content": "$3"
+      },
+      "date": {
+        "content": "$4"
+      }
+    }
+  },
+  "mailVerdictCritical": {
+    "message": "Критично"
+  },
+  "mailVerdictMajor": {
+    "message": "Серьёзно"
+  },
+  "mailVerdictMinor": {
+    "message": "Незначительно"
+  },
+  "mailVerdictNone": {
+    "message": "Ничего не найдено"
+  },
+  "mailCheckSender": {
+    "message": "отправитель"
+  },
+  "mailCheckLinks": {
+    "message": "ссылки"
+  },
+  "mailCheckHidden": {
+    "message": "скрытый текст"
+  },
+  "mailCheckAttachments": {
+    "message": "вложения"
+  },
+  "mailNotRun": {
+    "message": "Не проверялось: $CHECK$ — $WHY$",
+    "placeholders": {
+      "check": {
+        "content": "$1"
+      },
+      "why": {
+        "content": "$2"
+      }
+    }
+  },
+  "mailTruncated": {
+    "message": "Письмо прочитано не целиком: разбор упёрся в потолок, и вердикт относится к прочитанной части"
+  },
+  "mailReviewNone": {
+    "message": "Ревизия моделью не проводилась"
+  },
+  "mailReviewLocal": {
+    "message": "Ревизия на этом устройстве: $REVIEWER$ — $SUMMARY$",
+    "placeholders": {
+      "reviewer": {
+        "content": "$1"
+      },
+      "summary": {
+        "content": "$2"
+      }
+    }
+  },
+  "mailReviewCloud": {
+    "message": "Ревизия в облаке: $REVIEWER$ — $SUMMARY$",
+    "placeholders": {
+      "reviewer": {
+        "content": "$1"
+      },
+      "summary": {
+        "content": "$2"
+      }
+    }
+  },
+  "mailSkipNotBuilt": {
+    "message": "проверка ещё не построена"
+  },
+  "mailUnreadable": {
+    "message": "Письмо не прочитано: $WHY$. Вердикта нет — непрочитанное письмо не считается чистым",
+    "placeholders": {
+      "why": {
+        "content": "$1"
+      }
+    }
+  },
+  "mailParseEmpty": {
+    "message": "файл пуст"
+  },
+  "mailParseNoHeaders": {
+    "message": "в файле нет ни одного заголовка, это не письмо"
+  },
+  "mailParseEmlxLengthMismatch": {
+    "message": "объявленная длина не сходится с содержимым"
+  },
+  "mailParseTooLarge": {
+    "message": "файл больше потолка разбора"
+  },
+  "mailUsage": {
+    "message": "Использование: okolos-mail scan <файл>"
+  },
+  "mailParseUnreadableFile": {
+    "message": "файл не читается"
+  },
+  "mailVerdictUnchecked": {
+    "message": "Ни одна проверка не выполнена — вердикта о письме нет"
   }
 }

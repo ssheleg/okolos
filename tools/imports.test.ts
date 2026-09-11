@@ -11,6 +11,7 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 import {
+  binEntriesFromPackages,
   entryPoints,
   pageEntriesFromBuild,
   reachableFrom,
@@ -79,12 +80,19 @@ describe('walking from an entry', () => {
 describe('the entry list', () => {
   it('comes from the build and wrangler, not from a list of its own', () => {
     // The obvious way to defeat a reachability gate is to declare the orphan an
-    // entry point. These three sources are the ones that actually ship code.
+    // entry point. These four sources are the ones that actually ship code —
+    // the build's scripts and pages, the worker wrangler loads, and the `bin`
+    // an app declares. The equality below is the anti-cheat property: the list
+    // must be exactly their union, never a hand-written addition.
     expect(tsEntriesFromBuild().length).toBeGreaterThanOrEqual(2)
     expect(pageEntriesFromBuild().length).toBeGreaterThanOrEqual(3)
     expect(workerEntryFromWrangler().length).toBe(1)
+    expect(binEntriesFromPackages().length).toBeGreaterThanOrEqual(1)
     expect(entryPoints().length).toBe(
-      tsEntriesFromBuild().length + pageEntriesFromBuild().length + workerEntryFromWrangler().length,
+      tsEntriesFromBuild().length +
+        pageEntriesFromBuild().length +
+        workerEntryFromWrangler().length +
+        binEntriesFromPackages().length,
     )
   })
 })

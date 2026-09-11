@@ -1,0 +1,10 @@
+{
+  "name": "@okolos/core-mail",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "description": "Parses a message and judges it from the checks that actually ran. Pure.",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "build": "tsc -b" }
+}

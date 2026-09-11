@@ -848,7 +848,7 @@ that surface is not designed here.
 - **States covered:** loading, empty, error, success
 - **Errors & recovery:** the file cannot be parsed -> the run reports the message as unreadable and renders no verdict. **A scan that failed is never a clean result** — the same rule B-74 established for the page scan, applied before the first line of this feature is written rather than after it costs someone a warning
 - **Status:** draft
-- **Coverage:** none — designed 2026-09-11, not built
+- **Coverage:** partial — the refusal path is built and the finding path is not. `packages/core-mail/src/parse.ts:parseMessage` reads `.eml` and `.emlx`, `verdict.ts:assembleVerdict` refuses to call a check clean when nobody reported it, `report.ts:buildReport` renders SCR-21, and `apps/mail-cli/src/scan.ts` exits `2` on an unreadable message rather than `0`. **Every check reports `mailSkipNotBuilt` and the command prints that four times** — the scenario stays `draft` because its own steps 1–3 have not run, not because nothing exists
 
 ### SCN-039: The sender is not who the name says
 - **Persona:** P-01

@@ -13,7 +13,7 @@
 | Требования | 37: **36 DONE, 0 PARTIAL**, одно закрыто решением не выпускать — [приёмка](superpowers/audits/2026-08-05-acceptance.md), [аудит на дефекты](superpowers/audits/2026-08-08-bug-hunt.md) |
 | Сценарии | **43**, из них **37 реализованы**; шесть заведены 2026-09-11 под локальную проверку почты и стоят `draft` — [scenarios.md](ux/scenarios.md). Число здесь держит гейт `tools/docs.test.ts` через [brand/facts.md](brand/facts.md), а не память |
 | Тесты | `pnpm test` (unit + гейты), `pnpm test:e2e` (Chromium), `pnpm test:e2e:firefox` — счётчики намеренно не выписаны здесь: они устаревают следующим коммитом |
-| Код | 19 пакетов, 2 приложения — карта ниже |
+| Код | 20 пакетов, 3 приложения — карта ниже |
 | Репозиторий | `ssheleg/okolos` (публичный, AGPL-3.0) |
 | Ждёт человека | 2 шага: аккаунт Chrome Web Store и `pnpm feed:agent` — без второго `pnpm package:check` отказывает, и с 2026-08-21 отказывает и `.githooks/pre-push` |
 
@@ -96,6 +96,7 @@ PEM-заголовок — [runbooks/feed-signing.md](runbooks/feed-signing.md).
 | Пакет | Что решает |
 |---|---|
 | `contracts` | словарь, который знают все слои: вердикт, улика, RPC, гейт-решение. Ничего не импортирует |
+| `core-mail` | письмо: разбор `.eml`/`.emlx`, вердикт из отработавших проверок, блок «не проверялось» |
 | `core-injection` | скрытые инструкции: 9 детерминированных сигналов на двух уровнях ([ADR-0012](adr/0012-one-signal-is-a-suspicion.md)) + ступень классификатора; `chars.ts` решает, что невидимый символ делает, а не только что он есть |
 | `core-sanitizer` | какие узлы снимать (только по проверяемым уликам) |
 | `core-gate` | пускать ли действие агента; дефолт — Block |
@@ -119,6 +120,7 @@ PEM-заголовок — [runbooks/feed-signing.md](runbooks/feed-signing.md).
 |---|---|
 | `apps/extension` | само расширение: content script, service worker, страницы |
 | `apps/proxy` | тонкий Cloudflare Worker: фиды, статус домена, апелляции |
+| `apps/mail-cli` | команда `okolos-mail scan <файл>`: проверка одного письма на этой машине |
 
 ## Процесс
 

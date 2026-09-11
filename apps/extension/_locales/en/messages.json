@@ -2318,5 +2318,117 @@
         "content": "$1"
       }
     }
+  },
+  "mailHeader": {
+    "message": "From $WHO$ <$ADDRESS$> — “$SUBJECT$” — $DATE$",
+    "placeholders": {
+      "who": {
+        "content": "$1"
+      },
+      "address": {
+        "content": "$2"
+      },
+      "subject": {
+        "content": "$3"
+      },
+      "date": {
+        "content": "$4"
+      }
+    }
+  },
+  "mailVerdictCritical": {
+    "message": "Critical"
+  },
+  "mailVerdictMajor": {
+    "message": "Serious"
+  },
+  "mailVerdictMinor": {
+    "message": "Minor"
+  },
+  "mailVerdictNone": {
+    "message": "Nothing found"
+  },
+  "mailCheckSender": {
+    "message": "sender"
+  },
+  "mailCheckLinks": {
+    "message": "links"
+  },
+  "mailCheckHidden": {
+    "message": "hidden text"
+  },
+  "mailCheckAttachments": {
+    "message": "attachments"
+  },
+  "mailNotRun": {
+    "message": "Not checked: $CHECK$ — $WHY$",
+    "placeholders": {
+      "check": {
+        "content": "$1"
+      },
+      "why": {
+        "content": "$2"
+      }
+    }
+  },
+  "mailTruncated": {
+    "message": "The message was not read in full: the parse hit a ceiling, and this verdict covers the part that was read"
+  },
+  "mailReviewNone": {
+    "message": "No model review was made"
+  },
+  "mailReviewLocal": {
+    "message": "Reviewed on this device: $REVIEWER$ — $SUMMARY$",
+    "placeholders": {
+      "reviewer": {
+        "content": "$1"
+      },
+      "summary": {
+        "content": "$2"
+      }
+    }
+  },
+  "mailReviewCloud": {
+    "message": "Reviewed in the cloud: $REVIEWER$ — $SUMMARY$",
+    "placeholders": {
+      "reviewer": {
+        "content": "$1"
+      },
+      "summary": {
+        "content": "$2"
+      }
+    }
+  },
+  "mailSkipNotBuilt": {
+    "message": "this check is not built yet"
+  },
+  "mailUnreadable": {
+    "message": "The message was not read: $WHY$. There is no verdict — a message that could not be read is not a clean one",
+    "placeholders": {
+      "why": {
+        "content": "$1"
+      }
+    }
+  },
+  "mailParseEmpty": {
+    "message": "the file is empty"
+  },
+  "mailParseNoHeaders": {
+    "message": "the file carries no header at all, so it is not a message"
+  },
+  "mailParseEmlxLengthMismatch": {
+    "message": "the declared length disagrees with the contents"
+  },
+  "mailParseTooLarge": {
+    "message": "the file is past the parsing ceiling"
+  },
+  "mailUsage": {
+    "message": "Usage: okolos-mail scan <file>"
+  },
+  "mailParseUnreadableFile": {
+    "message": "the file cannot be read"
+  },
+  "mailVerdictUnchecked": {
+    "message": "No check ran at all — there is no verdict about this message"
   }
 }

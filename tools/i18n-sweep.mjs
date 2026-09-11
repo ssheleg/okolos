@@ -76,7 +76,16 @@ const root = path.resolve(import.meta.dirname, '..')
  * twenty-three sentences of it. A sweep whose roots are narrower than the product is
  * a floor pretending to be a total (B-51).
  */
-const ROOTS = ['apps/extension/src', 'packages']
+/**
+ * Every place the product keeps words a person will read.
+ *
+ * `apps/mail-cli/src` joined on 2026-09-11 with the app itself. A new surface
+ * outside the sweep is the exact shape standing instruction 6 names: the defect
+ * is an absence, and no amount of looking harder at the roots already listed
+ * would find it. Adding the app and its gate in one change is the only version
+ * of this that stays true.
+ */
+const ROOTS = ['apps/extension/src', 'apps/mail-cli/src', 'packages']
 
 /**
  * Three or more words with at least two lowercase ones after the first. Prose,

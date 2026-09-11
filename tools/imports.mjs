@@ -18,6 +18,8 @@ import { existsSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { directoriesIn } from './tree.mjs'
+
 export const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const app = path.join(root, 'apps/extension')
 
@@ -139,7 +141,35 @@ export function workerEntryFromWrangler() {
   return main?.[1] !== undefined ? [path.join(root, 'apps/proxy', main[1])] : []
 }
 
+/**
+ * Commands an app declares as `bin`, as the package manager will install them.
+ *
+ * Derived from what actually ships rather than listed by hand, for the same
+ * reason the other three are: a hardcoded entry list is a second copy of the
+ * build, and the copy is the one that goes stale. Added with `apps/mail-cli`
+ * on 2026-09-11 — until then every file of a command-line app read as
+ * unreachable, which is true of the build and false of the product.
+ */
+export function binEntriesFromPackages() {
+  const out = []
+  for (const dir of directoriesIn(path.join(root, 'apps'))) {
+    const manifest = path.join(root, 'apps', dir, 'package.json')
+    if (!existsSync(manifest)) continue
+    const bin = JSON.parse(readFileSync(manifest, 'utf8')).bin
+    for (const target of Object.values(bin ?? {})) {
+      const file = path.join(root, 'apps', dir, target)
+      if (existsSync(file)) out.push(file)
+    }
+  }
+  return out
+}
+
 /** Every entry point the build actually ships. */
 export function entryPoints() {
-  return [...tsEntriesFromBuild(), ...pageEntriesFromBuild(), ...workerEntryFromWrangler()]
+  return [
+    ...tsEntriesFromBuild(),
+    ...pageEntriesFromBuild(),
+    ...workerEntryFromWrangler(),
+    ...binEntriesFromPackages(),
+  ]
 }

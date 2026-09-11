@@ -61,7 +61,7 @@ function paint(text: string, kind: string, colour: boolean): string {
 function resolveArgs(args: readonly string[], t: Resolver): string[] {
   return args.map((arg) => {
     if (!/^[a-z][A-Za-z0-9_]*$/.test(arg)) return arg
-    const resolved = t(arg)
+    const resolved = t(arg, [])
     return resolved === `[${arg}]` ? arg : resolved
   })
 }

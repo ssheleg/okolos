@@ -19,7 +19,7 @@ describe('the verdict is the worst thing that was actually found', () => {
   it('takes the worst severity among the signals', () => {
     const outcomes = new Map<CheckId, CheckOutcome>(CHECKS.map((c) => [c, ran([])]))
     outcomes.set('links', ran([{ check: 'links', severity: 'minor', code: 'x', facts: [] }]))
-    outcomes.set('sender', ran([{ check: 'sender', severity: 'critical', code: 'y', facts: [] }]))
+    outcomes.set('senderAuth', ran([{ check: 'senderAuth', severity: 'critical', code: 'y', facts: [] }]))
     const v = assembleVerdict(outcomes, { truncated: false })
     expect(v.severity).toBe('critical')
   })
@@ -37,11 +37,11 @@ describe('the verdict is the worst thing that was actually found', () => {
   })
 
   it('treats a check nobody reported as not run, rather than as clean', () => {
-    const v = assembleVerdict(new Map<CheckId, CheckOutcome>([['sender', ran([])]]), {
+    const v = assembleVerdict(new Map<CheckId, CheckOutcome>([['senderAuth', ran([])]]), {
       truncated: false,
     })
     expect(v.notRun.map((n) => n.check).sort()).toEqual(
-      CHECKS.filter((c) => c !== 'sender').slice().sort(),
+      CHECKS.filter((c) => c !== 'senderAuth').slice().sort(),
     )
   })
 

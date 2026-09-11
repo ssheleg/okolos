@@ -75,7 +75,9 @@ const LINE_KEY: Readonly<Record<'header' | 'notRun' | 'truncated', string>> = {
 }
 
 const CHECK_KEY: Readonly<Record<CheckId, string>> = {
-  sender: 'mailCheckSender',
+  senderAuth: 'mailCheckSenderAuth',
+  senderIdentity: 'mailCheckSenderIdentity',
+  replyPath: 'mailCheckReplyPath',
   links: 'mailCheckLinks',
   hidden: 'mailCheckHidden',
   attachments: 'mailCheckAttachments',

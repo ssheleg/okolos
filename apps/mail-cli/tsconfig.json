@@ -7,5 +7,9 @@
   },
   "include": ["src/**/*.ts"],
   "exclude": ["src/**/*.test.ts"],
-  "references": [{ "path": "../../packages/core-mail" }, { "path": "../../packages/i18n" }]
+  "references": [
+    { "path": "../../packages/core-mail" },
+    { "path": "../../packages/core-lookalike" },
+    { "path": "../../packages/i18n" }
+  ]
 }

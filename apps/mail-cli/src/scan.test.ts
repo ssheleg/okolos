@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { fromCatalogue } from '@okolos/i18n'
 
+
 import { EXIT, scan } from './scan.js'
 
 const t = fromCatalogue({
@@ -15,7 +16,10 @@ const t = fromCatalogue({
     message: 'НЕ ПРОВЕРЯЛОСЬ: $A$ - $B$',
     placeholders: { a: { content: '$1' }, b: { content: '$2' } },
   },
-  mailCheckSender: { message: 'отправитель' },
+  mailSkipNoAuthResult: { message: 'никто не подтвердил отправителя' },
+  mailCheckSenderAuth: { message: 'подлинность' },
+  mailCheckSenderIdentity: { message: 'кем называется' },
+  mailCheckReplyPath: { message: 'куда ответ' },
   mailCheckLinks: { message: 'ссылки' },
   mailCheckHidden: { message: 'скрытый текст' },
   mailCheckAttachments: { message: 'вложения' },
@@ -40,7 +44,20 @@ describe('scan, as the command behaves', () => {
   it('reads an ordinary message and reports nothing found', () => {
     const out = scan(ok, t, { colour: false })
     expect(out.code).toBe(EXIT.nothingFound)
-    expect(out.text).toContain('ни одна проверка не выполнена')
+    expect(out.text).toContain('ничего не найдено')
+  })
+
+  /**
+   * The fixture carries no `Authentication-Results`, which is the ordinary case
+   * and the reason the sender is three checks rather than one: the identity and
+   * reply-path checks ran over the same message that left authentication
+   * unverifiable. A single `sender` entry would have had to report one of those
+   * two truths and hide the other.
+   */
+  it('separates a check that could not run from checks that ran on the same message', () => {
+    const out = scan(ok, t, { colour: false })
+    expect(out.text).toContain('никто не подтвердил отправителя')
+    expect(out.text).toContain('кем называется')
   })
 
   /**
@@ -53,7 +70,7 @@ describe('scan, as the command behaves', () => {
     const out = scan('', t, { colour: false })
     expect(out.code).toBe(EXIT.unreadable)
     expect(out.text).toContain('ПИСЬМО НЕ ПРОЧИТАНО')
-    expect(out.text).not.toContain('ни одна проверка не выполнена')
+    expect(out.text).not.toContain('ничего не найдено')
   })
 
   it('names which way the message was unreadable, not just that it was', () => {
@@ -63,7 +80,6 @@ describe('scan, as the command behaves', () => {
 
   it('lists every check that has not been built yet, rather than implying it ran', () => {
     const out = scan(ok, t, { colour: false })
-    expect(out.text.match(/НЕ ПРОВЕРЯЛОСЬ/g)).toHaveLength(4)
-    expect(out.text).toContain('проверка ещё не построена')
+    expect(out.text.match(/проверка ещё не построена/g)).toHaveLength(3)
   })
 })

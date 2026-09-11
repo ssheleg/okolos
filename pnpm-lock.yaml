@@ -122,6 +122,9 @@ importers:
 
   apps/mail-cli:
     dependencies:
+      '@okolos/core-lookalike':
+        specifier: workspace:*
+        version: link:../../packages/core-lookalike
       '@okolos/core-mail':
         specifier: workspace:*
         version: link:../../packages/core-mail
@@ -165,7 +168,11 @@ importers:
 
   packages/core-lookalike: {}
 
-  packages/core-mail: {}
+  packages/core-mail:
+    dependencies:
+      '@okolos/core-lookalike':
+        specifier: workspace:*
+        version: link:../core-lookalike
 
   packages/core-queue:
     dependencies:

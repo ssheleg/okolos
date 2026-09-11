@@ -31,8 +31,23 @@ export function worstOf(severities: readonly Severity[]): Severity {
  * registry that is built from what the caller happened to return can never
  * notice an absence, and an absence is the failure mode this whole file exists
  * to make visible.
+ *
+ * **The sender is three entries, not one, and the split is the point.** A first
+ * version had a single `sender`, and it could not tell the truth about the
+ * ordinary case: a message with no `Authentication-Results` header at all still
+ * has a display name to compare against its domain. Reporting `sender: not
+ * checked` would hide that the lookalike check ran; reporting `sender: checked`
+ * would hide that nobody verified the message was really sent by that domain.
+ * A granularity that forces one of two false answers is the wrong granularity.
  */
-export const CHECKS = ['sender', 'links', 'hidden', 'attachments'] as const
+export const CHECKS = [
+  'senderAuth',
+  'senderIdentity',
+  'replyPath',
+  'links',
+  'hidden',
+  'attachments',
+] as const
 export type CheckId = (typeof CHECKS)[number]
 
 /** A fact a person can check for themselves, shown beside the signal. */

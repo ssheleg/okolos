@@ -1,10 +1,15 @@
+import { checkLookalike, DEFAULT_WATCHLIST } from '@okolos/core-lookalike'
 import {
   CHECKS,
   assembleVerdict,
   buildReport,
+  checkReplyPath,
+  checkSenderAuth,
+  checkSenderIdentity,
   parseMessage,
   type CheckId,
   type CheckOutcome,
+  type MailMessage,
 } from '@okolos/core-mail'
 import type { Resolver } from '@okolos/i18n'
 
@@ -51,26 +56,39 @@ export interface ScanResult {
 }
 
 /**
- * Phase 0 runs no detector, and says so four times.
+ * What has been built, over a registry that still declares what has not.
  *
- * Every check in the registry reports `not built` rather than being absent from
- * the output, so the surface that carries gaps is exercised end to end before
- * the first detector exists. That is the walking skeleton this module map asks
- * for: the honest-degradation path is the path that ships first, instead of
- * being added once the happy one already reads as complete.
+ * The unbuilt checks report `not built` rather than being absent from the
+ * output — the walking skeleton shipped that way deliberately, so the surface
+ * carrying gaps was exercised before the first detector existed. Each detector
+ * that lands replaces one of those lines, and the shape of the answer does not
+ * change when the last one does.
  */
-function outcomes(): Map<CheckId, CheckOutcome> {
-  return new Map(CHECKS.map((check) => [check, { ran: false, why: SKIP_KEY.notBuilt }]))
+function outcomes(message: MailMessage): Map<CheckId, CheckOutcome> {
+  const identity = {
+    lookalike: (host: string) => checkLookalike(host, DEFAULT_WATCHLIST),
+    watchlist: DEFAULT_WATCHLIST,
+  }
+  const built: Partial<Record<CheckId, CheckOutcome>> = {
+    senderAuth: checkSenderAuth(message),
+    senderIdentity: checkSenderIdentity(message, identity),
+    replyPath: checkReplyPath(message),
+  }
+  return new Map(
+    CHECKS.map((check) => [check, built[check] ?? { ran: false, why: SKIP_KEY.notBuilt }]),
+  )
 }
 
 export function scan(source: string, t: Resolver, options: RenderOptions): ScanResult {
   const parsed = parseMessage(source)
   if (!parsed.ok) {
-    const reason = t(FAILURE_KEY[parsed.reason.code] ?? parsed.reason.code)
+    const reason = t(FAILURE_KEY[parsed.reason.code] ?? parsed.reason.code, [])
     return { text: t('mailUnreadable', [reason]), code: EXIT.unreadable }
   }
 
-  const verdict = assembleVerdict(outcomes(), { truncated: parsed.message.truncated })
+  const verdict = assembleVerdict(outcomes(parsed.message), {
+    truncated: parsed.message.truncated,
+  })
   return {
     text: render(buildReport(parsed.message, verdict), t, options),
     code: verdict.signals.length > 0 ? EXIT.signalsFound : EXIT.nothingFound,

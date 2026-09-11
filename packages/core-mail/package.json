@@ -5,6 +5,13 @@
   "type": "module",
   "license": "AGPL-3.0-only",
   "description": "Parses a message and judges it from the checks that actually ran. Pure.",
-  "exports": { ".": "./src/index.ts" },
-  "scripts": { "build": "tsc -b" }
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@okolos/core-lookalike": "workspace:*"
+  }
 }

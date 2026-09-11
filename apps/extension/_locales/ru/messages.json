@@ -2348,9 +2348,6 @@
   "mailVerdictNone": {
     "message": "Ничего не найдено"
   },
-  "mailCheckSender": {
-    "message": "отправитель"
-  },
   "mailCheckLinks": {
     "message": "ссылки"
   },
@@ -2430,5 +2427,89 @@
   },
   "mailVerdictUnchecked": {
     "message": "Ни одна проверка не выполнена — вердикта о письме нет"
+  },
+  "mailCheckSenderAuth": {
+    "message": "подлинность отправителя"
+  },
+  "mailCheckSenderIdentity": {
+    "message": "кем отправитель себя называет"
+  },
+  "mailCheckReplyPath": {
+    "message": "куда уйдёт ответ"
+  },
+  "mailSenderDmarcFail": {
+    "message": "Домен отправителя сам отказывается от этого письма (DMARC не пройден)"
+  },
+  "mailSenderSpfFail": {
+    "message": "Письмо отправлено с сервера, которому домен этого не разрешал (SPF не пройден)"
+  },
+  "mailSenderDkimFail": {
+    "message": "Подпись письма не сошлась (DKIM не пройден)"
+  },
+  "mailSenderNotAligned": {
+    "message": "Подпись действительна, но выдана не тем доменом, от имени которого письмо"
+  },
+  "mailSenderLookalikeDomain": {
+    "message": "Домен отправителя похож на чужой"
+  },
+  "mailSenderBrandMismatch": {
+    "message": "В имени отправителя стоит бренд, которому этот адрес не принадлежит"
+  },
+  "mailSenderReplyElsewhere": {
+    "message": "Ответ уйдёт не туда, откуда пришло письмо"
+  },
+  "mailFactFromDomain": {
+    "message": "домен отправителя: $V$",
+    "placeholders": {
+      "v": {
+        "content": "$1"
+      }
+    }
+  },
+  "mailFactSignedFor": {
+    "message": "подпись выдана для: $V$",
+    "placeholders": {
+      "v": {
+        "content": "$1"
+      }
+    }
+  },
+  "mailFactDisplayName": {
+    "message": "имя в письме: $V$",
+    "placeholders": {
+      "v": {
+        "content": "$1"
+      }
+    }
+  },
+  "mailFactAddress": {
+    "message": "адрес на самом деле: $V$",
+    "placeholders": {
+      "v": {
+        "content": "$1"
+      }
+    }
+  },
+  "mailFactResembles": {
+    "message": "похож на: $V$",
+    "placeholders": {
+      "v": {
+        "content": "$1"
+      }
+    }
+  },
+  "mailFactReplyDomain": {
+    "message": "ответ уйдёт на: $V$",
+    "placeholders": {
+      "v": {
+        "content": "$1"
+      }
+    }
+  },
+  "mailSkipNoAuthResult": {
+    "message": "никто не подтвердил, что письмо действительно отправлено с этого домена"
+  },
+  "mailSkipNoSender": {
+    "message": "в письме нет разбираемого адреса отправителя"
   }
 }

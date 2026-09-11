@@ -18,7 +18,9 @@ const t = fromCatalogue({
     message: 'НЕ ПРОВЕРЯЛОСЬ: $A$ - $B$',
     placeholders: { a: { content: '$1' }, b: { content: '$2' } },
   },
-  mailCheckSender: { message: 'отправитель' },
+  mailCheckSenderAuth: { message: 'подлинность' },
+  mailCheckSenderIdentity: { message: 'кем называется' },
+  mailCheckReplyPath: { message: 'куда ответ' },
   mailCheckLinks: { message: 'ссылки' },
   mailCheckHidden: { message: 'скрытый текст' },
   mailCheckAttachments: { message: 'вложения' },
@@ -65,9 +67,9 @@ describe('the terminal surface', () => {
 
   it('names a missing key visibly rather than printing a blank line', () => {
     const outcomes = allRan()
-    outcomes.set('sender', {
+    outcomes.set('senderAuth', {
       ran: true,
-      signals: [{ check: 'sender', severity: 'minor', code: 'noSuchKey', facts: [] }],
+      signals: [{ check: 'senderAuth', severity: 'minor', code: 'noSuchKey', facts: [] }],
     })
     const out = render(buildReport(message, assembleVerdict(outcomes, { truncated: false })), t, {
       colour: false,
@@ -82,7 +84,7 @@ describe('the terminal surface', () => {
     const out = render(buildReport(message, assembleVerdict(outcomes, { truncated: false })), t, {
       colour: false,
     })
-    for (const label of ['отправитель', 'ссылки', 'скрытый текст', 'вложения']) {
+    for (const label of ['подлинность', 'кем называется', 'куда ответ', 'ссылки', 'скрытый текст', 'вложения']) {
       expect(out).toContain(label)
     }
     expect(out.match(/НЕ ПРОВЕРЯЛОСЬ/g)).toHaveLength(CHECKS.length)

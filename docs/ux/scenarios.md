@@ -48,7 +48,7 @@ are specified once in [screens.md](screens.md).
 | SCN-036 | A verdict survives the navigation the submission caused | credentials | P-01 | ST-011, FLW-10 | implemented | 2026-08-20 e2e |
 | SCN-037 | The block page refuses to be another page's iframe | web-guard | P-02 | ST-005, FLW-04 | implemented | 2026-08-21 e2e |
 | SCN-038 | One message checked on demand | mail-guard | P-01 | ST-022, FLW-19 | draft | — |
-| SCN-039 | The sender is not who the name says | mail-guard | P-01 | ST-023, FLW-19 | draft | — |
+| SCN-039 | The sender is not who the name says | mail-guard | P-01 | ST-023, FLW-19 | implemented | 2026-09-12 unit |
 | SCN-040 | A link goes somewhere other than it says, and text is hidden from the reader | mail-guard | P-01 | ST-024, FLW-19 | draft | — |
 | SCN-041 | An attachment is judged without being opened | mail-guard | P-01 | ST-025, FLW-19 | draft | — |
 | SCN-042 | A message arrives and is judged before it is read | mail-guard | P-01 | ST-022, FLW-20 | draft | — |
@@ -865,9 +865,10 @@ that surface is not designed here.
 - **UI elements:** SCR-21 signals block, one row per signal, each carrying its evidence
 - **States covered:** success, empty
 - **Errors & recovery:** the headers carry **no** authentication result at all -> reported in the did-not-run block as a check that could not run, never as a pass. A message that nobody authenticated and a message that authenticated cleanly must not print the same thing
-- **Known limit — the same one the injection detector carries.** Brand and language matching runs in Russian and English. A brand impersonation written in a third language reaches the check and leaves it without a signal. This is recorded before it ships rather than found by a sweep three weeks later (the shape of B-51)
-- **Status:** draft
-- **Coverage:** none — designed 2026-09-11, not built
+- **Known limit — the brand check reads a Latin label, and that is the whole of its language coverage.** Standing instruction 10 asks every wording-reading detector to name the languages it matches, and here the honest answer is narrower than "Russian and English": the check takes the label of each watched domain — `paypal` from `paypal.com` — and looks for it in the display name. So `"PayPal Service" <billing@secure-notice.top>` is caught, and **«Сбербанк» is not**, because no Cyrillic brand name is in `DEFAULT_WATCHLIST` to match against. Everything else in this scenario is structural and carries no language at all: a header value, a comparison of two registrable domains, a script mixture in a hostname. Naming which half is which is the point of the instruction — so nobody re-derives it, and nobody reads the caught case as proof of the missed one
+- **Known limit — a brand name inside a longer word is not that brand.** `"Applesauce Recipes"` carries `apple` and is not Apple. The match is bounded by letters and digits of any script on both sides, so a Cyrillic word beside a Latin brand still separates. A check that cries wolf here is how a person learns to dismiss the next one unread
+- **Status:** implemented
+- **Coverage:** `packages/core-mail/src/sender.ts:checkSenderAuth` (RFC 7601 `method=result`, the older `Received-SPF`, and DKIM alignment compared on the registrable domain so `mail.bank.test` signing for `bank.test` is not an anomaly), `:checkSenderIdentity` (lookalike domain via `@okolos/core-lookalike`, brand-in-display-name), `:checkReplyPath`; `packages/core-mail/src/sender.test.ts` — 19 checks, **seven planted defects, each landed and each caught**; `apps/mail-cli/src/scan.ts:outcomes` wires all three. **The absent-header path is the one that decides the design:** a message with no authentication result at all makes `senderAuth` report `not run` while `senderIdentity` and `replyPath` run on the same message — which is why the registry splits the sender into three entries rather than one, recorded in `verdict.ts:CHECKS`
 
 ### SCN-040: A link goes somewhere other than it says, and text is hidden from the reader
 - **Persona:** P-01

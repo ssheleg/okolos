@@ -2348,9 +2348,6 @@
   "mailVerdictNone": {
     "message": "Nothing found"
   },
-  "mailCheckSender": {
-    "message": "sender"
-  },
   "mailCheckLinks": {
     "message": "links"
   },
@@ -2430,5 +2427,89 @@
   },
   "mailVerdictUnchecked": {
     "message": "No check ran at all — there is no verdict about this message"
+  },
+  "mailCheckSenderAuth": {
+    "message": "sender authentication"
+  },
+  "mailCheckSenderIdentity": {
+    "message": "who the sender claims to be"
+  },
+  "mailCheckReplyPath": {
+    "message": "where a reply would go"
+  },
+  "mailSenderDmarcFail": {
+    "message": "The sender’s own domain disowns this message (DMARC failed)"
+  },
+  "mailSenderSpfFail": {
+    "message": "Sent from a server the domain did not authorise (SPF failed)"
+  },
+  "mailSenderDkimFail": {
+    "message": "The message signature did not verify (DKIM failed)"
+  },
+  "mailSenderNotAligned": {
+    "message": "The signature is valid but was issued by a different domain than the message claims"
+  },
+  "mailSenderLookalikeDomain": {
+    "message": "The sender’s domain resembles somebody else’s"
+  },
+  "mailSenderBrandMismatch": {
+    "message": "The sender’s name carries a brand this address does not belong to"
+  },
+  "mailSenderReplyElsewhere": {
+    "message": "A reply would go somewhere other than where this came from"
+  },
+  "mailFactFromDomain": {
+    "message": "sender domain: $V$",
+    "placeholders": {
+      "v": {
+        "content": "$1"
+      }
+    }
+  },
+  "mailFactSignedFor": {
+    "message": "signature issued for: $V$",
+    "placeholders": {
+      "v": {
+        "content": "$1"
+      }
+    }
+  },
+  "mailFactDisplayName": {
+    "message": "name shown: $V$",
+    "placeholders": {
+      "v": {
+        "content": "$1"
+      }
+    }
+  },
+  "mailFactAddress": {
+    "message": "address in fact: $V$",
+    "placeholders": {
+      "v": {
+        "content": "$1"
+      }
+    }
+  },
+  "mailFactResembles": {
+    "message": "resembles: $V$",
+    "placeholders": {
+      "v": {
+        "content": "$1"
+      }
+    }
+  },
+  "mailFactReplyDomain": {
+    "message": "a reply would go to: $V$",
+    "placeholders": {
+      "v": {
+        "content": "$1"
+      }
+    }
+  },
+  "mailSkipNoAuthResult": {
+    "message": "nobody confirmed this message really came from that domain"
+  },
+  "mailSkipNoSender": {
+    "message": "the message carries no parsable sender address"
   }
 }

@@ -623,3 +623,73 @@ flowchart TD
   moment this flow exists to prepare a reader for — which is why the landing page
   spends half itself on what the product does not do.
 
+### FLW-19: Check one message
+- **Traces:** ST-022, ST-023, ST-024, ST-025, ST-026 (JTBD-09, JRN-04/#4, JRN-04/#5)
+- **Goal:** a message the user is unsure about gets a verdict that names its signals and its gaps, without the message leaving the machine by default
+- **Entry points:** `okolos-mail scan <file>` on an `.eml`/`.emlx` path; a message exported from the client by drag; later, the selected message in Apple Mail
+- **Success exit:** a verdict is printed naming every signal that fired and every check that did not run — or the message is reported unreadable, which is not a clean result
+- **Task analysis:**
+  1. Hand the message over without forwarding it anywhere
+  2. Read what was found, signal by signal
+  3. See what was *not* checked, so the answer can be weighed
+- **Flow:**
+
+```mermaid
+flowchart TD
+  A[Message file] --> B{Parse}
+  B -->|unreadable| E1[State: error - could not read this message]
+  B -->|parsed| C[Deterministic checks: sender, links, hidden text, attachments]
+  C --> D{Reviewer mode}
+  D -->|local| R1[On-device model]
+  D -->|cloud-zdr, switched on| R0[Outbound record written first] --> R2[Chosen model via zero-retention route]
+  D -->|off| R3[No review]
+  R0 -->|record refused| R3
+  R1 --> V[Screen: Message verdict]
+  R2 --> V
+  R3 --> V
+  R1 -->|unavailable| V
+  R2 -->|unavailable| V
+  V -->|nothing found| V_empty[State: empty - nothing found, and what was checked]
+  V -->|signals found| V_ok[State: success - signals, then what did not run]
+```
+
+- **Screens traversed:**
+  | Screen | States used here |
+  |--------|------------------|
+  | SCR-21 Message verdict | loading, empty, error, success |
+
+- **The reviewer is the only step that can leave the machine, and it is drawn as its own branch for that reason.** The outbound record is written before the request and a refusal to record cancels it — the same rule `packages/net` already enforces for the browser side. A reviewer that is unavailable does not fail the flow: the deterministic verdict is the verdict, and the output says the review did not run.
+- **Attachments never reach an application.** The parse branch inside "deterministic checks" runs in a jailed child process with no network and no write access. A crash there ends that check, not the scan.
+
+### FLW-20: Watch the mailbox
+- **Traces:** ST-022, ST-023, ST-024, ST-025 (JTBD-09, JRN-04/#2, JRN-04/#7)
+- **Goal:** a message that lands is judged before the user reads it, and the user hears about it only when there is something to hear
+- **Entry points:** `okolos-mail watch`; a login item once the user chooses to keep it running
+- **Success exit:** every message that arrived since the watcher started has a recorded verdict, and only messages with findings produced a notification
+- **Task analysis:**
+  1. Start it once and stop thinking about it
+  2. Be interrupted only by something worth the interruption
+  3. Open the full verdict when interrupted
+- **Flow:**
+
+```mermaid
+flowchart TD
+  W[Watcher on the local mail store] -->|new message file| P{Complete?}
+  P -->|partial, attachments still arriving| P_wait[Wait for the complete form] --> P
+  P -->|complete| S[FLW-19 checks]
+  S --> Q{Findings?}
+  Q -->|none| J[Recorded, silent]
+  Q -->|found| N[Screen: Message alert]
+  N -->|open| V[Screen: Message verdict]
+  W -->|store unreadable| N_err[Screen: Message alert - error state: the mail store cannot be read]
+```
+
+- **Screens traversed:**
+  | Screen | States used here |
+  |--------|------------------|
+  | SCR-22 Message alert | empty, error, success |
+  | SCR-21 Message verdict | success |
+
+- **Only new messages, and that is a default with a reason.** The store on a working machine holds tens of thousands of messages — 82 595 on the machine this was designed against, measured 2026-09-11. A watcher that judged the archive on first start would spend hours and produce a backlog nobody asked for. Reviewing what is already there is a separate, explicit act.
+- **A partial message is not judged.** The client writes a message before its attachments have all arrived. Judging the half that exists would produce a verdict about a message that does not exist yet, and the attachment checks would report "did not run" for files that are simply still coming.
+

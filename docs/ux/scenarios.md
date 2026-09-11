@@ -47,6 +47,12 @@ are specified once in [screens.md](screens.md).
 | SCN-035 | A password submitted from an embedded frame is checked | credentials | P-01 | ST-011, FLW-10 | implemented | 2026-08-20 e2e |
 | SCN-036 | A verdict survives the navigation the submission caused | credentials | P-01 | ST-011, FLW-10 | implemented | 2026-08-20 e2e |
 | SCN-037 | The block page refuses to be another page's iframe | web-guard | P-02 | ST-005, FLW-04 | implemented | 2026-08-21 e2e |
+| SCN-038 | One message checked on demand | mail-guard | P-01 | ST-022, FLW-19 | draft | — |
+| SCN-039 | The sender is not who the name says | mail-guard | P-01 | ST-023, FLW-19 | draft | — |
+| SCN-040 | A link goes somewhere other than it says, and text is hidden from the reader | mail-guard | P-01 | ST-024, FLW-19 | draft | — |
+| SCN-041 | An attachment is judged without being opened | mail-guard | P-01 | ST-025, FLW-19 | draft | — |
+| SCN-042 | A message arrives and is judged before it is read | mail-guard | P-01 | ST-022, FLW-20 | draft | — |
+| SCN-043 | Who reviewed, where it ran, and what left | mail-guard | P-01 | ST-026, FLW-19 | draft | — |
 
 ## Personas
 
@@ -814,4 +820,131 @@ See [foundation.md](foundation.md) → Personas.
 - **Why this was written on 2026-08-20 and not when the pages shipped.** The journey carried the step from the day it was drawn, the pages were built and gated in B-15, and the screen entries recorded on 2026-08-12 that no flow covered them — honestly, rather than inventing one. What was missing was the story in between. Written now as ST-021 → FLW-18 → this scenario (B-22)
 - **Status:** implemented
 - **Coverage:** apps/proxy/src/landing.test.ts, apps/proxy/src/router.test.ts, tools/docs.test.ts
+
+## mail-guard
+
+Scope note, written before the first scenario rather than discovered after it:
+**this feature serves P-01 only, and that is a limitation, not an oversight.**
+Mail-borne scam hits P-02 hardest — `foundation.md` describes them as someone
+who "не откроет дашборд и не прочитает" — and phase 0 is a command line. A
+command line is not a surface P-02 will ever meet. Claiming this feature
+protects them would be the most comfortable sentence in this document and the
+least true one. It becomes true when a surface exists that they would use, and
+that surface is not designed here.
+
+### SCN-038: One message checked on demand
+- **Persona:** P-01
+- **Feature:** mail-guard
+- **Traces:** ST-022, FLW-19 (JTBD-09, JRN-04/#4, JRN-04/#5)
+- **Entry point:** `okolos-mail scan <path>` on an `.eml` or `.emlx` file
+- **Preconditions:** the file is readable; no configuration has been done
+- **Steps:**
+  1. User hands over one message -> system parses it and runs every deterministic check
+  2. User reads the result -> system names each signal that fired and the fact it stands on
+  3. User reads further -> system names each check that did not run, and why, with the same prominence
+- **Expected result:** the user can weigh the answer, because they can see both what it found and what it could not look at — and nothing about the message left the machine
+- **Alt paths:** the message carries nothing suspicious -> system says so **and still lists what was checked**; a bare "clean" is refused by SCR-21's empty state
+- **UI elements:** SCR-21 — verdict line with severity in words, signals, the did-not-run block
+- **States covered:** loading, empty, error, success
+- **Errors & recovery:** the file cannot be parsed -> the run reports the message as unreadable and renders no verdict. **A scan that failed is never a clean result** — the same rule B-74 established for the page scan, applied before the first line of this feature is written rather than after it costs someone a warning
+- **Status:** draft
+- **Coverage:** none — designed 2026-09-11, not built
+
+### SCN-039: The sender is not who the name says
+- **Persona:** P-01
+- **Feature:** mail-guard
+- **Traces:** ST-023, FLW-19 (JTBD-09, JRN-04/#1, JRN-04/#5)
+- **Entry point:** any message check
+- **Preconditions:** the message carries headers
+- **Steps:**
+  1. User checks a message -> system reads the authentication result the receiving server already computed (SPF, DKIM, DMARC alignment) and reports its verdict in plain words
+  2. User checks a message whose display name carries a brand -> system compares it against the address's registrable domain and shows both halves when they disagree
+  3. User checks a message from a domain that neighbours a known one -> system names the lookalike using the same words the browser side uses for the same finding
+- **Expected result:** the sender is judged by what the sender cannot forge, not by the display name — the one field an attacker controls completely
+- **Alt paths:** `Reply-To` resolves to a different domain than `From` -> reported as a signal in its own right, because it is the shape of business-email compromise
+- **UI elements:** SCR-21 signals block, one row per signal, each carrying its evidence
+- **States covered:** success, empty
+- **Errors & recovery:** the headers carry **no** authentication result at all -> reported in the did-not-run block as a check that could not run, never as a pass. A message that nobody authenticated and a message that authenticated cleanly must not print the same thing
+- **Known limit — the same one the injection detector carries.** Brand and language matching runs in Russian and English. A brand impersonation written in a third language reaches the check and leaves it without a signal. This is recorded before it ships rather than found by a sweep three weeks later (the shape of B-51)
+- **Status:** draft
+- **Coverage:** none — designed 2026-09-11, not built
+
+### SCN-040: A link goes somewhere other than it says, and text is hidden from the reader
+- **Persona:** P-01
+- **Feature:** mail-guard
+- **Traces:** ST-024, FLW-19 (JTBD-09, JTBD-01, JRN-04/#5)
+- **Entry point:** any message check
+- **Preconditions:** the message has an HTML part
+- **Steps:**
+  1. User checks a message -> system extracts every link and compares the visible text against the destination, showing both when they disagree
+  2. System unwraps redirects and checks each resulting host against the signed blocklist the browser side already carries, and against the lookalike checker
+  3. System runs the hidden-text detector over the HTML part and reports text present in the message but not perceivable by a human and phrased as an instruction
+- **Expected result:** neither the reader nor an assistant reading the mailbox is steered by something the reader cannot see
+- **Alt paths:** the message is plain text only -> the link checks still run over the raw addresses, and the hidden-text check reports in the did-not-run block that there was no HTML part to examine
+- **UI elements:** SCR-21 signals block; a link signal shows the two addresses on adjacent rows, never inline in a sentence
+- **States covered:** success, empty
+- **Errors & recovery:** the blocklist is older than its ceiling -> the host check reports as not run, naming the age. **The blocklist this reuses was 29.3 days old on the machine this was designed against (measured 2026-09-11) and its ceiling is 14** — so on the day this ships, this check's honest answer is "did not run", and the surface must be able to say that without looking broken
+- **Why this scenario is the feature's reason to exist.** The hidden-instruction detector is what this product is for, and a mailbox read by an assistant is where indirect prompt injection arrives without the user having chosen to open anything. The same `core-injection` stage that reads a page reads a message body; nothing about it is new except the carrier
+- **Status:** draft
+- **Coverage:** none — designed 2026-09-11, not built
+
+### SCN-041: An attachment is judged without being opened
+- **Persona:** P-01
+- **Feature:** mail-guard
+- **Traces:** ST-025, FLW-19 (JTBD-09, JRN-04/#6)
+- **Entry point:** a message check where the message has attachments
+- **Preconditions:** the attachment bytes are present, or the message names an attachment that is not
+- **Steps:**
+  1. User checks a message with a file attached -> system reads the bytes in a jailed child process with no network and no write access, and asks no application on the machine to open, render, preview or index it
+  2. System compares the real type by magic bytes against the declared MIME and against the extension, and names any disagreement
+  3. System reports a filename carrying a bidirectional override in both forms — as stored and as displayed — and names the trick
+- **Expected result:** the user learns whether the file is what it claims to be, and checking it was never the thing that ran it
+- **Alt paths:** a dangerous class with no ambiguity (installer, script, disk image, an office document carrying a macro project, an HTML attachment) -> named as such without needing a mismatch to fire
+- **UI elements:** SCR-21 signals block, one attachment per row with its own did-not-run entries
+- **States covered:** success, empty, error
+- **Errors & recovery:** the parser crashes or exceeds its ceiling -> that attachment's checks are reported as not run, the rest of the message is still judged, and nothing outside the jailed process is affected. **This is the whole reason the process is separate**: the input is chosen by an attacker, so the parser is assumed to be the thing that breaks
+- **Known limit — no hash is sent anywhere.** The browser side already took this position for downloads (`coverage-matrix.md` 2.2): sending a hash of the user's file to a third party is not among the network purposes this product declares. The verdict therefore never carries "known-bad sample", and says so rather than leaving the reader to assume it was checked
+- **Status:** draft
+- **Coverage:** none — designed 2026-09-11, not built
+
+### SCN-042: A message arrives and is judged before it is read
+- **Persona:** P-01
+- **Feature:** mail-guard
+- **Traces:** ST-022, FLW-20 (JTBD-09, JRN-04/#2, JRN-04/#7)
+- **Entry point:** `okolos-mail watch` running; a message lands in the local mail store
+- **Preconditions:** the watcher can read the store; the message arrived after the watcher started
+- **Steps:**
+  1. A message lands -> system waits for the complete form rather than judging the partial one the client writes first
+  2. System runs the checks of SCN-038 through SCN-041 and records the verdict
+  3. System interrupts **only** if something was found, naming severity, the displayed sender, the address it resolves to, and one sentence
+- **Expected result:** the user hears about the message before they read it, and hears nothing for every message that is fine
+- **Alt paths:** the user opens the alert -> SCR-21 for that message
+- **UI elements:** SCR-22 (severity in words, sender in both forms, one sentence, one action), then SCR-21
+- **States covered:** empty, error, success
+- **Errors & recovery:** the mail store becomes unreadable -> the watcher says it has stopped watching, and why. **Silence from a watcher that died is indistinguishable from silence from a quiet inbox**, which makes the error state the thing that earns the silence — the argument SCN-030 already makes for the dashboard
+- **Bounded by design: only messages that arrive after the watcher starts.** The store held **82 595 messages** on the machine this was designed against (`find ~/Library/Mail -name '*.emlx' | wc -l`, 2026-09-11). A first run over the archive would take hours and produce a backlog nobody asked for. Reviewing what is already there is a separate, explicit act with its own bound
+- **Known limit — reading the store needs Full Disk Access, and that is the whole onboarding.** Granted once in system settings. Without it the watcher reports that it cannot see the store rather than reporting an empty one
+- **Status:** draft
+- **Coverage:** none — designed 2026-09-11, not built
+
+### SCN-043: Who reviewed, where it ran, and what left
+- **Persona:** P-01
+- **Feature:** mail-guard
+- **Traces:** ST-026, FLW-19 (JTBD-09, JTBD-05, JRN-04/#4)
+- **Entry point:** any message check
+- **Preconditions:** none — the default configuration is the main path of this scenario
+- **Steps:**
+  1. User checks a message having configured nothing -> system runs the review on-device or not at all, **nothing leaves the machine**, and the verdict names which of the two happened
+  2. User switches the cloud review on deliberately and names a model -> system writes the outbound record **before** the request, naming the model, the provider and the size of what was sent, and routes only to an endpoint that retains nothing
+  3. User reads the verdict -> system names who reviewed and where it ran, on the verdict itself and not only in a log
+- **Expected result:** the product's central claim survives contact with a language model, because the one step that can leave the machine is off by default, named when on, and recorded before it happens
+- **Alt paths:** the reviewer is unavailable, refuses, or times out -> the deterministic verdict stands unchanged and the output says the review did not run
+- **UI elements:** SCR-21 `[data-role=review]`
+- **States covered:** success, error
+- **Errors & recovery:** the outbound record cannot be written -> the request is **not made**. This is `packages/net`'s existing rule, and it is the rule rather than a new one because a second network path with a second set of habits is how the first one's guarantee stops being true
+- **The reviewer may not raise severity.** It explains, orders and summarises; it cannot manufacture a verdict the deterministic checks did not reach. This is [ADR-0004](../adr/0004-verdict-never-outruns-checks.md) applied to a new stage rather than a new decision
+- **The message is untrusted input to the reviewer.** A message can carry instructions addressed to whatever reads it, and the reviewer is a reader. The sanitiser runs before the reviewer sees anything — which means this product's own detector protects its own model, and a failure here would be the exact attack the product is named for, committed by the product
+- **Recorded exception to an anti-goal.** `coverage-matrix.md` §6 refuses "анализ содержимого писем через облачный OAuth". The cloud review is not that — no OAuth, no mailbox access, one message the user handed over — but it is adjacent, and the distance is kept by three things rather than by the wording: off by default, recorded before it is sent, and routed only where nothing is retained
+- **Status:** draft
+- **Coverage:** none — designed 2026-09-11, not built
 

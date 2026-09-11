@@ -41,6 +41,8 @@ never updated, which is the same drift this file exists to catch.)
 | SCR-18 | Privacy page | FLW-18 | - | built | tools/privacy-page.mjs, tools/docs.test.ts |
 | SCR-19 | Lookalike comparison | FLW-05 | - | built | packages/ui/src/comparison/comparison.ts:mountComparison, e2e/scn-006.spec.ts, e2e/a11y-overlays.spec.ts |
 | SCR-20 | Local store unavailable | FLW-14 | - | built | packages/ui/src/storage/storage-problem.ts:renderStorageProblem |
+| SCR-21 | Message verdict | FLW-19, FLW-20 | - | designed | none — Ф0 |
+| SCR-22 | Message alert | FLW-20 | - | designed | none — Ф1 |
 
 ## Design system
 
@@ -556,3 +558,39 @@ generator, and the sheet declares no colour of its own.
 - **Coverage:** packages/ui/src/storage/storage-problem.ts:renderStorageProblem, packages/ui/src/storage/storage-problem.test.ts, apps/extension/src/options/index.ts:storageProblem
 - **Scenarios:** SCN-032
 - **Status:** built
+
+### SCR-21: Message verdict
+- **Used by:** FLW-19 (the whole flow), FLW-20 (opened from the alert)
+- **Purpose:** say what was found in one message, signal by signal, and say with equal prominence what was **not** checked — the surface exists to be weighed, not obeyed
+- **Surface:** terminal output in Ф0; the same content rendered as a local page once a window exists. The content is specified here once; the medium is not what makes it a screen
+- **Elements:** the message identified by sender, subject and date, so the reader knows which one this is; `severity + word` on the verdict line, never colour alone; `[data-role=signals]` — one row per signal that fired, each naming the fact it stands on (the authentication result, the two halves of a mismatched link, the two forms of a filename); `[data-role=not-run]` — one row per check that did not run, with its reason, carrying the same visual weight as the signals; `[data-role=review]` — who reviewed, where it ran, and for the cloud mode what left and how large; `[data-role=actions]` — at most three, and never more than one that leaves the terminal
+- **States:**
+  | State | Trigger | Figma frame | Behavior |
+  |-------|---------|-------------|----------|
+  | loading | checks started | - | names the check running now, not a spinner; attachments named individually because they are the slow ones |
+  | empty | parsed, nothing found | - | says nothing was found **and lists what was checked** — a bare "clean" is the one answer this screen may not give |
+  | error | the message could not be parsed | - | says the message could not be read, and does not render a verdict; a scan that failed is never a clean result |
+  | success | one or more signals | - | signals first, worst first, then the checks that did not run |
+- **Nothing here is carried by colour.** Inherited from the Design system section and restated because a terminal is where it is easiest to break: a severity is a word, and the word is printed whether or not the stream is a TTY.
+- **The "did not run" block is not a footnote.** The browser side learned this twice — a download verdict that omitted the hash check read as a full one (B-57), and a scan that exited silently read as a clean page (B-74). A mail verdict has more absent checks than the browser side ever has: an unauthenticated sender, an attachment the parser refused, a reviewer that was off. Listing them quietly would make this the most confidently wrong surface in the product.
+- **Scenarios:** SCN-038, SCN-039, SCN-040, SCN-041, SCN-043
+- **Resources:** core-mail parser, the signed phishing feed, the lookalike checker, the jailed attachment parser, the reviewer driver
+- **Status:** designed
+
+### SCR-22: Message alert
+- **Used by:** FLW-20 (the only surface the watcher raises on its own)
+- **Purpose:** interrupt for a message worth interrupting for, and for nothing else
+- **Surface:** a macOS user notification
+- **Elements:** the severity in words; the sender as displayed **and** the address it resolves to, because the gap between them is often the whole finding; the one-sentence reason; a single action that opens SCR-21
+- **States:**
+  | State | Trigger | Figma frame | Behavior |
+  |-------|---------|-------------|----------|
+  | loading | — | - | not applicable: this surface only ever appears after a verdict exists, and a notification that says "checking" is an interruption with no content |
+  | empty | nothing found | - | **nothing is shown at all.** The recorded verdict is the output; a notification per clean message is how a person learns to swipe them away unread |
+  | error | the mail store cannot be read | - | says the watcher is not watching, and why — silence from a watcher that has stopped is indistinguishable from silence from a quiet inbox |
+  | success | one or more signals | - | severity, sender, one sentence, one action |
+- **Silence has to be earned, and the error state is what earns it.** A watcher that dies quietly leaves the user safer-feeling and no safer. This is the same argument SCN-030 makes on the dashboard — an unread state must never render as "nothing here".
+- **Scenarios:** SCN-042
+- **Resources:** the watcher, the notification channel
+- **Status:** designed
+

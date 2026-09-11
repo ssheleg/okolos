@@ -94,6 +94,14 @@ its owner** ([evidence/06](../evidence/06-competitors.md) §6.3).
 - **Forces:** push: false flags directly cost e-commerce revenue; pull: public status check without an account; anxiety: no channel, no answer; habit: complaining on social media.
 - **Success metric:** an owner can look up their domain's status and open an appeal in under two minutes, with no account.
 
+### JTBD-09: Judge a message before I act on it
+- **Statement:** When a message lands in my mailbox asking me to click, pay, sign in or open a file, I want to know whether it is what it claims to be, so that the channel that reaches me uninvited is not the one I check least.
+- **Personas:** P-01, P-02
+- **Type:** functional
+- **Forces:** push: mail arrives without me choosing it, and the same phishing campaigns that own the web surface own the inbox; pull: a verdict computed on the machine the mail already sits on; anxiety: a tool that reads my mail is a worse exposure than the scam it prevents; habit: judging a sender by the display name.
+- **Success metric:** a message carrying a forged sender, a disguised link or a dangerous attachment is named as such before the user acts on it, with every check computed locally by default. **[assumption]** — no measurement of mail-borne scam against this corpus exists yet; the browser-side numbers in [evidence/01](../evidence/01-threat-landscape.md) are about pages, not messages.
+- **Why this is not JTBD-02.** JTBD-02 is about a page or a link the user *chose to open*. Mail arrives uninvited, is read in a program that is not the browser, and carries two things a page does not: a claimed sender whose authenticity the receiving server already assessed, and files attached to the artefact itself. A job that starts with "when I'm about to open a link" cannot carry it.
+
 ## Customer journeys
 
 ### JRN-01: P-01 — keep my AI from being hijacked (JTBD-01)
@@ -127,6 +135,17 @@ its owner** ([evidence/06](../evidence/06-competitors.md) §6.3).
 | 4 | Decision | About to press Win+R and paste | OS run dialog | 2 | We cannot reach outside the browser — this is the last moment we can act | Make the in-page warning unmissable and dismissible only deliberately |
 | 5 | After (bad) | Already pasted and ran it | — | 1 | Doesn't know what happened or what to do | Recovery checklist: what to check, what to change, in what order |
 | 6 | After (good) | Leaves the page | banner | 4 | Doesn't understand what nearly happened | One plain sentence, no jargon, no scare metrics |
+
+### JRN-04: P-01 — a message arrives and has to be judged (JTBD-09)
+| # | Stage | User action | Touchpoint | Emotion (1-5) | Pain | Opportunity |
+|---|-------|------------|------------|---------------|------|-------------|
+| 1 | Before | Reads mail in Apple Mail, several times a day | Mail.app | 3 | The client shows a display name and a subject — the two fields an attacker controls completely | Judge the fields the attacker does not control: the authentication result the receiving server already computed |
+| 2 | Arrival | A message lands | Mail.app, message list | 3 | Nothing between arrival and reading says anything about the sender | The message is on disk before it is read; a verdict can be there too |
+| 3 | Suspicion | Something feels off, or nothing does | the message body | 2 | "Looks off" is not a check, and most of these look fine | An explicit, repeatable answer instead of a feeling |
+| 4 | Check | Asks for this message to be checked | CLI, later a notification | 3 | Forwarding it to a scanning service means handing a stranger the mail | Everything computed on the machine the mail already lives on |
+| 5 | Verdict | Reads what was found | verdict output | 4 | A score explains nothing and cannot be argued with | Name each signal, and name every check that did **not** run |
+| 6 | Attachment | Wonders whether the file is safe | the attachment | 2 | The only way most people check a file is to open it — which is the attack | Judge it as bytes, in a jailed process, and never hand it to an application |
+| 7 | After | Deletes it, or acts on it knowingly | Mail.app | 4 | — | The verdict is recorded, so "did I already check this one" has an answer |
 
 ## User stories
 
@@ -310,6 +329,60 @@ its owner** ([evidence/06](../evidence/06-competitors.md) §6.3).
 - **Priority:** could
 - **Status:** proposed
 - **Kill criteria:** if no carer configures it within 3 months of release → drop the mode, keep the confidence thresholds. **[assumption]** — segment desirability untested.
+
+### ST-022: Check one message on demand
+- **Story:** As P-01, I want to hand a single message to the checker and get a verdict, so that a message I am unsure about has an answer that is not my own feeling.
+- **Traces:** JTBD-09, JRN-04/#4, JRN-04/#5
+- **Acceptance criteria:**
+  - Given a message file, when I ask for it to be checked, then I get a verdict that names each signal that fired and each check that did not run, with its reason.
+  - Given a message with nothing wrong, when I check it, then the answer says so and still lists what was checked.
+  - Given a message the parser cannot read, when I check it, then it says the message could not be read — never that it is clean.
+- **Priority:** must
+- **Status:** proposed
+
+### ST-023: Judge the sender by what the sender cannot forge
+- **Story:** As P-01, I want the sender judged by the authentication the receiving server already performed and by the shape of the address, so that a display name I recognise is not what decides.
+- **Traces:** JTBD-09, JRN-04/#1, JRN-04/#5
+- **Acceptance criteria:**
+  - Given a message whose SPF, DKIM or DMARC result is a failure, when it is checked, then that is named as a signal in plain words.
+  - Given a display name carrying a brand whose domain the address does not belong to, when it is checked, then the mismatch is named and both halves are shown.
+  - Given a sender domain that is a punycode or homoglyph neighbour of a known one, when it is checked, then it is named the same way the browser side names a lookalike.
+  - Given a message whose headers carry no authentication result at all, when it is checked, then that absence is reported as a check that did not run — not as a pass.
+- **Priority:** must
+- **Status:** proposed
+
+### ST-024: See where a link really goes, and what the message hides
+- **Story:** As P-01, I want every link judged by its destination rather than its text, and any text hidden from me but visible to a machine surfaced, so that neither I nor an assistant reading my mail is steered by something I cannot see.
+- **Traces:** JTBD-09, JTBD-01, JRN-04/#5
+- **Acceptance criteria:**
+  - Given a link whose visible text names one address and whose target is another, when the message is checked, then both are shown side by side.
+  - Given a link to a host on the blocklist the browser side already uses, when the message is checked, then it is named with the same words that side uses.
+  - Given text present in the message but not perceivable by a human and phrased as an instruction, when the message is checked, then it is reported as an instruction planted for a machine.
+- **Priority:** must
+- **Status:** proposed
+
+### ST-025: Judge an attachment without opening it
+- **Story:** As P-01, I want attachments judged as bytes in an isolated process, so that checking a file is never the thing that runs it.
+- **Traces:** JTBD-09, JRN-04/#6
+- **Acceptance criteria:**
+  - Given an attachment whose real type, declared type and extension disagree, when it is checked, then the disagreement is named.
+  - Given a filename carrying a bidirectional-override character, when it is checked, then the name is shown as stored and as displayed, and the trick is named.
+  - Given any attachment, when it is checked, then no application on this machine is asked to open, render, preview or index it, and the parse runs in a process with no network and no write access.
+  - Given a parser that crashes or exceeds its ceiling, when that happens, then the check is reported as not run, the rest of the message is still judged, and nothing else on the machine is affected.
+- **Priority:** must
+- **Status:** proposed
+
+### ST-026: Choose who reviews, and be told what leaves
+- **Story:** As P-01, I want to choose whether the final review runs on my machine, in a cloud model I selected, or not at all — and to be told exactly what left, so that the product's privacy claim survives contact with a language model.
+- **Traces:** JTBD-09, JTBD-05, JRN-04/#4
+- **Acceptance criteria:**
+  - Given no configuration, when a message is checked, then the review runs locally or not at all, and nothing leaves the device.
+  - Given the cloud review is switched on deliberately, when a message is checked, then the outbound record is written before the request, names the model, the provider and the size of what was sent, and a refusal to record cancels the request.
+  - Given the cloud review is on, when the request is made, then it is routed only to an endpoint that retains nothing, and a route that cannot promise that is not used.
+  - Given the reviewer is unavailable for any reason, when a message is checked, then the deterministic verdict still stands and the output says the review did not run.
+  - Given any reviewer, when it answers, then it cannot raise the severity above what the deterministic checks found.
+- **Priority:** must
+- **Status:** proposed
 
 ## Assumptions register
 
